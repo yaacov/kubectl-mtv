@@ -11,7 +11,7 @@
 Name:           %{repo}
 Version:        0.1.1
 Release:        1%{?dist}
-Summary:        kubectl-mtv - Migration Toolkit for Virtualization
+Summary:        kubectl-mtv - Migration Toolkit for Virtualization CLI
 License:        Apache
 URL:            https://%{import_path}
 Source0:        https://github.com/yaacov/kubectl-mtv/archive/v%{version}.tar.gz

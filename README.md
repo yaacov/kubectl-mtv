@@ -1,4 +1,4 @@
-# kubectl-mtv - Migration Toolkit for Virtualization
+# kubectl-mtv - Migration Toolkit for Virtualization CLI
 
 A kubectl plugin that helps users migrate virtualization workloads from oVirt, VMware, OpenStack, and OVA files to KubeVirt on Kubernetes.
 
