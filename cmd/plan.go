@@ -153,6 +153,7 @@ func newListPlanCmd() *cobra.Command {
 
 func newStartPlanCmd() *cobra.Command {
 	var name string
+	var cutoverTimeStr string
 
 	cmd := &cobra.Command{
 		Use:   "start",
@@ -160,11 +161,24 @@ func newStartPlanCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
-			return plan.Start(kubeConfigFlags, name, namespace)
+
+			var cutoverTime *time.Time
+			if cutoverTimeStr != "" {
+				// Parse the provided cutover time
+				t, err := time.Parse(time.RFC3339, cutoverTimeStr)
+				if err != nil {
+					return fmt.Errorf("failed to parse cutover time: %v", err)
+				}
+				cutoverTime = &t
+			}
+
+			return plan.Start(kubeConfigFlags, name, namespace, cutoverTime)
 		},
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "Plan name")
+	cmd.Flags().StringVar(&cutoverTimeStr, "cutover", "", "Cutover time in RFC3339 format (e.g., 2023-04-01T14:30:00Z) for warm migrations. If not provided, defaults to 1 hour from now.")
+
 	if err := cmd.MarkFlagRequired("name"); err != nil {
 		fmt.Printf("Warning: error marking 'provider' flag as required: %v\n", err)
 	}

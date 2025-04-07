@@ -3,6 +3,7 @@ package plan
 import (
 	"context"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +18,7 @@ import (
 )
 
 // Start starts a migration plan
-func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string) error {
+func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string, cutoverTime *time.Time) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -56,6 +57,23 @@ func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string) e
 		return fmt.Errorf("migration plan '%s' has already succeeded", name)
 	}
 
+	// Check if the plan is a warm migration
+	warm, _, err := unstructured.NestedBool(plan.Object, "spec", "warm")
+	if err != nil {
+		return fmt.Errorf("failed to check if plan is warm: %v", err)
+	}
+
+	// Handle cutover time based on plan type
+	if !warm && cutoverTime != nil {
+		fmt.Printf("Warning: Cutover time is specified but plan '%s' is not a warm migration. Ignoring cutover time.\n", name)
+		cutoverTime = nil
+	} else if warm && cutoverTime == nil {
+		// For warm migrations without specified cutover, default to now + 1 hour
+		defaultTime := time.Now().Add(1 * time.Hour)
+		cutoverTime = &defaultTime
+		fmt.Printf("Warning: No cutover time specified for warm migration. Setting default cutover time to %s (1 hour from now).\n", cutoverTime.Format(time.RFC3339))
+	}
+
 	// Extract the plan's UID
 	planUID := string(plan.GetUID())
 
@@ -76,6 +94,13 @@ func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string) e
 	migration.Kind = "Migration"
 	migration.APIVersion = forkliftv1beta1.SchemeGroupVersion.String()
 
+	// Set cutover time if applicable (for warm migrations)
+	if warm && cutoverTime != nil {
+		// Convert time.Time to *metav1.Time
+		metaTime := metav1.NewTime(*cutoverTime)
+		migration.Spec.Cutover = &metaTime
+	}
+
 	// Convert Migration object to Unstructured
 	unstructuredMigration, err := runtime.DefaultUnstructuredConverter.ToUnstructured(migration)
 	if err != nil {
@@ -90,5 +115,8 @@ func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string) e
 	}
 
 	fmt.Printf("Migration started for plan '%s' in namespace '%s'\n", name, namespace)
+	if warm && cutoverTime != nil {
+		fmt.Printf("Cutover scheduled for: %s\n", cutoverTime.Format(time.RFC3339))
+	}
 	return nil
 }
