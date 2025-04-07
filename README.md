@@ -10,6 +10,21 @@ A kubectl plugin that helps users migrate virtualization workloads from oVirt, V
 
 The Migration Toolkit for Virtualization (MTV) simplifies the process of migrating virtual machines from traditional virtualization platforms to Kubernetes using KubeVirt. It handles the complexities of different virtualization platforms and provides a consistent way to define, plan, and execute migrations.
 
+## Table of Contents
+
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+  - [Installing from DNF (Fedora)](#installing-from-dnf-fedora)
+  - [Building and Installing](#building-and-installing)
+- [Usage](#usage)
+  - [Global Flags](#global-flags)
+  - [Provider Management](#provider-management)
+  - [Mapping Management](#mapping-management)
+  - [Inventory Management](#inventory-management)
+  - [Migration Plan Management](#migration-plan-management)
+- [Logo Attribution](#logo-attribution)
+- [License](#license)
+
 ## Installation
 
 ### Prerequisites
