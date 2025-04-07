@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	planv1beta1 "github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1/plan"
 	"github.com/spf13/cobra"
@@ -25,6 +26,7 @@ func newPlanCmd() *cobra.Command {
 	cmd.AddCommand(newStartPlanCmd())
 	cmd.AddCommand(newDescribePlanCmd())
 	cmd.AddCommand(newCancelVMsCmd())
+	cmd.AddCommand(newCutoverCmd())
 
 	return cmd
 }
@@ -244,6 +246,41 @@ func newCancelVMsCmd() *cobra.Command {
 	}
 	if err := cmd.MarkFlagRequired("vms"); err != nil {
 		fmt.Printf("Warning: error marking 'vms' flag as required: %v\n", err)
+	}
+
+	return cmd
+}
+
+func newCutoverCmd() *cobra.Command {
+	var planName string
+	var cutoverTimeStr string
+
+	cmd := &cobra.Command{
+		Use:   "cutover",
+		Short: "Set the cutover time for a warm migration",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Resolve the appropriate namespace based on context and flags
+			namespace := client.ResolveNamespace(kubeConfigFlags)
+
+			var cutoverTime *time.Time
+			if cutoverTimeStr != "" {
+				// Parse the provided cutover time
+				t, err := time.Parse(time.RFC3339, cutoverTimeStr)
+				if err != nil {
+					return fmt.Errorf("failed to parse cutover time: %v", err)
+				}
+				cutoverTime = &t
+			}
+
+			return plan.Cutover(kubeConfigFlags, planName, namespace, cutoverTime)
+		},
+	}
+
+	cmd.Flags().StringVar(&planName, "name", "", "Plan name")
+	cmd.Flags().StringVar(&cutoverTimeStr, "time", "", "Cutover time in RFC3339 format (e.g., 2023-04-01T14:30:00Z). If not specified, current time will be used.")
+
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		fmt.Printf("Warning: error marking 'name' flag as required: %v\n", err)
 	}
 
 	return cmd
