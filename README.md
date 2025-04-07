@@ -134,21 +134,6 @@ kubectl mtv plan start --name migration-plan-1
 kubectl mtv plan describe --name migration-plan-1
 ```
 
-### Migrations
-
-When a plan is running, Migration resources track the current state.
-
-```bash
-# List migrations
-kubectl mtv migration list
-
-# Describe a migration
-kubectl mtv migration describe --name migration-1
-
-# Cancel a migration
-kubectl mtv migration cancel --name migration-1
-```
-
 ## Inventory API
 
 MTV maintains an inventory API that allows users to fetch information about the current inventory of providers.
