@@ -3,6 +3,7 @@ package plan
 import (
 	"context"
 	"fmt"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -34,6 +35,7 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, watch bo
 		output.Header{DisplayName: "READY", JSONPath: "ready"},
 		output.Header{DisplayName: "STATUS", JSONPath: "status"},
 		output.Header{DisplayName: "PROGRESS", JSONPath: "progress"},
+		output.Header{DisplayName: "CUTOVER", JSONPath: "cutover"},
 		output.Header{DisplayName: "CREATED", JSONPath: "created"},
 	)
 
@@ -50,7 +52,7 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, watch bo
 
 		// Format the VM migration status
 		var vmStatus string
-		if planDetails.HasRunningMigration && planDetails.VMStats.Total > 0 {
+		if planDetails.RunningMigration != nil && planDetails.VMStats.Total > 0 {
 			vmStatus = fmt.Sprintf("%d/%d (S:%d/F:%d/C:%d)",
 				planDetails.VMStats.Completed,
 				planDetails.VMStats.Total,
@@ -63,12 +65,30 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, watch bo
 
 		// Format the disk transfer progress
 		progressStatus := "-"
-		if planDetails.HasRunningMigration && planDetails.DiskProgress.Total > 0 {
+		if planDetails.RunningMigration != nil && planDetails.DiskProgress.Total > 0 {
 			percentage := float64(planDetails.DiskProgress.Completed) / float64(planDetails.DiskProgress.Total) * 100
 			progressStatus = fmt.Sprintf("%.1f%% (%d/%d GB)",
 				percentage,
 				planDetails.DiskProgress.Completed/(1024), // Convert to GB
 				planDetails.DiskProgress.Total/(1024))     // Convert to GB
+		}
+
+		// Determine cutover information
+		cutoverInfo := "cold" // Default for cold migration
+		warm, exists, _ := unstructured.NestedBool(p.Object, "spec", "warm")
+		if exists && warm {
+			cutoverInfo = "-" // Default for warm migration without running migration
+			if planDetails.RunningMigration != nil {
+				// Extract cutover time from running migration
+				cutoverTimeStr, exists, _ := unstructured.NestedString(planDetails.RunningMigration.Object, "spec", "cutover")
+				if exists && cutoverTimeStr != "" {
+					// Parse the cutover time string
+					cutoverTime, err := time.Parse(time.RFC3339, cutoverTimeStr)
+					if err == nil {
+						cutoverInfo = cutoverTime.Format("2006-01-02 15:04:05")
+					}
+				}
+			}
 		}
 
 		// Create a new printer item
@@ -82,9 +102,10 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, watch bo
 			"created":  creationTime.Format("2006-01-02 15:04:05"),
 			"vms":      vmStatus,
 			"ready":    fmt.Sprintf("%t", planDetails.IsReady),
-			"running":  fmt.Sprintf("%t", planDetails.HasRunningMigration),
+			"running":  fmt.Sprintf("%t", planDetails.RunningMigration != nil),
 			"status":   planDetails.Status,
 			"progress": progressStatus,
+			"cutover":  cutoverInfo,
 		}
 
 		// Add the item to the list

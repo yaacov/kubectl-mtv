@@ -284,11 +284,11 @@ func GetDiskTransferProgress(migration *unstructured.Unstructured) (ProgressStat
 
 // PlanDetails contains all relevant status information for a plan
 type PlanDetails struct {
-	IsReady             bool
-	HasRunningMigration bool
-	Status              string
-	VMStats             VMStats
-	DiskProgress        ProgressStats
+	IsReady          bool
+	RunningMigration *unstructured.Unstructured
+	Status           string
+	VMStats          VMStats
+	DiskProgress     ProgressStats
 }
 
 // GetPlanDetails returns all details about a plan's status in a single call
@@ -312,7 +312,7 @@ func GetPlanDetails(
 	if err != nil {
 		return details, err
 	}
-	details.HasRunningMigration = runningMigration != nil
+	details.RunningMigration = runningMigration
 
 	// Get plan status
 	status, err := GetPlanStatus(plan)
