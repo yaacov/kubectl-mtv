@@ -15,6 +15,7 @@ The Migration Toolkit for Virtualization (MTV) simplifies the process of migrati
 - [Installation](#installation)
   - [Prerequisites](#prerequisites)
   - [Installing from DNF (Fedora)](#installing-from-dnf-fedora)
+  - [Installing from Release Binaries](#installing-from-release-binaries)
   - [Building and Installing](#building-and-installing)
 - [Usage](#usage)
   - [Global Flags](#global-flags)
@@ -43,6 +44,31 @@ dnf copr enable yaacov/kubesql
 
 # Install kubectl-mtv
 dnf install kubectl-mtv
+```
+
+### Installing from Release Binaries
+
+You can download and install pre-built binaries for linux/amd64:
+
+```bash
+# Set the version to download
+VERSION=v0.1.1-3  # Replace with the desired version
+
+# Download the release binary and its checksum
+curl -LO https://github.com/yaacov/kubectl-mtv/releases/download/${VERSION}/kubectl-mtv.tar.gz
+curl -LO https://github.com/yaacov/kubectl-mtv/releases/download/${VERSION}/kubectl-mtv.tar.gz.sha256sum
+
+# Verify checksum
+sha256sum kubectl-mtv.tar.gz
+cat kubectl-mtv.tar.gz.sha256sum
+# Compare the output of both commands to ensure they match
+
+# Extract the binary
+tar -xzf kubectl-mtv.tar.gz
+
+# Install the binary (requires root privileges)
+sudo mv kubectl-mtv /usr/local/bin/
+sudo chmod +x /usr/local/bin/kubectl-mtv
 ```
 
 ### Building and Installing
