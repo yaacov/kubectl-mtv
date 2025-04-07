@@ -49,17 +49,17 @@ func IsPlanReady(plan *unstructured.Unstructured) (bool, error) {
 	return false, nil
 }
 
-// HasRunningMigration checks if a plan has any running migrations
-func HasRunningMigration(
+// GetRunningMigration checks if a plan has any running migrations
+func GetRunningMigration(
 	client dynamic.Interface,
 	namespace string,
 	plan *unstructured.Unstructured,
 	migrationsGVR schema.GroupVersionResource,
-) (bool, error) {
+) (*unstructured.Unstructured, error) {
 	// Get the plan UID
 	planUID, found, err := unstructured.NestedString(plan.Object, "metadata", "uid")
 	if !found || err != nil {
-		return false, fmt.Errorf("failed to get plan UID: %v", err)
+		return nil, fmt.Errorf("failed to get plan UID: %v", err)
 	}
 
 	// Get all migrations in the namespace
@@ -67,7 +67,7 @@ func HasRunningMigration(
 		Namespace(namespace).
 		List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return false, fmt.Errorf("failed to list migrations: %v", err)
+		return nil, fmt.Errorf("failed to list migrations: %v", err)
 	}
 
 	// Check each migration
@@ -99,12 +99,12 @@ func HasRunningMigration(
 			condStatus, _, _ := unstructured.NestedString(condition, "status")
 
 			if condType == "Running" && condStatus == "True" {
-				return true, nil
+				return &migration, nil
 			}
 		}
 	}
 
-	return false, nil
+	return nil, nil
 }
 
 // GetPlanStatus returns the status of a plan
@@ -308,11 +308,11 @@ func GetPlanDetails(
 	details.IsReady = ready
 
 	// Get if plan has running migration
-	hasRunning, err := HasRunningMigration(client, namespace, plan, migrationsGVR)
+	runningMigration, err := GetRunningMigration(client, namespace, plan, migrationsGVR)
 	if err != nil {
 		return details, err
 	}
-	details.HasRunningMigration = hasRunning
+	details.HasRunningMigration = runningMigration != nil
 
 	// Get plan status
 	status, err := GetPlanStatus(plan)
@@ -322,7 +322,7 @@ func GetPlanDetails(
 	details.Status = status
 
 	// If there's a running migration, get VM stats
-	if hasRunning {
+	if runningMigration != nil {
 		// Get the plan UID
 		planUID, found, err := unstructured.NestedString(plan.Object, "metadata", "uid")
 		if !found || err != nil {

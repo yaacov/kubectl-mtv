@@ -24,6 +24,7 @@ func newPlanCmd() *cobra.Command {
 	cmd.AddCommand(newListPlanCmd())
 	cmd.AddCommand(newStartPlanCmd())
 	cmd.AddCommand(newDescribePlanCmd())
+	cmd.AddCommand(newCancelVMsCmd())
 
 	return cmd
 }
@@ -185,6 +186,64 @@ func newDescribePlanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&name, "name", "", "Plan name")
 	if err := cmd.MarkFlagRequired("name"); err != nil {
 		fmt.Printf("Warning: error marking 'provider' flag as required: %v\n", err)
+	}
+
+	return cmd
+}
+
+func newCancelVMsCmd() *cobra.Command {
+	var planName string
+	var vmNamesOrFile string
+
+	cmd := &cobra.Command{
+		Use:   "cancel-vms",
+		Short: "Cancel specific VMs in a running migration",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Resolve the appropriate namespace based on context and flags
+			namespace := client.ResolveNamespace(kubeConfigFlags)
+
+			var vmNames []string
+
+			if strings.HasPrefix(vmNamesOrFile, "@") {
+				// It's a file
+				filePath := vmNamesOrFile[1:]
+				content, err := os.ReadFile(filePath)
+				if err != nil {
+					return fmt.Errorf("failed to read file %s: %v", filePath, err)
+				}
+
+				// Try to unmarshal as JSON or YAML array of strings
+				var namesArray []string
+				if err := json.Unmarshal(content, &namesArray); err != nil {
+					if err := yaml.Unmarshal(content, &namesArray); err != nil {
+						return fmt.Errorf("failed to parse VM names from file: %v", err)
+					}
+				}
+				vmNames = namesArray
+			} else {
+				// It's a comma-separated list
+				vmNameSlice := strings.Split(vmNamesOrFile, ",")
+				for _, vmName := range vmNameSlice {
+					vmNames = append(vmNames, strings.TrimSpace(vmName))
+				}
+			}
+
+			if len(vmNames) == 0 {
+				return fmt.Errorf("no VM names specified to cancel")
+			}
+
+			return plan.Cancel(kubeConfigFlags, planName, namespace, vmNames)
+		},
+	}
+
+	cmd.Flags().StringVar(&planName, "name", "", "Plan name")
+	cmd.Flags().StringVar(&vmNamesOrFile, "vms", "", "List of VM names to cancel (comma-separated) or path to file containing VM names (prefix with @)")
+
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		fmt.Printf("Warning: error marking 'name' flag as required: %v\n", err)
+	}
+	if err := cmd.MarkFlagRequired("vms"); err != nil {
+		fmt.Printf("Warning: error marking 'vms' flag as required: %v\n", err)
 	}
 
 	return cmd

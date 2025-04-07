@@ -39,11 +39,11 @@ func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string) e
 	}
 
 	// Check if the plan has running migrations
-	hasRunning, err := status.HasRunningMigration(c, namespace, plan, client.MigrationsGVR)
+	runningMigration, err := status.GetRunningMigration(c, namespace, plan, client.MigrationsGVR)
 	if err != nil {
 		return err
 	}
-	if hasRunning {
+	if runningMigration != nil {
 		return fmt.Errorf("migration plan '%s' already has a running migration", name)
 	}
 
