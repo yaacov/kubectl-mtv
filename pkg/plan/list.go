@@ -12,10 +12,11 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	"github.com/yaacov/kubectl-mtv/pkg/plan/status"
+	"github.com/yaacov/kubectl-mtv/pkg/watch"
 )
 
-// List lists migration plans
-func List(configFlags *genericclioptions.ConfigFlags, namespace string, watch bool) error {
+// ListPlans lists migration plans without watch functionality
+func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -127,4 +128,15 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, watch bo
 	}
 
 	return nil
+}
+
+// List lists migration plans with optional watch mode
+func List(configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool) error {
+	if watchMode {
+		return watch.Watch(func() error {
+			return ListPlans(configFlags, namespace)
+		}, 15*time.Second) // Refresh every 5 seconds
+	}
+
+	return ListPlans(configFlags, namespace)
 }
