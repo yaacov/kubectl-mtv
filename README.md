@@ -14,6 +14,18 @@ The Migration Toolkit for Virtualization (MTV) simplifies the process of migrati
 - kubectl installed and configured
 - Go 1.23+
 
+### Installing from DNF (Fedora)
+
+On Fedora 41, 42, and other compatible amd64 systems, you can install kubectl-mtv directly from the COPR repository:
+
+```bash
+# Enable the COPR repository
+dnf copr enable yaacov/kubesql
+
+# Install kubectl-mtv
+dnf install kubectl-mtv
+```
+
 ### Building and Installing
 
 ```bash
