@@ -27,185 +27,296 @@ make install
 
 Make sure `$GOPATH/bin` is in your PATH to use as a kubectl plugin.
 
-## Custom Resources
+## Usage
 
-MTV uses several Custom Resource Definitions (CRDs) to manage the migration process:
+### Global Flags
 
-### Providers
-
-Providers define connections to virtualization platforms. This includes both source platforms (where VMs currently run) and target platforms (KubeVirt on Kubernetes).
-
-#### Common Provider Flags
-
-All provider creation commands support these flags:
+These flags are available for all commands:
 
 ```
---type          Required. Provider type (openshift, vsphere, ova)
---name          Required. Provider name
---namespace     Namespace for the provider (defaults to current namespace)
---secret        Optional. Name of an existing secret containing provider credentials
---url           Provider URL (required for vsphere and when providing token for openshift)
+--kubeconfig string      Path to the kubeconfig file
+--context string         The name of the kubeconfig context to use
+--namespace string       Namespace (defaults to active namespace from kubeconfig)
 ```
 
-#### Provider Type-Specific Requirements:
+### Provider Management
 
-1. **vSphere Provider**
-   ```bash
-   kubectl mtv provider create --type vsphere --name my-vsphere \
-     --url "https://vcenter.example.com/sdk" \
-     --username administrator@vsphere.local --password VMware123! \
-     --cacert @ca.pem [--provider-insecure-skip-tls] [--vddk-init-image IMAGE_PATH]
-   ```
-   
-   Required flags:
-   - `--url`: vCenter Server URL
-   - Either provide (`--username` and `--password`) OR use an existing secret with `--secret`
-   - Either provide `--cacert` OR use `--provider-insecure-skip-tls`
-   
-   Optional flags:
-   - `--vddk-init-image`: Path to Virtual Disk Development Kit container init image
+#### Create Provider
 
-2. **OVA Provider**
-   ```bash
-   kubectl mtv provider create --type ova --name my-ova \
-     --url "https://ova-provider.example.com"
-   ```
-   
-   Required flags:
-   - `--url`: OVA Provider URL
-   - `--name`: Provider name
-
-3. **OpenShift Provider**
-   ```bash
-   # Creating with token (requires URL)
-   kubectl mtv provider create --type openshift --name my-openshift \
-     --url "https://api.openshift.example.com:6443" --token TOKEN_STRING
-   
-   # Creating without credentials (using service account)
-   kubectl mtv provider create --type openshift --name my-openshift
-   ```
-   
-   Required flags:
-   - `--name`: Provider name
-   
-   Conditional requirements:
-   - When using `--token`, you must also provide `--url`
-
-#### Listing and Deleting Providers
+Create a provider connection to a virtualization platform.
 
 ```bash
-# List providers
-kubectl mtv provider list [--output json|table] [--inventory-url URL]
-
-# Delete a provider
-kubectl mtv provider delete --name PROVIDER_NAME
+kubectl mtv provider create NAME --type TYPE [flags]
 ```
 
-### Network and Storage Mappings
+**Required Flags:**
+- `--type`: Provider type (openshift, vsphere, ovirt, openstack, ova)
 
-Mappings define how to translate networks and storage from the source platform to the target platform.
+**Optional Flags:**
+- `--secret`: Secret containing provider credentials
+- `--url`: Provider URL
+- `--username`: Provider credentials username
+- `--password`: Provider credentials password
+- `--token`: Provider authentication token (used for openshift provider)
+- `--cacert`: Provider CA certificate (use @filename to load from file)
+- `--provider-insecure-skip-tls`: Skip TLS verification when connecting to the provider
+- `--vddk-init-image`: Virtual Disk Development Kit (VDDK) container init image path
+
+**Examples:**
 
 ```bash
-# Create network mapping
-kubectl mtv mapping create-network --name network-map-1 --source my-ovirt --target my-kubevirt --from-file network-mapping.yaml
+# Create a VMware provider
+kubectl mtv provider create vsphere-01 --type vsphere --url https://vcenter.example.com \
+  --username admin --password secret --cacert @ca.cert
 
-# Create storage mapping
-kubectl mtv mapping create-storage --name storage-map-1 --source my-ovirt --target my-kubevirt --from-file storage-mapping.yaml
-
-# List mappings
-kubectl mtv mapping list [--type network|storage|all]
+# Create an OpenShift provider
+kubectl mtv provider create openshift-target --type openshift \
+  --url https://api.cluster.example.com:6443 --token eyJhbGc...
 ```
 
-### Plans
+#### List Providers
 
-Plans define which VMs to migrate, using which providers and mappings.
+List all providers in a namespace.
 
 ```bash
-# Create a migration plan
-kubectl mtv plan create --name migration-plan-1 --source my-ovirt --target my-kubevirt --network-mapping network-map-1 --storage-mapping storage-map-1 --vms vm-123,vm-456
-
-# List plans
-kubectl mtv plan list
-
-# Start a plan
-kubectl mtv plan start --name migration-plan-1
-
-# Describe a plan
-kubectl mtv plan describe --name migration-plan-1
+kubectl mtv provider list [flags]
 ```
 
-## Inventory API
+**Optional Flags:**
+- `--inventory-url`: Base URL for the inventory service
+- `-o, --output`: Output format. One of: table, json (default "table")
 
-MTV maintains an inventory API that allows users to fetch information about the current inventory of providers.
+#### Delete Provider
+
+Delete a provider.
 
 ```bash
-# Common flags for inventory commands
-# --provider       Required. Provider name to query
-# --inventory-url  Optional. Base URL for inventory API (auto-discovered if omitted)
-# --output,-o      Optional. Output format: table or json (default: table)
-# --extended       Optional. Show extended information in table output
-# --query          Optional. Query string to filter results
-
-# List VMs from a provider
-kubectl mtv inventory vms --provider my-ovirt
-
-# List networks from a provider
-kubectl mtv inventory networks --provider my-ovirt
-
-# List storage from a provider
-kubectl mtv inventory storage --provider my-ovirt
-
-# List hosts from a provider
-kubectl mtv inventory hosts --provider my-ovirt
+kubectl mtv provider delete NAME [flags]
 ```
 
-### Query Syntax for Inventory Commands
+### Mapping Management
 
-The `--query` flag supports advanced filtering with SQL-like syntax:
+Mappings define how resources from source providers are mapped to target providers.
 
-```
-SELECT field1, field2 AS alias, field3  # Select specific fields with optional aliases
-WHERE condition                         # Filter using tree-search-language conditions
-ORDER BY field1 [ASC|DESC], field2      # Sort results on multiple fields
-LIMIT n                                 # Limit number of results
-```
+#### Create Network Mapping
 
-Example: `--query "SELECT name, memory WHERE memory > 1024 ORDER BY name LIMIT 10"`
-
-## Migration Workflow
-
-1. Create source and target providers
-2. Create network and storage mappings
-3. Create a migration plan
-4. Start the plan
-5. Monitor the migration
-
-## Examples
-
-### Complete Migration Example
+Create a network mapping between source and target providers.
 
 ```bash
-# Create providers
-kubectl mtv provider create --type vsphere --name vsphere-source \
-  --url "https://vcenter.example.com/sdk" \
-  --username administrator@vsphere.local --password VMware123! \
-  --provider-insecure-skip-tls
+kubectl mtv mapping create-network NAME [flags]
+```
 
-kubectl mtv provider create --type openshift --name ocp-target \
-  --url "https://api.ocp.example.com:6443" --token kubeadmin-token
+**Optional Flags:**
+- `--source`: Source provider name
+- `--target`: Target provider name
+- `--from-file`: Create from YAML file
 
-# View available VMs in source provider
-kubectl mtv inventory vms --provider vsphere-source
+#### Create Storage Mapping
 
-# Create and start migration plan
-kubectl mtv plan create --name migration-plan-1 --source vsphere-source --target ocp-target --network-mapping network-map --storage-mapping storage-map --vms vm-123,vm-456
-kubectl mtv plan start --name migration-plan-1
+Create a storage mapping between source and target providers.
 
-# Monitor migration
-kubectl mtv plan list
-kubectl mtv plan describe --name migration-plan-1-migration
+```bash
+kubectl mtv mapping create-storage NAME [flags]
+```
+
+**Optional Flags:**
+- `--source`: Source provider name
+- `--target`: Target provider name
+- `--from-file`: Create from YAML file
+
+#### List Mappings
+
+List all mappings in a namespace.
+
+```bash
+kubectl mtv mapping list [flags]
+```
+
+**Optional Flags:**
+- `--type`: Mapping type (network, storage, all) (default "all")
+- `-o, --output`: Output format. One of: table, json (default "table")
+
+### Inventory Management
+
+Query and explore the inventory of providers.
+
+#### List VMs
+
+List VMs from a provider.
+
+```bash
+kubectl mtv inventory vms PROVIDER [flags]
+```
+
+**Optional Flags:**
+- `-u, --inventory-url`: Base URL for the inventory service
+- `-o, --output`: Output format. One of: table, json, planvms (default "table")
+- `-e, --extended`: Show extended information in table output
+- `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses
+
+**Query Syntax:**
+- `SELECT field1, field2 AS alias, field3`: Select specific fields with optional aliases
+- `WHERE condition`: Filter using tree-search-language conditions
+- `ORDER BY field1 [ASC|DESC], field2`: Sort results on multiple fields
+- `LIMIT n`: Limit number of results
+
+**Examples:**
+
+```bash
+# List all VMs
+kubectl mtv inventory vms vsphere-01
+
+# List VMs with a specific query
+kubectl mtv inventory vms vsphere-01 -q "WHERE name LIKE 'db-%' ORDER BY memory DESC LIMIT 10"
+
+# Output VM list in a format suitable for migration plans
+kubectl mtv inventory vms vsphere-01 -o planvms > vms.yaml
+```
+
+#### List Networks
+
+List networks from a provider.
+
+```bash
+kubectl mtv inventory networks PROVIDER [flags]
+```
+
+**Optional Flags:**
+- `-u, --inventory-url`: Base URL for the inventory service
+- `-o, --output`: Output format. One of: table, json (default "table")
+- `-e, --extended`: Show extended information in table output
+- `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses
+
+#### List Storage
+
+List storage from a provider.
+
+```bash
+kubectl mtv inventory storage PROVIDER [flags]
+```
+
+**Optional Flags:**
+- `-u, --inventory-url`: Base URL for the inventory service
+- `-o, --output`: Output format. One of: table, json (default "table")
+- `-e, --extended`: Show extended information in table output
+- `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses
+
+#### List Hosts
+
+List hosts from a provider.
+
+```bash
+kubectl mtv inventory hosts PROVIDER [flags]
+```
+
+**Optional Flags:**
+- `-u, --inventory-url`: Base URL for the inventory service
+- `-o, --output`: Output format. One of: table, json (default "table")
+- `-e, --extended`: Show extended information in table output
+- `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses
+
+### Migration Plan Management
+
+Create and manage migration plans.
+
+#### Create Migration Plan
+
+Create a migration plan to move VMs from a source provider to a target provider.
+
+```bash
+kubectl mtv plan create NAME [flags]
+```
+
+**Optional Flags:**
+- `--source`: Source provider name
+- `--target`: Target provider name
+- `--network-mapping`: Network mapping name
+- `--storage-mapping`: Storage mapping name
+- `--vms`: List of VM names (comma-separated) or path to YAML/JSON file containing a list of VM structs (prefix with @)
+- `--description`: Plan description
+- `--target-namespace`: Target namespace
+- `--warm`: Whether this is a warm migration
+- `--transfer-network`: Network attachment definition for disk transfer
+- `--preserve-cluster-cpu-model`: Preserve the CPU model from the source cluster
+- `--preserve-static-ips`: Preserve static IPs of VMs in vSphere
+- `--pvc-name-template`: Template for generating PVC names for VM disks
+- `--volume-name-template`: Template for generating volume interface names
+- `--network-name-template`: Template for generating network interface names
+- `--migrate-shared-disks`: Determines if the plan should migrate shared disks (default true)
+- `--inventory-url`: Base URL for the inventory service
+
+**Examples:**
+
+```bash
+# Create a plan with specific VMs
+kubectl mtv plan create my-plan --source vsphere-01 --target openshift-target \
+  --vms "web-vm-1,db-vm-2,app-vm-3"
+
+# Create a plan with VMs defined in a file
+kubectl mtv plan create my-plan --source vsphere-01 --target openshift-target \
+  --vms @vms.yaml
+```
+
+#### List Migration Plans
+
+List migration plans in a namespace.
+
+```bash
+kubectl mtv plan list [flags]
+```
+
+**Optional Flags:**
+- `--watch`: Watch migration plans with live updates
+
+#### Start Migration Plan
+
+Start a migration plan execution.
+
+```bash
+kubectl mtv plan start NAME [flags]
+```
+
+**Optional Flags:**
+- `--cutover`: Cutover time in RFC3339 format (e.g., 2023-04-01T14:30:00Z) for warm migrations, if missing cutover is set to 1h from now.
+
+#### Describe Migration Plan
+
+Show detailed information about a migration plan.
+
+```bash
+kubectl mtv plan describe NAME
+```
+
+#### Cancel VMs in Migration Plan
+
+Cancel specific VMs in a running migration.
+
+```bash
+kubectl mtv plan cancel-vms NAME --vms VMLIST [flags]
+```
+
+**Required Flags:**
+- `--vms`: List of VM names to cancel (comma-separated) or path to file containing VM names (prefix with @)
+
+#### Set Cutover Time
+
+Set the cutover time for a warm migration.
+
+```bash
+kubectl mtv plan cutover NAME [flags]
+```
+
+**Optional Flags:**
+- `--time`: Cutover time in RFC3339 format. If not specified, current time will be used.
+
+#### Delete Migration Plan
+
+Delete a migration plan.
+
+```bash
+kubectl mtv plan delete NAME
 ```
 
 ## License
 
-Apache-2.0 license 
+Apache-2.0 license

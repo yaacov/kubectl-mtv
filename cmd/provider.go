@@ -101,23 +101,19 @@ func newListProviderCmd() *cobra.Command {
 }
 
 func newDeleteProviderCmd() *cobra.Command {
-	var name string
-
 	cmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete NAME",
 		Short: "Delete a provider",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get name from positional argument
+			name := args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
 			return provider.Delete(kubeConfigFlags, name, namespace)
 		},
-	}
-
-	cmd.Flags().StringVar(&name, "name", "", "Provider name")
-
-	if err := cmd.MarkFlagRequired("name"); err != nil {
-		fmt.Printf("Warning: error marking 'name' flag as required: %v\n", err)
 	}
 
 	return cmd
