@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"gopkg.in/yaml.v3"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	planv1beta1 "github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	querypkg "github.com/yaacov/kubectl-mtv/pkg/query"
@@ -226,8 +228,8 @@ func ListVMs(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, names
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "planvms" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, planvms", outputFormat)
 	}
 
 	// Handle different output formats
@@ -241,6 +243,35 @@ func ListVMs(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, names
 			return jsonPrinter.PrintEmpty(fmt.Sprintf("No VMs found for provider %s", providerName))
 		}
 		return jsonPrinter.Print()
+	} else if outputFormat == "planvms" {
+		// Convert inventory VMs to plan VM structs
+		planVMs := make([]planv1beta1.VM, 0, len(vms))
+		for _, vm := range vms {
+			vmName, ok := vm["name"].(string)
+			if !ok {
+				continue
+			}
+
+			planVM := planv1beta1.VM{}
+			planVM.Name = vmName
+
+			// Add ID if available
+			if vmID, ok := vm["id"].(string); ok {
+				planVM.ID = vmID
+			}
+
+			planVMs = append(planVMs, planVM)
+		}
+
+		// Marshal to YAML
+		yamlData, err := yaml.Marshal(planVMs)
+		if err != nil {
+			return fmt.Errorf("failed to marshal plan VMs to YAML: %v", err)
+		}
+
+		// Print the YAML to stdout
+		fmt.Println(string(yamlData))
+		return nil
 	} else {
 		var tablePrinter *output.TablePrinter
 

@@ -57,7 +57,7 @@ Query syntax allows:
 
 	cmd.Flags().StringVar(&provider, "provider", "", "Provider name")
 	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Base URL for the inventory service")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, planvms")
 	cmd.Flags().BoolVar(&extendedOutput, "extended", false, "Show extended information in table output")
 	cmd.Flags().StringVar(&query, "query", "", "Query string with 'where', 'order by', and 'limit' clauses")
 

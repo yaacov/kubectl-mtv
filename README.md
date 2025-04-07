@@ -197,17 +197,13 @@ kubectl mtv provider create --type openshift --name ocp-target \
 # View available VMs in source provider
 kubectl mtv inventory vms --provider vsphere-source
 
-# Create mappings
-kubectl mtv mapping create-network --name network-map --source vsphere-source --target ocp-target --from-file network-map.yaml
-kubectl mtv mapping create-storage --name storage-map --source vsphere-source --target ocp-target --from-file storage-map.yaml
-
 # Create and start migration plan
 kubectl mtv plan create --name migration-plan-1 --source vsphere-source --target ocp-target --network-mapping network-map --storage-mapping storage-map --vms vm-123,vm-456
 kubectl mtv plan start --name migration-plan-1
 
 # Monitor migration
-kubectl mtv migration list
-kubectl mtv migration describe --name migration-plan-1-migration
+kubectl mtv plan list
+kubectl mtv plan describe --name migration-plan-1-migration
 ```
 
 ## License
