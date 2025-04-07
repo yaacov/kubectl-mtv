@@ -2,6 +2,10 @@
 
 A kubectl plugin that helps users migrate virtualization workloads from oVirt, VMware, OpenStack, and OVA files to KubeVirt on Kubernetes.
 
+<p align="center">
+  <img src="docs/hiking.svg" alt="kubectl-mtv logo" width="200">
+</p>
+
 ## Overview
 
 The Migration Toolkit for Virtualization (MTV) simplifies the process of migrating virtual machines from traditional virtualization platforms to Kubernetes using KubeVirt. It handles the complexities of different virtualization platforms and provides a consistent way to define, plan, and execute migrations.
@@ -328,6 +332,10 @@ Delete a migration plan.
 ```bash
 kubectl mtv plan delete NAME
 ```
+
+## Logo Attribution
+
+The gopher logo is from [github.com/egonelbre/gophers](https://github.com/egonelbre/gophers) by Renee French.
 
 ## License
 
