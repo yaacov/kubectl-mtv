@@ -26,7 +26,7 @@ func newProviderCmd() *cobra.Command {
 }
 
 func newCreateProviderCmd() *cobra.Command {
-	var name, secret string
+	var secret string
 	providerType := flags.NewProviderTypeFlag()
 
 	// Add Provider credential flags
@@ -35,9 +35,13 @@ func newCreateProviderCmd() *cobra.Command {
 	var vddkInitImage string
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create NAME",
 		Short: "Create a new provider",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get name from positional argument
+			name := args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -57,7 +61,6 @@ func newCreateProviderCmd() *cobra.Command {
 	}
 
 	cmd.Flags().Var(providerType, "type", "Provider type (openshift, vsphere, ovirt, openstack, ova)")
-	cmd.Flags().StringVar(&name, "name", "", "Provider name")
 	cmd.Flags().StringVar(&secret, "secret", "", "Secret containing provider credentials")
 
 	// Provider credential flags
@@ -71,9 +74,6 @@ func newCreateProviderCmd() *cobra.Command {
 
 	if err := cmd.MarkFlagRequired("type"); err != nil {
 		fmt.Printf("Warning: error marking 'type' flag as required: %v\n", err)
-	}
-	if err := cmd.MarkFlagRequired("name"); err != nil {
-		fmt.Printf("Warning: error marking 'name' flag as required: %v\n", err)
 	}
 
 	return cmd

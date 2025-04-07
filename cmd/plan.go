@@ -42,9 +42,13 @@ func newCreatePlanCmd() *cobra.Command {
 	var inventoryURL string
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create NAME",
 		Short: "Create a migration plan",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get name from positional argument
+			name = args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -107,7 +111,7 @@ func newCreatePlanCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&name, "name", "", "Plan name")
+	// Remove the name flag
 	cmd.Flags().StringVar(&sourceProvider, "source", "", "Source provider name")
 	cmd.Flags().StringVar(&targetProvider, "target", "", "Target provider name")
 	cmd.Flags().StringVar(&networkMapping, "network-mapping", "", "Network mapping name")
@@ -125,10 +129,6 @@ func newCreatePlanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&networkNameTemplate, "network-name-template", "", "NetworkNameTemplate is a template for generating network interface names in the target virtual machine")
 	cmd.Flags().BoolVar(&migrateSharedDisks, "migrate-shared-disks", true, "Determines if the plan should migrate shared disks")
 	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Base URL for the inventory service")
-
-	if err := cmd.MarkFlagRequired("name"); err != nil {
-		fmt.Printf("Warning: error marking 'provider' flag as required: %v\n", err)
-	}
 
 	return cmd
 }
@@ -153,13 +153,16 @@ func newListPlanCmd() *cobra.Command {
 }
 
 func newStartPlanCmd() *cobra.Command {
-	var name string
 	var cutoverTimeStr string
 
 	cmd := &cobra.Command{
-		Use:   "start",
+		Use:   "start NAME",
 		Short: "Start a migration plan",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get name from positional argument
+			name := args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -177,45 +180,40 @@ func newStartPlanCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&name, "name", "", "Plan name")
 	cmd.Flags().StringVar(&cutoverTimeStr, "cutover", "", "Cutover time in RFC3339 format (e.g., 2023-04-01T14:30:00Z) for warm migrations. If not provided, defaults to 1 hour from now.")
-
-	if err := cmd.MarkFlagRequired("name"); err != nil {
-		fmt.Printf("Warning: error marking 'provider' flag as required: %v\n", err)
-	}
 
 	return cmd
 }
 
 func newDescribePlanCmd() *cobra.Command {
-	var name string
-
 	cmd := &cobra.Command{
-		Use:   "describe",
+		Use:   "describe NAME",
 		Short: "Describe a migration plan",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get name from positional argument
+			name := args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 			return plan.Describe(kubeConfigFlags, name, namespace)
 		},
 	}
 
-	cmd.Flags().StringVar(&name, "name", "", "Plan name")
-	if err := cmd.MarkFlagRequired("name"); err != nil {
-		fmt.Printf("Warning: error marking 'provider' flag as required: %v\n", err)
-	}
-
 	return cmd
 }
 
 func newCancelVMsCmd() *cobra.Command {
-	var planName string
 	var vmNamesOrFile string
 
 	cmd := &cobra.Command{
-		Use:   "cancel-vms",
+		Use:   "cancel-vms NAME",
 		Short: "Cancel specific VMs in a running migration",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get plan name from positional argument
+			planName := args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -253,12 +251,8 @@ func newCancelVMsCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&planName, "name", "", "Plan name")
 	cmd.Flags().StringVar(&vmNamesOrFile, "vms", "", "List of VM names to cancel (comma-separated) or path to file containing VM names (prefix with @)")
 
-	if err := cmd.MarkFlagRequired("name"); err != nil {
-		fmt.Printf("Warning: error marking 'name' flag as required: %v\n", err)
-	}
 	if err := cmd.MarkFlagRequired("vms"); err != nil {
 		fmt.Printf("Warning: error marking 'vms' flag as required: %v\n", err)
 	}
@@ -267,13 +261,16 @@ func newCancelVMsCmd() *cobra.Command {
 }
 
 func newCutoverCmd() *cobra.Command {
-	var planName string
 	var cutoverTimeStr string
 
 	cmd := &cobra.Command{
-		Use:   "cutover",
+		Use:   "cutover NAME",
 		Short: "Set the cutover time for a warm migration",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get plan name from positional argument
+			planName := args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -291,32 +288,24 @@ func newCutoverCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&planName, "name", "", "Plan name")
 	cmd.Flags().StringVar(&cutoverTimeStr, "time", "", "Cutover time in RFC3339 format (e.g., 2023-04-01T14:30:00Z). If not specified, current time will be used.")
-
-	if err := cmd.MarkFlagRequired("name"); err != nil {
-		fmt.Printf("Warning: error marking 'name' flag as required: %v\n", err)
-	}
 
 	return cmd
 }
 
 func newDeletePlanCmd() *cobra.Command {
-	var name string
-
 	cmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete NAME",
 		Short: "Delete a migration plan",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get name from positional argument
+			name := args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 			return plan.Delete(kubeConfigFlags, name, namespace)
 		},
-	}
-
-	cmd.Flags().StringVar(&name, "name", "", "Plan name")
-	if err := cmd.MarkFlagRequired("name"); err != nil {
-		fmt.Printf("Warning: error marking 'name' flag as required: %v\n", err)
 	}
 
 	return cmd

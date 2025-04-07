@@ -26,14 +26,13 @@ func newInventoryCmd() *cobra.Command {
 }
 
 func newListVMsCmd() *cobra.Command {
-	var provider string
 	var inventoryURL string
 	var outputFormat string
 	var extendedOutput bool
 	var query string
 
 	cmd := &cobra.Command{
-		Use:   "vms",
+		Use:   "vms PROVIDER",
 		Short: "List VMs from a provider",
 		Long: `List VMs from a provider
 		
@@ -42,7 +41,11 @@ Query syntax allows:
 - WHERE condition                         (filter using tree-search-language conditions)
 - ORDER BY field1 [ASC|DESC], field2      (sort results on multiple fields)
 - LIMIT n                                 (limit number of results)`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get provider from positional argument
+			provider := args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -55,28 +58,22 @@ Query syntax allows:
 		},
 	}
 
-	cmd.Flags().StringVar(&provider, "provider", "", "Provider name")
-	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "u", "", "Base URL for the inventory service")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, planvms")
-	cmd.Flags().BoolVar(&extendedOutput, "extended", false, "Show extended information in table output")
-	cmd.Flags().StringVar(&query, "query", "", "Query string with 'where', 'order by', and 'limit' clauses")
-
-	if err := cmd.MarkFlagRequired("provider"); err != nil {
-		fmt.Printf("Warning: error marking 'provider' flag as required: %v\n", err)
-	}
+	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
 
 	return cmd
 }
 
 func newListNetworksCmd() *cobra.Command {
-	var provider string
 	var inventoryURL string
 	var outputFormat string
 	var extendedOutput bool
 	var query string
 
 	cmd := &cobra.Command{
-		Use:   "networks",
+		Use:   "networks PROVIDER",
 		Short: "List networks from a provider",
 		Long: `List networks from a provider
 		
@@ -85,7 +82,11 @@ Query syntax allows:
 - WHERE condition                         (filter using tree-search-language conditions)
 - ORDER BY field1 [ASC|DESC], field2      (sort results on multiple fields)
 - LIMIT n                                 (limit number of results)`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get provider from positional argument
+			provider := args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -98,28 +99,22 @@ Query syntax allows:
 		},
 	}
 
-	cmd.Flags().StringVar(&provider, "provider", "", "Provider name")
-	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "u", "", "Base URL for the inventory service")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
-	cmd.Flags().BoolVar(&extendedOutput, "extended", false, "Show extended information in table output")
-	cmd.Flags().StringVar(&query, "query", "", "Query string with 'where', 'order by', and 'limit' clauses")
-
-	if err := cmd.MarkFlagRequired("provider"); err != nil {
-		fmt.Printf("Warning: error marking 'provider' flag as required: %v\n", err)
-	}
+	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
 
 	return cmd
 }
 
 func newListStorageCmd() *cobra.Command {
-	var provider string
 	var inventoryURL string
 	var outputFormat string
 	var extendedOutput bool
 	var query string
 
 	cmd := &cobra.Command{
-		Use:   "storage",
+		Use:   "storage PROVIDER",
 		Short: "List storage from a provider",
 		Long: `List storage from a provider
 		
@@ -128,7 +123,11 @@ Query syntax allows:
 - WHERE condition                         (filter using tree-search-language conditions)
 - ORDER BY field1 [ASC|DESC], field2      (sort results on multiple fields)
 - LIMIT n                                 (limit number of results)`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get provider from positional argument
+			provider := args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -141,28 +140,22 @@ Query syntax allows:
 		},
 	}
 
-	cmd.Flags().StringVar(&provider, "provider", "", "Provider name")
-	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "u", "", "Base URL for the inventory service")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
-	cmd.Flags().BoolVar(&extendedOutput, "extended", false, "Show extended information in table output")
-	cmd.Flags().StringVar(&query, "query", "", "Query string with 'where', 'order by', and 'limit' clauses")
-
-	if err := cmd.MarkFlagRequired("provider"); err != nil {
-		fmt.Printf("Warning: error marking 'provider' flag as required: %v\n", err)
-	}
+	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
 
 	return cmd
 }
 
 func newListHostsCmd() *cobra.Command {
-	var provider string
 	var inventoryURL string
 	var outputFormat string
 	var extendedOutput bool
 	var query string
 
 	cmd := &cobra.Command{
-		Use:   "hosts",
+		Use:   "hosts PROVIDER",
 		Short: "List hosts from a provider",
 		Long: `List hosts from a provider
 		
@@ -171,7 +164,11 @@ Query syntax allows:
 - WHERE condition                         (filter using tree-search-language conditions)
 - ORDER BY field1 [ASC|DESC], field2      (sort results on multiple fields)
 - LIMIT n                                 (limit number of results)`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get provider from positional argument
+			provider := args[0]
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -184,15 +181,10 @@ Query syntax allows:
 		},
 	}
 
-	cmd.Flags().StringVar(&provider, "provider", "", "Provider name")
-	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "u", "", "Base URL for the inventory service")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
-	cmd.Flags().BoolVar(&extendedOutput, "extended", false, "Show extended information in table output")
-	cmd.Flags().StringVar(&query, "query", "", "Query string with 'where', 'order by', and 'limit' clauses")
-
-	if err := cmd.MarkFlagRequired("provider"); err != nil {
-		fmt.Printf("Warning: error marking 'provider' flag as required: %v\n", err)
-	}
+	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
 
 	return cmd
 }
