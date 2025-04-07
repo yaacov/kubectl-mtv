@@ -27,6 +27,7 @@ func newPlanCmd() *cobra.Command {
 	cmd.AddCommand(newDescribePlanCmd())
 	cmd.AddCommand(newCancelVMsCmd())
 	cmd.AddCommand(newCutoverCmd())
+	cmd.AddCommand(newDeletePlanCmd())
 
 	return cmd
 }
@@ -293,6 +294,27 @@ func newCutoverCmd() *cobra.Command {
 	cmd.Flags().StringVar(&planName, "name", "", "Plan name")
 	cmd.Flags().StringVar(&cutoverTimeStr, "time", "", "Cutover time in RFC3339 format (e.g., 2023-04-01T14:30:00Z). If not specified, current time will be used.")
 
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		fmt.Printf("Warning: error marking 'name' flag as required: %v\n", err)
+	}
+
+	return cmd
+}
+
+func newDeletePlanCmd() *cobra.Command {
+	var name string
+
+	cmd := &cobra.Command{
+		Use:   "delete",
+		Short: "Delete a migration plan",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Resolve the appropriate namespace based on context and flags
+			namespace := client.ResolveNamespace(kubeConfigFlags)
+			return plan.Delete(kubeConfigFlags, name, namespace)
+		},
+	}
+
+	cmd.Flags().StringVar(&name, "name", "", "Plan name")
 	if err := cmd.MarkFlagRequired("name"); err != nil {
 		fmt.Printf("Warning: error marking 'name' flag as required: %v\n", err)
 	}
