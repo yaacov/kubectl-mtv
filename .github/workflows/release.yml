@@ -35,4 +35,4 @@ jobs:
         with:
           files: |
             kubectl-mtv.tar.gz.sha256sum
-            ubectl-mtv.tar.gz
+            kubectl-mtv.tar.gz
