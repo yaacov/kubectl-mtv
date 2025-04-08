@@ -164,7 +164,7 @@ kubectl mtv mapping create-network NAME [flags]
 ```
 
 **Optional Flags:**
-- `-s, --source`: Source provider name
+- `-S, --source`: Source provider name
 - `-t, --target`: Target provider name
 - `--from-file`: Create from YAML file
 
@@ -177,7 +177,7 @@ kubectl mtv mapping create-storage NAME [flags]
 ```
 
 **Optional Flags:**
-- `-s, --source`: Source provider name
+- `-S, --source`: Source provider name
 - `-t, --target`: Target provider name
 - `--from-file`: Create from YAML file
 
@@ -285,7 +285,7 @@ kubectl mtv plan create NAME [flags]
 ```
 
 **Optional Flags:**
-- `-s, --source`: Source provider name
+- `-S, --source`: Source provider name
 - `-t, --target`: Target provider name
 - `--network-mapping`: Network mapping name
 - `--storage-mapping`: Storage mapping name

@@ -112,7 +112,7 @@ func newCreatePlanCmd() *cobra.Command {
 	}
 
 	// Remove the name flag
-	cmd.Flags().StringVarP(&sourceProvider, "source", "s", "", "Source provider name")
+	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
 	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name")
 	cmd.Flags().StringVar(&networkMapping, "network-mapping", "", "Network mapping name")
 	cmd.Flags().StringVar(&storageMapping, "storage-mapping", "", "Storage mapping name")

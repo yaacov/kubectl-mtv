@@ -38,7 +38,7 @@ func newCreateNetworkMappingCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&sourceProvider, "source", "s", "", "Source provider name")
+	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
 	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name")
 	cmd.Flags().StringVar(&fromFile, "from-file", "", "Create from YAML file")
 
@@ -63,7 +63,7 @@ func newCreateStorageMappingCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&sourceProvider, "source", "s", "", "Source provider name")
+	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
 	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name")
 	cmd.Flags().StringVar(&fromFile, "from-file", "", "Create from YAML file")
 
