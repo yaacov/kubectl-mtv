@@ -272,6 +272,19 @@ kubectl mtv inventory hosts PROVIDER [flags]
 - `-e, --extended`: Show extended information in table output
 - `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses
 
+#### List Namespaces
+
+List namespaces from a provider.
+
+```bash
+kubectl mtv inventory namespaces PROVIDER [flags]
+```
+
+**Optional Flags:**
+- `-i, --inventory-url`: Base URL for the inventory service
+- `-o, --output`: Output format. One of: table, json (default "table")
+- `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses
+
 ### Migration Plan Management
 
 Create and manage migration plans.
@@ -324,6 +337,7 @@ kubectl mtv plan list [flags]
 
 **Optional Flags:**
 - `--watch`: Watch migration plans with live updates
+- `-o, --output`: Output format. One of: table, json (default "table")
 
 #### Start Migration Plan
 
@@ -343,6 +357,31 @@ Show detailed information about a migration plan.
 ```bash
 kubectl mtv plan describe NAME
 ```
+
+#### Describe VM in Migration Plan
+
+Show detailed information about a specific VM in a migration plan.
+
+```bash
+kubectl mtv plan describe-vm NAME --vm VM_NAME [flags]
+```
+
+**Required Flags:**
+- `--vm`: VM name to describe
+
+**Optional Flags:**
+- `-w, --watch`: Watch VM status with live updates
+
+#### List VMs in Migration Plan
+
+List all VMs in a migration plan with their migration status.
+
+```bash
+kubectl mtv plan vms NAME [flags]
+```
+
+**Optional Flags:**
+- `-w, --watch`: Watch VM status with live updates
 
 #### Cancel VMs in Migration Plan
 
