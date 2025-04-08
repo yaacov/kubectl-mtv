@@ -39,8 +39,6 @@ func Watch(renderFunc RenderFunc, interval time.Duration) error {
 			}
 			fmt.Println("\n\033[1;34mPress Ctrl+C to exit watch mode...\033[0m")
 		case <-sigChan:
-			clearScreen()
-			fmt.Println("\033[31mExiting watch mode.\033[0m")
 			return nil
 		}
 	}
