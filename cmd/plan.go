@@ -112,8 +112,8 @@ func newCreatePlanCmd() *cobra.Command {
 	}
 
 	// Remove the name flag
-	cmd.Flags().StringVar(&sourceProvider, "source", "", "Source provider name")
-	cmd.Flags().StringVar(&targetProvider, "target", "", "Target provider name")
+	cmd.Flags().StringVarP(&sourceProvider, "source", "s", "", "Source provider name")
+	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name")
 	cmd.Flags().StringVar(&networkMapping, "network-mapping", "", "Network mapping name")
 	cmd.Flags().StringVar(&storageMapping, "storage-mapping", "", "Storage mapping name")
 	cmd.Flags().StringVar(&vmNamesOrFile, "vms", "", "List of VM names (comma-separated) or path to YAML/JSON file containing a list of VM structs")
@@ -128,7 +128,7 @@ func newCreatePlanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&volumeNameTemplate, "volume-name-template", "", "VolumeNameTemplate is a template for generating volume interface names in the target virtual machine")
 	cmd.Flags().StringVar(&networkNameTemplate, "network-name-template", "", "NetworkNameTemplate is a template for generating network interface names in the target virtual machine")
 	cmd.Flags().BoolVar(&migrateSharedDisks, "migrate-shared-disks", true, "Determines if the plan should migrate shared disks")
-	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", "", "Base URL for the inventory service")
 
 	return cmd
 }
@@ -147,7 +147,7 @@ func newListPlanCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&watch, "watch", false, "Watch migration plans with live updates using tview")
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch migration plans with live updates using tview")
 
 	return cmd
 }
@@ -180,7 +180,7 @@ func newStartPlanCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&cutoverTimeStr, "cutover", "", "Cutover time in RFC3339 format (e.g., 2023-04-01T14:30:00Z) for warm migrations. If not provided, defaults to 1 hour from now.")
+	cmd.Flags().StringVarP(&cutoverTimeStr, "cutover", "c", "", "Cutover time in RFC3339 format (e.g., 2023-12-31T15:30:00Z). If not provided, defaults to 1 hour from now.")
 
 	return cmd
 }
@@ -288,7 +288,7 @@ func newCutoverCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&cutoverTimeStr, "time", "", "Cutover time in RFC3339 format (e.g., 2023-04-01T14:30:00Z). If not specified, current time will be used.")
+	cmd.Flags().StringVarP(&cutoverTimeStr, "cutover", "c", "", "Cutover time in RFC3339 format (e.g., 2023-12-31T15:30:00Z). If not specified, defaults to current time.")
 
 	return cmd
 }

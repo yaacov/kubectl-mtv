@@ -107,14 +107,14 @@ kubectl mtv provider create NAME --type TYPE [flags]
 ```
 
 **Required Flags:**
-- `--type`: Provider type (openshift, vsphere, ovirt, openstack, ova)
+- `-t, --type`: Provider type (openshift, vsphere, ovirt, openstack, ova)
 
 **Optional Flags:**
 - `--secret`: Secret containing provider credentials
-- `--url`: Provider URL
-- `--username`: Provider credentials username
-- `--password`: Provider credentials password
-- `--token`: Provider authentication token (used for openshift provider)
+- `-u, --url`: Provider URL
+- `-U, --username`: Provider credentials username
+- `-p, --password`: Provider credentials password
+- `-t, --token`: Provider authentication token (used for openshift provider)
 - `--cacert`: Provider CA certificate (use @filename to load from file)
 - `--provider-insecure-skip-tls`: Skip TLS verification when connecting to the provider
 - `--vddk-init-image`: Virtual Disk Development Kit (VDDK) container init image path
@@ -140,7 +140,7 @@ kubectl mtv provider list [flags]
 ```
 
 **Optional Flags:**
-- `--inventory-url`: Base URL for the inventory service
+- `--q`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json (default "table")
 
 #### Delete Provider
@@ -206,7 +206,7 @@ kubectl mtv inventory vms PROVIDER [flags]
 ```
 
 **Optional Flags:**
-- `-u, --inventory-url`: Base URL for the inventory service
+- `-i, --inventory-url`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json, planvms (default "table")
 - `-e, --extended`: Show extended information in table output
 - `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses
@@ -239,7 +239,7 @@ kubectl mtv inventory networks PROVIDER [flags]
 ```
 
 **Optional Flags:**
-- `-u, --inventory-url`: Base URL for the inventory service
+- `-i, --inventory-url`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json (default "table")
 - `-e, --extended`: Show extended information in table output
 - `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses
@@ -253,7 +253,7 @@ kubectl mtv inventory storage PROVIDER [flags]
 ```
 
 **Optional Flags:**
-- `-u, --inventory-url`: Base URL for the inventory service
+- `-i, --inventory-url`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json (default "table")
 - `-e, --extended`: Show extended information in table output
 - `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses
@@ -267,7 +267,7 @@ kubectl mtv inventory hosts PROVIDER [flags]
 ```
 
 **Optional Flags:**
-- `-u, --inventory-url`: Base URL for the inventory service
+- `-i, --inventory-url`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json (default "table")
 - `-e, --extended`: Show extended information in table output
 - `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses

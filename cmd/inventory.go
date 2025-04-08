@@ -58,7 +58,7 @@ Query syntax allows:
 		},
 	}
 
-	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "u", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", "", "Base URL for the inventory service")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, planvms")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
@@ -99,7 +99,7 @@ Query syntax allows:
 		},
 	}
 
-	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "u", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", "", "Base URL for the inventory service")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
@@ -140,7 +140,7 @@ Query syntax allows:
 		},
 	}
 
-	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "u", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", "", "Base URL for the inventory service")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
@@ -181,7 +181,7 @@ Query syntax allows:
 		},
 	}
 
-	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "u", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", "", "Base URL for the inventory service")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
