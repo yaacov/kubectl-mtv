@@ -227,7 +227,11 @@ func newDescribeVMCmd() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch VM status with live updates")
 	cmd.Flags().StringVar(&vmName, "vm", "", "VM name to describe")
-	cmd.MarkFlagRequired("vm")
+
+	err := cmd.MarkFlagRequired("vm")
+	if err != nil {
+		fmt.Printf("Warning: error marking 'vm' flag as required: %v\n", err)
+	}
 
 	return cmd
 }
