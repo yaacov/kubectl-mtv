@@ -403,7 +403,7 @@ kubectl mtv plan cutover NAME [flags]
 ```
 
 **Optional Flags:**
-- `--time`: Cutover time in RFC3339 format. If not specified, current time will be used.
+- `--cutover`: Cutover time in RFC3339 format. If not specified, current time will be used.
 
 #### Delete Migration Plan
 
