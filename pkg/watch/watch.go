@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const exitMessage = "\n\033[1;34mPress Ctrl+C to exit watch mode...\033[0m"
+
 // RenderFunc is a function that renders output and returns an error if any
 type RenderFunc func() error
 
@@ -27,7 +29,7 @@ func Watch(renderFunc RenderFunc, interval time.Duration) error {
 	if err := renderFunc(); err != nil {
 		return err
 	}
-	fmt.Println("\n\033[1;34mPress Ctrl+C to exit watch mode...\033[0m")
+	fmt.Println(exitMessage)
 
 	// Main watch loop
 	for {
@@ -37,7 +39,7 @@ func Watch(renderFunc RenderFunc, interval time.Duration) error {
 			if err := renderFunc(); err != nil {
 				return err
 			}
-			fmt.Println("\n\033[1;34mPress Ctrl+C to exit watch mode...\033[0m")
+			fmt.Println(exitMessage)
 		case <-sigChan:
 			return nil
 		}
