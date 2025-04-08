@@ -140,7 +140,7 @@ kubectl mtv provider list [flags]
 ```
 
 **Optional Flags:**
-- `--q`: Base URL for the inventory service
+- `-i, --inventory-url`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json (default "table")
 
 #### Delete Provider
