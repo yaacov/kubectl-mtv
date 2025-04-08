@@ -111,8 +111,8 @@ kubectl mtv provider create NAME --type TYPE [flags]
 
 **Optional Flags:**
 - `--secret`: Secret containing provider credentials
-- `-u, --url`: Provider URL
-- `-U, --username`: Provider credentials username
+- `-U, --url`: Provider URL
+- `-u, --username`: Provider credentials username
 - `-p, --password`: Provider credentials password
 - `-t, --token`: Provider authentication token (used for openshift provider)
 - `--cacert`: Provider CA certificate (use @filename to load from file)
@@ -124,7 +124,7 @@ kubectl mtv provider create NAME --type TYPE [flags]
 ```bash
 # Create a VMware provider
 kubectl mtv provider create vsphere-01 --type vsphere --url https://vcenter.example.com \
-  --username admin --password secret --cacert @ca.cert
+  -u admin --password secret --cacert @ca.cert
 
 # Create an OpenShift provider
 kubectl mtv provider create openshift-target --type openshift \

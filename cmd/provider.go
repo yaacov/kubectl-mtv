@@ -64,8 +64,8 @@ func newCreateProviderCmd() *cobra.Command {
 	cmd.Flags().StringVar(&secret, "secret", "", "Secret containing provider credentials")
 
 	// Provider credential flags
-	cmd.Flags().StringVarP(&url, "url", "u", "", "Provider URL")
-	cmd.Flags().StringVarP(&username, "username", "U", "", "Provider credentials username")
+	cmd.Flags().StringVarP(&url, "url", "U", "", "Provider URL")
+	cmd.Flags().StringVarP(&username, "username", "u", "", "Provider credentials username")
 	cmd.Flags().StringVarP(&password, "password", "p", "", "Provider credentials password")
 	cmd.Flags().StringVarP(&token, "token", "t", "", "Provider authentication token (used for openshift provider)")
 	cmd.Flags().StringVar(&cacert, "cacert", "", "Provider CA certificate (use @filename to load from file)")
