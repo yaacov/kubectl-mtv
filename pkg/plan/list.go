@@ -3,6 +3,7 @@ package plan
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +17,7 @@ import (
 )
 
 // ListPlans lists migration plans without watch functionality
-func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string) error {
+func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, outputFormat string) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -27,18 +28,11 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string) err
 		return fmt.Errorf("failed to list plans: %v", err)
 	}
 
-	// Create a table printer with proper headers
-	tablePrinter := output.NewTablePrinter().WithHeaders(
-		output.Header{DisplayName: "NAME", JSONPath: "metadata.name"},
-		output.Header{DisplayName: "SOURCE", JSONPath: "source"},
-		output.Header{DisplayName: "TARGET", JSONPath: "target"},
-		output.Header{DisplayName: "VMS", JSONPath: "vms"},
-		output.Header{DisplayName: "READY", JSONPath: "ready"},
-		output.Header{DisplayName: "STATUS", JSONPath: "status"},
-		output.Header{DisplayName: "PROGRESS", JSONPath: "progress"},
-		output.Header{DisplayName: "CUTOVER", JSONPath: "cutover"},
-		output.Header{DisplayName: "CREATED", JSONPath: "created"},
-	)
+	// Format validation
+	outputFormat = strings.ToLower(outputFormat)
+	if outputFormat != "table" && outputFormat != "json" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json", outputFormat)
+	}
 
 	// Create printer items
 	items := []map[string]interface{}{}
@@ -113,10 +107,32 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string) err
 		items = append(items, item)
 	}
 
-	// Add the items to the printer
-	tablePrinter.AddItems(items)
+	// Handle different output formats
+	if outputFormat == "json" {
+		// Use JSON printer
+		jsonPrinter := output.NewJSONPrinter().
+			WithPrettyPrint(true).
+			AddItems(items)
 
-	// Print empty message if no plans found
+		if len(plans.Items) == 0 {
+			return jsonPrinter.PrintEmpty("No plans found in namespace " + namespace)
+		}
+		return jsonPrinter.Print()
+	}
+
+	// Use Table printer (default)
+	tablePrinter := output.NewTablePrinter().WithHeaders(
+		output.Header{DisplayName: "NAME", JSONPath: "metadata.name"},
+		output.Header{DisplayName: "SOURCE", JSONPath: "source"},
+		output.Header{DisplayName: "TARGET", JSONPath: "target"},
+		output.Header{DisplayName: "VMS", JSONPath: "vms"},
+		output.Header{DisplayName: "READY", JSONPath: "ready"},
+		output.Header{DisplayName: "STATUS", JSONPath: "status"},
+		output.Header{DisplayName: "PROGRESS", JSONPath: "progress"},
+		output.Header{DisplayName: "CUTOVER", JSONPath: "cutover"},
+		output.Header{DisplayName: "CREATED", JSONPath: "created"},
+	).AddItems(items)
+
 	if len(plans.Items) == 0 {
 		if err := tablePrinter.PrintEmpty("No plans found in namespace " + namespace); err != nil {
 			return fmt.Errorf("error printing empty table: %v", err)
@@ -131,12 +147,15 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string) err
 }
 
 // List lists migration plans with optional watch mode
-func List(configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool) error {
+func List(configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool, outputFormat string) error {
 	if watchMode {
+		if outputFormat != "table" {
+			return fmt.Errorf("watch mode only supports table output format")
+		}
 		return watch.Watch(func() error {
-			return ListPlans(configFlags, namespace)
-		}, 15*time.Second) // Refresh every 5 seconds
+			return ListPlans(configFlags, namespace, outputFormat)
+		}, 15*time.Second)
 	}
 
-	return ListPlans(configFlags, namespace)
+	return ListPlans(configFlags, namespace, outputFormat)
 }

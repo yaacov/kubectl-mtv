@@ -137,6 +137,7 @@ func newCreatePlanCmd() *cobra.Command {
 
 func newListPlanCmd() *cobra.Command {
 	var watch bool
+	var outputFormat string
 
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -145,11 +146,12 @@ func newListPlanCmd() *cobra.Command {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
-			return plan.List(kubeConfigFlags, namespace, watch)
+			return plan.List(kubeConfigFlags, namespace, watch, outputFormat)
 		},
 	}
 
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch migration plans with live updates using tview")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
 
 	return cmd
 }
