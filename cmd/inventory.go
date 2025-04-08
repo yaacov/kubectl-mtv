@@ -21,6 +21,7 @@ func newInventoryCmd() *cobra.Command {
 	cmd.AddCommand(newListNetworksCmd())
 	cmd.AddCommand(newListStorageCmd())
 	cmd.AddCommand(newListHostsCmd())
+	cmd.AddCommand(newListNamespacesCmd())
 
 	return cmd
 }
@@ -184,6 +185,45 @@ Query syntax allows:
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", "", "Base URL for the inventory service")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
+
+	return cmd
+}
+
+func newListNamespacesCmd() *cobra.Command {
+	var inventoryURL string
+	var outputFormat string
+	var query string
+
+	cmd := &cobra.Command{
+		Use:   "namespaces PROVIDER",
+		Short: "List namespaces from a provider",
+		Long: `List namespaces from a provider
+		
+Query syntax allows:
+- SELECT field1, field2 AS alias, field3  (select specific fields with optional aliases)
+- WHERE condition                         (filter using tree-search-language conditions)
+- ORDER BY field1 [ASC|DESC], field2      (sort results on multiple fields)
+- LIMIT n                                 (limit number of results)`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get provider from positional argument
+			provider := args[0]
+
+			// Resolve the appropriate namespace based on context and flags
+			namespace := client.ResolveNamespace(kubeConfigFlags)
+
+			// If inventoryURL is empty, try to discover it
+			if inventoryURL == "" {
+				inventoryURL = discoverInventoryURL(kubeConfigFlags, namespace)
+			}
+
+			return inventory.ListNamespaces(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query)
+		},
+	}
+
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
 
 	return cmd
