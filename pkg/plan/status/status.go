@@ -49,17 +49,29 @@ func IsPlanReady(plan *unstructured.Unstructured) (bool, error) {
 	return false, nil
 }
 
-// GetRunningMigration checks if a plan has any running migrations
+// GetRunningMigration checks for migrations associated with the given plan and returns
+// the currently running migration if one exists, along with the most recent migration.
+//
+// Parameters:
+//   - client: dynamic kubernetes client interface
+//   - namespace: namespace where the migrations are located
+//   - plan: the migration plan to check
+//   - migrationsGVR: GroupVersionResource for the migrations API
+//
+// Returns:
+//   - First return value: the currently running migration, or nil if none exists
+//   - Second return value: the most recent migration for this plan, or nil if none exists
+//   - Error: any error encountered during the operation
 func GetRunningMigration(
 	client dynamic.Interface,
 	namespace string,
 	plan *unstructured.Unstructured,
 	migrationsGVR schema.GroupVersionResource,
-) (*unstructured.Unstructured, error) {
+) (*unstructured.Unstructured, *unstructured.Unstructured, error) {
 	// Get the plan UID
 	planUID, found, err := unstructured.NestedString(plan.Object, "metadata", "uid")
 	if !found || err != nil {
-		return nil, fmt.Errorf("failed to get plan UID: %v", err)
+		return nil, nil, fmt.Errorf("failed to get plan UID: %v", err)
 	}
 
 	// Get all migrations in the namespace
@@ -67,11 +79,15 @@ func GetRunningMigration(
 		Namespace(namespace).
 		List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list migrations: %v", err)
+		return nil, nil, fmt.Errorf("failed to list migrations: %v", err)
 	}
 
+	var latestMigration *unstructured.Unstructured
+	var latestTimestamp metav1.Time
+
 	// Check each migration
-	for _, migration := range migrationList.Items {
+	for i := range migrationList.Items {
+		migration := &migrationList.Items[i]
 		// Check if this migration references our plan
 		planRef, found, _ := unstructured.NestedMap(migration.Object, "spec", "plan")
 		if !found {
@@ -81,6 +97,13 @@ func GetRunningMigration(
 		refUID, found, _ := unstructured.NestedString(planRef, "uid")
 		if !found || refUID != planUID {
 			continue
+		}
+
+		// Update latest migration if this one is newer
+		creationTime := migration.GetCreationTimestamp()
+		if latestMigration == nil || creationTime.After(latestTimestamp.Time) {
+			latestMigration = migration
+			latestTimestamp = creationTime
 		}
 
 		// Check if the migration is running
@@ -99,12 +122,12 @@ func GetRunningMigration(
 			condStatus, _, _ := unstructured.NestedString(condition, "status")
 
 			if condType == "Running" && condStatus == "True" {
-				return &migration, nil
+				return migration, nil, nil
 			}
 		}
 	}
 
-	return nil, nil
+	return nil, latestMigration, nil
 }
 
 // GetPlanStatus returns the status of a plan
@@ -286,6 +309,7 @@ func GetDiskTransferProgress(migration *unstructured.Unstructured) (ProgressStat
 type PlanDetails struct {
 	IsReady          bool
 	RunningMigration *unstructured.Unstructured
+	LatestMigration  *unstructured.Unstructured
 	Status           string
 	VMStats          VMStats
 	DiskProgress     ProgressStats
@@ -308,7 +332,7 @@ func GetPlanDetails(
 	details.IsReady = ready
 
 	// Get if plan has running migration
-	runningMigration, err := GetRunningMigration(client, namespace, plan, migrationsGVR)
+	runningMigration, latestMigration, err := GetRunningMigration(client, namespace, plan, migrationsGVR)
 	if err != nil {
 		return details, err
 	}
@@ -323,42 +347,27 @@ func GetPlanDetails(
 
 	// If there's a running migration, get VM stats
 	if runningMigration != nil {
-		// Get the plan UID
-		planUID, found, err := unstructured.NestedString(plan.Object, "metadata", "uid")
-		if !found || err != nil {
-			return details, nil // Continue without VM stats
-		}
+		details.RunningMigration = runningMigration
 
-		// Get all migrations in the namespace
-		migrationList, err := client.Resource(migrationsGVR).
-			Namespace(namespace).
-			List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			return details, nil // Continue without VM stats
-		}
+		// Found the migration for this plan, get VM stats
+		vmStats, _ := GetVMStats(runningMigration)
+		details.VMStats = vmStats
 
-		// Find the active migration for this plan
-		for _, migration := range migrationList.Items {
-			planRef, found, _ := unstructured.NestedMap(migration.Object, "spec", "plan")
-			if !found {
-				continue
-			}
+		// Get disk transfer progress
+		diskProgress, _ := GetDiskTransferProgress(runningMigration)
+		details.DiskProgress = diskProgress
+	}
 
-			refUID, found, _ := unstructured.NestedString(planRef, "uid")
-			if !found || refUID != planUID {
-				continue
-			}
+	if latestMigration != nil {
+		details.LatestMigration = latestMigration
 
-			// Found the migration for this plan, get VM stats
-			vmStats, _ := GetVMStats(&migration)
-			details.VMStats = vmStats
+		// Found the migration for this plan, get VM stats
+		vmStats, _ := GetVMStats(latestMigration)
+		details.VMStats = vmStats
 
-			// Get disk transfer progress
-			diskProgress, _ := GetDiskTransferProgress(&migration)
-			details.DiskProgress = diskProgress
-
-			break
-		}
+		// Get disk transfer progress
+		diskProgress, _ := GetDiskTransferProgress(latestMigration)
+		details.DiskProgress = diskProgress
 	}
 
 	return details, nil

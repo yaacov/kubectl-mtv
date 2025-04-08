@@ -40,7 +40,7 @@ func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string, c
 	}
 
 	// Check if the plan has running migrations
-	runningMigration, err := status.GetRunningMigration(c, namespace, plan, client.MigrationsGVR)
+	runningMigration, _, err := status.GetRunningMigration(c, namespace, plan, client.MigrationsGVR)
 	if err != nil {
 		return err
 	}

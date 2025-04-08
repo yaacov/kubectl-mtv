@@ -35,7 +35,7 @@ func Cutover(configFlags *genericclioptions.ConfigFlags, planName, namespace str
 	}
 
 	// Find the running migration for this plan
-	runningMigration, err := status.GetRunningMigration(c, namespace, planObj, client.MigrationsGVR)
+	runningMigration, _, err := status.GetRunningMigration(c, namespace, planObj, client.MigrationsGVR)
 	if err != nil {
 		return err
 	}

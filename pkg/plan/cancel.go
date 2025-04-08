@@ -70,7 +70,7 @@ func Cancel(configFlags *genericclioptions.ConfigFlags, planName string, namespa
 	}
 
 	// Find the running migration for this plan
-	runningMigration, err := status.GetRunningMigration(c, namespace, planObj, client.MigrationsGVR)
+	runningMigration, _, err := status.GetRunningMigration(c, namespace, planObj, client.MigrationsGVR)
 	if err != nil {
 		return err
 	}
