@@ -3,10 +3,12 @@ package plan
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/dynamic"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/plan/status"
@@ -68,87 +70,168 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 		fmt.Printf("Migration Progress:  Total:     %3d, Completed: %3d\n", planDetails.VMStats.Completed, planDetails.VMStats.Total)
 		fmt.Printf("VM Status:           Succeeded: %3d, Failed:    %3d, Canceled: %3d\n",
 			planDetails.VMStats.Succeeded, planDetails.VMStats.Failed, planDetails.VMStats.Canceled)
-		if planDetails.DiskProgress.Total > 0 {
-			percentage := float64(planDetails.DiskProgress.Completed) / float64(planDetails.DiskProgress.Total) * 100
-			fmt.Printf("Disk Transfer:       %.1f%% (%d/%d GB)\n",
-				percentage,
-				planDetails.DiskProgress.Completed/(1024),
-				planDetails.DiskProgress.Total/(1024))
-		}
+		printDiskProgress(planDetails.DiskProgress)
 	}
 
-	if planDetails.LatestMigration != nil {
-		fmt.Printf("\nMigration name:      %s\n", planDetails.LatestMigration.GetName())
-		fmt.Printf("Migration Progress:  Total:     %3d, Completed: %3d\n", planDetails.VMStats.Completed, planDetails.VMStats.Total)
-		fmt.Printf("VM Status:           Succeeded: %3d, Failed:    %3d, Canceled: %3d\n",
-			planDetails.VMStats.Succeeded, planDetails.VMStats.Failed, planDetails.VMStats.Canceled)
-		if planDetails.DiskProgress.Total > 0 {
-			percentage := float64(planDetails.DiskProgress.Completed) / float64(planDetails.DiskProgress.Total) * 100
-			fmt.Printf("Disk Transfer:       %.1f%% (%d/%d GB)\n",
-				percentage,
-				planDetails.DiskProgress.Completed/(1024),
-				planDetails.DiskProgress.Total/(1024))
-		}
-	}
+	printMigrationStats(planDetails.LatestMigration, planDetails.VMStats, planDetails.DiskProgress)
 
-	// Fetch and display network mapping details
+	// Display network mapping
 	if networkMapping != "" {
-		networkMap, err := c.Resource(client.NetworkMapGVR).Namespace(namespace).Get(context.TODO(), networkMapping, metav1.GetOptions{})
-		if err == nil {
-			networkPairs, exists, _ := unstructured.NestedSlice(networkMap.Object, "spec", "map")
-			if exists && len(networkPairs) > 0 {
-				fmt.Println()
-				fmt.Printf("%-40s %-20s %-20s\n", "SOURCE ID", "TYPE", "NAME")
-				fmt.Printf("%-40s %-20s %-20s\n", "---------", "----", "----")
-				for _, pair := range networkPairs {
-					if p, ok := pair.(map[string]interface{}); ok {
-						sourceID, _, _ := unstructured.NestedString(p, "source", "id")
-						destType, _, _ := unstructured.NestedString(p, "destination", "type")
-						destName, _, _ := unstructured.NestedString(p, "destination", "name")
-						destNS, _, _ := unstructured.NestedString(p, "destination", "namespace")
-
-						destination := destName
-						if destNS != "" && destType != "pod" && destType != "ignored" {
-							destination = fmt.Sprintf("%s/%s", destNS, destName)
-						} else if destType == "pod" {
-							destination = "Pod Network"
-						} else if destType == "ignored" {
-							destination = "Not Migrated"
-						}
-
-						fmt.Printf("%-40s %-20s %-20s\n", sourceID, destType, destination)
-					}
-				}
-			}
+		if err := displayNetworkMapping(c, namespace, networkMapping); err != nil {
+			fmt.Printf("Failed to display network mapping: %v\n", err)
 		}
 	}
 
-	// Fetch and display storage mapping details
+	// Display storage mapping
 	if storageMapping != "" {
-		storageMap, err := c.Resource(client.StorageMapGVR).Namespace(namespace).Get(context.TODO(), storageMapping, metav1.GetOptions{})
-		if err == nil {
-			storagePairs, exists, _ := unstructured.NestedSlice(storageMap.Object, "spec", "map")
-			if exists && len(storagePairs) > 0 {
-				fmt.Println()
-				fmt.Printf("%-40s %-20s\n", "SOURCE ID", "STORAGE CLASS")
-				fmt.Printf("%-40s %-20s\n", "---------", "-------------")
-				for _, pair := range storagePairs {
-					if p, ok := pair.(map[string]interface{}); ok {
-						sourceID, _, _ := unstructured.NestedString(p, "source", "id")
-						destClass, _, _ := unstructured.NestedString(p, "destination", "storageClass")
-						fmt.Printf("%-40s %-20s\n", sourceID, destClass)
-					}
-				}
-			}
+		if err := displayStorageMapping(c, namespace, storageMapping); err != nil {
+			fmt.Printf("Failed to display storage mapping: %v\n", err)
 		}
 	}
 
-	// Conditions
+	// Display conditions
 	conditions, exists, _ := unstructured.NestedSlice(plan.Object, "status", "conditions")
-	if exists && len(conditions) > 0 {
-		fmt.Printf("\nConditions:\n")
-		fmt.Printf("%-20s %-10s %-20s %s\n", "TYPE", "STATUS", "REASON", "MESSAGE")
-		fmt.Printf("%-20s %-10s %-20s %s\n", "----", "------", "------", "-------")
+	if exists {
+		displayConditions(conditions)
+	}
+
+	return nil
+}
+
+// printTable prints formatted table with headers and rows
+func printTable(headers []string, rows [][]string, colWidths []int) {
+	// Print headers
+	for i, header := range headers {
+		fmt.Printf(fmt.Sprintf("%%-%ds", colWidths[i]), header)
+		if i < len(headers)-1 {
+			fmt.Print(" ")
+		}
+	}
+	fmt.Println()
+
+	// Print header separators
+	for i, width := range colWidths {
+		fmt.Print(strings.Repeat("-", width))
+		if i < len(colWidths)-1 {
+			fmt.Print(" ")
+		}
+	}
+	fmt.Println()
+
+	// Print rows
+	for _, row := range rows {
+		for i, cell := range row {
+			fmt.Printf(fmt.Sprintf("%%-%ds", colWidths[i]), cell)
+			if i < len(row)-1 {
+				fmt.Print(" ")
+			}
+		}
+		fmt.Println()
+	}
+}
+
+// printDiskProgress prints disk transfer progress information
+func printDiskProgress(progress status.ProgressStats) {
+	if progress.Total > 0 {
+		percentage := float64(progress.Completed) / float64(progress.Total) * 100
+		fmt.Printf("Disk Transfer:       %.1f%% (%d/%d GB)\n",
+			percentage,
+			progress.Completed/(1024),
+			progress.Total/(1024))
+	}
+}
+
+// printMigrationStats prints migration statistics
+func printMigrationStats(migration *unstructured.Unstructured, stats status.VMStats, diskProgress status.ProgressStats) {
+	if migration != nil {
+		fmt.Printf("\nMigration name:      %s\n", migration.GetName())
+		fmt.Printf("Migration Progress:  Total:     %3d, Completed: %3d\n", stats.Completed, stats.Total)
+		fmt.Printf("VM Status:           Succeeded: %3d, Failed:    %3d, Canceled: %3d\n",
+			stats.Succeeded, stats.Failed, stats.Canceled)
+		printDiskProgress(diskProgress)
+	}
+}
+
+// displayNetworkMapping prints network mapping details
+func displayNetworkMapping(c dynamic.Interface, namespace, networkMapping string) error {
+	networkMap, err := c.Resource(client.NetworkMapGVR).Namespace(namespace).Get(context.TODO(), networkMapping, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	networkPairs, exists, _ := unstructured.NestedSlice(networkMap.Object, "spec", "map")
+	if exists && len(networkPairs) > 0 {
+		headers := []string{"SOURCE ID", "TYPE", "NAME"}
+		colWidths := []int{42, 9, 50}
+		rows := make([][]string, 0, len(networkPairs))
+
+		for _, pair := range networkPairs {
+			if p, ok := pair.(map[string]interface{}); ok {
+				sourceID, _, _ := unstructured.NestedString(p, "source", "id")
+				destType, _, _ := unstructured.NestedString(p, "destination", "type")
+				destName, _, _ := unstructured.NestedString(p, "destination", "name")
+				destNS, _, _ := unstructured.NestedString(p, "destination", "namespace")
+
+				destination := getDestinationString(destName, destNS, destType)
+				rows = append(rows, []string{sourceID, destType, destination})
+			}
+		}
+
+		fmt.Println()
+		printTable(headers, rows, colWidths)
+	}
+	return nil
+}
+
+// getDestinationString formats the destination string based on the type and namespace
+func getDestinationString(name, namespace, destType string) string {
+	switch destType {
+	case "pod":
+		return "Pod Network"
+	case "ignored":
+		return "Not Migrated"
+	default:
+		if namespace != "" {
+			return fmt.Sprintf("%s/%s", namespace, name)
+		}
+		return name
+	}
+}
+
+// displayStorageMapping prints storage mapping details
+func displayStorageMapping(c dynamic.Interface, namespace, storageMapping string) error {
+	storageMap, err := c.Resource(client.StorageMapGVR).Namespace(namespace).Get(context.TODO(), storageMapping, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	storagePairs, exists, _ := unstructured.NestedSlice(storageMap.Object, "spec", "map")
+	if exists && len(storagePairs) > 0 {
+		headers := []string{"SOURCE ID", "STORAGE CLASS"}
+		colWidths := []int{42, 60}
+		rows := make([][]string, 0, len(storagePairs))
+
+		for _, pair := range storagePairs {
+			if p, ok := pair.(map[string]interface{}); ok {
+				sourceID, _, _ := unstructured.NestedString(p, "source", "id")
+				destClass, _, _ := unstructured.NestedString(p, "destination", "storageClass")
+				rows = append(rows, []string{sourceID, destClass})
+			}
+		}
+
+		fmt.Println()
+		printTable(headers, rows, colWidths)
+	}
+	return nil
+}
+
+// displayConditions prints conditions information
+func displayConditions(conditions []interface{}) {
+	if len(conditions) > 0 {
+		headers := []string{"TYPE", "STATUS", "REASON", "MESSAGE"}
+		colWidths := []int{20, 10, 20, 50}
+		rows := make([][]string, 0, len(conditions))
+
 		for _, c := range conditions {
 			condition, ok := c.(map[string]interface{})
 			if !ok {
@@ -159,14 +242,13 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 			reason, _, _ := unstructured.NestedString(condition, "reason")
 			message, _, _ := unstructured.NestedString(condition, "message")
 
-			// Truncate message if too long
-			if len(message) > 50 {
+			if len(message) > 47 {
 				message = message[:47] + "..."
 			}
-
-			fmt.Printf("%-20s %-10s %-20s %s\n", condType, status, reason, message)
+			rows = append(rows, []string{condType, status, reason, message})
 		}
-	}
 
-	return nil
+		fmt.Printf("\nConditions:\n")
+		printTable(headers, rows, colWidths)
+	}
 }
