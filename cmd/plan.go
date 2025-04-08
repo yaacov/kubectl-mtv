@@ -25,6 +25,7 @@ func newPlanCmd() *cobra.Command {
 	cmd.AddCommand(newListPlanCmd())
 	cmd.AddCommand(newStartPlanCmd())
 	cmd.AddCommand(newDescribePlanCmd())
+	cmd.AddCommand(newDescribeVMCmd()) // Add the new command
 	cmd.AddCommand(newCancelVMsCmd())
 	cmd.AddCommand(newCutoverCmd())
 	cmd.AddCommand(newDeletePlanCmd())
@@ -200,6 +201,31 @@ func newDescribePlanCmd() *cobra.Command {
 			return plan.Describe(kubeConfigFlags, name, namespace)
 		},
 	}
+
+	return cmd
+}
+
+func newDescribeVMCmd() *cobra.Command {
+	var watch bool
+	var vmName string
+
+	cmd := &cobra.Command{
+		Use:   "describe-vm NAME",
+		Short: "Describe VM status in a migration plan",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get plan name from positional argument
+			name := args[0]
+
+			// Resolve the appropriate namespace based on context and flags
+			namespace := client.ResolveNamespace(kubeConfigFlags)
+			return plan.DescribeVM(kubeConfigFlags, name, namespace, vmName, watch)
+		},
+	}
+
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch VM status with live updates")
+	cmd.Flags().StringVar(&vmName, "vm", "", "VM name to describe")
+	cmd.MarkFlagRequired("vm")
 
 	return cmd
 }

@@ -19,7 +19,7 @@ func ListVMs(configFlags *genericclioptions.ConfigFlags, name, namespace string,
 	if watchMode {
 		return watch.Watch(func() error {
 			return listVMsOnce(configFlags, name, namespace)
-		}, 15*time.Second)
+		}, 20*time.Second)
 	}
 
 	return listVMsOnce(configFlags, name, namespace)
@@ -49,6 +49,29 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 	if migration == nil {
 		fmt.Printf("VMs in migration plan: %s\n\n", name)
 		fmt.Println("No migration information found. VM details will be available after the plan starts running.")
+
+		// Print VMs from plan spec
+		specVMs, exists, err := unstructured.NestedSlice(plan.Object, "spec", "vms")
+		if err == nil && exists && len(specVMs) > 0 {
+			fmt.Printf("\nPlan VM Specifications:\n")
+			headers := []string{"NAME", "ID"}
+			colWidths := []int{40, 20}
+			rows := make([][]string, 0, len(specVMs))
+
+			for _, v := range specVMs {
+				vm, ok := v.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				vmName, _, _ := unstructured.NestedString(vm, "name")
+				vmID, _, _ := unstructured.NestedString(vm, "id")
+				rows = append(rows, []string{vmName, vmID})
+			}
+
+			printTable(headers, rows, colWidths)
+		}
+
 		return nil
 	}
 
@@ -72,7 +95,7 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 			continue
 		}
 
-		fmt.Print("\n-------------------------------------------------------------------------------------------------------------\n")
+		fmt.Print("\n=============================================================================================================\n")
 
 		vmName, _, _ := unstructured.NestedString(vm, "name")
 		vmID, _, _ := unstructured.NestedString(vm, "id")
