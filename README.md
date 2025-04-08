@@ -107,14 +107,14 @@ kubectl mtv provider create NAME --type TYPE [flags]
 ```
 
 **Required Flags:**
-- `-t, --type`: Provider type (openshift, vsphere, ovirt, openstack, ova)
+- `--type`: Provider type (openshift, vsphere, ovirt, openstack, ova)
 
 **Optional Flags:**
 - `--secret`: Secret containing provider credentials
 - `-U, --url`: Provider URL
 - `-u, --username`: Provider credentials username
 - `-p, --password`: Provider credentials password
-- `-t, --token`: Provider authentication token (used for openshift provider)
+- `-T, --token`: Provider authentication token (used for openshift provider)
 - `--cacert`: Provider CA certificate (use @filename to load from file)
 - `--provider-insecure-skip-tls`: Skip TLS verification when connecting to the provider
 - `--vddk-init-image`: Virtual Disk Development Kit (VDDK) container init image path
@@ -164,8 +164,8 @@ kubectl mtv mapping create-network NAME [flags]
 ```
 
 **Optional Flags:**
-- `--source`: Source provider name
-- `--target`: Target provider name
+- `-s, --source`: Source provider name
+- `-t, --target`: Target provider name
 - `--from-file`: Create from YAML file
 
 #### Create Storage Mapping
@@ -177,8 +177,8 @@ kubectl mtv mapping create-storage NAME [flags]
 ```
 
 **Optional Flags:**
-- `--source`: Source provider name
-- `--target`: Target provider name
+- `-s, --source`: Source provider name
+- `-t, --target`: Target provider name
 - `--from-file`: Create from YAML file
 
 #### List Mappings
@@ -285,8 +285,8 @@ kubectl mtv plan create NAME [flags]
 ```
 
 **Optional Flags:**
-- `--source`: Source provider name
-- `--target`: Target provider name
+- `-s, --source`: Source provider name
+- `-t, --target`: Target provider name
 - `--network-mapping`: Network mapping name
 - `--storage-mapping`: Storage mapping name
 - `--vms`: List of VM names (comma-separated) or path to YAML/JSON file containing a list of VM structs (prefix with @)
@@ -300,7 +300,7 @@ kubectl mtv plan create NAME [flags]
 - `--volume-name-template`: Template for generating volume interface names
 - `--network-name-template`: Template for generating network interface names
 - `--migrate-shared-disks`: Determines if the plan should migrate shared disks (default true)
-- `--inventory-url`: Base URL for the inventory service
+- `-i, --inventory-url`: Base URL for the inventory service
 
 **Examples:**
 

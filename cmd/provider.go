@@ -60,14 +60,14 @@ func newCreateProviderCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().VarP(providerType, "type", "t", "Provider type (openshift, vsphere, ovirt, openstack, ova)")
+	cmd.Flags().Var(providerType, "type", "Provider type (openshift, vsphere, ovirt, openstack, ova)")
 	cmd.Flags().StringVar(&secret, "secret", "", "Secret containing provider credentials")
 
 	// Provider credential flags
 	cmd.Flags().StringVarP(&url, "url", "U", "", "Provider URL")
 	cmd.Flags().StringVarP(&username, "username", "u", "", "Provider credentials username")
 	cmd.Flags().StringVarP(&password, "password", "p", "", "Provider credentials password")
-	cmd.Flags().StringVarP(&token, "token", "t", "", "Provider authentication token (used for openshift provider)")
+	cmd.Flags().StringVarP(&token, "token", "T", "", "Provider authentication token (used for openshift provider)")
 	cmd.Flags().StringVar(&cacert, "cacert", "", "Provider CA certificate (use @filename to load from file)")
 	cmd.Flags().BoolVar(&insecureSkipTLS, "provider-insecure-skip-tls", false, "Skip TLS verification when connecting to the provider")
 	cmd.Flags().StringVar(&vddkInitImage, "vddk-init-image", "", "Virtual Disk Development Kit (VDDK) container init image path")
