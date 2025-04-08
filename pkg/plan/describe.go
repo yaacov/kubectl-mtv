@@ -91,6 +91,58 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 		}
 	}
 
+	// Fetch and display network mapping details
+	if networkMapping != "" {
+		networkMap, err := c.Resource(client.NetworkMapGVR).Namespace(namespace).Get(context.TODO(), networkMapping, metav1.GetOptions{})
+		if err == nil {
+			networkPairs, exists, _ := unstructured.NestedSlice(networkMap.Object, "spec", "map")
+			if exists && len(networkPairs) > 0 {
+				fmt.Println()
+				fmt.Printf("%-40s %-20s %-20s\n", "SOURCE ID", "TYPE", "NAME")
+				fmt.Printf("%-40s %-20s %-20s\n", "---------", "----", "----")
+				for _, pair := range networkPairs {
+					if p, ok := pair.(map[string]interface{}); ok {
+						sourceID, _, _ := unstructured.NestedString(p, "source", "id")
+						destType, _, _ := unstructured.NestedString(p, "destination", "type")
+						destName, _, _ := unstructured.NestedString(p, "destination", "name")
+						destNS, _, _ := unstructured.NestedString(p, "destination", "namespace")
+
+						destination := destName
+						if destNS != "" && destType != "pod" && destType != "ignored" {
+							destination = fmt.Sprintf("%s/%s", destNS, destName)
+						} else if destType == "pod" {
+							destination = "Pod Network"
+						} else if destType == "ignored" {
+							destination = "Not Migrated"
+						}
+
+						fmt.Printf("%-40s %-20s %-20s\n", sourceID, destType, destination)
+					}
+				}
+			}
+		}
+	}
+
+	// Fetch and display storage mapping details
+	if storageMapping != "" {
+		storageMap, err := c.Resource(client.StorageMapGVR).Namespace(namespace).Get(context.TODO(), storageMapping, metav1.GetOptions{})
+		if err == nil {
+			storagePairs, exists, _ := unstructured.NestedSlice(storageMap.Object, "spec", "map")
+			if exists && len(storagePairs) > 0 {
+				fmt.Println()
+				fmt.Printf("%-40s %-20s\n", "SOURCE ID", "STORAGE CLASS")
+				fmt.Printf("%-40s %-20s\n", "---------", "-------------")
+				for _, pair := range storagePairs {
+					if p, ok := pair.(map[string]interface{}); ok {
+						sourceID, _, _ := unstructured.NestedString(p, "source", "id")
+						destClass, _, _ := unstructured.NestedString(p, "destination", "storageClass")
+						fmt.Printf("%-40s %-20s\n", sourceID, destClass)
+					}
+				}
+			}
+		}
+	}
+
 	// Conditions
 	conditions, exists, _ := unstructured.NestedSlice(plan.Object, "status", "conditions")
 	if exists && len(conditions) > 0 {
