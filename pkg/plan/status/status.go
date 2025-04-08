@@ -51,17 +51,6 @@ func IsPlanReady(plan *unstructured.Unstructured) (bool, error) {
 
 // GetRunningMigration checks for migrations associated with the given plan and returns
 // the currently running migration if one exists, along with the most recent migration.
-//
-// Parameters:
-//   - client: dynamic kubernetes client interface
-//   - namespace: namespace where the migrations are located
-//   - plan: the migration plan to check
-//   - migrationsGVR: GroupVersionResource for the migrations API
-//
-// Returns:
-//   - First return value: the currently running migration, or nil if none exists
-//   - Second return value: the most recent migration for this plan, or nil if none exists
-//   - Error: any error encountered during the operation
 func GetRunningMigration(
 	client dynamic.Interface,
 	namespace string,

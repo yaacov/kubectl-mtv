@@ -80,7 +80,7 @@ func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string, c
 	// Create a migration object using structured type
 	migration := &forkliftv1beta1.Migration{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: name,
+			GenerateName: fmt.Sprintf("%s-", name),
 			Namespace:    namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{

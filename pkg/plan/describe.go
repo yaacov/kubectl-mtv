@@ -73,7 +73,14 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 		printDiskProgress(planDetails.DiskProgress)
 	}
 
-	printMigrationStats(planDetails.LatestMigration, planDetails.VMStats, planDetails.DiskProgress)
+	// Latest Migration
+	if planDetails.LatestMigration != nil {
+		fmt.Printf("\nMigration name:      %s\n", planDetails.LatestMigration.GetName())
+		fmt.Printf("Migration Progress:  Total:     %3d, Completed: %3d\n", planDetails.VMStats.Completed, planDetails.VMStats.Total)
+		fmt.Printf("VM Status:           Succeeded: %3d, Failed:    %3d, Canceled: %3d\n",
+			planDetails.VMStats.Succeeded, planDetails.VMStats.Failed, planDetails.VMStats.Canceled)
+		printDiskProgress(planDetails.DiskProgress)
+	}
 
 	// Display network mapping
 	if networkMapping != "" {
@@ -138,17 +145,6 @@ func printDiskProgress(progress status.ProgressStats) {
 			percentage,
 			progress.Completed/(1024),
 			progress.Total/(1024))
-	}
-}
-
-// printMigrationStats prints migration statistics
-func printMigrationStats(migration *unstructured.Unstructured, stats status.VMStats, diskProgress status.ProgressStats) {
-	if migration != nil {
-		fmt.Printf("\nMigration name:      %s\n", migration.GetName())
-		fmt.Printf("Migration Progress:  Total:     %3d, Completed: %3d\n", stats.Completed, stats.Total)
-		fmt.Printf("VM Status:           Succeeded: %3d, Failed:    %3d, Canceled: %3d\n",
-			stats.Succeeded, stats.Failed, stats.Canceled)
-		printDiskProgress(diskProgress)
 	}
 }
 

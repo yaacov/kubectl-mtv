@@ -28,6 +28,7 @@ func newPlanCmd() *cobra.Command {
 	cmd.AddCommand(newCancelVMsCmd())
 	cmd.AddCommand(newCutoverCmd())
 	cmd.AddCommand(newDeletePlanCmd())
+	cmd.AddCommand(newVMsCmd())
 
 	return cmd
 }
@@ -305,6 +306,24 @@ func newDeletePlanCmd() *cobra.Command {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 			return plan.Delete(kubeConfigFlags, name, namespace)
+		},
+	}
+
+	return cmd
+}
+
+func newVMsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "vms NAME",
+		Short: "List VMs in a migration plan",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get plan name from positional argument
+			name := args[0]
+
+			// Resolve the appropriate namespace based on context and flags
+			namespace := client.ResolveNamespace(kubeConfigFlags)
+			return plan.ListVMs(kubeConfigFlags, name, namespace)
 		},
 	}
 
