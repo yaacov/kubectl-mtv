@@ -313,6 +313,8 @@ func newDeletePlanCmd() *cobra.Command {
 }
 
 func newVMsCmd() *cobra.Command {
+	var watch bool
+
 	cmd := &cobra.Command{
 		Use:   "vms NAME",
 		Short: "List VMs in a migration plan",
@@ -323,9 +325,11 @@ func newVMsCmd() *cobra.Command {
 
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
-			return plan.ListVMs(kubeConfigFlags, name, namespace)
+			return plan.ListVMs(kubeConfigFlags, name, namespace, watch)
 		},
 	}
+
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch VM status with live updates")
 
 	return cmd
 }

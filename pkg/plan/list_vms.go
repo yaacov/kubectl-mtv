@@ -11,10 +11,22 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/plan/status"
+	"github.com/yaacov/kubectl-mtv/pkg/watch"
 )
 
 // ListVMs lists all VMs in a migration plan
-func ListVMs(configFlags *genericclioptions.ConfigFlags, name, namespace string) error {
+func ListVMs(configFlags *genericclioptions.ConfigFlags, name, namespace string, watchMode bool) error {
+	if watchMode {
+		return watch.Watch(func() error {
+			return listVMsOnce(configFlags, name, namespace)
+		}, 15*time.Second)
+	}
+
+	return listVMsOnce(configFlags, name, namespace)
+}
+
+// listVMsOnce lists VMs in a migration plan once (helper function for ListVMs)
+func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace string) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -99,7 +111,7 @@ func ListVMs(configFlags *genericclioptions.ConfigFlags, name, namespace string)
 				phaseCompleted, _, _ := unstructured.NestedString(phase, "completed")
 
 				progress := "-"
-				if vmPhase == "Completed" {
+				if vmPhase == "Completed" || phaseStatus == "Completed" {
 					progress = fmt.Sprintf("%14.1f%%", 100.0)
 				} else {
 					progressMap, exists, _ := unstructured.NestedMap(phase, "progress")
