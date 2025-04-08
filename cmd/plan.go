@@ -212,7 +212,7 @@ func newDescribeVMCmd() *cobra.Command {
 	var vmName string
 
 	cmd := &cobra.Command{
-		Use:   "describe-vm NAME",
+		Use:   "vm NAME",
 		Short: "Describe VM status in a migration plan",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

@@ -363,7 +363,7 @@ kubectl mtv plan describe NAME
 Show detailed information about a specific VM in a migration plan.
 
 ```bash
-kubectl mtv plan describe-vm NAME --vm VM_NAME [flags]
+kubectl mtv plan vm NAME --vm VM_NAME [flags]
 ```
 
 **Required Flags:**
