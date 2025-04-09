@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
+	"github.com/yaacov/kubectl-mtv/pkg/output"
 	"github.com/yaacov/kubectl-mtv/pkg/plan/status"
 )
 
@@ -27,23 +28,27 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 		return fmt.Errorf("failed to get plan: %v", err)
 	}
 
+	// Print the plan details
+	fmt.Printf("\n%s", output.ColorizedSeparator(105, output.YellowColor))
+	fmt.Printf("\n%s\n", output.Bold("MIGRATION PLAN"))
+
 	// Basic Information
-	fmt.Printf("Name:              %s\n", plan.GetName())
-	fmt.Printf("Namespace:         %s\n", plan.GetNamespace())
-	fmt.Printf("Created:           %s\n", plan.GetCreationTimestamp())
+	fmt.Printf("%s %s\n", output.Bold("Name:"), output.Yellow(plan.GetName()))
+	fmt.Printf("%s %s\n", output.Bold("Namespace:"), output.Yellow(plan.GetNamespace()))
+	fmt.Printf("%s %s\n", output.Bold("Created:"), output.Yellow(plan.GetCreationTimestamp().String()))
 
 	// Get archived status
 	archived, exists, _ := unstructured.NestedBool(plan.Object, "spec", "archived")
 	if exists {
-		fmt.Printf("Archived:          %t\n", archived)
+		fmt.Printf("%s %s\n", output.Bold("Archived:"), output.Yellow(fmt.Sprintf("%t", archived)))
 	} else {
-		fmt.Printf("Archived:          false\n")
+		fmt.Printf("%s %s\n", output.Bold("Archived:"), output.Yellow("false"))
 	}
 
 	// Plan Details
 	planDetails, _ := status.GetPlanDetails(c, namespace, plan, client.MigrationsGVR)
-	fmt.Printf("Ready:             %t\n", planDetails.IsReady)
-	fmt.Printf("Status:            %s\n", planDetails.Status)
+	fmt.Printf("%s %s\n", output.Bold("Ready:"), output.ColorizeBoolean(planDetails.IsReady))
+	fmt.Printf("%s %s\n", output.Bold("Status:"), output.ColorizeStatus(planDetails.Status))
 
 	// Spec Fields
 	source, _, _ := unstructured.NestedString(plan.Object, "spec", "provider", "source", "name")
@@ -55,7 +60,7 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 	preserveCPUModel, _, _ := unstructured.NestedBool(plan.Object, "spec", "preserveClusterCPUModel")
 	preserveStaticIPs, _, _ := unstructured.NestedBool(plan.Object, "spec", "preserveStaticIPs")
 
-	fmt.Printf("\nSpec:\n")
+	fmt.Printf("\n%s\n", output.Bold("Spec:"))
 	fmt.Printf("  Source Provider:   %s\n", source)
 	fmt.Printf("  Target Provider:   %s\n", target)
 	fmt.Printf("  Target Namespace:  %s\n", targetNamespace)
@@ -68,27 +73,37 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 	// Mappings
 	networkMapping, _, _ := unstructured.NestedString(plan.Object, "spec", "map", "network", "name")
 	storageMapping, _, _ := unstructured.NestedString(plan.Object, "spec", "map", "storage", "name")
-	fmt.Printf("\nMappings:\n")
+	fmt.Printf("\n%s\n", output.Bold("Mappings:"))
 	fmt.Printf("  Network:          %s\n", networkMapping)
 	fmt.Printf("  Storage:          %s\n", storageMapping)
 
-	fmt.Print("\n=============================================================================================================")
-
 	// Running Migration
 	if planDetails.RunningMigration != nil {
-		fmt.Printf("\nRunning Migration:   %s\n", planDetails.RunningMigration.GetName())
-		fmt.Printf("Migration Progress:  Total:     %3d, Completed: %3d\n", planDetails.VMStats.Completed, planDetails.VMStats.Total)
-		fmt.Printf("VM Status:           Succeeded: %3d, Failed:    %3d, Canceled: %3d\n",
-			planDetails.VMStats.Succeeded, planDetails.VMStats.Failed, planDetails.VMStats.Canceled)
+		fmt.Printf("\n%s   %s\n", output.Bold("Running Migration:"), output.Yellow(planDetails.RunningMigration.GetName()))
+		fmt.Printf("%s  Total:     %s, Completed: %s\n",
+			output.Bold("Migration Progress:"),
+			output.Blue(fmt.Sprintf("%3d", planDetails.VMStats.Total)),
+			output.Blue(fmt.Sprintf("%3d", planDetails.VMStats.Completed)))
+		fmt.Printf("%s Succeeded: %s, Failed:    %s, Canceled:  %s\n",
+			output.Bold("VM Status:          "),
+			output.Green(fmt.Sprintf("%3d", planDetails.VMStats.Succeeded)),
+			output.Red(fmt.Sprintf("%3d", planDetails.VMStats.Failed)),
+			output.Yellow(fmt.Sprintf("%3d", planDetails.VMStats.Canceled)))
 		printDiskProgress(planDetails.DiskProgress)
 	}
 
 	// Latest Migration
 	if planDetails.LatestMigration != nil {
-		fmt.Printf("\nMigration name:      %s\n", planDetails.LatestMigration.GetName())
-		fmt.Printf("Migration Progress:  Total:     %3d, Completed: %3d\n", planDetails.VMStats.Completed, planDetails.VMStats.Total)
-		fmt.Printf("VM Status:           Succeeded: %3d, Failed:    %3d, Canceled: %3d\n",
-			planDetails.VMStats.Succeeded, planDetails.VMStats.Failed, planDetails.VMStats.Canceled)
+		fmt.Printf("\n%s      %s\n", output.Bold("Migration name:"), output.Yellow(planDetails.LatestMigration.GetName()))
+		fmt.Printf("%s  Total:     %s, Completed: %s\n",
+			output.Bold("Migration Progress:"),
+			output.Blue(fmt.Sprintf("%3d", planDetails.VMStats.Total)),
+			output.Blue(fmt.Sprintf("%3d", planDetails.VMStats.Completed)))
+		fmt.Printf("%s Succeeded: %s, Failed:    %s, Canceled:  %s\n",
+			output.Bold("VM Status:          "),
+			output.Green(fmt.Sprintf("%3d", planDetails.VMStats.Succeeded)),
+			output.Red(fmt.Sprintf("%3d", planDetails.VMStats.Failed)),
+			output.Yellow(fmt.Sprintf("%3d", planDetails.VMStats.Canceled)))
 		printDiskProgress(planDetails.DiskProgress)
 	}
 
@@ -151,10 +166,16 @@ func printTable(headers []string, rows [][]string, colWidths []int) {
 func printDiskProgress(progress status.ProgressStats) {
 	if progress.Total > 0 {
 		percentage := float64(progress.Completed) / float64(progress.Total) * 100
-		fmt.Printf("Disk Transfer:       %.1f%% (%d/%d GB)\n",
+		progressText := fmt.Sprintf("%.1f%% (%d/%d GB)",
 			percentage,
 			progress.Completed/(1024),
 			progress.Total/(1024))
+
+		if percentage >= 100 {
+			fmt.Printf("%s       %s\n", output.Bold("Disk Transfer:"), output.Green(progressText))
+		} else {
+			fmt.Printf("%s       %s\n", output.Bold("Disk Transfer:"), output.Yellow(progressText))
+		}
 	}
 }
 
@@ -254,7 +275,7 @@ func displayConditions(conditions []interface{}) {
 			rows = append(rows, []string{condType, status, reason, message})
 		}
 
-		fmt.Printf("\nConditions:\n")
+		fmt.Printf("\n%s\n", output.Bold("Conditions:"))
 		printTable(headers, rows, colWidths)
 	}
 }
