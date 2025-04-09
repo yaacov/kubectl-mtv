@@ -2,6 +2,7 @@ package output
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -21,6 +22,9 @@ const (
 	BoldYellow  = "\033[1;33m"
 	BoldBlue    = "\033[1;34m"
 )
+
+// ansiRegex is a regular expression that matches ANSI color escape codes
+var ansiRegex = regexp.MustCompile("\033\\[[0-9;]*m")
 
 // Bold returns a bold-formatted string
 func Bold(text string) string {
@@ -55,6 +59,16 @@ func Blue(text string) string {
 // Cyan returns a cyan-colored string
 func Cyan(text string) string {
 	return ColorizedString(text, CyanColor)
+}
+
+// StripANSI removes ANSI color codes from a string
+func StripANSI(text string) string {
+	return ansiRegex.ReplaceAllString(text, "")
+}
+
+// VisibleLength returns the visible length of a string, excluding ANSI color codes
+func VisibleLength(text string) int {
+	return len(StripANSI(text))
 }
 
 // ColorizeStatus returns a colored string based on status value

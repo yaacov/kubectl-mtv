@@ -153,7 +153,18 @@ func printTable(headers []string, rows [][]string, colWidths []int) {
 	// Print rows
 	for _, row := range rows {
 		for i, cell := range row {
-			fmt.Printf(fmt.Sprintf("%%-%ds", colWidths[i]), cell)
+			// Calculate padding based on visible length
+			visLen := output.VisibleLength(cell)
+			padding := colWidths[i] - visLen
+
+			// Print the cell with its formatting intact
+			fmt.Print(cell)
+
+			// Add necessary padding after the cell
+			if padding > 0 {
+				fmt.Print(strings.Repeat(" ", padding))
+			}
+
 			if i < len(row)-1 {
 				fmt.Print(" ")
 			}

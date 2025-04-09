@@ -10,6 +10,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
+	"github.com/yaacov/kubectl-mtv/pkg/output"
 	"github.com/yaacov/kubectl-mtv/pkg/plan/status"
 	"github.com/yaacov/kubectl-mtv/pkg/watch"
 )
@@ -47,13 +48,13 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 		migration = planDetails.LatestMigration
 	}
 	if migration == nil {
-		fmt.Printf("VMs in migration plan: %s\n\n", name)
+		fmt.Printf("%s %s\n\n", output.Bold("VMs in migration plan:"), output.Yellow(name))
 		fmt.Println("No migration information found. VM details will be available after the plan starts running.")
 
 		// Print VMs from plan spec
 		specVMs, exists, err := unstructured.NestedSlice(plan.Object, "spec", "vms")
 		if err == nil && exists && len(specVMs) > 0 {
-			fmt.Printf("\nPlan VM Specifications:\n")
+			fmt.Printf("\n%s\n", output.Bold("Plan VM Specifications:"))
 			headers := []string{"NAME", "ID"}
 			colWidths := []int{40, 20}
 			rows := make([][]string, 0, len(specVMs))
@@ -66,7 +67,7 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 
 				vmName, _, _ := unstructured.NestedString(vm, "name")
 				vmID, _, _ := unstructured.NestedString(vm, "id")
-				rows = append(rows, []string{vmName, vmID})
+				rows = append(rows, []string{output.Yellow(vmName), output.Cyan(vmID)})
 			}
 
 			printTable(headers, rows, colWidths)
@@ -84,9 +85,11 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 		return fmt.Errorf("no VMs found in migration status")
 	}
 
-	fmt.Print("\n-------------------------------------------------------------------------------------------------------------\n")
-	fmt.Printf("VMs in migration plan: %s\n", name)
-	fmt.Printf("Migration: %s\n", migration.GetName())
+	fmt.Print("\n", output.ColorizedSeparator(105, output.YellowColor))
+	fmt.Printf("\n%s\n", output.Bold("MIGRATION PLAN"))
+
+	fmt.Printf("%s %s\n", output.Bold("VMs in migration plan:"), output.Yellow(name))
+	fmt.Printf("%s %s\n", output.Bold("Migration:"), output.Yellow(migration.GetName()))
 
 	// Print VM information
 	for _, v := range vms {
@@ -95,8 +98,6 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 			continue
 		}
 
-		fmt.Print("\n=============================================================================================================\n")
-
 		vmName, _, _ := unstructured.NestedString(vm, "name")
 		vmID, _, _ := unstructured.NestedString(vm, "id")
 		vmPhase, _, _ := unstructured.NestedString(vm, "phase")
@@ -104,23 +105,20 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 		started, _, _ := unstructured.NestedString(vm, "started")
 		completed, _, _ := unstructured.NestedString(vm, "completed")
 
-		fmt.Printf("VM: %s (ID: %s)\n", vmName, vmID)
-		fmt.Printf("Phase: %s\n", vmPhase)
-		fmt.Printf("OS: %s\n", vmOS)
+		fmt.Printf("%s %s (%s %s)\n", output.Bold("VM:"), output.Yellow(vmName), output.Bold("ID:"), output.Cyan(vmID))
+		fmt.Printf("%s %s\n", output.Bold("Phase:"), output.ColorizeStatus(vmPhase))
+		fmt.Printf("%s %s\n", output.Bold("OS:"), output.Blue(vmOS))
 		if started != "" {
-			fmt.Printf("Started: %s\n", started)
+			fmt.Printf("%s %s\n", output.Bold("Started:"), output.Blue(formatTime(started)))
 		}
 		if completed != "" {
-			fmt.Printf("Completed: %s\n", completed)
+			fmt.Printf("%s %s\n", output.Bold("Completed:"), output.Green(formatTime(completed)))
 		}
 
 		// Print pipeline information
 		pipeline, exists, _ := unstructured.NestedSlice(vm, "pipeline")
 		if exists && len(pipeline) > 0 {
-
-			fmt.Print("\n=============================================================================================================")
-
-			fmt.Printf("\nPipeline:\n")
+			fmt.Printf("\n%s\n", output.Bold("Pipeline:"))
 			headers := []string{"PHASE", "NAME", "STARTED", "COMPLETED", "PROGRESS"}
 			colWidths := []int{15, 25, 25, 25, 15}
 			rows := make([][]string, 0, len(pipeline))
@@ -139,6 +137,7 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 				progress := "-"
 				if vmPhase == "Completed" || phaseStatus == "Completed" {
 					progress = fmt.Sprintf("%14.1f%%", 100.0)
+					progress = output.Green(progress)
 				} else {
 					progressMap, exists, _ := unstructured.NestedMap(phase, "progress")
 					if exists {
@@ -146,14 +145,23 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 						total, _, _ := unstructured.NestedInt64(progressMap, "total")
 						if total > 0 {
 							percentage := float64(completed) / float64(total) * 100
-							progress = fmt.Sprintf("%14.1f%%", percentage)
+							progressText := fmt.Sprintf("%14.1f%%", percentage)
+							if percentage >= 100 {
+								progress = output.Green(progressText)
+							} else if percentage >= 75 {
+								progress = output.Blue(progressText)
+							} else if percentage >= 25 {
+								progress = output.Yellow(progressText)
+							} else {
+								progress = output.Cyan(progressText)
+							}
 						}
 					}
 				}
 
 				rows = append(rows, []string{
-					phaseStatus,
-					phaseName,
+					output.ColorizeStatus(phaseStatus),
+					output.Bold(phaseName),
 					formatTime(phaseStarted),
 					formatTime(phaseCompleted),
 					progress,
