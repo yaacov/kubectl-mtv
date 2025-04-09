@@ -123,7 +123,8 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 	fmt.Printf("\n%s %s\n", output.Bold("VM Details for:"), output.Yellow(vmName))
 	fmt.Printf("%s %s\n", output.Bold("Migration Plan:"), output.Yellow(name))
 	fmt.Printf("%s %s\n", output.Bold("Migration:"), output.Yellow(migration.GetName()))
-	fmt.Println("\n----------------------------------------")
+
+	fmt.Print("\n", output.ColorizedSeparator(105, output.YellowColor), "\n")
 
 	// Print basic VM information
 	vmID, _, _ = unstructured.NestedString(targetVM, "id")
@@ -200,7 +201,7 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 			phaseStarted, _, _ := unstructured.NestedString(phase, "started")
 			phaseCompleted, _, _ := unstructured.NestedString(phase, "completed")
 
-			fmt.Printf("\n[%s] %s\n", output.Bold(phaseName), phaseDesc)
+			fmt.Printf("\n%s\n", output.Yellow(fmt.Sprintf("[%s] %s", output.Bold(phaseName), phaseDesc)))
 			fmt.Printf("%s %s\n", output.Bold("Status:"), output.ColorizeStatus(phaseStatus))
 			fmt.Printf("%s %s\n", output.Bold("Started:"), formatTime(phaseStarted))
 			if phaseCompleted != "" {
