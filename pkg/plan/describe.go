@@ -72,6 +72,8 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 	fmt.Printf("  Network:          %s\n", networkMapping)
 	fmt.Printf("  Storage:          %s\n", storageMapping)
 
+	fmt.Print("\n=============================================================================================================")
+
 	// Running Migration
 	if planDetails.RunningMigration != nil {
 		fmt.Printf("\nRunning Migration:   %s\n", planDetails.RunningMigration.GetName())

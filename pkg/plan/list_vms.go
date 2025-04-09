@@ -117,6 +117,9 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 		// Print pipeline information
 		pipeline, exists, _ := unstructured.NestedSlice(vm, "pipeline")
 		if exists && len(pipeline) > 0 {
+
+			fmt.Print("\n=============================================================================================================")
+
 			fmt.Printf("\nPipeline:\n")
 			headers := []string{"PHASE", "NAME", "STARTED", "COMPLETED", "PROGRESS"}
 			colWidths := []int{15, 25, 25, 25, 15}

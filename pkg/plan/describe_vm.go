@@ -25,6 +25,15 @@ func DescribeVM(configFlags *genericclioptions.ConfigFlags, name, namespace, vmN
 	return describeVMOnce(configFlags, name, namespace, vmName)
 }
 
+// Helper function to truncate strings to a maximum length
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	// Reserve 3 characters for the ellipsis
+	return s[:maxLen-3] + "..."
+}
+
 func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace, vmName string) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
@@ -137,6 +146,9 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 	// Print conditions
 	conditions, exists, _ := unstructured.NestedSlice(targetVM, "conditions")
 	if exists && len(conditions) > 0 {
+
+		fmt.Print("\n=============================================================================================================")
+
 		fmt.Printf("\nConditions:\n")
 		headers := []string{"TYPE", "STATUS", "CATEGORY", "MESSAGE"}
 		colWidths := []int{15, 10, 15, 50}
@@ -164,14 +176,14 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 	// Print pipeline information
 	pipeline, exists, _ := unstructured.NestedSlice(targetVM, "pipeline")
 	if exists {
+		fmt.Print("\n=============================================================================================================")
+
 		fmt.Printf("\nPipeline:\n")
 		for _, p := range pipeline {
 			phase, ok := p.(map[string]interface{})
 			if !ok {
 				continue
 			}
-
-			fmt.Print("\n=============================================================================================================\n")
 
 			phaseName, _, _ := unstructured.NestedString(phase, "name")
 			phaseDesc, _, _ := unstructured.NestedString(phase, "description")
@@ -212,6 +224,9 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 					}
 
 					taskName, _, _ := unstructured.NestedString(task, "name")
+					// Truncate task name if longer than column width
+					taskName = truncateString(taskName, colWidths[0])
+
 					taskPhase, _, _ := unstructured.NestedString(task, "phase")
 					taskStarted, _, _ := unstructured.NestedString(task, "started")
 					taskCompleted, _, _ := unstructured.NestedString(task, "completed")
