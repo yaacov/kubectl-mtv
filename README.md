@@ -413,6 +413,17 @@ Delete a migration plan.
 kubectl mtv plan delete NAME
 ```
 
+#### Archive Migration Plan
+
+Archive or unarchive a migration plan for long-term storage.
+
+```bash
+kubectl mtv plan archive NAME [flags]
+```
+
+**Optional Flags:**
+- `--unarchive`: Unarchive the plan instead of archiving it
+
 ## Logo Attribution
 
 The gopher logo is from [github.com/egonelbre/gophers](https://github.com/egonelbre/gophers) by Renee French.

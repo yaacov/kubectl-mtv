@@ -30,6 +30,7 @@ func newPlanCmd() *cobra.Command {
 	cmd.AddCommand(newCutoverCmd())
 	cmd.AddCommand(newDeletePlanCmd())
 	cmd.AddCommand(newVMsCmd())
+	cmd.AddCommand(newArchivePlanCmd()) // Add the new archive command
 
 	return cmd
 }
@@ -362,6 +363,32 @@ func newVMsCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch VM status with live updates")
+
+	return cmd
+}
+
+func newArchivePlanCmd() *cobra.Command {
+	var unarchive bool
+
+	cmd := &cobra.Command{
+		Use:   "archive NAME",
+		Short: "Archive or unarchive a migration plan",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get name from positional argument
+			name := args[0]
+
+			// Resolve the appropriate namespace based on context and flags
+			namespace := client.ResolveNamespace(kubeConfigFlags)
+
+			// If unarchive flag is specified, set archived to false
+			archived := !unarchive
+
+			return plan.Archive(kubeConfigFlags, name, namespace, archived)
+		},
+	}
+
+	cmd.Flags().BoolVar(&unarchive, "unarchive", false, "Unarchive the plan instead of archiving it")
 
 	return cmd
 }
