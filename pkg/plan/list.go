@@ -42,6 +42,12 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 		vms, _, _ := unstructured.NestedSlice(p.Object, "spec", "vms")
 		creationTime := p.GetCreationTimestamp()
 
+		// Get archived status
+		archived, exists, _ := unstructured.NestedBool(p.Object, "spec", "archived")
+		if !exists {
+			archived = false
+		}
+
 		// Get plan details (ready, running migration, status)
 		planDetails, _ := status.GetPlanDetails(c, namespace, &p, client.MigrationsGVR)
 
@@ -101,6 +107,7 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 			"status":   planDetails.Status,
 			"progress": progressStatus,
 			"cutover":  cutoverInfo,
+			"archived": fmt.Sprintf("%t", archived),
 		}
 
 		// Add the item to the list
@@ -130,6 +137,7 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 		output.Header{DisplayName: "STATUS", JSONPath: "status"},
 		output.Header{DisplayName: "PROGRESS", JSONPath: "progress"},
 		output.Header{DisplayName: "CUTOVER", JSONPath: "cutover"},
+		output.Header{DisplayName: "ARCHIVED", JSONPath: "archived"},
 		output.Header{DisplayName: "CREATED", JSONPath: "created"},
 	).AddItems(items)
 

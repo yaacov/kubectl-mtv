@@ -32,6 +32,14 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 	fmt.Printf("Namespace:         %s\n", plan.GetNamespace())
 	fmt.Printf("Created:           %s\n", plan.GetCreationTimestamp())
 
+	// Get archived status
+	archived, exists, _ := unstructured.NestedBool(plan.Object, "spec", "archived")
+	if exists {
+		fmt.Printf("Archived:          %t\n", archived)
+	} else {
+		fmt.Printf("Archived:          false\n")
+	}
+
 	// Plan Details
 	planDetails, _ := status.GetPlanDetails(c, namespace, plan, client.MigrationsGVR)
 	fmt.Printf("Ready:             %t\n", planDetails.IsReady)
