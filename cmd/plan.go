@@ -131,7 +131,7 @@ func newCreatePlanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&volumeNameTemplate, "volume-name-template", "", "VolumeNameTemplate is a template for generating volume interface names in the target virtual machine")
 	cmd.Flags().StringVar(&networkNameTemplate, "network-name-template", "", "NetworkNameTemplate is a template for generating network interface names in the target virtual machine")
 	cmd.Flags().BoolVar(&migrateSharedDisks, "migrate-shared-disks", true, "Determines if the plan should migrate shared disks")
-	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
 
 	return cmd
 }

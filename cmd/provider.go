@@ -34,6 +34,11 @@ func newCreateProviderCmd() *cobra.Command {
 	var insecureSkipTLS bool
 	var vddkInitImage string
 
+	// Check if MTV_VDDK_INIT_IMAGE environment variable is set
+	if envVddkInitImage := os.Getenv("MTV_VDDK_INIT_IMAGE"); envVddkInitImage != "" {
+		vddkInitImage = envVddkInitImage
+	}
+
 	cmd := &cobra.Command{
 		Use:   "create NAME",
 		Short: "Create a new provider",
@@ -70,7 +75,7 @@ func newCreateProviderCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&token, "token", "T", "", "Provider authentication token (used for openshift provider)")
 	cmd.Flags().StringVar(&cacert, "cacert", "", "Provider CA certificate (use @filename to load from file)")
 	cmd.Flags().BoolVar(&insecureSkipTLS, "provider-insecure-skip-tls", false, "Skip TLS verification when connecting to the provider")
-	cmd.Flags().StringVar(&vddkInitImage, "vddk-init-image", "", "Virtual Disk Development Kit (VDDK) container init image path")
+	cmd.Flags().StringVar(&vddkInitImage, "vddk-init-image", vddkInitImage, "Virtual Disk Development Kit (VDDK) container init image path")
 
 	if err := cmd.MarkFlagRequired("type"); err != nil {
 		fmt.Printf("Warning: error marking 'type' flag as required: %v\n", err)
@@ -94,7 +99,7 @@ func newListProviderCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&inventoryBaseURL, "inventory-url", "i", "", "Base URL for the inventory service")
+	cmd.Flags().StringVarP(&inventoryBaseURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
 
 	return cmd
