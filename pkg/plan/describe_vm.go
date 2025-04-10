@@ -113,7 +113,7 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 	}
 
 	if targetVM == nil {
-		fmt.Printf("VM '%s' (ID: %s) status not yet available in migration\n", output.Yellow(vmName), output.Cyan(vmID))
+		fmt.Printf("VM '%s' (vmID=%s) status not yet available in migration\n", output.Yellow(vmName), output.Cyan(vmID))
 		return nil
 	}
 

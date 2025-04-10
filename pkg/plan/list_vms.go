@@ -105,7 +105,7 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 		started, _, _ := unstructured.NestedString(vm, "started")
 		completed, _, _ := unstructured.NestedString(vm, "completed")
 
-		fmt.Printf("%s %s (%s %s)\n", output.Bold("VM:"), output.Yellow(vmName), output.Bold("ID:"), output.Cyan(vmID))
+		fmt.Printf("%s %s (%s %s)\n", output.Bold("VM:"), output.Yellow(vmName), output.Bold("vmID="), output.Cyan(vmID))
 		fmt.Printf("%s %s\n", output.Bold("Phase:"), output.ColorizeStatus(vmPhase))
 		fmt.Printf("%s %s\n", output.Bold("OS:"), output.Blue(vmOS))
 		if started != "" {
