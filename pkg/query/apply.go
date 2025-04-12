@@ -11,7 +11,8 @@ func ApplyQuery(items []map[string]interface{}, queryOpts *QueryOptions) ([]map[
 	// Apply WHERE filtering if specified
 	if queryOpts.Where != "" {
 		var err error
-		result, err = FilterItems(result, queryOpts.Where)
+		// Use parallel filtering, use sutomatic batch size (batch size = 0)
+		result, err = FilterItemsParallel(result, queryOpts.Where, 0)
 		if err != nil {
 			return nil, fmt.Errorf("where clause error: %v", err)
 		}
