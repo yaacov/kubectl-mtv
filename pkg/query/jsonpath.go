@@ -67,28 +67,32 @@ func getValueByPath(obj interface{}, pathParts []string) (interface{}, error) {
 	part := pathParts[0]
 	remainingParts := pathParts[1:]
 
-	// Check if part has array indexing notation [i] or map key notation [key]
+	// Check if part has array indexing notation [i], map key notation [key], or wildcard [*]
 	arrayIndex := -1
 	mapKey := ""
+	isWildcard := false
 
-	// Check for array indexing first
+	// Run regex matchers
+	wildcardMatch := regexp.MustCompile(`(.*)\[\*\]$`).FindStringSubmatch(part)
 	arrayMatch := regexp.MustCompile(`(.*)\[(\d+)\]$`).FindStringSubmatch(part)
-	if len(arrayMatch) == 3 {
+	mapMatch := regexp.MustCompile(`(.*)\[([^\]]+)\]$`).FindStringSubmatch(part)
+
+	// Then use flat if conditions to process matches
+	if len(wildcardMatch) == 2 {
+		part = wildcardMatch[1]
+		isWildcard = true
+	} else if len(arrayMatch) == 3 {
 		part = arrayMatch[1]
 		index, err := strconv.Atoi(arrayMatch[2])
 		if err != nil {
 			return nil, fmt.Errorf("invalid array index in path: %s", part)
 		}
 		arrayIndex = index
-	} else {
-		// Check for map key notation
-		mapMatch := regexp.MustCompile(`(.*)\[([^\]]+)\]$`).FindStringSubmatch(part)
-		if len(mapMatch) == 3 {
-			part = mapMatch[1]
-			mapKey = mapMatch[2]
-			// Remove quotes if present
-			mapKey = strings.Trim(mapKey, `"'`)
-		}
+	} else if len(mapMatch) == 3 {
+		part = mapMatch[1]
+		mapKey = mapMatch[2]
+		// Remove quotes if present
+		mapKey = strings.Trim(mapKey, `"'`)
 	}
 
 	switch objTyped := obj.(type) {
@@ -98,6 +102,32 @@ func getValueByPath(obj interface{}, pathParts []string) (interface{}, error) {
 		if !exists {
 			// Don't fail if the part is not found, just return nil
 			return nil, nil
+		}
+
+		// Handle wildcard for arrays
+		if isWildcard {
+			// Check if the value is an array
+			arr, ok := value.([]interface{})
+			if !ok {
+				return nil, fmt.Errorf("cannot apply wildcard to non-array value: %s", part)
+			}
+
+			// For wildcard, collect results from all array elements
+			var results []interface{}
+			for _, item := range arr {
+				result, err := getValueByPath(item, remainingParts)
+				if err == nil && result != nil {
+					// Check if result is an array itself and flatten if needed
+					if resultArray, isArray := result.([]interface{}); isArray {
+						// Flatten by appending individual elements
+						results = append(results, resultArray...)
+					} else {
+						// Non-array result, append as is
+						results = append(results, result)
+					}
+				}
+			}
+			return results, nil
 		}
 
 		// Handle array indexing if present
