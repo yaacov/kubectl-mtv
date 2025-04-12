@@ -37,10 +37,13 @@ func FilterItemsParallel(items []map[string]interface{}, whereClause string, bat
 		return []map[string]interface{}{}, nil
 	}
 
-	// Calculate batch size if not provided
-	effectiveBatchSize := CalculateBatchSize(totalItems, batchSize)
+	tree, err := ParseWhereClause(whereClause)
+	if err != nil {
+		return nil, err
+	}
+	defer tree.Free()
 
-	// Calculate number of batches (using ceiling division)
+	effectiveBatchSize := CalculateBatchSize(totalItems, batchSize)
 	numBatches := (totalItems + effectiveBatchSize - 1) / effectiveBatchSize
 
 	// Create channels for results and errors
@@ -61,8 +64,8 @@ func FilterItemsParallel(items []map[string]interface{}, whereClause string, bat
 				end = totalItems
 			}
 
-			// Process the batch using the regular FilterItems function
-			filteredBatch, err := FilterItems(items[start:end], whereClause)
+			// Process the batch using ApplyFilter
+			filteredBatch, err := ApplyFilter(items[start:end], tree)
 			if err != nil {
 				errorsChan <- fmt.Errorf("error filtering batch %d: %v", batchIndex, err)
 				return

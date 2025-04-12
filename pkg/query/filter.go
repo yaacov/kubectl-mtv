@@ -7,15 +7,18 @@ import (
 	"github.com/yaacov/tree-search-language/v6/pkg/walkers/semantics"
 )
 
-// FilterItems filters the items based on a WHERE clause using the tree-search-language
-func FilterItems(items []map[string]interface{}, whereClause string) ([]map[string]interface{}, error) {
-	// Parse the WHERE clause into a TSL tree
+// ParseWhereClause parses a WHERE clause string into a TSL tree
+func ParseWhereClause(whereClause string) (*tsl.TSLNode, error) {
 	tree, err := tsl.ParseTSL(whereClause)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse where clause: %v", err)
 	}
-	defer tree.Free()
 
+	return tree, nil
+}
+
+// ApplyFilter filters items using a TSL tree
+func ApplyFilter(items []map[string]interface{}, tree *tsl.TSLNode) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 
 	// Filter the items collection using the TSL tree
@@ -34,6 +37,19 @@ func FilterItems(items []map[string]interface{}, whereClause string) ([]map[stri
 	}
 
 	return results, nil
+}
+
+// FilterItems filters the items based on a WHERE clause using the tree-search-language
+func FilterItems(items []map[string]interface{}, whereClause string) ([]map[string]interface{}, error) {
+	// Parse the WHERE clause
+	tree, err := ParseWhereClause(whereClause)
+	if err != nil {
+		return nil, err
+	}
+	defer tree.Free()
+
+	// Apply the filter to the items
+	return ApplyFilter(items, tree)
 }
 
 // evalFactory gets an item and returns a method that will get the field and return its value
