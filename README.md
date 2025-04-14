@@ -81,7 +81,7 @@ sudo chmod +x /usr/local/bin/kubectl-mtv
 git clone https://github.com/yaacov/kubectl-mtv.git
 cd kubectl-mtv
 
-# Build and install the plugin
+# Build the plugin
 make
 ```
 
