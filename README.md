@@ -55,7 +55,7 @@ You can download and install pre-built binaries for linux/amd64:
 
 ```bash
 # Set the version to download
-VERSION=v0.1.6  # Replace with the desired version
+VERSION=v0.1.7  # Replace with the desired version
 
 # Download the release binary and its checksum
 curl -LO https://github.com/yaacov/kubectl-mtv/releases/download/${VERSION}/kubectl-mtv.tar.gz
