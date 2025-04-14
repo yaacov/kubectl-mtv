@@ -89,6 +89,8 @@ Make sure `$GOPATH/bin` is in your PATH to use as a kubectl plugin.
 
 ## Usage
 
+See the demo documentation for a migration [demo flow using kubectl-mtv](./README_demo.md).
+
 ### Global Flags
 
 These flags are available for all commands:
