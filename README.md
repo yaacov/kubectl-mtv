@@ -82,7 +82,7 @@ git clone https://github.com/yaacov/kubectl-mtv.git
 cd kubectl-mtv
 
 # Build and install the plugin
-make install
+make
 ```
 
 Make sure `$GOPATH/bin` is in your PATH to use as a kubectl plugin.
