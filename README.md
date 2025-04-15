@@ -112,9 +112,11 @@ kubectl mtv provider create NAME --type TYPE [flags]
 ```
 
 **Required Flags:**
+
 - `--type`: Provider type (openshift, vsphere, ovirt, openstack, ova)
 
 **Optional Flags:**
+
 - `--secret`: Secret containing provider credentials
 - `-U, --url`: Provider URL
 - `-u, --username`: Provider credentials username
@@ -145,6 +147,7 @@ kubectl mtv provider list [flags]
 ```
 
 **Optional Flags:**
+
 - `-i, --inventory-url`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json (default "table")
 
@@ -169,6 +172,7 @@ kubectl mtv mapping create-network NAME [flags]
 ```
 
 **Optional Flags:**
+
 - `-S, --source`: Source provider name
 - `-t, --target`: Target provider name
 - `--from-file`: Create from YAML file
@@ -182,6 +186,7 @@ kubectl mtv mapping create-storage NAME [flags]
 ```
 
 **Optional Flags:**
+
 - `-S, --source`: Source provider name
 - `-t, --target`: Target provider name
 - `--from-file`: Create from YAML file
@@ -195,6 +200,7 @@ kubectl mtv mapping list [flags]
 ```
 
 **Optional Flags:**
+
 - `--type`: Mapping type (network, storage, all) (default "all")
 - `-o, --output`: Output format. One of: table, json (default "table")
 
@@ -211,12 +217,14 @@ kubectl mtv inventory vms PROVIDER [flags]
 ```
 
 **Optional Flags:**
+
 - `-i, --inventory-url`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json, planvms (default "table")
 - `-e, --extended`: Show extended information in table output
 - `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses
 
 **Query Syntax:**
+
 - `SELECT field1, field2 AS alias, field3`: Select specific fields with optional aliases
 - `WHERE condition`: Filter using tree-search-language conditions
 - `ORDER BY field1 [ASC|DESC], field2`: Sort results on multiple fields
@@ -244,6 +252,7 @@ kubectl mtv inventory networks PROVIDER [flags]
 ```
 
 **Optional Flags:**
+
 - `-i, --inventory-url`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json (default "table")
 - `-e, --extended`: Show extended information in table output
@@ -258,6 +267,7 @@ kubectl mtv inventory storage PROVIDER [flags]
 ```
 
 **Optional Flags:**
+
 - `-i, --inventory-url`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json (default "table")
 - `-e, --extended`: Show extended information in table output
@@ -272,6 +282,7 @@ kubectl mtv inventory hosts PROVIDER [flags]
 ```
 
 **Optional Flags:**
+
 - `-i, --inventory-url`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json (default "table")
 - `-e, --extended`: Show extended information in table output
@@ -286,6 +297,7 @@ kubectl mtv inventory namespaces PROVIDER [flags]
 ```
 
 **Optional Flags:**
+
 - `-i, --inventory-url`: Base URL for the inventory service
 - `-o, --output`: Output format. One of: table, json (default "table")
 - `-q, --query`: Query string with 'where', 'order by', and 'limit' clauses
@@ -303,6 +315,7 @@ kubectl mtv plan create NAME [flags]
 ```
 
 **Optional Flags:**
+
 - `-S, --source`: Source provider name
 - `-t, --target`: Target provider name
 - `--network-mapping`: Network mapping name
@@ -341,6 +354,7 @@ kubectl mtv plan list [flags]
 ```
 
 **Optional Flags:**
+
 - `--watch`: Watch migration plans with live updates
 - `-o, --output`: Output format. One of: table, json (default "table")
 
@@ -353,6 +367,7 @@ kubectl mtv plan start NAME [flags]
 ```
 
 **Optional Flags:**
+
 - `--cutover`: Cutover time in RFC3339 format (e.g., 2023-04-01T14:30:00Z) for warm migrations, if missing cutover is set to 1h from now.
 
 #### Describe Migration Plan
@@ -372,9 +387,11 @@ kubectl mtv plan vm NAME --vm VM_NAME [flags]
 ```
 
 **Required Flags:**
+
 - `--vm`: VM name to describe
 
 **Optional Flags:**
+
 - `-w, --watch`: Watch VM status with live updates
 
 #### List VMs in Migration Plan
@@ -386,6 +403,7 @@ kubectl mtv plan vms NAME [flags]
 ```
 
 **Optional Flags:**
+
 - `-w, --watch`: Watch VM status with live updates
 
 #### Cancel VMs in Migration Plan
@@ -397,6 +415,7 @@ kubectl mtv plan cancel-vms NAME --vms VMLIST [flags]
 ```
 
 **Required Flags:**
+
 - `--vms`: List of VM names to cancel (comma-separated) or path to file containing VM names (prefix with @)
 
 #### Set Cutover Time
@@ -408,6 +427,7 @@ kubectl mtv plan cutover NAME [flags]
 ```
 
 **Optional Flags:**
+
 - `--cutover`: Cutover time in RFC3339 format. If not specified, current time will be used.
 
 #### Delete Migration Plan
@@ -427,6 +447,7 @@ kubectl mtv plan archive NAME [flags]
 ```
 
 **Optional Flags:**
+
 - `--unarchive`: Unarchive the plan instead of archiving it
 
 ## Environment Variables

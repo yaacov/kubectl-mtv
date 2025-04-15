@@ -115,4 +115,3 @@ oc logs -l vmID=<vm-id> -f
 
 - [forklift GitHub Repository](https://github.com/kubev2v/forklift)
 - [kubectl-mtv GitHub Repository](https://github.com/yaacov/kubectl-mtv)
-
