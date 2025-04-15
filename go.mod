@@ -7,7 +7,7 @@ toolchain go1.23.7
 // Add your other dependencies here
 
 // This redirect tells Go to fetch from kubev2v/forklift when konveyor/forklift-controller is imported
-replace github.com/konveyor/forklift-controller => github.com/kubev2v/forklift v0.0.0-20250402111903-1f35d54e208a
+replace github.com/konveyor/forklift-controller => github.com/kubev2v/forklift v0.0.0-20250414122456-a2c36061ea72
 
 require (
 	github.com/konveyor/forklift-controller v0.0.0-00010101000000-000000000000
@@ -18,6 +18,7 @@ require (
 	k8s.io/apimachinery v0.32.3
 	k8s.io/cli-runtime v0.32.3
 	k8s.io/client-go v0.32.3
+	kubevirt.io/api v1.1.1
 )
 
 require (
@@ -72,7 +73,6 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
-	kubevirt.io/api v1.1.1 // indirect
 	kubevirt.io/containerized-data-importer-api v1.59.0 // indirect
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.0.0-20220329064328-f3cc58c6ed90 // indirect
 	sigs.k8s.io/controller-runtime v0.16.3 // indirect

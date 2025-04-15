@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	cnv "kubevirt.io/api/core/v1"
 
 	forkliftv1beta1 "github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1"
 	"github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1/plan"
@@ -26,25 +27,29 @@ import (
 
 // CreatePlanOptions encapsulates the parameters for the Create function.
 type CreatePlanOptions struct {
-	Name                    string
-	Namespace               string
-	SourceProvider          string
-	TargetProvider          string
-	NetworkMapping          string
-	StorageMapping          string
-	VMList                  []plan.VM
-	Description             string
-	TargetNamespace         string
-	Warm                    bool
-	TransferNetwork         string
-	PreserveClusterCPUModel bool
-	PreserveStaticIPs       bool
-	PVCNameTemplate         string
-	VolumeNameTemplate      string
-	NetworkNameTemplate     string
-	MigrateSharedDisks      bool
-	ConfigFlags             *genericclioptions.ConfigFlags
-	InventoryURL            string
+	Name                           string
+	Namespace                      string
+	SourceProvider                 string
+	TargetProvider                 string
+	NetworkMapping                 string
+	StorageMapping                 string
+	VMList                         []plan.VM
+	Description                    string
+	TargetNamespace                string
+	Warm                           bool
+	TransferNetwork                string
+	PreserveClusterCPUModel        bool
+	PreserveStaticIPs              bool
+	PVCNameTemplate                string
+	VolumeNameTemplate             string
+	NetworkNameTemplate            string
+	MigrateSharedDisks             bool
+	ConfigFlags                    *genericclioptions.ConfigFlags
+	InventoryURL                   string
+	Archived                       bool
+	DiskBus                        cnv.DiskBus
+	PVCNameTemplateUseGenerateName bool
+	DeleteGuestConversionPod       bool
 }
 
 // Create creates a new migration plan
@@ -145,15 +150,19 @@ func Create(opts CreatePlanOptions) error {
 			Namespace: opts.Namespace,
 		},
 		Spec: forkliftv1beta1.PlanSpec{
-			Description:             opts.Description,
-			TargetNamespace:         opts.TargetNamespace,
-			Warm:                    opts.Warm,
-			PreserveClusterCPUModel: opts.PreserveClusterCPUModel,
-			PreserveStaticIPs:       opts.PreserveStaticIPs,
-			PVCNameTemplate:         opts.PVCNameTemplate,
-			VolumeNameTemplate:      opts.VolumeNameTemplate,
-			NetworkNameTemplate:     opts.NetworkNameTemplate,
-			MigrateSharedDisks:      opts.MigrateSharedDisks,
+			Description:                    opts.Description,
+			TargetNamespace:                opts.TargetNamespace,
+			Warm:                           opts.Warm,
+			PreserveClusterCPUModel:        opts.PreserveClusterCPUModel,
+			PreserveStaticIPs:              opts.PreserveStaticIPs,
+			PVCNameTemplate:                opts.PVCNameTemplate,
+			VolumeNameTemplate:             opts.VolumeNameTemplate,
+			NetworkNameTemplate:            opts.NetworkNameTemplate,
+			MigrateSharedDisks:             opts.MigrateSharedDisks,
+			Archived:                       opts.Archived,
+			DiskBus:                        opts.DiskBus,
+			PVCNameTemplateUseGenerateName: opts.PVCNameTemplateUseGenerateName,
+			DeleteGuestConversionPod:       opts.DeleteGuestConversionPod,
 			Provider: provider.Pair{
 				Source: corev1.ObjectReference{
 					Kind:       "Provider",

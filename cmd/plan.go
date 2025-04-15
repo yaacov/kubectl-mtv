@@ -12,6 +12,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/plan"
 	"gopkg.in/yaml.v3"
+	cnv "kubevirt.io/api/core/v1"
 )
 
 func newPlanCmd() *cobra.Command {
@@ -43,6 +44,8 @@ func newCreatePlanCmd() *cobra.Command {
 	var warm, preserveClusterCPUModel, preserveStaticIPs, migrateSharedDisks bool
 	var transferNetwork, pvcNameTemplate, volumeNameTemplate, networkNameTemplate string
 	var inventoryURL string
+	var archived, pvcNameTemplateUseGenerateName, deleteGuestConversionPod bool
+	var diskBusStr string
 
 	cmd := &cobra.Command{
 		Use:   "create NAME",
@@ -88,33 +91,42 @@ func newCreatePlanCmd() *cobra.Command {
 				}
 			}
 
+			// Parse disk bus if provided
+			var diskBus cnv.DiskBus
+			if diskBusStr != "" {
+				diskBus = cnv.DiskBus(diskBusStr)
+			}
+
 			opts := plan.CreatePlanOptions{
-				Name:                    name,
-				Namespace:               namespace,
-				SourceProvider:          sourceProvider,
-				TargetProvider:          targetProvider,
-				NetworkMapping:          networkMapping,
-				StorageMapping:          storageMapping,
-				VMList:                  vmList,
-				Description:             description,
-				TargetNamespace:         targetNamespace,
-				Warm:                    warm,
-				TransferNetwork:         transferNetwork,
-				PreserveClusterCPUModel: preserveClusterCPUModel,
-				PreserveStaticIPs:       preserveStaticIPs,
-				PVCNameTemplate:         pvcNameTemplate,
-				VolumeNameTemplate:      volumeNameTemplate,
-				NetworkNameTemplate:     networkNameTemplate,
-				MigrateSharedDisks:      migrateSharedDisks,
-				ConfigFlags:             kubeConfigFlags,
-				InventoryURL:            inventoryURL,
+				Name:                           name,
+				Namespace:                      namespace,
+				SourceProvider:                 sourceProvider,
+				TargetProvider:                 targetProvider,
+				NetworkMapping:                 networkMapping,
+				StorageMapping:                 storageMapping,
+				VMList:                         vmList,
+				Description:                    description,
+				TargetNamespace:                targetNamespace,
+				Warm:                           warm,
+				TransferNetwork:                transferNetwork,
+				PreserveClusterCPUModel:        preserveClusterCPUModel,
+				PreserveStaticIPs:              preserveStaticIPs,
+				PVCNameTemplate:                pvcNameTemplate,
+				VolumeNameTemplate:             volumeNameTemplate,
+				NetworkNameTemplate:            networkNameTemplate,
+				MigrateSharedDisks:             migrateSharedDisks,
+				ConfigFlags:                    kubeConfigFlags,
+				InventoryURL:                   inventoryURL,
+				Archived:                       archived,
+				DiskBus:                        diskBus,
+				PVCNameTemplateUseGenerateName: pvcNameTemplateUseGenerateName,
+				DeleteGuestConversionPod:       deleteGuestConversionPod,
 			}
 
 			return plan.Create(opts)
 		},
 	}
 
-	// Remove the name flag
 	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
 	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name")
 	cmd.Flags().StringVar(&networkMapping, "network-mapping", "", "Network mapping name")
@@ -132,6 +144,10 @@ func newCreatePlanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&networkNameTemplate, "network-name-template", "", "NetworkNameTemplate is a template for generating network interface names in the target virtual machine")
 	cmd.Flags().BoolVar(&migrateSharedDisks, "migrate-shared-disks", true, "Determines if the plan should migrate shared disks")
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
+	cmd.Flags().BoolVar(&archived, "archived", false, "Whether this plan should be archived")
+	cmd.Flags().StringVar(&diskBusStr, "disk-bus", "", "Disk bus type (deprecated: will be deprecated in 2.8)")
+	cmd.Flags().BoolVar(&pvcNameTemplateUseGenerateName, "pvc-name-template-use-generate-name", true, "Use generateName instead of name for PVC name template")
+	cmd.Flags().BoolVar(&deleteGuestConversionPod, "delete-guest-conversion-pod", false, "Delete guest conversion pod after successful migration")
 
 	return cmd
 }

@@ -329,9 +329,13 @@ kubectl mtv plan create NAME [flags]
 - `--preserve-cluster-cpu-model`: Preserve the CPU model from the source cluster
 - `--preserve-static-ips`: Preserve static IPs of VMs in vSphere
 - `--pvc-name-template`: Template for generating PVC names for VM disks
+- `--pvc-name-template-use-generate-name`: Use generateName instead of name for PVC name template (default true)
 - `--volume-name-template`: Template for generating volume interface names
 - `--network-name-template`: Template for generating network interface names
 - `--migrate-shared-disks`: Determines if the plan should migrate shared disks (default true)
+- `--archived`: Whether this plan should be archived
+- `--disk-bus`: Disk bus type (deprecated: will be deprecated in 2.8)
+- `--delete-guest-conversion-pod`: Delete guest conversion pod after successful migration
 - `-i, --inventory-url`: Base URL for the inventory service
 
 **Examples:**
@@ -344,6 +348,11 @@ kubectl mtv plan create my-plan --source vsphere-01 --target openshift-target \
 # Create a plan with VMs defined in a file
 kubectl mtv plan create my-plan --source vsphere-01 --target openshift-target \
   --vms @vms.yaml
+
+# Create a warm migration plan with options for PVC naming
+kubectl mtv plan create warm-plan --source vsphere-01 --target openshift-target \
+  --vms "web-vm-1" --warm --pvc-name-template "{{.VmName}}-disk-{{.DiskIndex}}" \
+  --pvc-name-template-use-generate-name=false
 ```
 
 #### List Migration Plans
@@ -365,6 +374,17 @@ Start a migration plan execution.
 
 ```bash
 kubectl mtv plan start NAME [flags]
+```
+
+Examples:
+```bash
+# Cutover in 10m
+kubectl mtv plan start demo --cutover $(date -d '+10 minutes' --rfc-3339=seconds)
+```
+
+```bash
+# Cutover on the next round hour
+kubectl mtv plan start demo --cutover $(date -d "$(date +'%Y-%m-%d %H:00:00') +1 hour" --rfc-3339=seconds)
 ```
 
 **Optional Flags:**

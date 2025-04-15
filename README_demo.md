@@ -74,6 +74,19 @@ Create a migration plan for the selected VM:
 oc mtv plan create demo -S vmware --vms your_selected_vms
 ```
 
+For more advanced options, you can use flags like:
+
+```bash
+# Create a plan with PVC naming template
+oc mtv plan create demo-advanced -S vmware --vms your_selected_vms \
+  --pvc-name-template "{{.VmName}}-disk-{{.DiskIndex}}" \
+  --pvc-name-template-use-generate-name=false
+
+# Create a warm migration plan with automatic cleanup
+oc mtv plan create demo-warm -S vmware --vms your_selected_vms \
+  --warm --delete-guest-conversion-pod
+```
+
 Optional step to edit network or storage mappings:
 
 ```bash
