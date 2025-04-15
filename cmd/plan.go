@@ -26,13 +26,12 @@ func newPlanCmd() *cobra.Command {
 	cmd.AddCommand(newListPlanCmd())
 	cmd.AddCommand(newStartPlanCmd())
 	cmd.AddCommand(newDescribePlanCmd())
-	cmd.AddCommand(newDescribeVMCmd()) // Add the new command
+	cmd.AddCommand(newDescribeVMCmd())
 	cmd.AddCommand(newCancelVMsCmd())
 	cmd.AddCommand(newCutoverCmd())
 	cmd.AddCommand(newDeletePlanCmd())
 	cmd.AddCommand(newVMsCmd())
-	cmd.AddCommand(newArchivePlanCmd()) // Add the new archive command
-
+	cmd.AddCommand(newArchivePlanCmd())
 	return cmd
 }
 
