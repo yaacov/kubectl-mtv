@@ -12,7 +12,7 @@ replace github.com/konveyor/forklift-controller => github.com/kubev2v/forklift v
 require (
 	github.com/konveyor/forklift-controller v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.9.1
-	github.com/yaacov/tree-search-language/v6 v6.0.4
+	github.com/yaacov/tree-search-language/v6 v6.0.5
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.32.3
 	k8s.io/apimachinery v0.32.3
