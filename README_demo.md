@@ -37,8 +37,11 @@ Verify that the VDDK initialization image environment variable is set:
 
 ```bash
 # For example, use quay.io/private/vddk:8.0.1 as the default VDDK init image:
+#    export MTV_VDDK_INIT_IMAGE=quay.io/private/vddk:8.0.1
 echo $MTV_VDDK_INIT_IMAGE
 ```
+
+See [VDDK Image Creation and Usage](./README_vddk.md) for instructions on building and configuring a VDDK image.
 
 Register VMware vSphere as the source provider:
 

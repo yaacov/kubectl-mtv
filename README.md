@@ -25,6 +25,7 @@ The Migration Toolkit for Virtualization (MTV) simplifies the process of migrati
   - [Mapping Management](#mapping-management)
   - [Inventory Management](#inventory-management)
   - [Migration Plan Management](#migration-plan-management)
+  - [VDDK Image Management](#vddk-image-management)
 - [Environment Variables](#environment-variables)
 - [Tutorials](#tutorials)
 - [Logo Attribution](#logo-attribution)
@@ -470,6 +471,29 @@ kubectl mtv plan archive NAME [flags]
 **Optional Flags:**
 
 - `--unarchive`: Unarchive the plan instead of archiving it
+
+### VDDK Image Management
+
+It is strongly recommended that Migration Toolkit for Virtualization (MTV) should be used with the VMware Virtual Disk Development Kit (VDDK) SDK when transferring virtual disks from VMware vSphere.
+
+> **Note**  
+> Storing the VDDK image in a public registry might violate the VMware license terms.
+
+#### Prerequisites
+
+- `podman` installed.
+- You are working on a file system that preserves symbolic links (symlinks).
+- If you are using an external registry, OpenShift Virtualization must be able to access it.
+
+#### Creating and Using a VDDK Image
+
+See [VDDK Image Creation and Usage](./README_vddk.md) for a step-by-step guide.
+
+#### Command Example
+
+```bash
+kubectl mtv vddk create --tar ~/vmware-vix-disklib-distrib-8-0-1.tar.gz --tag quay.io/example/vddk:8
+```
 
 ## Environment Variables
 
