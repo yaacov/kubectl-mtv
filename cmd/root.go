@@ -31,4 +31,5 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 	rootCmd.AddCommand(newMappingCmd())
 	rootCmd.AddCommand(newPlanCmd())
 	rootCmd.AddCommand(newInventoryCmd())
+	rootCmd.AddCommand(newVddkCmd())
 }
