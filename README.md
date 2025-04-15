@@ -26,6 +26,7 @@ The Migration Toolkit for Virtualization (MTV) simplifies the process of migrati
   - [Inventory Management](#inventory-management)
   - [Migration Plan Management](#migration-plan-management)
 - [Environment Variables](#environment-variables)
+- [Tutorials](#tutorials)
 - [Logo Attribution](#logo-attribution)
 - [License](#license)
 
@@ -456,6 +457,11 @@ The following environment variables are used by `kubectl-mtv`:
 
 - `MTV_VDDK_INIT_IMAGE`: Specifies the default Virtual Disk Development Kit (VDDK) container init image path. This value is used as the default for the `--vddk-init-image` flag when creating a provider.
 - `MTV_INVENTORY_URL`: Specifies the base URL for the inventory service. This value is used as the default for the `--inventory-url` flag in various commands, such as listing providers, VMs, networks, and storage.
+
+## Tutorials
+
+- [Migration Demo Tutorial](./README_demo.md): Step-by-step guide to performing a VM migration
+- [Inventory Commands Tutorial](./README_inventory.md): Comprehensive guide to using inventory commands and queries
 
 ## Logo Attribution
 
