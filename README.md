@@ -1,6 +1,11 @@
 # kubectl-mtv
 
-A kubectl plugin that helps users migrate virtualization workloads from oVirt, VMware, OpenStack, and OVA files to KubeVirt on Kubernetes.
+A kubectl plugin that helps users of Forklift migrate virtualization workloads from oVirt, VMware, OpenStack, and OVA files to KubeVirt on Kubernetes.
+
+> **Note**  
+> The Migration Toolkit for Virtualization (MTV) is the downstream (OpenShift) distribution of the upstream Kubernetes Forklift project.  
+> Similarly, the `oc` CLI is the downstream (OpenShift) version of the upstream `kubectl` CLI.  
+> This project (`kubectl-mtv`) is compatible with both upstream (Kubernetes/Forklift/kubectl) and downstream (OpenShift/MTV/oc) environments, but documentation here uses upstream naming unless otherwise noted.
 
 <p align="center">
   <img src="docs/hiking.svg" alt="kubectl-mtv logo" width="200">
@@ -8,9 +13,9 @@ A kubectl plugin that helps users migrate virtualization workloads from oVirt, V
 
 ## Overview
 
-The Migration Toolkit for Virtualization (MTV) simplifies the process of migrating virtual machines from traditional virtualization platforms to Kubernetes using KubeVirt. It handles the complexities of different virtualization platforms and provides a consistent way to define, plan, and execute migrations.
+The Forklift project (upstream of Migration Toolkit for Virtualization) simplifies the process of migrating virtual machines from traditional virtualization platforms to Kubernetes using KubeVirt. It handles the complexities of different virtualization platforms and provides a consistent way to define, plan, and execute migrations.
 
-[Migration Toolkit for Virtualization (MTV)](https://github.com/kubev2v/forklift)
+[Forklift GitHub Repository](https://github.com/kubev2v/forklift)
 
 ## Table of Contents
 
@@ -35,7 +40,7 @@ The Migration Toolkit for Virtualization (MTV) simplifies the process of migrati
 
 ### Prerequisites
 
-- Kubernetes cluster with MTV installed
+- Kubernetes cluster with Forklift or MTV installed
 - kubectl installed and configured
 - Go 1.23+
 
@@ -459,7 +464,7 @@ kubectl mtv plan archive NAME [flags]
 
 ### VDDK Image Management
 
-It is strongly recommended that Migration Toolkit for Virtualization (MTV) should be used with the VMware Virtual Disk Development Kit (VDDK) SDK when transferring virtual disks from VMware vSphere.
+It is strongly recommended that Forklift (Migration Toolkit for Virtualization/MTV) should be used with the VMware Virtual Disk Development Kit (VDDK) SDK when transferring virtual disks from VMware vSphere.
 
 > **Note**  
 > Storing the VDDK image in a public registry might violate the VMware license terms.
@@ -468,7 +473,7 @@ It is strongly recommended that Migration Toolkit for Virtualization (MTV) shoul
 
 - `podman` installed.
 - You are working on a file system that preserves symbolic links (symlinks).
-- If you are using an external registry, OpenShift Virtualization must be able to access it.
+- If you are using an external registry, KubeVirt must be able to access it.
 
 #### Creating and Using a VDDK Image
 

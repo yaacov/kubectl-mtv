@@ -1,9 +1,9 @@
 # VDDK Image Creation and Usage
 
-It is strongly recommended that Migration Toolkit for Virtualization (MTV) should be used with the VMware Virtual Disk Development Kit (VDDK) SDK when transferring virtual disks from VMware vSphere.
+It is strongly recommended that Forklift, or the Migration Toolkit for Virtualization (MTV), should be used with the VMware Virtual Disk Development Kit (VDDK) SDK when transferring virtual disks from VMware vSphere.
 
 > **Note**  
-> Creating a VDDK image, although optional, is highly recommended. Using MTV without VDDK is not recommended and could result in significantly lower migration speeds.
+> Creating a VDDK image, although optional, is highly recommended. Using Forklift without VDDK is not recommended and could result in significantly lower migration speeds.
 
 To make use of this feature, you download the VMware Virtual Disk Development Kit (VDDK), build a VDDK image, and push the VDDK image to your image registry.
 
@@ -14,10 +14,10 @@ The VDDK package contains symbolic links, therefore, the procedure of creating a
 
 ## Prerequisites
 
-- Red Hat OpenShift image registry.
+- Kubernetes image registry.
 - `podman` installed.
 - You are working on a file system that preserves symbolic links (symlinks).
-- If you are using an external registry, OpenShift Virtualization must be able to access it.
+- If you are using an external registry, KubeVirt must be able to access it.
 
 ## Steps to Create and Use a VDDK Image
 
@@ -54,8 +54,8 @@ export MTV_VDDK_INIT_IMAGE=quay.io/yourorg/vddk:8
 
 You can add this line to your shell profile (e.g., `.bashrc` or `.zshrc`) for persistence.
 
-### 4. Use the VDDK Image in MTV
+### 4. Use the VDDK Image in Forklift/MTV
 
-When creating a vSphere provider, MTV will use the image specified in `MTV_VDDK_INIT_IMAGE` as the default VDDK init image.
+When creating a vSphere provider, Forklift will use the image specified in `MTV_VDDK_INIT_IMAGE` as the default VDDK init image.
 
 If you want to override it per provider, use the `--vddk-init-image` flag when creating the provider.

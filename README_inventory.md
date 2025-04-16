@@ -10,7 +10,7 @@ The `kubectl mtv inventory` command allows you to query and explore resources fr
 - Networks
 - Storage
 - Hosts (vSphere providers)
-- Namespaces (Openshift providers)
+- Namespaces (Kubernetes/Openshift providers)
 
 ## General Syntax
 
@@ -92,7 +92,7 @@ Returns VM details in JSON format:
         "label": "Changed Block Tracking (CBT) not enabled"
       },
       {
-        "assessment": "Distributed resource scheduling is not currently supported by OpenShift Virtualization. The VM can be migrated but it will not have this feature in the target environment.",
+        "assessment": "Distributed resource scheduling is not currently supported by Forklift Virtualization. The VM can be migrated but it will not have this feature in the target environment.",
         "category": "Information",
         "label": "VM running in a DRS-enabled cluster"
       }
@@ -216,7 +216,7 @@ Returns VM details in JSON format:
 
 ```bash
 kubectl mtv inventory vms vsphere-01 -q "WHERE powerState = 'poweredOn'" -o planvms > vms-to-migrate.yaml
-kubectl mtv plan create my-migration-plan --source vsphere-01 --target openshift-target --vms @vms-to-migrate.yaml
+kubectl mtv plan create my-migration-plan --source vsphere-01 --target kubernetes-target --vms @vms-to-migrate.yaml
 ```
 
 This creates a list of powered-on VMs in a format suitable for migration planning, then creates a plan using that list.
@@ -459,7 +459,7 @@ Lists hosts that have warning or error status.
 ### Listing Namespaces
 
 ```bash
-kubectl mtv inventory namespaces openshift-target
+kubectl mtv inventory namespaces kubernetes-target
 ```
 
 ## Common Query Examples
