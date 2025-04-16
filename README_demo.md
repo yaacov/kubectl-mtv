@@ -30,7 +30,7 @@ kubectl mtv provider list
 Register Kubernetes as the target provider:
 
 ```bash
-kubectl mtv provider create host --type kubernetes
+kubectl mtv provider create host --type openshift
 ```
 
 Verify that the VDDK initialization image environment variable is set:
