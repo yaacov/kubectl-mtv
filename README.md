@@ -156,6 +156,14 @@ kubectl mtv provider delete NAME [flags]
 
 Mappings define how resources from source providers are mapped to target providers.
 
+> **Note**
+> While `kubectl-mtv` provide manual mapping management, mapping is handled automatically by
+> the `kubectl-mtv` tool. When using `kubectl-mtv` users will not create mappings manually,
+> during the creation of a migration plan, `kubectl-mtv` will check the network and storage
+> resources used by the virtual machines in the source cluster, and will create a "best parctice"
+> network and storage mappings, users can review and edit the mappings while customizing
+> the migration plan, before executing it.
+
 #### Create Network Mapping
 
 Create a network mapping between source and target providers.
