@@ -3,13 +3,6 @@
 It is strongly recommended that Forklift, or the Migration Toolkit for Virtualization (MTV), should be used with the VMware Virtual Disk Development Kit (VDDK) SDK when transferring virtual disks from VMware vSphere.
 
 > **Note**  
-> Creating a VDDK image, although optional, is highly recommended. Using Forklift without VDDK is not recommended and could result in significantly lower migration speeds.
-
-To make use of this feature, you download the VMware Virtual Disk Development Kit (VDDK), build a VDDK image, and push the VDDK image to your image registry.
-
-The VDDK package contains symbolic links, therefore, the procedure of creating a VDDK image must be performed on a file system that preserves symbolic links (symlinks).
-
-> **Note**  
 > Storing the VDDK image in a public registry might violate the VMware license terms.
 
 ## Prerequisites
