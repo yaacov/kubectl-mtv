@@ -2,11 +2,6 @@
 
 A kubectl plugin that helps users of Forklift migrate virtualization workloads from oVirt, VMware, OpenStack, and OVA files to KubeVirt on Kubernetes.
 
-> **Note**  
-> The Migration Toolkit for Virtualization (MTV) is the downstream (OpenShift) distribution of the upstream Kubernetes Forklift project.  
-> Similarly, the `oc` CLI is the downstream (OpenShift) version of the upstream `kubectl` CLI.  
-> This project (`kubectl-mtv`) is compatible with both upstream (Kubernetes/Forklift/kubectl) and downstream (OpenShift/MTV/oc) environments, but documentation here uses upstream naming unless otherwise noted.
-
 <p align="center">
   <img src="docs/hiking.svg" alt="kubectl-mtv logo" width="200">
 </p>
@@ -16,6 +11,11 @@ A kubectl plugin that helps users of Forklift migrate virtualization workloads f
 The Forklift project (upstream of Migration Toolkit for Virtualization) simplifies the process of migrating virtual machines from traditional virtualization platforms to Kubernetes using KubeVirt. It handles the complexities of different virtualization platforms and provides a consistent way to define, plan, and execute migrations.
 
 [Forklift GitHub Repository](https://github.com/kubev2v/forklift)
+
+> **Note**  
+> The Migration Toolkit for Virtualization (MTV) is the downstream (OpenShift) distribution of the upstream Kubernetes Forklift project.  
+> Similarly, the `oc` CLI is the downstream (OpenShift) version of the upstream `kubectl` CLI.  
+> This project (`kubectl-mtv`) is compatible with both upstream (Kubernetes/Forklift/kubectl) and downstream (OpenShift/MTV/oc) environments, but documentation here uses upstream naming unless otherwise noted.
 
 ## Table of Contents
 
