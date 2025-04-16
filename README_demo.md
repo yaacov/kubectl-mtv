@@ -125,6 +125,7 @@ Monitor logs, pods, and persistent volume claims:
 
 ```bash
 # The '-w' flag is optional and keeps the command running, waiting for updates.
+kubectl get dv -l vmID=<vm-id> -w
 kubectl get pvc -l vmID=<vm-id> -w
 kubectl get pod -l vmID=<vm-id> -w
 # The '-f' flag is optional and keeps the command running, waiting for updates.
