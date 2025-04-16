@@ -13,8 +13,8 @@ The Forklift project (upstream of Migration Toolkit for Virtualization) simplifi
 [Forklift GitHub Repository](https://github.com/kubev2v/forklift)
 
 > **Note**  
-> The Migration Toolkit for Virtualization (MTV) is the downstream (OpenShift) distribution of the upstream Kubernetes Forklift project.  
-> Similarly, the `oc` CLI is the downstream (OpenShift) version of the upstream `kubectl` CLI.  
+> The Migration Toolkit for Virtualization (MTV) is the downstream (OpenShift) distribution of the upstream Kubernetes Forklift project.
+> Similarly, the `oc` CLI is the downstream (OpenShift) version of the upstream `kubectl` CLI.
 > This project (`kubectl-mtv`) is compatible with both upstream (Kubernetes/Forklift/kubectl) and downstream (OpenShift/MTV/oc) environments, but documentation here uses upstream naming unless otherwise noted.
 
 ## Table of Contents
