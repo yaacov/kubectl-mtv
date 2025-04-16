@@ -98,6 +98,10 @@ kubectl edit networkmap <networkmap-name>
 kubectl edit storagemap <storagemap-name>
 ```
 
+> **Tip:**  
+> You can use `kubectl mtv inventory vms <provider> -o planvms > vms.yaml` to export a list of VMs, edit the file to customize migration options, and then use `--vms @vms.yaml` when creating the plan.  
+> See [Editing the VMs List for Migration Plans (planvms)](./README_planvms.md) for details.
+
 ### 5. Execute Migration Plan
 
 Review and initiate the migration:

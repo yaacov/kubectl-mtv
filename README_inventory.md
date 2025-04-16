@@ -221,6 +221,8 @@ kubectl mtv plan create my-migration-plan --source vsphere-01 --target kubernete
 
 This creates a list of powered-on VMs in a format suitable for migration planning, then creates a plan using that list.
 
+See [Editing the VMs List for Migration Plans (planvms)](./README_planvms.md) for details on the planvms file format and how to edit it before migration.
+
 #### Selecting specific fields
 
 ```bash

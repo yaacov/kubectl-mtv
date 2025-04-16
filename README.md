@@ -33,6 +33,7 @@ The Forklift project (upstream of Migration Toolkit for Virtualization) simplifi
   - [VDDK Image Management](#vddk-image-management)
 - [Environment Variables](#environment-variables)
 - [Tutorials](#tutorials)
+- [planvms VM List Editing](./README_planvms.md)
 - [Logo Attribution](#logo-attribution)
 - [License](#license)
 
@@ -345,6 +346,8 @@ kubectl mtv plan create warm-plan --source vsphere-01 --target openshift-target 
   --vms "web-vm-1" --warm --pvc-name-template "{{.VmName}}-disk-{{.DiskIndex}}" \
   --pvc-name-template-use-generate-name=false
 ```
+
+See [Editing the VMs List for Migration Plans (planvms)](./README_planvms.md) for details on the planvms file format and how to edit it before migration.
 
 #### List Migration Plans
 
