@@ -2,6 +2,8 @@
 
 When using `kubectl mtv inventory vms <provider> -o planvms`, you get a list of VMs in a format suitable for use with migration plans. This file can be edited before running a migration plan to customize migration behavior for each VM.
 
+The vms YAML files allow you to specify which VMs to include in a migration plan and to customize migration options for each VM, such as setting custom virtual machine names on the target platform, attaching hooks, specifying disk decryption secrets, or overriding default templates for storage and network resources.
+
 ## VM List Format
 
 Each VM entry in the list has the following structure:

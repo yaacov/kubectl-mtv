@@ -80,7 +80,9 @@ kubectl mtv plan create demo -S vmware --vms your_selected_vms
 For more advanced options, you can use flags like:
 
 ```bash
-# Create a plan with PVC naming template
+# Create a plan with percictant volume clame [PVC] naming template,
+# This setting will cange the disk name (stored using the PVC) to be used 
+# by the VM in kubernetes.
 kubectl mtv plan create demo-advanced -S vmware --vms your_selected_vms \
   --pvc-name-template "{{.VmName}}-disk-{{.DiskIndex}}" \
   --pvc-name-template-use-generate-name=false
