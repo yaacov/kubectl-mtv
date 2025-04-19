@@ -74,7 +74,7 @@ kubectl mtv inventory vms vmware -q "where name ~= 'your_vm_name' and len disks 
 Create a migration plan for the selected VM:
 
 ```bash
-kubectl mtv plan create demo -S vmware --vms your_selected_vms
+kubectl mtv plan create demo -S vmware --vms comma_separated_list_of_selected_vms
 ```
 
 For more advanced options, you can use flags like:
