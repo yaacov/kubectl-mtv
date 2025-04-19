@@ -9,6 +9,7 @@ import (
 // SortItems sorts the items based on the provided ordering options
 func SortItems(items []map[string]interface{}, queryOpts *QueryOptions) ([]map[string]interface{}, error) {
 	orderOpts := queryOpts.OrderBy
+	selectOpts := queryOpts.Select
 
 	if len(orderOpts) == 0 {
 		return items, nil
@@ -21,16 +22,14 @@ func SortItems(items []map[string]interface{}, queryOpts *QueryOptions) ([]map[s
 	// Sort the items
 	sort.SliceStable(result, func(i, j int) bool {
 		for _, orderOpt := range orderOpts {
-			// Use the SelectOption.Field string
-			path := orderOpt.Field.Field
-
-			// Get values for both items
-			valueI, err := GetValueByPathString(result[i], path)
+			// Use GetValue to retrieve values respecting aliases and reducers
+			name := orderOpt.Field.Alias
+			valueI, err := GetValue(result[i], name, selectOpts)
 			if err != nil {
 				continue
 			}
 
-			valueJ, err := GetValueByPathString(result[j], path)
+			valueJ, err := GetValue(result[j], name, selectOpts)
 			if err != nil {
 				continue
 			}

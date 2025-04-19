@@ -18,12 +18,12 @@ func ParseWhereClause(whereClause string) (*tsl.TSLNode, error) {
 }
 
 // ApplyFilter filters items using a TSL tree
-func ApplyFilter(items []map[string]interface{}, tree *tsl.TSLNode) ([]map[string]interface{}, error) {
+func ApplyFilter(items []map[string]interface{}, tree *tsl.TSLNode, selectOpts []SelectOption) ([]map[string]interface{}, error) {
 	var results []map[string]interface{}
 
 	// Filter the items collection using the TSL tree
 	for _, item := range items {
-		eval := evalFactory(item)
+		eval := evalFactory(item, selectOpts)
 
 		matchingFilter, err := semantics.Walk(tree, eval)
 		if err != nil {
@@ -39,34 +39,13 @@ func ApplyFilter(items []map[string]interface{}, tree *tsl.TSLNode) ([]map[strin
 	return results, nil
 }
 
-// FilterItems filters the items based on a WHERE clause using the tree-search-language
-func FilterItems(items []map[string]interface{}, whereClause string) ([]map[string]interface{}, error) {
-	// Parse the WHERE clause
-	tree, err := ParseWhereClause(whereClause)
-	if err != nil {
-		return nil, err
-	}
-	defer tree.Free()
-
-	// Apply the filter to the items
-	return ApplyFilter(items, tree)
-}
-
 // evalFactory gets an item and returns a method that will get the field and return its value
-func evalFactory(item map[string]interface{}) semantics.EvalFunc {
+func evalFactory(item map[string]interface{}, selectOpts []SelectOption) semantics.EvalFunc {
 	return func(k string) (interface{}, bool) {
-		// First try direct access to the field
-		if v, ok := item[k]; ok {
+		// Use GetValue to respect aliases and reducers
+		if v, err := GetValue(item, k, selectOpts); err == nil {
 			return v, true
 		}
-
-		// If direct access fails, try to use JSONPath
-		v, err := GetValueByPathString(item, "."+k)
-		if err == nil && v != nil {
-			return v, true
-		}
-
-		// If not found, don't return an error, it's ok to not find a field
 		return nil, true
 	}
 }

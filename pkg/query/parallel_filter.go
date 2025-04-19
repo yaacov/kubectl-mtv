@@ -65,7 +65,7 @@ func FilterItemsParallel(items []map[string]interface{}, queryOpts *QueryOptions
 			}
 
 			// Process the batch using ApplyFilter
-			filteredBatch, err := ApplyFilter(items[start:end], tree)
+			filteredBatch, err := ApplyFilter(items[start:end], tree, queryOpts.Select)
 			if err != nil {
 				errorsChan <- fmt.Errorf("error filtering batch %d: %v", batchIndex, err)
 				return
