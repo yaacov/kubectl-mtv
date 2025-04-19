@@ -62,8 +62,14 @@ func TestParseQueryString(t *testing.T) {
 				HasSelect: false,
 				Where:     "",
 				OrderBy: []OrderOption{
-					{Field: ".foo", Descending: true},
-					{Field: ".bar", Descending: false},
+					{
+						Field:      SelectOption{Field: ".foo", Alias: "foo", Reducer: ""},
+						Descending: true,
+					},
+					{
+						Field:      SelectOption{Field: ".bar", Alias: "bar", Reducer: ""},
+						Descending: false,
+					},
 				},
 				HasOrderBy: true,
 				Limit:      -1,
@@ -81,12 +87,43 @@ func TestParseQueryString(t *testing.T) {
 				HasSelect: true,
 				Where:     "y>1",
 				OrderBy: []OrderOption{
-					{Field: ".x", Descending: true},
-					{Field: ".y", Descending: false},
+					{
+						Field:      SelectOption{Field: ".x", Alias: "total", Reducer: "sum"},
+						Descending: true,
+					},
+					{
+						Field:      SelectOption{Field: ".y", Alias: "y", Reducer: ""},
+						Descending: false,
+					},
 				},
 				HasOrderBy: true,
 				Limit:      10,
 				HasLimit:   true,
+			},
+		},
+		{
+			name:  "order by alias",
+			query: "SELECT foo as f, bar as b ORDER BY f DESC, b",
+			expected: &QueryOptions{
+				Select: []SelectOption{
+					{Field: ".foo", Alias: "f", Reducer: ""},
+					{Field: ".bar", Alias: "b", Reducer: ""},
+				},
+				HasSelect: true,
+				Where:     "",
+				OrderBy: []OrderOption{
+					{
+						Field:      SelectOption{Field: ".foo", Alias: "f", Reducer: ""},
+						Descending: true,
+					},
+					{
+						Field:      SelectOption{Field: ".bar", Alias: "b", Reducer: ""},
+						Descending: false,
+					},
+				},
+				HasOrderBy: true,
+				Limit:      -1,
+				HasLimit:   false,
 			},
 		},
 	}

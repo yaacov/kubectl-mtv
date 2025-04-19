@@ -9,7 +9,7 @@ import (
 
 var selectRegexp = regexp.MustCompile(`(?i)^(?:(sum|len|any|all)\s*\(?\s*([^)\s]+)\s*\)?|(.+?))\s*(?:as\s+(.+))?$`)
 
-// parseSelectClause splits and parses a select clause into SelectOptions.
+// parseSelectClause splits and parses a select clause into SelectOptions entries.
 func parseSelectClause(selectClause string) []SelectOption {
 	var opts []SelectOption
 	for _, raw := range strings.Split(selectClause, ",") {
@@ -38,6 +38,60 @@ func parseSelectClause(selectClause string) []SelectOption {
 		}
 	}
 	return opts
+}
+
+// parseOrderByClause splits an ORDER BY clause into OrderOption entries.
+func parseOrderByClause(orderByClause string, selectOpts []SelectOption) []OrderOption {
+	var orderOpts []OrderOption
+
+	for _, rawField := range strings.Split(orderByClause, ",") {
+		fieldStr := strings.TrimSpace(rawField)
+		if fieldStr == "" {
+			continue
+		}
+
+		// determine direction
+		parts := strings.Fields(fieldStr)
+		descending := false
+		last := parts[len(parts)-1]
+		if strings.EqualFold(last, "desc") {
+			descending = true
+			parts = parts[:len(parts)-1]
+		} else if strings.EqualFold(last, "asc") {
+			parts = parts[:len(parts)-1]
+		}
+
+		// ensure JSONPath format
+		name := strings.Join(parts, " ")
+		if !strings.HasPrefix(name, ".") && !strings.HasPrefix(name, "{") {
+			name = "." + name
+		}
+
+		// find matching select option or create default
+		var selOpt SelectOption
+		found := false
+		for _, sel := range selectOpts {
+			if sel.Field == name || sel.Alias == strings.TrimPrefix(name, ".") {
+				selOpt = sel
+				found = true
+				break
+			}
+		}
+		if !found {
+			selOpt = SelectOption{
+				Field:   name,
+				Alias:   strings.TrimPrefix(name, "."),
+				Reducer: "",
+			}
+		}
+
+		orderOpts = append(orderOpts, OrderOption{
+			Field:      selOpt,
+			Descending: descending,
+		})
+	}
+
+	return orderOpts
 }
 
 // ParseQueryString parses a query string into its component parts
@@ -98,39 +152,9 @@ func ParseQueryString(query string) (*QueryOptions, error) {
 
 		// Extract order by clause (skip "order by " prefix which is 9 chars)
 		orderByClause := strings.TrimSpace(query[orderByIndex+9 : orderByEnd])
-		orderFields := strings.Split(orderByClause, ",")
 
-		for _, field := range orderFields {
-			field = strings.TrimSpace(field)
-			if field == "" {
-				continue
-			}
-
-			descending := false
-			// Check if field ends with DESC
-			if strings.HasSuffix(strings.ToUpper(field), " DESC") {
-				descending = true
-				field = strings.TrimSuffix(field, " DESC")
-				field = strings.TrimSuffix(field, " desc")
-				field = strings.TrimSpace(field)
-			} else {
-				// Remove optional ASC suffix
-				field = strings.TrimSuffix(field, " ASC")
-				field = strings.TrimSuffix(field, " asc")
-				field = strings.TrimSpace(field)
-			}
-
-			// Make sure field is properly formatted for JSONPath
-			if !strings.HasPrefix(field, ".") && !strings.HasPrefix(field, "{") {
-				field = "." + field
-			}
-
-			options.OrderBy = append(options.OrderBy, OrderOption{
-				Field:      field,
-				Descending: descending,
-			})
-		}
-
+		// use helper to build OrderOption slice
+		options.OrderBy = parseOrderByClause(orderByClause, options.Select)
 		options.HasOrderBy = len(options.OrderBy) > 0
 	}
 

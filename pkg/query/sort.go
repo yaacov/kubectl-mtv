@@ -19,8 +19,8 @@ func SortItems(items []map[string]interface{}, orderOpts []OrderOption) ([]map[s
 	// Sort the items
 	sort.SliceStable(result, func(i, j int) bool {
 		for _, orderOpt := range orderOpts {
-			// Parse the field path
-			path := orderOpt.Field
+			// Use the SelectOption.Field string
+			path := orderOpt.Field.Field
 
 			// Get values for both items
 			valueI, err := GetValueByPathString(result[i], path)

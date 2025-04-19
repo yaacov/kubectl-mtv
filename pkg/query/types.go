@@ -20,6 +20,6 @@ type SelectOption struct {
 
 // OrderOption represents a field to sort by and its direction
 type OrderOption struct {
-	Field      string
+	Field      SelectOption
 	Descending bool
 }
