@@ -7,6 +7,39 @@ import (
 	"strings"
 )
 
+var selectRegexp = regexp.MustCompile(`(?i)^(?:(sum|len|any|all)\s*\(?\s*([^)\s]+)\s*\)?|(.+?))\s*(?:as\s+(.+))?$`)
+
+// parseSelectClause splits and parses a select clause into SelectOptions.
+func parseSelectClause(selectClause string) []SelectOption {
+	var opts []SelectOption
+	for _, raw := range strings.Split(selectClause, ",") {
+		field := strings.TrimSpace(raw)
+		if field == "" {
+			continue
+		}
+		if m := selectRegexp.FindStringSubmatch(field); m != nil {
+			reducer := strings.ToLower(m[1])
+			expr := m[2]
+			if expr == "" {
+				expr = m[3]
+			}
+			alias := m[4]
+			if alias == "" {
+				alias = expr
+			}
+			if !strings.HasPrefix(expr, ".") && !strings.HasPrefix(expr, "{") {
+				expr = "." + expr
+			}
+			opts = append(opts, SelectOption{
+				Field:   expr,
+				Alias:   alias,
+				Reducer: reducer,
+			})
+		}
+	}
+	return opts
+}
+
 // ParseQueryString parses a query string into its component parts
 func ParseQueryString(query string) (*QueryOptions, error) {
 	options := &QueryOptions{
@@ -39,34 +72,7 @@ func ParseQueryString(query string) (*QueryOptions, error) {
 
 		// Extract select clause (skip "select " prefix which is 7 chars)
 		selectClause := strings.TrimSpace(query[selectIndex+7 : selectEnd])
-		selectFields := strings.Split(selectClause, ",")
-
-		for _, field := range selectFields {
-			field = strings.TrimSpace(field)
-			if field == "" {
-				continue
-			}
-
-			// Check if the field has an alias using "as" keyword
-			parts := regexp.MustCompile(`(?i)\s+as\s+`).Split(field, 2)
-			fieldPath := strings.TrimSpace(parts[0])
-			alias := fieldPath
-
-			if len(parts) > 1 {
-				alias = strings.TrimSpace(parts[1])
-			}
-
-			// Make sure field is properly formatted for JSONPath
-			if !strings.HasPrefix(fieldPath, ".") && !strings.HasPrefix(fieldPath, "{") {
-				fieldPath = "." + fieldPath
-			}
-
-			options.Select = append(options.Select, SelectOption{
-				Field: fieldPath,
-				Alias: alias,
-			})
-		}
-
+		options.Select = parseSelectClause(selectClause)
 		options.HasSelect = len(options.Select) > 0
 	}
 

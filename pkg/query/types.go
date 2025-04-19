@@ -13,8 +13,9 @@ type QueryOptions struct {
 
 // SelectOption represents a column to be selected and its optional alias
 type SelectOption struct {
-	Field string
-	Alias string
+	Field   string
+	Alias   string
+	Reducer string // one of "sum","len","any","all", or empty
 }
 
 // OrderOption represents a field to sort by and its direction
