@@ -31,13 +31,13 @@ func CalculateBatchSize(totalItems int, providedBatchSize int) int {
 }
 
 // FilterItemsParallel filters items in parallel batches
-func FilterItemsParallel(items []map[string]interface{}, whereClause string, batchSize int) ([]map[string]interface{}, error) {
+func FilterItemsParallel(items []map[string]interface{}, queryOpts *QueryOptions, batchSize int) ([]map[string]interface{}, error) {
 	totalItems := len(items)
 	if totalItems == 0 {
 		return []map[string]interface{}{}, nil
 	}
 
-	tree, err := ParseWhereClause(whereClause)
+	tree, err := ParseWhereClause(queryOpts.Where)
 	if err != nil {
 		return nil, err
 	}

@@ -12,7 +12,7 @@ func ApplyQuery(items []map[string]interface{}, queryOpts *QueryOptions) ([]map[
 	if queryOpts.Where != "" {
 		var err error
 		// Use parallel filtering, use sutomatic batch size (batch size = 0)
-		result, err = FilterItemsParallel(result, queryOpts.Where, 0)
+		result, err = FilterItemsParallel(result, queryOpts, 0)
 		if err != nil {
 			return nil, fmt.Errorf("where clause error: %v", err)
 		}
@@ -21,7 +21,7 @@ func ApplyQuery(items []map[string]interface{}, queryOpts *QueryOptions) ([]map[
 	// Apply sorting if specified
 	if queryOpts.HasOrderBy {
 		var err error
-		result, err = SortItems(result, queryOpts.OrderBy)
+		result, err = SortItems(result, queryOpts)
 		if err != nil {
 			return nil, err
 		}

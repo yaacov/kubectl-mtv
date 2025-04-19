@@ -7,7 +7,9 @@ import (
 )
 
 // SortItems sorts the items based on the provided ordering options
-func SortItems(items []map[string]interface{}, orderOpts []OrderOption) ([]map[string]interface{}, error) {
+func SortItems(items []map[string]interface{}, queryOpts *QueryOptions) ([]map[string]interface{}, error) {
+	orderOpts := queryOpts.OrderBy
+
 	if len(orderOpts) == 0 {
 		return items, nil
 	}
