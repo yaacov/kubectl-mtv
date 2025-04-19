@@ -3,6 +3,7 @@ package query
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestApplyFilter(t *testing.T) {
@@ -114,6 +115,29 @@ func TestApplyFilter(t *testing.T) {
 			selectOpts: []SelectOption{{Field: ".nums", Alias: "s", Reducer: "sum"}},
 			want: []map[string]interface{}{
 				{"nums": []interface{}{3, 4}},
+			},
+		},
+		{
+			name: "int-float equality",
+			items: []map[string]interface{}{
+				{"foo": 3}, {"foo": 3.0}, {"foo": 4},
+			},
+			where:      "foo = 3.0",
+			selectOpts: nil,
+			want: []map[string]interface{}{
+				{"foo": 3}, {"foo": 3.0},
+			},
+		},
+		{
+			name: "date-string equality",
+			items: []map[string]interface{}{
+				{"date": time.Date(2020, time.January, 2, 15, 4, 5, 0, time.UTC)},
+				{"date": time.Date(2021, time.January, 2, 15, 4, 5, 0, time.UTC)},
+			},
+			where:      `date = "2020-01-02T15:04:05Z"`,
+			selectOpts: nil,
+			want: []map[string]interface{}{
+				{"date": time.Date(2020, time.January, 2, 15, 4, 5, 0, time.UTC)},
 			},
 		},
 	}
