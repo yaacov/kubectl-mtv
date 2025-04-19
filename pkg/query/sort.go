@@ -28,7 +28,6 @@ func SortItems(items []map[string]interface{}, queryOpts *QueryOptions) ([]map[s
 			if err != nil {
 				continue
 			}
-
 			valueJ, err := GetValue(result[j], name, selectOpts)
 			if err != nil {
 				continue
@@ -40,18 +39,19 @@ func SortItems(items []map[string]interface{}, queryOpts *QueryOptions) ([]map[s
 
 			// Compare values
 			cmp := compareValues(valueI, valueJ)
-			if cmp != 0 {
-				// If descending, reverse the comparison
-				if orderOpt.Descending {
-					return cmp > 0
-				}
-				return cmp < 0
+			if cmp == 0 {
+				// equal on this field, try next
+				continue
 			}
 
-			// If values are equal, continue to the next order option
-			return false
+			// If descending, reverse the comparison
+			if orderOpt.Descending {
+				return cmp > 0
+			}
+			return cmp < 0
 		}
 
+		// all equal
 		return false
 	})
 
