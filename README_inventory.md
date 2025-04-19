@@ -36,6 +36,8 @@ The query language supports a SQL-like syntax with the following clauses:
 - `ORDER BY field1 [ASC|DESC], field2`: Sort results on multiple fields
 - `LIMIT n`: Limit number of results
 
+For a more complete reference of the query language syntax and capabilities, see the [Query Language Reference](./README_quary_language.md) document.
+
 ## Examples
 
 ### Listing VMs
