@@ -169,3 +169,36 @@ func getValueByPath(obj interface{}, pathParts []string) (interface{}, error) {
 		return nil, fmt.Errorf("cannot access property %s on non-object value", part)
 	}
 }
+
+// GetValue retrieves a value by name (or alias) from obj using JSONPath,
+// then applies a reducer if one is specified in selectOpts.
+func GetValue(obj interface{}, name string, selectOpts []SelectOption) (interface{}, error) {
+	path := name
+	var reducer string
+
+	// If name matches an alias, switch to its Field and capture reducer
+	for _, opt := range selectOpts {
+		if opt.Alias == name {
+			path = opt.Field
+			reducer = opt.Reducer
+			break
+		}
+	}
+
+	// Fetch the raw value
+	val, err := GetValueByPathString(obj, path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Apply reducer if specified
+	if reducer != "" {
+		reduced, err := applyReducer(val, reducer)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply reducer %q: %v", reducer, err)
+		}
+		return reduced, nil
+	}
+
+	return val, nil
+}
