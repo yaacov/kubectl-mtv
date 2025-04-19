@@ -321,7 +321,7 @@ kubectl mtv plan create NAME [flags]
 - `-t, --target`: Target provider name
 - `--network-mapping`: Network mapping name
 - `--storage-mapping`: Storage mapping name
-- `--vms`: List of VM names (comma-separated) or path to YAML/JSON file containing a list of VM structs (prefix with @)
+- `--vms`: Comma separated list of VM names (comma-separated) or path to YAML/JSON file containing a list of VM structs (prefix with @)
 - `--description`: Plan description
 - `--target-namespace`: Target namespace
 - `--warm`: Whether this is a warm migration
@@ -440,7 +440,7 @@ kubectl mtv plan cancel-vms NAME --vms VMLIST [flags]
 
 **Required Flags:**
 
-- `--vms`: List of VM names to cancel (comma-separated) or path to file containing VM names (prefix with @)
+- `--vms`: Comma separated list of VM names to cancel (comma-separated) or path to file containing VM names (prefix with @)
 
 #### Set Cutover Time
 
