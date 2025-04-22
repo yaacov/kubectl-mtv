@@ -16,7 +16,7 @@ This document provides a step-by-step demo of the `kubectl-mtv` CLI tool for Kub
 Create a new Kubernetes namespace for the migration demo:
 
 ```bash
-kubectl create namespace demo
+kubectl create namespace demo-ns
 ```
 
 ### 2. Provider Registration
