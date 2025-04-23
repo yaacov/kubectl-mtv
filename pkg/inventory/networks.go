@@ -135,7 +135,7 @@ func ListNetworks(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, 
 			for _, sel := range queryOpts.Select {
 				headers = append(headers, output.Header{
 					DisplayName: sel.Alias,
-					JSONPath:    sel.Field,
+					JSONPath:    sel.Alias,
 				})
 			}
 			tablePrinter = output.NewTablePrinter().

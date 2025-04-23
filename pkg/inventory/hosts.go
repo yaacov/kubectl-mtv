@@ -79,7 +79,7 @@ func ListHosts(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, nam
 			for _, sel := range queryOpts.Select {
 				headers = append(headers, output.Header{
 					DisplayName: sel.Alias,
-					JSONPath:    sel.Field,
+					JSONPath:    sel.Alias,
 				})
 			}
 			tablePrinter = output.NewTablePrinter().

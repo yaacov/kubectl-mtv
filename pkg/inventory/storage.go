@@ -134,7 +134,7 @@ func ListStorage(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, n
 			for _, sel := range queryOpts.Select {
 				headers = append(headers, output.Header{
 					DisplayName: sel.Alias,
-					JSONPath:    sel.Field,
+					JSONPath:    sel.Alias,
 				})
 			}
 			tablePrinter = output.NewTablePrinter().
