@@ -9,7 +9,7 @@
 %define debug_package %{nil}
 
 Name:           %{repo}
-Version:        0.1.10
+Version:        0.1.11
 Release:        1%{?dist}
 Summary:        kubectl-mtv - Migration Toolkit for Virtualization CLI
 License:        Apache
