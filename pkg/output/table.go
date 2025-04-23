@@ -111,7 +111,7 @@ func (t *TablePrinter) extractValue(item map[string]interface{}, path string) st
 	}
 
 	// Use query.GetValue if selectOptions are set, otherwise fallback to GetValueByPathString
-	if t.selectOptions != nil && len(t.selectOptions) > 0 {
+	if len(t.selectOptions) > 0 {
 		val, err := query.GetValue(item, path, t.selectOptions)
 		if err != nil {
 			return ""

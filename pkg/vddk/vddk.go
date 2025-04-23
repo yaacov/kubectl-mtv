@@ -118,6 +118,13 @@ func extractTarGz(tarGzPath, destDir string) error {
 				return err
 			}
 			outFile.Close()
+		case tar.TypeSymlink:
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				return err
+			}
+			if err := os.Symlink(hdr.Linkname, target); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
