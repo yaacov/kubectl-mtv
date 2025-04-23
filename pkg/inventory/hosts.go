@@ -82,7 +82,9 @@ func ListHosts(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, nam
 					JSONPath:    sel.Field,
 				})
 			}
-			tablePrinter = output.NewTablePrinter().WithHeaders(headers...)
+			tablePrinter = output.NewTablePrinter().
+				WithHeaders(headers...).
+				WithSelectOptions(queryOpts.Select)
 		} else {
 			// Use default Table printer
 			tablePrinter = output.NewTablePrinter().WithHeaders(

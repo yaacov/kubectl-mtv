@@ -138,7 +138,9 @@ func ListNetworks(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, 
 					JSONPath:    sel.Field,
 				})
 			}
-			tablePrinter = output.NewTablePrinter().WithHeaders(headers...)
+			tablePrinter = output.NewTablePrinter().
+				WithHeaders(headers...).
+				WithSelectOptions(queryOpts.Select)
 		} else {
 			// Use the predefined default headers based on provider type
 			tablePrinter = output.NewTablePrinter().WithHeaders(defaultHeaders...)

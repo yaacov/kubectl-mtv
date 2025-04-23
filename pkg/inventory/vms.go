@@ -284,7 +284,9 @@ func ListVMs(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, names
 					JSONPath:    sel.Field,
 				})
 			}
-			tablePrinter = output.NewTablePrinter().WithHeaders(headers...)
+			tablePrinter = output.NewTablePrinter().
+				WithHeaders(headers...).
+				WithSelectOptions(queryOpts.Select)
 		} else {
 			// Use default table headers
 			tablePrinter = output.NewTablePrinter().WithHeaders(

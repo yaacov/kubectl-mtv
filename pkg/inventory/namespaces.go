@@ -80,7 +80,9 @@ func ListNamespaces(kubeConfigFlags *genericclioptions.ConfigFlags, providerName
 					JSONPath:    sel.Field,
 				})
 			}
-			tablePrinter = output.NewTablePrinter().WithHeaders(headers...)
+			tablePrinter = output.NewTablePrinter().
+				WithHeaders(headers...).
+				WithSelectOptions(queryOpts.Select)
 		} else {
 			tablePrinter = output.NewTablePrinter().WithHeaders(
 				output.Header{DisplayName: "NAME", JSONPath: "name"},

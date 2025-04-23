@@ -18,13 +18,14 @@ type Header struct {
 
 // TablePrinter prints tabular data with dynamically sized columns
 type TablePrinter struct {
-	headers      []Header
-	items        []map[string]interface{}
-	padding      int
-	minWidth     int
-	writer       io.Writer
-	maxColWidth  int
-	expandedData map[int]string // Stores expanded data for each row by index
+	headers       []Header
+	items         []map[string]interface{}
+	padding       int
+	minWidth      int
+	writer        io.Writer
+	maxColWidth   int
+	expandedData  map[int]string       // Stores expanded data for each row by index
+	selectOptions []query.SelectOption // Optional: select options for advanced extraction
 }
 
 // NewTablePrinter creates a new TablePrinter
@@ -76,6 +77,12 @@ func (t *TablePrinter) WithExpandedData(index int, data string) *TablePrinter {
 	return t
 }
 
+// WithSelectOptions sets the select options for the table printer
+func (t *TablePrinter) WithSelectOptions(selectOptions []query.SelectOption) *TablePrinter {
+	t.selectOptions = selectOptions
+	return t
+}
+
 // AddItem adds an item to the table
 func (t *TablePrinter) AddItem(item map[string]interface{}) *TablePrinter {
 	t.items = append(t.items, item)
@@ -101,6 +108,15 @@ func (t *TablePrinter) extractValue(item map[string]interface{}, path string) st
 	if path == "" {
 		// No path provided, return empty string
 		return ""
+	}
+
+	// Use query.GetValue if selectOptions are set, otherwise fallback to GetValueByPathString
+	if t.selectOptions != nil && len(t.selectOptions) > 0 {
+		val, err := query.GetValue(item, path, t.selectOptions)
+		if err != nil {
+			return ""
+		}
+		return valueToString(val)
 	}
 
 	value, err := query.GetValueByPathString(item, path)
