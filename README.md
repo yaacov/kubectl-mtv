@@ -80,6 +80,16 @@ make
 
 Make sure `$GOPATH/bin` is in your PATH to use as a kubectl plugin.
 
+### Download from github
+
+```bash
+REPO=yaacov/kubectl-mtv
+ASSET=kubectl-mtv.tar.gz
+LATEST_VER=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep -m1 '"tag_name"' | cut -d'"' -f4)
+curl -L -o $ASSET https://github.com/$REPO/releases/download/$LATEST_VER/$ASSET
+tar -xzf $ASSET
+```
+
 ## Usage
 
 See the demo documentation for a migration [demo flow using kubectl-mtv](./README_demo.md).
