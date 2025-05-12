@@ -15,7 +15,7 @@ import (
 )
 
 // Helper function to create an OpenShift secret
-func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName, url, token string) (*corev1.Secret, error) {
+func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName, url, token, cacert string, insecureSkipTLS bool) (*corev1.Secret, error) {
 	// Get the Kubernetes client using configFlags
 	k8sClient, err := client.GetKubernetesClientset(configFlags)
 	if err != nil {
@@ -26,6 +26,13 @@ func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, provide
 	secretData := map[string][]byte{
 		"token": []byte(token),
 		"url":   []byte(url),
+	}
+	// Add optional fields
+	if insecureSkipTLS {
+		secretData["insecureSkipVerify"] = []byte("true")
+	}
+	if cacert != "" {
+		secretData["cacert"] = []byte(cacert)
 	}
 
 	// Generate a name prefix for the secret

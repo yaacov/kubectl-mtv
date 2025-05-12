@@ -110,6 +110,12 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 	var err error
 
 	if options.Token != "" {
+		createdSecret, err = createSecret(configFlags, options.Namespace, options.Name,
+			options.URL, options.Token, options.CACert, options.InsecureSkipTLS)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to create vSphere secret: %v", err)
+		}
+
 		// If token is provided
 		if options.Secret != "" {
 			// Use the provided secret if specified alongside the token
@@ -119,7 +125,7 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 			}
 		} else {
 			// Create a new secret if no existing secret is specified
-			createdSecret, err = createSecret(configFlags, options.Namespace, options.Name, options.URL, options.Token)
+			createdSecret, err = createSecret(configFlags, options.Namespace, options.Name, options.URL, options.Token, options.CACert, options.InsecureSkipTLS)
 			if err != nil {
 				return nil, nil, fmt.Errorf("failed to create OpenShift secret: %v", err)
 			}
