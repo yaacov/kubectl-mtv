@@ -345,9 +345,9 @@ func validateVMs(configFlags *genericclioptions.ConfigFlags, opts *CreatePlanOpt
 	}
 
 	// Add namespaces to VMs that don't have them, if available
-	for _, planVM := range opts.VMList {
+	for i, planVM := range validVMs {
 		if vmNamespace, exists := vmIDToNamespaceMap[planVM.ID]; exists {
-			planVM.Namespace = vmNamespace
+			validVMs[i].Namespace = vmNamespace
 		}
 	}
 
