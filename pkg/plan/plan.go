@@ -284,6 +284,7 @@ func validateVMs(configFlags *genericclioptions.ConfigFlags, opts *CreatePlanOpt
 	// Create maps for VM names to VM IDs and VM IDs to VM names for lookup
 	vmNameToIDMap := make(map[string]string)
 	vmIDToNameMap := make(map[string]string)
+	vmIDToNamespaceMap := make(map[string]string)
 
 	for _, item := range sourceVMsArray {
 		vm, ok := item.(map[string]interface{})
@@ -301,8 +302,14 @@ func validateVMs(configFlags *genericclioptions.ConfigFlags, opts *CreatePlanOpt
 			continue
 		}
 
+		vmNamespace, ok := vm["namespace"].(string)
+		if !ok {
+			continue
+		}
+
 		vmNameToIDMap[vmName] = vmID
 		vmIDToNameMap[vmID] = vmName
+		vmIDToNamespaceMap[vmID] = vmNamespace
 	}
 
 	// Process VMs: first those with IDs, then those with only names
@@ -334,6 +341,13 @@ func validateVMs(configFlags *genericclioptions.ConfigFlags, opts *CreatePlanOpt
 			} else {
 				fmt.Printf("Warning: VM with name '%s' not found in source provider, removing from plan\n", planVM.Name)
 			}
+		}
+	}
+
+	// Add namespaces to VMs that don't have them, if available
+	for _, planVM := range opts.VMList {
+		if vmNamespace, exists := vmIDToNamespaceMap[planVM.ID]; exists {
+			planVM.Namespace = vmNamespace
 		}
 	}
 
