@@ -1,10 +1,7 @@
 package vddk
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -80,52 +77,19 @@ ENTRYPOINT ["cp", "-r", "/vmware-vix-disklib-distrib", "/opt"]
 }
 
 func extractTarGz(tarGzPath, destDir string) error {
-	f, err := os.Open(tarGzPath)
-	if err != nil {
-		return err
+	// Ensure destination directory exists
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
 	}
-	defer f.Close()
-	gzr, err := gzip.NewReader(f)
-	if err != nil {
-		return err
+
+	// Use system tar command to extract
+	cmd := exec.Command("tar", "-xzf", tarGzPath, "-C", destDir)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("tar extraction failed: %w", err)
 	}
-	defer gzr.Close()
-	tr := tar.NewReader(gzr)
-	for {
-		hdr, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return err
-		}
-		target := filepath.Join(destDir, hdr.Name)
-		switch hdr.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(target, 0755); err != nil {
-				return err
-			}
-		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-				return err
-			}
-			outFile, err := os.Create(target)
-			if err != nil {
-				return err
-			}
-			if _, err := io.Copy(outFile, tr); err != nil {
-				outFile.Close()
-				return err
-			}
-			outFile.Close()
-		case tar.TypeSymlink:
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-				return err
-			}
-			if err := os.Symlink(hdr.Linkname, target); err != nil {
-				return err
-			}
-		}
-	}
+
 	return nil
 }
