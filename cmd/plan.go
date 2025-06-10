@@ -45,6 +45,7 @@ func newCreatePlanCmd() *cobra.Command {
 	var inventoryURL string
 	var archived, pvcNameTemplateUseGenerateName, deleteGuestConversionPod bool
 	var diskBusStr string
+	var defaultTargetNetwork, defaultTargetStorageClass string
 
 	cmd := &cobra.Command{
 		Use:   "create NAME",
@@ -120,6 +121,8 @@ func newCreatePlanCmd() *cobra.Command {
 				DiskBus:                        diskBus,
 				PVCNameTemplateUseGenerateName: pvcNameTemplateUseGenerateName,
 				DeleteGuestConversionPod:       deleteGuestConversionPod,
+				DefaultTargetNetwork:           defaultTargetNetwork,
+				DefaultTargetStorageClass:      defaultTargetStorageClass,
 			}
 
 			return plan.Create(opts)
@@ -147,6 +150,8 @@ func newCreatePlanCmd() *cobra.Command {
 	cmd.Flags().StringVar(&diskBusStr, "disk-bus", "", "Disk bus type (deprecated: will be deprecated in 2.8)")
 	cmd.Flags().BoolVar(&pvcNameTemplateUseGenerateName, "pvc-name-template-use-generate-name", true, "Use generateName instead of name for PVC name template")
 	cmd.Flags().BoolVar(&deleteGuestConversionPod, "delete-guest-conversion-pod", false, "Delete guest conversion pod after successful migration")
+	cmd.Flags().StringVarP(&defaultTargetNetwork, "default-target-network", "N", "", "Default target network for network mapping. Use 'pod' for pod networking, or specify a NetworkAttachmentDefinition name")
+	cmd.Flags().StringVar(&defaultTargetStorageClass, "default-target-storage-class", "", "Default target storage class for storage mapping")
 
 	return cmd
 }
