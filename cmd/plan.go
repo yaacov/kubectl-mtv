@@ -200,7 +200,7 @@ func newStartPlanCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&cutoverTimeStr, "cutover", "c", "", "Cutover time in RFC3339 format (e.g., 2023-12-31T15:30:00Z). If not provided, defaults to 1 hour from now.")
+	cmd.Flags().StringVarP(&cutoverTimeStr, "cutover", "c", "", "Cutover time in ISO8601 format (e.g., 2023-12-31T15:30:00Z, '$(date -d \"+1 hour\" --iso-8601=sec)' ). If not provided, defaults to 1 hour from now.")
 
 	return cmd
 }
@@ -337,7 +337,7 @@ func newCutoverCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&cutoverTimeStr, "cutover", "c", "", "Cutover time in RFC3339 format (e.g., 2023-12-31T15:30:00Z). If not specified, defaults to current time.")
+	cmd.Flags().StringVarP(&cutoverTimeStr, "cutover", "c", "", "Cutover time in ISO8601 format (e.g., 2023-12-31T15:30:00Z, '$(date --iso-8601=sec)'). If not specified, defaults to current time.")
 
 	return cmd
 }

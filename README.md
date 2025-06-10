@@ -402,7 +402,7 @@ kubectl mtv plan start demo --cutover $(date -d "$(date +'%Y-%m-%d %H:00:00') +1
 
 **Optional Flags:**
 
-- `--cutover`: Cutover time in RFC3339 format (e.g., 2023-04-01T14:30:00Z) for warm migrations, if missing cutover is set to 1h from now.
+- `--cutover`: Cutover time in ISO8601 format (e.g., 2023-04-01T14:30:00Z) for warm migrations, if missing cutover is set to 1h from now.
 
 #### Describe Migration Plan
 
@@ -462,7 +462,7 @@ kubectl mtv plan cutover NAME [flags]
 
 **Optional Flags:**
 
-- `--cutover`: Cutover time in RFC3339 format. If not specified, current time will be used.
+- `--cutover`: Cutover time in ISO8601 format. If not specified, current time will be used.
 
 #### Delete Migration Plan
 
