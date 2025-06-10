@@ -3,16 +3,28 @@ package inventory
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	querypkg "github.com/yaacov/kubectl-mtv/pkg/query"
+	"github.com/yaacov/kubectl-mtv/pkg/watch"
 )
 
 // ListHosts queries the provider's host inventory and displays the results
-func ListHosts(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func ListHosts(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+	if watchMode {
+		return watch.Watch(func() error {
+			return listHostsOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+		}, 10*time.Second)
+	}
+
+	return listHostsOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+}
+
+func listHostsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// Get the provider object
 	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
 	if err != nil {

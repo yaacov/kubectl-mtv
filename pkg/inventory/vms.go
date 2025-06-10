@@ -3,6 +3,7 @@ package inventory
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -11,6 +12,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	querypkg "github.com/yaacov/kubectl-mtv/pkg/query"
+	"github.com/yaacov/kubectl-mtv/pkg/watch"
 )
 
 // countConcernsByCategory counts VM concerns by their category
@@ -126,7 +128,17 @@ func calculateTotalDiskCapacity(vm map[string]interface{}) float64 {
 }
 
 // ListVMs queries the provider's VM inventory and displays the results
-func ListVMs(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string) error {
+func ListVMs(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string, watchMode bool) error {
+	if watchMode {
+		return watch.Watch(func() error {
+			return listVMsOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, query)
+		}, 10*time.Second)
+	}
+
+	return listVMsOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, query)
+}
+
+func listVMsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string) error {
 	// Get the provider object
 	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
 	if err != nil {

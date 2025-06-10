@@ -3,6 +3,7 @@ package inventory
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -10,6 +11,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	querypkg "github.com/yaacov/kubectl-mtv/pkg/query"
+	"github.com/yaacov/kubectl-mtv/pkg/watch"
 )
 
 // countNetworkHosts calculates the number of hosts connected to a network
@@ -28,7 +30,17 @@ func countNetworkHosts(network map[string]interface{}) int {
 }
 
 // ListNetworks queries the provider's network inventory and displays the results
-func ListNetworks(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func ListNetworks(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+	if watchMode {
+		return watch.Watch(func() error {
+			return listNetworksOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+		}, 10*time.Second)
+	}
+
+	return listNetworksOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+}
+
+func listNetworksOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// Get the provider object
 	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
 	if err != nil {

@@ -32,6 +32,7 @@ func newListVMsCmd() *cobra.Command {
 	var outputFormat string
 	var extendedOutput bool
 	var query string
+	var watch bool
 
 	cmd := &cobra.Command{
 		Use:   "vms PROVIDER",
@@ -56,7 +57,7 @@ Query syntax allows:
 				inventoryURL = discoverInventoryURL(kubeConfigFlags, namespace)
 			}
 
-			return inventory.ListVMs(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, extendedOutput, query)
+			return inventory.ListVMs(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, extendedOutput, query, watch)
 		},
 	}
 
@@ -64,6 +65,7 @@ Query syntax allows:
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, planvms")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch VM list with live updates")
 
 	return cmd
 }
@@ -73,6 +75,7 @@ func newListNetworksCmd() *cobra.Command {
 	var outputFormat string
 	var extendedOutput bool
 	var query string
+	var watch bool
 
 	cmd := &cobra.Command{
 		Use:   "networks PROVIDER",
@@ -97,7 +100,7 @@ Query syntax allows:
 				inventoryURL = discoverInventoryURL(kubeConfigFlags, namespace)
 			}
 
-			return inventory.ListNetworks(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query)
+			return inventory.ListNetworks(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 		},
 	}
 
@@ -105,6 +108,7 @@ Query syntax allows:
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch network list with live updates")
 
 	return cmd
 }
@@ -114,6 +118,7 @@ func newListStorageCmd() *cobra.Command {
 	var outputFormat string
 	var extendedOutput bool
 	var query string
+	var watch bool
 
 	cmd := &cobra.Command{
 		Use:   "storage PROVIDER",
@@ -138,7 +143,7 @@ Query syntax allows:
 				inventoryURL = discoverInventoryURL(kubeConfigFlags, namespace)
 			}
 
-			return inventory.ListStorage(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query)
+			return inventory.ListStorage(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 		},
 	}
 
@@ -146,6 +151,7 @@ Query syntax allows:
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch storage list with live updates")
 
 	return cmd
 }
@@ -155,6 +161,7 @@ func newListHostsCmd() *cobra.Command {
 	var outputFormat string
 	var extendedOutput bool
 	var query string
+	var watch bool
 
 	cmd := &cobra.Command{
 		Use:   "hosts PROVIDER",
@@ -179,7 +186,7 @@ Query syntax allows:
 				inventoryURL = discoverInventoryURL(kubeConfigFlags, namespace)
 			}
 
-			return inventory.ListHosts(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query)
+			return inventory.ListHosts(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 		},
 	}
 
@@ -187,6 +194,7 @@ Query syntax allows:
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch host list with live updates")
 
 	return cmd
 }
@@ -195,6 +203,7 @@ func newListNamespacesCmd() *cobra.Command {
 	var inventoryURL string
 	var outputFormat string
 	var query string
+	var watch bool
 
 	cmd := &cobra.Command{
 		Use:   "namespaces PROVIDER",
@@ -219,13 +228,14 @@ Query syntax allows:
 				inventoryURL = discoverInventoryURL(kubeConfigFlags, namespace)
 			}
 
-			return inventory.ListNamespaces(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query)
+			return inventory.ListNamespaces(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 		},
 	}
 
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch namespace list with live updates")
 
 	return cmd
 }
