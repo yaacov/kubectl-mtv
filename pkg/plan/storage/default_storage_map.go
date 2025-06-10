@@ -19,13 +19,14 @@ import (
 
 // CreateDefaultStorageMapOptions encapsulates the parameters for creating a default storage map.
 type CreateDefaultStorageMapOptions struct {
-	Name           string
-	Namespace      string
-	SourceProvider string
-	TargetProvider string
-	ConfigFlags    *genericclioptions.ConfigFlags
-	InventoryURL   string
-	PlanVMNames    []string
+	Name                      string
+	Namespace                 string
+	SourceProvider            string
+	TargetProvider            string
+	ConfigFlags               *genericclioptions.ConfigFlags
+	InventoryURL              string
+	PlanVMNames               []string
+	DefaultTargetStorageClass string
 }
 
 // CreateDefaultStorageMap creates a default storage map.
@@ -36,15 +37,22 @@ func CreateDefaultStorageMap(opts CreateDefaultStorageMapOptions) (string, error
 		return "", fmt.Errorf("failed to get client: %v", err)
 	}
 
-	// Get target provider
-	targetProvider, err := inventory.GetProviderByName(opts.ConfigFlags, opts.TargetProvider, opts.Namespace)
-	if err != nil {
-		return "", fmt.Errorf("failed to get target provider: %v", err)
-	}
+	var defaultTargetStorageName string
 
-	defaultTargetStorageName, err := GetDefaultTargetStorage(opts.ConfigFlags, targetProvider, opts.Namespace, opts.InventoryURL)
-	if err != nil {
-		return "", err
+	// If default target storage class is specified, use it
+	if opts.DefaultTargetStorageClass != "" {
+		defaultTargetStorageName = opts.DefaultTargetStorageClass
+	} else {
+		// Get target provider and find default storage
+		targetProvider, err := inventory.GetProviderByName(opts.ConfigFlags, opts.TargetProvider, opts.Namespace)
+		if err != nil {
+			return "", fmt.Errorf("failed to get target provider: %v", err)
+		}
+
+		defaultTargetStorageName, err = GetDefaultTargetStorage(opts.ConfigFlags, targetProvider, opts.Namespace, opts.InventoryURL)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// Get source provider

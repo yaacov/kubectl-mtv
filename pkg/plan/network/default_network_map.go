@@ -3,6 +3,7 @@ package network
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,13 +18,14 @@ import (
 
 // CreateDefaultNetworkMapOptions encapsulates the parameters for creating a default network map.
 type CreateDefaultNetworkMapOptions struct {
-	Name           string
-	Namespace      string
-	SourceProvider string
-	TargetProvider string
-	ConfigFlags    *genericclioptions.ConfigFlags
-	InventoryURL   string
-	PlanVMNames    []string
+	Name                 string
+	Namespace            string
+	SourceProvider       string
+	TargetProvider       string
+	ConfigFlags          *genericclioptions.ConfigFlags
+	InventoryURL         string
+	PlanVMNames          []string
+	DefaultTargetNetwork string
 }
 
 // CreateDefaultNetworkMap creates a default network map.
@@ -40,10 +42,29 @@ func CreateDefaultNetworkMap(opts CreateDefaultNetworkMapOptions) (string, error
 		return "", err
 	}
 
-	// Get target networks
-	targetNetworks, err := GetTargetNetworks(opts.ConfigFlags, opts.TargetProvider, opts.Namespace, opts.InventoryURL)
-	if err != nil {
-		return "", err
+	var targetNetworks []NetworkInfo
+
+	// If default target network is specified, use it
+	if opts.DefaultTargetNetwork != "" {
+		// Check if it's "pod" (case insensitive)
+		if strings.ToLower(opts.DefaultTargetNetwork) == "pod" {
+			// Use pod networking - no target networks needed, will be handled by CreateNetworkMapEntries
+			targetNetworks = []NetworkInfo{}
+		} else {
+			// Use the specified network as the default target network
+			targetNetworks = []NetworkInfo{
+				{
+					Name:      opts.DefaultTargetNetwork,
+					Namespace: opts.Namespace, // Use the plan namespace as default
+				},
+			}
+		}
+	} else {
+		// Get target networks from the target provider inventory
+		targetNetworks, err = GetTargetNetworks(opts.ConfigFlags, opts.TargetProvider, opts.Namespace, opts.InventoryURL)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	// Create NetworkMap entries

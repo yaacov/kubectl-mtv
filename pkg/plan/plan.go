@@ -50,6 +50,8 @@ type CreatePlanOptions struct {
 	DiskBus                        cnv.DiskBus
 	PVCNameTemplateUseGenerateName bool
 	DeleteGuestConversionPod       bool
+	DefaultTargetNetwork           string
+	DefaultTargetStorageClass      string
 }
 
 // Create creates a new migration plan
@@ -97,13 +99,14 @@ func Create(opts CreatePlanOptions) error {
 	if opts.NetworkMapping == "" {
 		networkMapPrefix := opts.Name
 		networkMapName, err := network.CreateDefaultNetworkMap(network.CreateDefaultNetworkMapOptions{
-			Name:           networkMapPrefix,
-			Namespace:      opts.Namespace,
-			SourceProvider: opts.SourceProvider,
-			TargetProvider: opts.TargetProvider,
-			ConfigFlags:    opts.ConfigFlags,
-			InventoryURL:   opts.InventoryURL,
-			PlanVMNames:    planVMNames,
+			Name:                 networkMapPrefix,
+			Namespace:            opts.Namespace,
+			SourceProvider:       opts.SourceProvider,
+			TargetProvider:       opts.TargetProvider,
+			ConfigFlags:          opts.ConfigFlags,
+			InventoryURL:         opts.InventoryURL,
+			PlanVMNames:          planVMNames,
+			DefaultTargetNetwork: opts.DefaultTargetNetwork,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create default network map: %v", err)
@@ -116,13 +119,14 @@ func Create(opts CreatePlanOptions) error {
 	if opts.StorageMapping == "" {
 		storageMapPrefix := opts.Name
 		storageMapName, err := storage.CreateDefaultStorageMap(storage.CreateDefaultStorageMapOptions{
-			Name:           storageMapPrefix,
-			Namespace:      opts.Namespace,
-			SourceProvider: opts.SourceProvider,
-			TargetProvider: opts.TargetProvider,
-			ConfigFlags:    opts.ConfigFlags,
-			InventoryURL:   opts.InventoryURL,
-			PlanVMNames:    planVMNames,
+			Name:                      storageMapPrefix,
+			Namespace:                 opts.Namespace,
+			SourceProvider:            opts.SourceProvider,
+			TargetProvider:            opts.TargetProvider,
+			ConfigFlags:               opts.ConfigFlags,
+			InventoryURL:              opts.InventoryURL,
+			PlanVMNames:               planVMNames,
+			DefaultTargetStorageClass: opts.DefaultTargetStorageClass,
 		})
 		if err != nil {
 			// Clean up the network map if we created it
