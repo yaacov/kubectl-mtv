@@ -245,6 +245,33 @@ func Create(opts CreatePlanOptions) error {
 		return fmt.Errorf("failed to create plan: %v", err)
 	}
 
+	// MTV automatically sets the PVCNameTemplateUseGenerateName field to true,ff opts.PVCNameTemplateUseGenerateName is false
+	// we need to patch the plan to re-set the PVCNameTemplateGenerateName field to false.
+	if !opts.PVCNameTemplateUseGenerateName {
+		patch := map[string]interface{}{
+			"spec": map[string]interface{}{
+				"pvcNameTemplateUseGenerateName": false,
+			},
+		}
+		patchBytes, err := json.Marshal(patch)
+		if err != nil {
+			// Ignore error here, we will still create the plan
+			fmt.Printf("Warning: failed to marshal patch for PVCNameTemplateGenerateName: %v\n", err)
+		} else {
+			_, err = c.Resource(client.PlansGVR).Namespace(opts.Namespace).Patch(
+				context.TODO(),
+				createdPlan.GetName(),
+				types.MergePatchType,
+				patchBytes,
+				metav1.PatchOptions{},
+			)
+			if err != nil {
+				// Ignore error here, we will still create the plan
+				fmt.Printf("Warning: failed to patch plan for PVCNameTemplateGenerateName: %v\n", err)
+			}
+		}
+	}
+
 	// Set ownership of maps if we created them
 	if createdNetworkMap {
 		err = setMapOwnership(opts.ConfigFlags, createdPlan, client.NetworkMapGVR, opts.NetworkMapping, opts.Namespace)
