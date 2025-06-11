@@ -13,6 +13,7 @@ import (
 
 	forkliftv1beta1 "github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1"
 	"github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1/provider"
+	"github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1/ref"
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 )
 
@@ -69,6 +70,20 @@ func CreateDefaultNetworkMap(opts CreateDefaultNetworkMapOptions) (string, error
 
 	// Create NetworkMap entries
 	networkPairs := CreateNetworkMapEntries(sourceNetworkIDs, targetNetworks)
+
+	// If no network pairs were created, create a dummy entry
+	if len(networkPairs) == 0 {
+		networkPairs = []forkliftv1beta1.NetworkPair{
+			{
+				Source: ref.Ref{
+					Type: "pod", // Use "pod" type for dummy entry
+				},
+				Destination: forkliftv1beta1.DestinationNetwork{
+					Type: "pod", // Use "pod" type for dummy entry
+				},
+			},
+		}
+	}
 
 	// Create a new NetworkMap object
 	networkMap := &forkliftv1beta1.NetworkMap{

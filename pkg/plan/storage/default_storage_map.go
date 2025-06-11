@@ -79,6 +79,20 @@ func CreateDefaultStorageMap(opts CreateDefaultStorageMapOptions) (string, error
 		})
 	}
 
+	// If no storage pairs were created, create a dummy entry
+	if len(storagePairs) == 0 {
+		storagePairs = []forkliftv1beta1.StoragePair{
+			{
+				Source: ref.Ref{
+					Name: defaultTargetStorageName,
+				},
+				Destination: forkliftv1beta1.DestinationStorage{
+					StorageClass: defaultTargetStorageName,
+				},
+			},
+		}
+	}
+
 	// Create a new StorageMap object
 	storageMap := &forkliftv1beta1.StorageMap{
 		ObjectMeta: metav1.ObjectMeta{
