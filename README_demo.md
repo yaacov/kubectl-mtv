@@ -51,6 +51,7 @@ kubectl mtv provider create vmware --type vsphere \
   -U https://your.vsphere.server.com/sdk \
   -u your_vsphere_username \
   -p $YOUR_PASSWORD \
+  --vddk-init-image quay.io/demo/vddk
   --provider-insecure-skip-tls
 ```
 
