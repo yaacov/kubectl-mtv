@@ -228,8 +228,8 @@ func ListVMs(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, names
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" && outputFormat != "planvms" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, planvms", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "planvms" && outputFormat != "yaml" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, planvms", outputFormat)
 	}
 
 	// Handle different output formats
@@ -243,6 +243,15 @@ func ListVMs(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, names
 			return jsonPrinter.PrintEmpty(fmt.Sprintf("No VMs found for provider %s", providerName))
 		}
 		return jsonPrinter.Print()
+	} else if outputFormat == "yaml" {
+		// Use YAML printer
+		yamlPrinter := output.NewYAMLPrinter().
+			AddItems(vms)
+
+		if len(vms) == 0 {
+			return yamlPrinter.PrintEmpty(fmt.Sprintf("No VMs found for provider %s", providerName))
+		}
+		return yamlPrinter.Print()
 	} else if outputFormat == "planvms" {
 		// Convert inventory VMs to plan VM structs
 		planVMs := make([]planv1beta1.VM, 0, len(vms))

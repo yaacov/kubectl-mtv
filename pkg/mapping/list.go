@@ -73,8 +73,8 @@ func listMappings(configFlags *genericclioptions.ConfigFlags, mappingType, names
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
 	}
 
 	var allItems []map[string]interface{}
@@ -105,6 +105,14 @@ func listMappings(configFlags *genericclioptions.ConfigFlags, mappingType, names
 			return jsonPrinter.PrintEmpty("No mappings found in namespace " + namespace)
 		}
 		return jsonPrinter.Print()
+	} else if outputFormat == "yaml" {
+		yamlPrinter := output.NewYAMLPrinter().
+			AddItems(allItems)
+
+		if len(allItems) == 0 {
+			return yamlPrinter.PrintEmpty("No mappings found in namespace " + namespace)
+		}
+		return yamlPrinter.Print()
 	} else {
 		// Table output (default)
 		tablePrinter := output.NewTablePrinter().WithHeaders(

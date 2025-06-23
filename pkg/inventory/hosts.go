@@ -55,8 +55,8 @@ func ListHosts(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, nam
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
 	}
 
 	// Handle different output formats
@@ -70,6 +70,15 @@ func ListHosts(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, nam
 			return jsonPrinter.PrintEmpty(fmt.Sprintf("No hosts found for provider %s", providerName))
 		}
 		return jsonPrinter.Print()
+	} else if outputFormat == "yaml" {
+		// Use YAML printer
+		yamlPrinter := output.NewYAMLPrinter().
+			AddItems(hosts)
+
+		if len(hosts) == 0 {
+			return yamlPrinter.PrintEmpty(fmt.Sprintf("No hosts found for provider %s", providerName))
+		}
+		return yamlPrinter.Print()
 	} else {
 		var tablePrinter *output.TablePrinter
 

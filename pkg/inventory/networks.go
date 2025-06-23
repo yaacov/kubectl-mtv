@@ -111,8 +111,8 @@ func ListNetworks(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, 
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
 	}
 
 	// Handle different output formats
@@ -126,6 +126,15 @@ func ListNetworks(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, 
 			return jsonPrinter.PrintEmpty(fmt.Sprintf("No networks found for provider %s", providerName))
 		}
 		return jsonPrinter.Print()
+	} else if outputFormat == "yaml" {
+		// Use YAML printer
+		yamlPrinter := output.NewYAMLPrinter().
+			AddItems(networks)
+
+		if len(networks) == 0 {
+			return yamlPrinter.PrintEmpty(fmt.Sprintf("No networks found for provider %s", providerName))
+		}
+		return yamlPrinter.Print()
 	} else {
 		var tablePrinter *output.TablePrinter
 
