@@ -85,7 +85,7 @@ func newListMappingCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&mappingType, "type", "all", "Mapping type (network, storage, all)")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, yaml")
 
 	return cmd
 }

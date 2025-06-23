@@ -100,7 +100,7 @@ func newListProviderCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&inventoryBaseURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, yaml")
 
 	return cmd
 }

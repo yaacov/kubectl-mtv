@@ -172,7 +172,7 @@ func newListPlanCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch migration plans with live updates using tview")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, yaml")
 
 	return cmd
 }

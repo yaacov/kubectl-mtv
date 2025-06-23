@@ -62,7 +62,7 @@ Query syntax allows:
 	}
 
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, planvms")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, yaml, planvms")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch VM list with live updates")
@@ -105,7 +105,7 @@ Query syntax allows:
 	}
 
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, yaml")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch network list with live updates")
@@ -148,7 +148,7 @@ Query syntax allows:
 	}
 
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, yaml")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch storage list with live updates")
@@ -191,7 +191,7 @@ Query syntax allows:
 	}
 
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, yaml")
 	cmd.Flags().BoolVarP(&extendedOutput, "extended", "e", false, "Show extended information in table output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch host list with live updates")
@@ -233,7 +233,7 @@ Query syntax allows:
 	}
 
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format. One of: table, json, yaml")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query string with 'where', 'order by', and 'limit' clauses")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch namespace list with live updates")
 

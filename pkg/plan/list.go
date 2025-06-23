@@ -30,8 +30,8 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
 	}
 
 	// Create printer items
@@ -125,6 +125,15 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 			return jsonPrinter.PrintEmpty("No plans found in namespace " + namespace)
 		}
 		return jsonPrinter.Print()
+	} else if outputFormat == "yaml" {
+		// Use YAML printer
+		yamlPrinter := output.NewYAMLPrinter().
+			AddItems(items)
+
+		if len(plans.Items) == 0 {
+			return yamlPrinter.PrintEmpty("No plans found in namespace " + namespace)
+		}
+		return yamlPrinter.Print()
 	}
 
 	// Use Table printer (default)

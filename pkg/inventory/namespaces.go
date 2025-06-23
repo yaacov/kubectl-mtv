@@ -67,8 +67,8 @@ func listNamespacesOnce(kubeConfigFlags *genericclioptions.ConfigFlags, provider
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
 	}
 
 	// Handle different output formats
@@ -81,6 +81,14 @@ func listNamespacesOnce(kubeConfigFlags *genericclioptions.ConfigFlags, provider
 			return jsonPrinter.PrintEmpty(fmt.Sprintf("No namespaces found for provider %s", providerName))
 		}
 		return jsonPrinter.Print()
+	} else if outputFormat == "yaml" {
+		yamlPrinter := output.NewYAMLPrinter().
+			AddItems(namespaces)
+
+		if len(namespaces) == 0 {
+			return yamlPrinter.PrintEmpty(fmt.Sprintf("No namespaces found for provider %s", providerName))
+		}
+		return yamlPrinter.Print()
 	} else {
 		var tablePrinter *output.TablePrinter
 

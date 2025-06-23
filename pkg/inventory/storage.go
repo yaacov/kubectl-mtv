@@ -122,8 +122,8 @@ func listStorageOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerNam
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
 	}
 
 	// Handle different output formats
@@ -134,9 +134,18 @@ func listStorageOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerNam
 			AddItems(storages)
 
 		if len(storages) == 0 {
-			return jsonPrinter.PrintEmpty(fmt.Sprintf("No storage resources found for provider %s", providerName))
+			return jsonPrinter.PrintEmpty(fmt.Sprintf("No storages found for provider %s", providerName))
 		}
 		return jsonPrinter.Print()
+	} else if outputFormat == "yaml" {
+		// Use YAML printer
+		yamlPrinter := output.NewYAMLPrinter().
+			AddItems(storages)
+
+		if len(storages) == 0 {
+			return yamlPrinter.PrintEmpty(fmt.Sprintf("No storages found for provider %s", providerName))
+		}
+		return yamlPrinter.Print()
 	} else {
 		var tablePrinter *output.TablePrinter
 

@@ -28,8 +28,8 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
 	}
 
 	// If baseURL is empty, try to discover it from an OpenShift Route
@@ -98,6 +98,15 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 			return jsonPrinter.PrintEmpty("No providers found in namespace " + namespace)
 		}
 		return jsonPrinter.Print()
+	} else if outputFormat == "yaml" {
+		// Use YAML printer
+		yamlPrinter := output.NewYAMLPrinter().
+			AddItems(items)
+
+		if len(providers.Items) == 0 {
+			return yamlPrinter.PrintEmpty("No providers found in namespace " + namespace)
+		}
+		return yamlPrinter.Print()
 	} else {
 		// Use Table printer (default)
 		tablePrinter := output.NewTablePrinter().WithHeaders(
