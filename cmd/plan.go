@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	planv1beta1 "github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1/plan"
+	planv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan"
 	"github.com/spf13/cobra"
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/plan"

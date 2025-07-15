@@ -1,8 +1,8 @@
 package network
 
 import (
-	forkliftv1beta1 "github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1"
-	"github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1/ref"
+	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
+	"github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/ref"
 )
 
 // CreateNetworkMapEntries creates NetworkMap entries based on source network IDs and target networks.
