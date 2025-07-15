@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	planv1beta1 "github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1/plan"
+	planv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	querypkg "github.com/yaacov/kubectl-mtv/pkg/query"

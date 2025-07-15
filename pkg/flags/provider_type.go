@@ -3,7 +3,7 @@ package flags
 import (
 	"fmt"
 
-	forkliftv1beta1 "github.com/konveyor/forklift-controller/pkg/apis/forklift/v1beta1"
+	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 )
 
 // ProviderTypeFlag implements pflag.Value interface for provider type validation
