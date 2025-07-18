@@ -38,12 +38,12 @@ GOARCH := $(shell go env GOARCH)
 
 kubectl-mtv: clean $(kubemtv_cmd) $(kubemtv_pkg)
 	@echo "Building for ${GOOS}/${GOARCH}"
-	go build -ldflags='-X github.com/yaacov/kubectl-mtv/pkg/cmd.clientVersion=${VERSION}' -o kubectl-mtv $(kubemtv_cmd)
+	go build -ldflags='-X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' -o kubectl-mtv $(kubemtv_cmd)
 
 kubectl-mtv-static: $(kubemtv_cmd) $(kubemtv_pkg)
 	CGO_ENABLED=1 CC=musl-gcc go build \
 		-tags netgo \
-		-ldflags '-linkmode external -extldflags "-static" -X github.com/yaacov/kubectl-mtv/pkg/cmd.clientVersion=${VERSION}' \
+		-ldflags '-linkmode external -extldflags "-static" -X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' \
 		-o kubectl-mtv \
 		$(kubemtv_cmd)
 
