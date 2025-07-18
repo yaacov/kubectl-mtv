@@ -483,7 +483,7 @@ kubectl mtv get inventory vms vsphere-01 -q "WHERE warningConcerns > 0 OR critic
 ### Finding VMs with specific network connections
 
 ```bash
-kubectl mtv inventory vms vsphere-01 -q "WHERE ipAddress LIKE '10.10.%'"
+kubectl mtv get inventory vms vsphere-01 -q "WHERE ipAddress LIKE '10.10.%'"
 ```
 
 ### Finding VMs with shared disks
