@@ -1,10 +1,10 @@
 # kubectl-mtv Inventory Tutorial
 
-This document provides a guide to using the `kubectl mtv inventory` commands for exploring provider inventories.
+This document provides a guide to using the `kubectl mtv get inventory` commands for exploring provider inventories.
 
 ## Overview
 
-The `kubectl mtv inventory` command allows you to query and explore resources from virtualization providers, including:
+The `kubectl mtv get inventory` command allows you to query and explore resources from virtualization providers, including:
 
 - Virtual Machines (VMs)
 - Networks
@@ -17,7 +17,7 @@ The `kubectl mtv inventory` command allows you to query and explore resources fr
 All inventory commands follow this general pattern:
 
 ```bash
-kubectl mtv inventory <resource-type> <provider-name> [flags]
+kubectl mtv get inventory <resource-type> <provider-name> [flags]
 ```
 
 ### Common Flags
@@ -45,7 +45,7 @@ For a more complete reference of the query language syntax and capabilities, see
 #### Basic VM listing
 
 ```bash
-kubectl mtv inventory vms vsphere-01
+kubectl mtv get inventory vms vsphere-01
 ```
 
 This displays a table with VM names, power state, CPU count, memory, and other basic information.
@@ -53,7 +53,7 @@ This displays a table with VM names, power state, CPU count, memory, and other b
 #### Filtering VMs by name pattern
 
 ```bash
-kubectl mtv inventory vms vsphere-01 -q "WHERE name LIKE 'web-%'"
+kubectl mtv get inventory vms vsphere-01 -q "WHERE name LIKE 'web-%'"
 ```
 
 Lists only VMs with names starting with "web-".
@@ -61,7 +61,7 @@ Lists only VMs with names starting with "web-".
 #### Sorting VMs by memory
 
 ```bash
-kubectl mtv inventory vms vsphere-01 -q "ORDER BY memoryMB DESC LIMIT 5"
+kubectl mtv get inventory vms vsphere-01 -q "ORDER BY memoryMB DESC LIMIT 5"
 ```
 
 Lists the top 5 VMs with the most memory allocation.
@@ -69,7 +69,7 @@ Lists the top 5 VMs with the most memory allocation.
 #### Complex queries
 
 ```bash
-kubectl mtv inventory vms vsphere-01 -q "WHERE powerState = 'poweredOn' AND memoryMB > 4096 ORDER BY cpuCount DESC"
+kubectl mtv get inventory vms vsphere-01 -q "WHERE powerState = 'poweredOn' AND memoryMB > 4096 ORDER BY cpuCount DESC"
 ```
 
 Lists powered-on VMs with more than 4GB memory, sorted by CPU count in descending order.
@@ -77,7 +77,7 @@ Lists powered-on VMs with more than 4GB memory, sorted by CPU count in descendin
 #### JSON output for scripting
 
 ```bash
-kubectl mtv inventory vms vsphere-01 -q "LIMIT 1" -o json
+kubectl mtv get inventory vms vsphere-01 -q "LIMIT 1" -o json
 ```
 
 Returns VM details in JSON format:
@@ -217,8 +217,8 @@ Returns VM details in JSON format:
 #### Creating migration plans from VM inventory
 
 ```bash
-kubectl mtv inventory vms vsphere-01 -q "WHERE powerState = 'poweredOn'" -o planvms > vms-to-migrate.yaml
-kubectl mtv plan create my-migration-plan --source vsphere-01 --target kubernetes-target --vms @vms-to-migrate.yaml
+kubectl mtv get inventory vms vsphere-01 -q "WHERE powerState = 'poweredOn'" -o planvms > vms-to-migrate.yaml
+kubectl mtv create plan my-migration-plan --source vsphere-01 --target kubernetes-target --vms @vms-to-migrate.yaml
 ```
 
 This creates a list of powered-on VMs in a format suitable for migration planning, then creates a plan using that list.
@@ -228,7 +228,7 @@ See [Editing the VMs List for Migration Plans (planvms)](./README_planvms.md) fo
 #### Selecting specific fields
 
 ```bash
-kubectl mtv inventory vms vsphere-01 -q "SELECT name, powerStateHuman AS state, memoryGB, cpuCount, ipAddress WHERE memoryMB > 2048"
+kubectl mtv get inventory vms vsphere-01 -q "SELECT name, powerStateHuman AS state, memoryGB, cpuCount, ipAddress WHERE memoryMB > 2048"
 ```
 
 Shows only selected fields for VMs with more than 2GB of memory.
@@ -238,13 +238,13 @@ Shows only selected fields for VMs with more than 2GB of memory.
 #### Basic network listing
 
 ```bash
-kubectl mtv inventory networks vsphere-01
+kubectl mtv get inventory networks vsphere-01
 ```
 
 #### Filtering networks
 
 ```bash
-kubectl mtv inventory networks vsphere-01 -q "WHERE name LIKE '%prod%'"
+kubectl mtv get inventory networks vsphere-01 -q "WHERE name LIKE '%prod%'"
 ```
 
 Lists only networks with "prod" in their name.
@@ -252,7 +252,7 @@ Lists only networks with "prod" in their name.
 #### Network JSON output example
 
 ```bash
-kubectl mtv inventory networks vsphere-01 -q "LIMIT 1" -o json
+kubectl mtv get inventory networks vsphere-01 -q "LIMIT 1" -o json
 ```
 
 Returns network details in JSON format:
@@ -292,7 +292,7 @@ Returns network details in JSON format:
 #### Advanced network queries
 
 ```bash
-kubectl mtv inventory networks vsphere-01 -q "WHERE variant = 'DvSwitch' AND hostCount > 5"
+kubectl mtv get inventory networks vsphere-01 -q "WHERE variant = 'DvSwitch' AND hostCount > 5"
 ```
 
 Lists distributed virtual switches connected to more than 5 hosts.
@@ -302,13 +302,13 @@ Lists distributed virtual switches connected to more than 5 hosts.
 #### Basic storage listing
 
 ```bash
-kubectl mtv inventory storage vsphere-01
+kubectl mtv get inventory storage vsphere-01
 ```
 
 #### Finding available storage
 
 ```bash
-kubectl mtv inventory storage vsphere-01 -q "WHERE free > 500Gi ORDER BY free DESC"
+kubectl mtv get inventory storage vsphere-01 -q "WHERE free > 500Gi ORDER BY free DESC"
 ```
 
 Lists storage with more than 500GB free space, sorted by available space.
@@ -316,7 +316,7 @@ Lists storage with more than 500GB free space, sorted by available space.
 #### Storage JSON output example
 
 ```bash
-kubectl mtv inventory storage vsphere-01 -q "LIMIT 1" -o json
+kubectl mtv get inventory storage vsphere-01 -q "LIMIT 1" -o json
 ```
 
 Returns storage details in JSON format:
@@ -347,7 +347,7 @@ Returns storage details in JSON format:
 #### Storage maintenance status check
 
 ```bash
-kubectl mtv inventory storage vsphere-01 -q "WHERE maintenance != 'normal'"
+kubectl mtv get inventory storage vsphere-01 -q "WHERE maintenance != 'normal'"
 ```
 
 Lists storage datastores that are in maintenance mode.
@@ -355,7 +355,7 @@ Lists storage datastores that are in maintenance mode.
 #### Storage utilization analysis
 
 ```bash
-kubectl mtv inventory storage vsphere-01 -q "SELECT name, capacityHuman, freeHuman, type WHERE (capacity - free) / capacity > 0.7"
+kubectl mtv get inventory storage vsphere-01 -q "SELECT name, capacityHuman, freeHuman, type WHERE (capacity - free) / capacity > 0.7"
 ```
 
 Lists datastores that are over 70% utilized.
@@ -365,19 +365,19 @@ Lists datastores that are over 70% utilized.
 #### Basic host listing
 
 ```bash
-kubectl mtv inventory hosts vsphere-01
+kubectl mtv get inventory hosts vsphere-01
 ```
 
 #### Filtering hosts
 
 ```bash
-kubectl mtv inventory hosts vsphere-01 -q "WHERE inMaintenance = false"
+kubectl mtv get inventory hosts vsphere-01 -q "WHERE inMaintenance = false"
 ```
 
 #### Host JSON output example
 
 ```bash
-kubectl mtv inventory hosts vsphere-01 -q "LIMIT 1" -o json
+kubectl mtv get inventory hosts vsphere-01 -q "LIMIT 1" -o json
 ```
 
 Returns host details in JSON format:
@@ -443,19 +443,19 @@ Returns host details in JSON format:
 #### Advanced host queries
 
 ```bash
-kubectl mtv inventory hosts vsphere-01 -q "WHERE productVersion LIKE '8.%' AND cpuCores > 16"
+kubectl mtv get inventory hosts vsphere-01 -q "WHERE productVersion LIKE '8.%' AND cpuCores > 16"
 ```
 
 Lists ESXi 8.x hosts with more than 16 CPU cores.
 
 ```bash
-kubectl mtv inventory hosts vsphere-01 -q "SELECT name, productVersion, cpuCores, cpuSockets, status WHERE inMaintenance = false"
+kubectl mtv get inventory hosts vsphere-01 -q "SELECT name, productVersion, cpuCores, cpuSockets, status WHERE inMaintenance = false"
 ```
 
 Lists active hosts not in maintenance mode with selected fields.
 
 ```bash
-kubectl mtv inventory hosts vsphere-01 -q "WHERE status != 'green'"
+kubectl mtv get inventory hosts vsphere-01 -q "WHERE status != 'green'"
 ```
 
 Lists hosts that have warning or error status.
@@ -463,7 +463,7 @@ Lists hosts that have warning or error status.
 ### Listing Namespaces
 
 ```bash
-kubectl mtv inventory namespaces kubernetes-target
+kubectl mtv get inventory namespaces kubernetes-target
 ```
 
 ## Common Query Examples
@@ -471,13 +471,13 @@ kubectl mtv inventory namespaces kubernetes-target
 ### Finding VMs with specific guest OS
 
 ```bash
-kubectl mtv inventory vms vsphere-01 -q "WHERE guestName LIKE '%Linux%'"
+kubectl mtv get inventory vms vsphere-01 -q "WHERE guestName LIKE '%Linux%'"
 ```
 
 ### Finding VMs with migration concerns
 
 ```bash
-kubectl mtv inventory vms vsphere-01 -q "WHERE warningConcerns > 0 OR criticalConcerns > 0"
+kubectl mtv get inventory vms vsphere-01 -q "WHERE warningConcerns > 0 OR criticalConcerns > 0"
 ```
 
 ### Finding VMs with specific network connections

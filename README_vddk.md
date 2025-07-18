@@ -20,11 +20,11 @@ Download the [VMware Virtual Disk Development Kit (VDDK) tar.gz](https://develop
 
 ### 2. Build the VDDK Image
 
-Use the `kubectl mtv vddk create` command to build and optionally push the image:
+Use the `kubectl mtv create vddk-image` command to build and optionally push the image:
 
 ```bash
 # For example:
-kubectl mtv vddk create --tar ~/vmware-vix-disklib-distrib-8-0-1.tar.gz --tag quay.io/example/vddk:8
+kubectl mtv create vddk-image --tar ~/vmware-vix-disklib-distrib-8-0-1.tar.gz --tag quay.io/example/vddk:8
 ```
 
 - `--tar`: Path to the VDDK tar.gz file (e.g., `~/vmware-vix-disklib-distrib-8-0-1.tar.gz`)
@@ -34,7 +34,7 @@ kubectl mtv vddk create --tar ~/vmware-vix-disklib-distrib-8-0-1.tar.gz --tag qu
 Example with push:
 
 ```bash
-kubectl mtv vddk create --tar ~/vmware-vix-disklib-distrib-8-0-1.tar.gz --tag quay.io/example/vddk:8 --push
+kubectl mtv create vddk-image --tar ~/vmware-vix-disklib-distrib-8-0-1.tar.gz --tag quay.io/example/vddk:8 --push
 ```
 
 ### 3. Set the MTV_VDDK_INIT_IMAGE Environment Variable
