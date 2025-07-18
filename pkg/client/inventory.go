@@ -53,3 +53,15 @@ func FetchProviderInventory(configFlags *genericclioptions.ConfigFlags, baseURL 
 
 	return result, nil
 }
+
+// DiscoverInventoryURL tries to discover the inventory URL from an OpenShift Route
+func DiscoverInventoryURL(configFlags *genericclioptions.ConfigFlags, namespace string) string {
+	route, err := GetForkliftInventoryRoute(configFlags, namespace)
+	if err == nil && route != nil {
+		host, found, _ := unstructured.NestedString(route.Object, "spec", "host")
+		if found && host != "" {
+			return fmt.Sprintf("https://%s", host)
+		}
+	}
+	return ""
+}

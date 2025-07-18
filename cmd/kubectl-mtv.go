@@ -19,7 +19,7 @@ func init() {
 	kubeConfigFlags = genericclioptions.NewConfigFlags(true)
 
 	rootCmd = &cobra.Command{
-		Use:   "mtv",
+		Use:   "kubectl-mtv",
 		Short: "Migration Toolkit for Virtualization CLI",
 		Long: `Migration Toolkit for Virtualization (MTV) CLI
 A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files to KubeVirt.`,
@@ -27,9 +27,16 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 
 	kubeConfigFlags.AddFlags(rootCmd.PersistentFlags())
 
-	rootCmd.AddCommand(newProviderCmd())
-	rootCmd.AddCommand(newMappingCmd())
-	rootCmd.AddCommand(newPlanCmd())
-	rootCmd.AddCommand(newInventoryCmd())
-	rootCmd.AddCommand(newVddkCmd())
+	// Add standard commands for various resources
+	rootCmd.AddCommand(newGetCmd())
+	rootCmd.AddCommand(newDeleteCmd())
+	rootCmd.AddCommand(newCreateCmd())
+	rootCmd.AddCommand(newDescribeCmd())
+
+	// Plan commands
+	rootCmd.AddCommand(newStartCmd())
+	rootCmd.AddCommand(newCancelCmd())
+	rootCmd.AddCommand(newCutoverCmd())
+	rootCmd.AddCommand(newArchiveCmd())
+	rootCmd.AddCommand(newUnArchiveCmd())
 }
