@@ -11,6 +11,20 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/provider"
 )
 
+// getOutputFormatCompletions returns valid output format options for completion
+func getOutputFormatCompletions() []string {
+	return []string{"table", "json", "yaml"}
+}
+
+// addOutputFormatCompletion adds completion for output format flags
+func addOutputFormatCompletion(cmd *cobra.Command, flagName string) {
+	if err := cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return getOutputFormatCompletions(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+}
+
 // printCommandError provides consistent error messaging across commands
 // It prints helpful error information when an error occurs
 func printCommandError(err error, operation string, namespace string) {
@@ -68,6 +82,7 @@ func newGetPlanCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+	addOutputFormatCompletion(cmd, "output")
 
 	return cmd
 }
@@ -118,6 +133,7 @@ func newGetProviderCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+	addOutputFormatCompletion(cmd, "output")
 
 	return cmd
 }
@@ -142,6 +158,7 @@ func newGetMappingCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&mappingType, "type", "t", "", "Mapping type (network, storage)")
+	addOutputFormatCompletion(cmd, "output")
 
 	return cmd
 }
@@ -212,6 +229,7 @@ func newGetInventoryHostCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	addOutputFormatCompletion(cmd, "output")
 
 	return cmd
 }
@@ -247,6 +265,7 @@ func newGetInventoryNamespaceCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	addOutputFormatCompletion(cmd, "output")
 
 	return cmd
 }
@@ -282,6 +301,7 @@ func newGetInventoryNetworkCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	addOutputFormatCompletion(cmd, "output")
 
 	return cmd
 }
@@ -317,6 +337,7 @@ func newGetInventoryStorageCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	addOutputFormatCompletion(cmd, "output")
 
 	return cmd
 }
@@ -354,6 +375,7 @@ func newGetInventoryVMCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&extendedOutput, "extended", false, "Show extended output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	addOutputFormatCompletion(cmd, "output")
 
 	return cmd
 }

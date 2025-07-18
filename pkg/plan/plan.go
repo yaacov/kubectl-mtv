@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	cnv "kubevirt.io/api/core/v1"
 
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan"
@@ -27,31 +26,17 @@ import (
 
 // CreatePlanOptions encapsulates the parameters for the Create function.
 type CreatePlanOptions struct {
-	Name                           string
-	Namespace                      string
-	SourceProvider                 string
-	TargetProvider                 string
-	NetworkMapping                 string
-	StorageMapping                 string
-	VMList                         []plan.VM
-	Description                    string
-	TargetNamespace                string
-	Warm                           bool
-	TransferNetwork                string
-	PreserveClusterCPUModel        bool
-	PreserveStaticIPs              bool
-	PVCNameTemplate                string
-	VolumeNameTemplate             string
-	NetworkNameTemplate            string
-	MigrateSharedDisks             bool
-	ConfigFlags                    *genericclioptions.ConfigFlags
-	InventoryURL                   string
-	Archived                       bool
-	DiskBus                        cnv.DiskBus
-	PVCNameTemplateUseGenerateName bool
-	DeleteGuestConversionPod       bool
-	DefaultTargetNetwork           string
-	DefaultTargetStorageClass      string
+	Name                      string
+	Namespace                 string
+	SourceProvider            string
+	TargetProvider            string
+	NetworkMapping            string
+	StorageMapping            string
+	InventoryURL              string
+	DefaultTargetNetwork      string
+	DefaultTargetStorageClass string
+	PlanSpec                  forkliftv1beta1.PlanSpec
+	ConfigFlags               *genericclioptions.ConfigFlags
 }
 
 // Create creates a new migration plan
@@ -91,7 +76,7 @@ func Create(opts CreatePlanOptions) error {
 
 	// Extract VM names from the plan
 	var planVMNames []string
-	for _, planVM := range opts.VMList {
+	for _, planVM := range opts.PlanSpec.VMs {
 		planVMNames = append(planVMNames, planVM.Name)
 	}
 
@@ -142,73 +127,53 @@ func Create(opts CreatePlanOptions) error {
 	}
 
 	// If target namespace is not provided, use the plan's namespace
-	if opts.TargetNamespace == "" {
-		opts.TargetNamespace = opts.Namespace
-		fmt.Printf("No target namespace specified, using plan namespace: %s\n", opts.TargetNamespace)
+	if opts.PlanSpec.TargetNamespace == "" {
+		opts.PlanSpec.TargetNamespace = opts.Namespace
+		fmt.Printf("No target namespace specified, using plan namespace: %s\n", opts.PlanSpec.TargetNamespace)
 	}
 
-	// Create a new Plan object
+	// Create a new Plan object using the PlanSpec
 	planObj := &forkliftv1beta1.Plan{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      opts.Name,
 			Namespace: opts.Namespace,
 		},
-		Spec: forkliftv1beta1.PlanSpec{
-			Description:                    opts.Description,
-			TargetNamespace:                opts.TargetNamespace,
-			Warm:                           opts.Warm,
-			PreserveClusterCPUModel:        opts.PreserveClusterCPUModel,
-			PreserveStaticIPs:              opts.PreserveStaticIPs,
-			PVCNameTemplate:                opts.PVCNameTemplate,
-			VolumeNameTemplate:             opts.VolumeNameTemplate,
-			NetworkNameTemplate:            opts.NetworkNameTemplate,
-			MigrateSharedDisks:             opts.MigrateSharedDisks,
-			Archived:                       opts.Archived,
-			DiskBus:                        opts.DiskBus,
-			PVCNameTemplateUseGenerateName: opts.PVCNameTemplateUseGenerateName,
-			DeleteGuestConversionPod:       opts.DeleteGuestConversionPod,
-			Provider: provider.Pair{
-				Source: corev1.ObjectReference{
-					Kind:       "Provider",
-					APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
-					Name:       opts.SourceProvider,
-					Namespace:  opts.Namespace,
-				},
-				Destination: corev1.ObjectReference{
-					Kind:       "Provider",
-					APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
-					Name:       opts.TargetProvider,
-					Namespace:  opts.Namespace,
-				},
-			},
-			Map: plan.Map{
-				Network: corev1.ObjectReference{
-					Kind:       "NetworkMap",
-					APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
-					Name:       opts.NetworkMapping,
-					Namespace:  opts.Namespace,
-				},
-				Storage: corev1.ObjectReference{
-					Kind:       "StorageMap",
-					APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
-					Name:       opts.StorageMapping,
-					Namespace:  opts.Namespace,
-				},
-			},
-			VMs: opts.VMList,
+		Spec: opts.PlanSpec,
+	}
+
+	// Set provider references
+	planObj.Spec.Provider = provider.Pair{
+		Source: corev1.ObjectReference{
+			Kind:       "Provider",
+			APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
+			Name:       opts.SourceProvider,
+			Namespace:  opts.Namespace,
+		},
+		Destination: corev1.ObjectReference{
+			Kind:       "Provider",
+			APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
+			Name:       opts.TargetProvider,
+			Namespace:  opts.Namespace,
+		},
+	}
+
+	// Set map references
+	planObj.Spec.Map = plan.Map{
+		Network: corev1.ObjectReference{
+			Kind:       "NetworkMap",
+			APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
+			Name:       opts.NetworkMapping,
+			Namespace:  opts.Namespace,
+		},
+		Storage: corev1.ObjectReference{
+			Kind:       "StorageMap",
+			APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
+			Name:       opts.StorageMapping,
+			Namespace:  opts.Namespace,
 		},
 	}
 	planObj.Kind = "Plan"
 	planObj.APIVersion = forkliftv1beta1.SchemeGroupVersion.String()
-
-	if opts.TransferNetwork != "" {
-		planObj.Spec.TransferNetwork = &corev1.ObjectReference{
-			Kind:       "NetworkAttachmentDefinition",
-			APIVersion: "k8s.cni.cncf.io/v1",
-			Name:       opts.TransferNetwork,
-			Namespace:  opts.Namespace,
-		}
-	}
 
 	// Convert Plan object to Unstructured
 	unstructuredPlan, err := runtime.DefaultUnstructuredConverter.ToUnstructured(planObj)
@@ -245,9 +210,9 @@ func Create(opts CreatePlanOptions) error {
 		return fmt.Errorf("failed to create plan: %v", err)
 	}
 
-	// MTV automatically sets the PVCNameTemplateUseGenerateName field to true,ff opts.PVCNameTemplateUseGenerateName is false
-	// we need to patch the plan to re-set the PVCNameTemplateGenerateName field to false.
-	if !opts.PVCNameTemplateUseGenerateName {
+	// MTV automatically sets the PVCNameTemplateUseGenerateName field to true, if opts.PlanSpec.PVCNameTemplateUseGenerateName is false
+	// we need to patch the plan to re-set the PVCNameTemplateUseGenerateName field to false.
+	if !opts.PlanSpec.PVCNameTemplateUseGenerateName {
 		patch := map[string]interface{}{
 			"spec": map[string]interface{}{
 				"pvcNameTemplateUseGenerateName": false,
@@ -256,7 +221,7 @@ func Create(opts CreatePlanOptions) error {
 		patchBytes, err := json.Marshal(patch)
 		if err != nil {
 			// Ignore error here, we will still create the plan
-			fmt.Printf("Warning: failed to marshal patch for PVCNameTemplateGenerateName: %v\n", err)
+			fmt.Printf("Warning: failed to marshal patch for PVCNameTemplateUseGenerateName: %v\n", err)
 		} else {
 			_, err = c.Resource(client.PlansGVR).Namespace(opts.Namespace).Patch(
 				context.TODO(),
@@ -267,7 +232,7 @@ func Create(opts CreatePlanOptions) error {
 			)
 			if err != nil {
 				// Ignore error here, we will still create the plan
-				fmt.Printf("Warning: failed to patch plan for PVCNameTemplateGenerateName: %v\n", err)
+				fmt.Printf("Warning: failed to patch plan for PVCNameTemplateUseGenerateName: %v\n", err)
 			}
 		}
 	}
@@ -348,7 +313,7 @@ func validateVMs(configFlags *genericclioptions.ConfigFlags, opts *CreatePlanOpt
 	var validVMs []plan.VM
 
 	// First process VMs that already have IDs
-	for _, planVM := range opts.VMList {
+	for _, planVM := range opts.PlanSpec.VMs {
 		if planVM.ID != "" {
 			// Check if VM with this ID exists in inventory
 			if vmName, exists := vmIDToNameMap[planVM.ID]; exists {
@@ -364,7 +329,7 @@ func validateVMs(configFlags *genericclioptions.ConfigFlags, opts *CreatePlanOpt
 	}
 
 	// Then process VMs that only have names (and need IDs)
-	for _, planVM := range opts.VMList {
+	for _, planVM := range opts.PlanSpec.VMs {
 		if planVM.ID == "" && planVM.Name != "" {
 			vmID, exists := vmNameToIDMap[planVM.Name]
 			if exists {
@@ -384,10 +349,10 @@ func validateVMs(configFlags *genericclioptions.ConfigFlags, opts *CreatePlanOpt
 	}
 
 	// Update the VM list
-	opts.VMList = validVMs
+	opts.PlanSpec.VMs = validVMs
 
 	// Check if any VMs remain
-	if len(opts.VMList) == 0 {
+	if len(opts.PlanSpec.VMs) == 0 {
 		return fmt.Errorf("no valid VMs found in source provider matching the plan VMs")
 	}
 
