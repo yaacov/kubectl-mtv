@@ -98,7 +98,7 @@ See the demo documentation for a migration [demo flow using kubectl-mtv](./READM
 
 These flags are available for all commands:
 
-```
+```bash
 --kubeconfig string      Path to the kubeconfig file
 --context string         The name of the kubeconfig context to use
 --namespace string       Namespace (defaults to active namespace from kubeconfig)
@@ -511,7 +511,7 @@ It is strongly recommended that Forklift (Migration Toolkit for Virtualization/M
 > **Note**  
 > Storing the VDDK image in a public registry might violate the VMware license terms.
 
-#### Prerequisites
+#### VDDK Image Management prerequisites
 
 - `podman` installed.
 - You are working on a file system that preserves symbolic links (symlinks).
