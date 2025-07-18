@@ -21,8 +21,9 @@ The Forklift project (upstream of Migration Toolkit for Virtualization) simplifi
 
 - [Installation](#installation)
   - [Prerequisites](#prerequisites)
-  - [Installing from DNF (Fedora)](#installing-from-dnf-fedora)
   - [Krew plugin manager](#krew-plugin-manager)
+  - [Download release binaries](#download-release-binaries)
+  - [Installing from DNF (Fedora)](#installing-from-dnf-fedora)
   - [Building and Installing](#building-and-installing)
 - [Usage](#usage)
   - [Global Flags](#global-flags)
@@ -45,6 +46,30 @@ The Forklift project (upstream of Migration Toolkit for Virtualization) simplifi
 - kubectl installed and configured
 - Go 1.23+
 
+### Krew plugin manager
+
+Using [krew](https://sigs.k8s.io/krew) plugin manager to install:
+
+``` bash
+# Available for linux-amd64
+kubectl krew install mtv
+kubectl mtv --help
+```
+
+### Download release binaries
+
+Go to the [Releases page](https://github.com/yaacov/kubectl-mtv/releases) and download the appropriate archive for your platform.
+
+Or, use the following commands to download and extract the latest release:
+
+```bash
+REPO=yaacov/kubectl-mtv
+ASSET=kubectl-mtv.tar.gz
+LATEST_VER=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep -m1 '"tag_name"' | cut -d'"' -f4)
+curl -L -o $ASSET https://github.com/$REPO/releases/download/$LATEST_VER/$ASSET
+tar -xzf $ASSET
+```
+
 ### Installing from DNF (Fedora)
 
 On Fedora 41, 42, and other compatible amd64 systems, you can install kubectl-mtv directly from the COPR repository:
@@ -55,16 +80,6 @@ dnf copr enable yaacov/kubesql
 
 # Install kubectl-mtv
 dnf install kubectl-mtv
-```
-
-### Krew plugin manager
-
-Using [krew](https://sigs.k8s.io/krew) plugin manager to install:
-
-``` bash
-# Available for linux-amd64
-kubectl krew install mtv
-kubectl mtv --help
 ```
 
 ### Building and Installing
@@ -79,16 +94,6 @@ make
 ```
 
 Make sure `$GOPATH/bin` is in your PATH to use as a kubectl plugin.
-
-### Download from github
-
-```bash
-REPO=yaacov/kubectl-mtv
-ASSET=kubectl-mtv.tar.gz
-LATEST_VER=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep -m1 '"tag_name"' | cut -d'"' -f4)
-curl -L -o $ASSET https://github.com/$REPO/releases/download/$LATEST_VER/$ASSET
-tar -xzf $ASSET
-```
 
 ## Usage
 
