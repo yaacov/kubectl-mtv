@@ -49,6 +49,11 @@ func (p *ProviderTypeFlag) GetValue() string {
 	return p.value
 }
 
+// GetValidValues returns all valid provider type values for auto-completion
+func (p *ProviderTypeFlag) GetValidValues() []string {
+	return []string{"openshift", "vsphere", "ovirt", "openstack", "ova"}
+}
+
 // NewProviderTypeFlag creates a new provider type flag
 func NewProviderTypeFlag() *ProviderTypeFlag {
 	return &ProviderTypeFlag{}

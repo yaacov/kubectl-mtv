@@ -7,7 +7,7 @@ toolchain go1.23.7
 // Add your other dependencies here
 
 require (
-	github.com/kubev2v/forklift v0.0.0-20250714153124-d21ad35de509
+	github.com/kubev2v/forklift v0.0.0-20250718044255-6567482a00cb
 	github.com/spf13/cobra v1.9.1
 	github.com/yaacov/tree-search-language/v6 v6.0.7
 	gopkg.in/yaml.v3 v3.0.1

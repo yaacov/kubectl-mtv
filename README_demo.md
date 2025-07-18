@@ -24,13 +24,13 @@ kubectl create namespace demo-ns
 List existing providers:
 
 ```bash
-kubectl mtv provider list
+kubectl mtv get providers
 ```
 
 Register Kubernetes as the target provider:
 
 ```bash
-kubectl mtv provider create host --type openshift
+kubectl mtv create provider host --type openshift
 ```
 
 Verify that the VDDK initialization image environment variable is set:
@@ -47,7 +47,7 @@ Register VMware vSphere as the source provider:
 
 ```bash
 # For example, use the default VDDK image, and skip TLS verification.
-kubectl mtv provider create vmware --type vsphere \
+kubectl mtv create provider vmware --type vsphere \
   -U https://your.vsphere.server.com/sdk \
   -u your_vsphere_username \
   -p $YOUR_PASSWORD \
@@ -58,16 +58,16 @@ kubectl mtv provider create vmware --type vsphere \
 Re-fetch existing providers:
 
 ```bash
-kubectl mtv provider list
+kubectl mtv get provider
 ```
 
-### 3. Fetch VM Inventory
+### 3. Select VMs for Migration
 
-Retrieve the VM inventory from the VMware provider:
+Browse virtual machines on the source provider using a query:
 
 ```bash
 # For example, select VMs that have a name matching RegExp rule and have more than one disk:
-kubectl mtv inventory vms vmware -q "where name ~= 'your_vm_name' and len disks > 1"
+kubectl mtv get inventory vms vmware -q "where name ~= 'your_vm_name' and len disks > 1"
 ```
 
 ### 4. Create Migration Plan
@@ -75,7 +75,7 @@ kubectl mtv inventory vms vmware -q "where name ~= 'your_vm_name' and len disks 
 Create a migration plan for the selected VM:
 
 ```bash
-kubectl mtv plan create demo -S vmware --vms comma_separated_list_of_selected_vms
+kubectl mtv create plan demo -S vmware --vms comma_separated_list_of_selected_vms
 ```
 
 For more advanced options, you can use flags like:
@@ -84,12 +84,12 @@ For more advanced options, you can use flags like:
 # Create a plan with percictant volume clame [PVC] naming template,
 # This setting will cange the disk name (stored using the PVC) to be used 
 # by the VM in kubernetes.
-kubectl mtv plan create demo-advanced -S vmware --vms your_selected_vms \
+kubectl mtv create plan demo-advanced -S vmware --vms your_selected_vms \
   --pvc-name-template "{{.VmName}}-disk-{{.DiskIndex}}" \
   --pvc-name-template-use-generate-name=false
 
 # Create a warm migration plan with automatic cleanup
-kubectl mtv plan create demo-warm -S vmware --vms your_selected_vms \
+kubectl mtv create plan demo-warm -S vmware --vms your_selected_vms \
   --warm --delete-guest-conversion-pod
 ```
 
@@ -102,7 +102,7 @@ kubectl edit storagemap <storagemap-name>
 ```
 
 > **Tip:**  
-> You can use `kubectl mtv inventory vms <provider> -o planvms > vms.yaml` to export a list of VMs, edit the file to customize migration options, and then use `--vms @vms.yaml` when creating the plan.  
+> You can use `kubectl mtv get inventory vms <provider> -o planvms > vms.yaml` to export a list of VMs, edit the file to customize migration options, and then use `--vms @vms.yaml` when creating the plan.  
 > See [Editing the VMs List for Migration Plans (planvms)](./README_planvms.md) for details.
 
 ### 5. Execute Migration Plan
@@ -110,8 +110,8 @@ kubectl edit storagemap <storagemap-name>
 Review and initiate the migration:
 
 ```bash
-kubectl mtv plan describe demo
-kubectl mtv plan start demo
+kubectl mtv describe plan demo
+kubectl mtv start plan demo
 ```
 
 ### 6. Monitoring Migration
@@ -119,9 +119,9 @@ kubectl mtv plan start demo
 Monitor migration progress and status:
 
 ```bash
-kubectl mtv plan describe demo -w
-kubectl mtv plan vms demo -w
-kubectl mtv plan vm demo --vm your_selected_vm -w
+kubectl mtv describe plan demo -w
+kubectl mtv get plan-vms demo -w
+kubectl mtv describe plan-vm demo --vm your_selected_vm -w
 ```
 
 Monitor logs, pods, and persistent volume claims:

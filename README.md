@@ -1,6 +1,12 @@
 # kubectl-mtv
 
-A kubectl plugin that helps users of Forklift migrate virtualization workloads from oVirt, VMware, OpenStack, and OVA files to KubeVirt on Kubernetes.
+A kubectl plugin that helps users of Forklift migrate virtualization workloads from oVirt, VMware, OpenStack, and OVA file#### Delete Provider
+
+Delete a provider by name.
+
+```bash
+kubectl mtv delete provider NAME [flags]
+```beVirt on Kubernetes.
 
 <p align="center">
   <img src="docs/hiking.svg" alt="kubectl-mtv logo" width="200">
@@ -21,8 +27,8 @@ The Forklift project (upstream of Migration Toolkit for Virtualization) simplifi
 
 - [Installation](#installation)
   - [Prerequisites](#prerequisites)
-  - [Installing from DNF (Fedora)](#installing-from-dnf-fedora)
   - [Krew plugin manager](#krew-plugin-manager)
+  - [Release binaries](#release-binaries)
   - [Building and Installing](#building-and-installing)
 - [Usage](#usage)
   - [Global Flags](#global-flags)
@@ -45,18 +51,6 @@ The Forklift project (upstream of Migration Toolkit for Virtualization) simplifi
 - kubectl installed and configured
 - Go 1.23+
 
-### Installing from DNF (Fedora)
-
-On Fedora 41, 42, and other compatible amd64 systems, you can install kubectl-mtv directly from the COPR repository:
-
-```bash
-# Enable the COPR repository
-dnf copr enable yaacov/kubesql
-
-# Install kubectl-mtv
-dnf install kubectl-mtv
-```
-
 ### Krew plugin manager
 
 Using [krew](https://sigs.k8s.io/krew) plugin manager to install:
@@ -67,7 +61,13 @@ kubectl krew install mtv
 kubectl mtv --help
 ```
 
+### Release binaries
+
+Pre-built binaries are available for download from the [GitHub releases page](https://github.com/yaacov/kubectl-mtv/releases).
+
 ### Building and Installing
+
+If you prefer to build from source:
 
 ```bash
 # Clone the repository
@@ -79,16 +79,6 @@ make
 ```
 
 Make sure `$GOPATH/bin` is in your PATH to use as a kubectl plugin.
-
-### Download from github
-
-```bash
-REPO=yaacov/kubectl-mtv
-ASSET=kubectl-mtv.tar.gz
-LATEST_VER=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep -m1 '"tag_name"' | cut -d'"' -f4)
-curl -L -o $ASSET https://github.com/$REPO/releases/download/$LATEST_VER/$ASSET
-tar -xzf $ASSET
-```
 
 ## Usage
 
@@ -104,14 +94,12 @@ These flags are available for all commands:
 --namespace string       Namespace (defaults to active namespace from kubeconfig)
 ```
 
-### Provider Management
+### Provider Commands
 
-#### Create Provider
-
-Create a provider connection to a virtualization platform.
+Create a new provider:
 
 ```bash
-kubectl mtv provider create NAME --type TYPE [flags]
+kubectl mtv create provider NAME --type TYPE [flags]
 ```
 
 **Required Flags:**
@@ -133,11 +121,11 @@ kubectl mtv provider create NAME --type TYPE [flags]
 
 ```bash
 # Create a VMware provider
-kubectl mtv provider create vsphere-01 --type vsphere --url https://vcenter.example.com \
+kubectl mtv create provider vsphere-01 --type vsphere --url https://vcenter.example.com \
   -u admin --password secret --cacert @ca.cert
 
 # Create an OpenShift provider
-kubectl mtv provider create openshift-target --type openshift \
+kubectl mtv create provider openshift-target --type openshift \
   --url https://api.cluster.example.com:6443 --token eyJhbGc...
 ```
 
@@ -146,7 +134,7 @@ kubectl mtv provider create openshift-target --type openshift \
 List all providers in a namespace.
 
 ```bash
-kubectl mtv provider list [flags]
+kubectl mtv get provider [flags]
 ```
 
 **Optional Flags:**
@@ -156,10 +144,10 @@ kubectl mtv provider list [flags]
 
 #### Delete Provider
 
-Delete a provider.
+Delete a provider by name.
 
 ```bash
-kubectl mtv provider delete NAME [flags]
+kubectl mtv delete provider NAME [flags]
 ```
 
 ### Mapping Management
@@ -179,41 +167,61 @@ Mappings define how resources from source providers are mapped to target provide
 Create a network mapping between source and target providers.
 
 ```bash
-kubectl mtv mapping create-network NAME [flags]
+kubectl mtv create mapping NAME --type network [flags]
 ```
+
+**Required Flags:**
+
+- `--type`: Mapping type (network, storage)
 
 **Optional Flags:**
 
 - `-S, --source`: Source provider name
-- `-t, --target`: Target provider name
-- `--from-file`: Create from YAML file
+- `-T, --target`: Target provider name
+- `-f, --from-file`: Create mapping from YAML/JSON file
 
 #### Create Storage Mapping
 
 Create a storage mapping between source and target providers.
 
 ```bash
-kubectl mtv mapping create-storage NAME [flags]
+kubectl mtv create mapping NAME --type storage [flags]
 ```
+
+**Required Flags:**
+
+- `--type`: Mapping type (network, storage)
 
 **Optional Flags:**
 
 - `-S, --source`: Source provider name
-- `-t, --target`: Target provider name
-- `--from-file`: Create from YAML file
+- `-T, --target`: Target provider name
+- `-f, --from-file`: Create mapping from YAML/JSON file
 
 #### List Mappings
 
 List all mappings in a namespace.
 
 ```bash
-kubectl mtv mapping list [flags]
+kubectl mtv get mapping [flags]
 ```
 
 **Optional Flags:**
 
 - `--type`: Mapping type (network, storage, all) (default "all")
 - `-o, --output`: Output format. One of: table, json (default "table")
+
+#### Delete Mapping
+
+Delete a mapping by name.
+
+```bash
+kubectl mtv delete mapping NAME [flags]
+```
+
+**Optional Flags:**
+
+- `--type`: Mapping type (network, storage)
 
 ### Inventory Management
 
@@ -224,7 +232,7 @@ Query and explore the inventory of providers.
 List VMs from a provider.
 
 ```bash
-kubectl mtv inventory vms PROVIDER [flags]
+kubectl mtv get inventory vms PROVIDER [flags]
 ```
 
 **Optional Flags:**
@@ -245,13 +253,13 @@ kubectl mtv inventory vms PROVIDER [flags]
 
 ```bash
 # List all VMs
-kubectl mtv inventory vms vsphere-01
+kubectl mtv get inventory vms vsphere-01
 
 # List VMs with a specific query
-kubectl mtv inventory vms vsphere-01 -q "WHERE name LIKE 'db-%' ORDER BY memory DESC LIMIT 10"
+kubectl mtv get inventory vms vsphere-01 -q "WHERE name LIKE 'db-%' ORDER BY memory DESC LIMIT 10"
 
 # Output VM list in a format suitable for migration plans
-kubectl mtv inventory vms vsphere-01 -o planvms > vms.yaml
+kubectl mtv get inventory vms vsphere-01 -o planvms > vms.yaml
 ```
 
 #### List Networks
@@ -259,7 +267,7 @@ kubectl mtv inventory vms vsphere-01 -o planvms > vms.yaml
 List networks from a provider.
 
 ```bash
-kubectl mtv inventory networks PROVIDER [flags]
+kubectl mtv get inventory networks PROVIDER [flags]
 ```
 
 **Optional Flags:**
@@ -274,7 +282,7 @@ kubectl mtv inventory networks PROVIDER [flags]
 List storage from a provider.
 
 ```bash
-kubectl mtv inventory storage PROVIDER [flags]
+kubectl mtv get inventory storage PROVIDER [flags]
 ```
 
 **Optional Flags:**
@@ -289,7 +297,7 @@ kubectl mtv inventory storage PROVIDER [flags]
 List hosts from a provider.
 
 ```bash
-kubectl mtv inventory hosts PROVIDER [flags]
+kubectl mtv get inventory hosts PROVIDER [flags]
 ```
 
 **Optional Flags:**
@@ -304,7 +312,7 @@ kubectl mtv inventory hosts PROVIDER [flags]
 List namespaces from a provider.
 
 ```bash
-kubectl mtv inventory namespaces PROVIDER [flags]
+kubectl mtv get inventory namespaces PROVIDER [flags]
 ```
 
 **Optional Flags:**
@@ -322,7 +330,7 @@ Create and manage migration plans.
 Create a migration plan to move VMs from a source provider to a target provider.
 
 ```bash
-kubectl mtv plan create NAME [flags]
+kubectl mtv create plan NAME [flags]
 ```
 
 **Optional Flags:**
@@ -352,15 +360,15 @@ kubectl mtv plan create NAME [flags]
 
 ```bash
 # Create a plan with specific VMs
-kubectl mtv plan create my-plan --source vsphere-01 --target openshift-target \
+kubectl mtv create plan my-plan --source vsphere-01 --target openshift-target \
   --vms "web-vm-1,db-vm-2,app-vm-3"
 
 # Create a plan with VMs defined in a file
-kubectl mtv plan create my-plan --source vsphere-01 --target openshift-target \
+kubectl mtv create plan my-plan --source vsphere-01 --target openshift-target \
   --vms @vms.yaml
 
 # Create a warm migration plan with options for PVC naming
-kubectl mtv plan create warm-plan --source vsphere-01 --target openshift-target \
+kubectl mtv create plan warm-plan --source vsphere-01 --target openshift-target \
   --vms "web-vm-1" --warm --pvc-name-template "{{.VmName}}-disk-{{.DiskIndex}}" \
   --pvc-name-template-use-generate-name=false
 ```
@@ -372,7 +380,7 @@ See [Editing the VMs List for Migration Plans (planvms)](./README_planvms.md) fo
 List migration plans in a namespace.
 
 ```bash
-kubectl mtv plan list [flags]
+kubectl mtv get plan [flags]
 ```
 
 **Optional Flags:**
@@ -385,19 +393,19 @@ kubectl mtv plan list [flags]
 Start a migration plan execution.
 
 ```bash
-kubectl mtv plan start NAME [flags]
+kubectl mtv start plan NAME [flags]
 ```
 
 Examples:
 
 ```bash
 # Cutover in 10m
-kubectl mtv plan start demo --cutover $(date -d '+10 minutes' --rfc-3339=seconds)
+kubectl mtv start plan demo --cutover $(date -d '+10 minutes' --rfc-3339=seconds)
 ```
 
 ```bash
 # Cutover on the next round hour
-kubectl mtv plan start demo --cutover $(date -d "$(date +'%Y-%m-%d %H:00:00') +1 hour" --rfc-3339=seconds)
+kubectl mtv start plan demo --cutover $(date -d "$(date +'%Y-%m-%d %H:00:00') +1 hour" --rfc-3339=seconds)
 ```
 
 **Optional Flags:**
@@ -409,7 +417,7 @@ kubectl mtv plan start demo --cutover $(date -d "$(date +'%Y-%m-%d %H:00:00') +1
 Show detailed information about a migration plan.
 
 ```bash
-kubectl mtv plan describe NAME
+kubectl mtv describe plan NAME
 ```
 
 #### Describe VM in Migration Plan
@@ -417,7 +425,7 @@ kubectl mtv plan describe NAME
 Show detailed information about a specific VM in a migration plan.
 
 ```bash
-kubectl mtv plan vm NAME --vm VM_NAME [flags]
+kubectl mtv describe plan-vm NAME --vm VM_NAME [flags]
 ```
 
 **Required Flags:**
@@ -433,7 +441,7 @@ kubectl mtv plan vm NAME --vm VM_NAME [flags]
 List all VMs in a migration plan with their migration status.
 
 ```bash
-kubectl mtv plan vms NAME [flags]
+kubectl mtv get plan-vms NAME [flags]
 ```
 
 **Optional Flags:**
@@ -445,7 +453,7 @@ kubectl mtv plan vms NAME [flags]
 Cancel specific VMs in a running migration.
 
 ```bash
-kubectl mtv plan cancel-vms NAME --vms VMLIST [flags]
+kubectl mtv cancel plan NAME --vms VMLIST [flags]
 ```
 
 **Required Flags:**
@@ -457,7 +465,7 @@ kubectl mtv plan cancel-vms NAME --vms VMLIST [flags]
 Set the cutover time for a warm migration.
 
 ```bash
-kubectl mtv plan cutover NAME [flags]
+kubectl mtv cutover plan NAME [flags]
 ```
 
 **Optional Flags:**
@@ -469,20 +477,24 @@ kubectl mtv plan cutover NAME [flags]
 Delete a migration plan.
 
 ```bash
-kubectl mtv plan delete NAME
+kubectl mtv delete plan NAME
 ```
 
 #### Archive Migration Plan
 
-Archive or unarchive a migration plan for long-term storage.
+Archive a migration plan for long-term storage.
 
 ```bash
-kubectl mtv plan archive NAME [flags]
+kubectl mtv archive plan NAME [flags]
 ```
 
-**Optional Flags:**
+#### Unarchive Migration Plan
 
-- `--unarchive`: Unarchive the plan instead of archiving it
+Unarchive a migration plan from long-term storage.
+
+```bash
+kubectl mtv unarchive plan NAME [flags]
+```
 
 ### VDDK Image Management
 
@@ -504,7 +516,7 @@ See [VDDK Image Creation and Usage](./README_vddk.md) for a step-by-step guide.
 #### Command Example
 
 ```bash
-kubectl mtv vddk create --tar ~/vmware-vix-disklib-distrib-8-0-1.tar.gz --tag quay.io/example/vddk:8
+kubectl mtv create vddk-image --tar ~/vmware-vix-disklib-distrib-8-0-1.tar.gz --tag quay.io/example/vddk:8
 ```
 
 ## Environment Variables
