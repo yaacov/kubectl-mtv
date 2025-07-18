@@ -237,6 +237,33 @@ func Create(opts CreatePlanOptions) error {
 		}
 	}
 
+	// MTV automatically sets the MigrateSharedDisks field to true, if opts.PlanSpec.MigrateSharedDisks is false
+	// we need to patch the plan to re-set the MigrateSharedDisks field to false.
+	if !opts.PlanSpec.MigrateSharedDisks {
+		patch := map[string]interface{}{
+			"spec": map[string]interface{}{
+				"migrateSharedDisks": false,
+			},
+		}
+		patchBytes, err := json.Marshal(patch)
+		if err != nil {
+			// Ignore error here, we will still create the plan
+			fmt.Printf("Warning: failed to marshal patch for MigrateSharedDisks: %v\n", err)
+		} else {
+			_, err = c.Resource(client.PlansGVR).Namespace(opts.Namespace).Patch(
+				context.TODO(),
+				createdPlan.GetName(),
+				types.MergePatchType,
+				patchBytes,
+				metav1.PatchOptions{},
+			)
+			if err != nil {
+				// Ignore error here, we will still create the plan
+				fmt.Printf("Warning: failed to patch plan for MigrateSharedDisks: %v\n", err)
+			}
+		}
+	}
+
 	// Set ownership of maps if we created them
 	if createdNetworkMap {
 		err = setMapOwnership(opts.ConfigFlags, createdPlan, client.NetworkMapGVR, opts.NetworkMapping, opts.Namespace)
