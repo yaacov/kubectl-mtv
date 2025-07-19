@@ -13,6 +13,19 @@ import (
 
 // resolveOpenShiftNetworkNameToID resolves network name for OpenShift provider
 func resolveOpenShiftNetworkNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, networkName string) (ref.Ref, error) {
+	// If networkName is empty, return an empty ref
+	if networkName == "" {
+		return ref.Ref{}, fmt.Errorf("network name cannot be empty")
+	}
+
+	// If networkName is pod, return special pod reference
+	if networkName == "pod" {
+		return ref.Ref{
+			Name: "pod",
+			Type: "pod",
+		}, nil
+	}
+
 	// Fetch NetworkAttachmentDefinitions from OpenShift
 	networksInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "networkattachmentdefinitions?detail=4")
 	if err != nil {
@@ -38,12 +51,14 @@ func resolveOpenShiftNetworkNameToID(configFlags *genericclioptions.ConfigFlags,
 					if metadataMap, ok := metadata.(map[string]interface{}); ok {
 						name, _ := metadataMap["name"].(string)
 						ns, _ := metadataMap["namespace"].(string)
+						id, _ := metadataMap["uid"].(string)
 
 						if name == networkName {
 							return ref.Ref{
-								ID:        fmt.Sprintf("%s/%s", ns, name),
+								ID:        id,
 								Name:      name,
 								Namespace: ns,
+								Type:      "multus",
 							}, nil
 						}
 					}

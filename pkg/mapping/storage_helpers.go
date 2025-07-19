@@ -37,10 +37,14 @@ func resolveOpenShiftStorageNameToID(configFlags *genericclioptions.ConfigFlags,
 				if metadata, exists := objMap["metadata"]; exists {
 					if metadataMap, ok := metadata.(map[string]interface{}); ok {
 						name, _ := metadataMap["name"].(string)
+						namespace, _ := metadataMap["namespace"].(string)
+						id, _ := metadataMap["uid"].(string)
 
 						if name == storageName {
 							return ref.Ref{
-								ID: name, // For storage classes, ID is the same as name
+								Name:      name,
+								Namespace: namespace,
+								ID:        id,
 							}, nil
 						}
 					}
@@ -77,7 +81,8 @@ func resolveVSphereStorageNameToID(configFlags *genericclioptions.ConfigFlags, i
 
 		if name == storageName {
 			return ref.Ref{
-				ID: id,
+				Name: name,
+				ID:   id,
 			}, nil
 		}
 	}
@@ -110,7 +115,8 @@ func resolveOvirtStorageNameToID(configFlags *genericclioptions.ConfigFlags, inv
 
 		if name == storageName {
 			return ref.Ref{
-				ID: id,
+				Name: name,
+				ID:   id,
 			}, nil
 		}
 	}
@@ -143,7 +149,8 @@ func resolveOpenStackStorageNameToID(configFlags *genericclioptions.ConfigFlags,
 
 		if name == storageName {
 			return ref.Ref{
-				ID: id,
+				Name: name,
+				ID:   id,
 			}, nil
 		}
 	}
