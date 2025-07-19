@@ -22,14 +22,24 @@ var (
 	globalConfig    *GlobalConfig
 )
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-func Execute() error {
-	return rootCmd.Execute()
+// logInfof logs formatted informational messages at verbosity level 1
+func logInfof(format string, args ...interface{}) {
+	klog.V(1).Infof(format, args...)
+}
+
+// logDebugf logs formatted debug messages at verbosity level 2
+func logDebugf(format string, args ...interface{}) {
+	klog.V(2).Infof(format, args...)
 }
 
 // GetGlobalConfig returns the global configuration instance
 func GetGlobalConfig() *GlobalConfig {
 	return globalConfig
+}
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+func Execute() error {
+	return rootCmd.Execute()
 }
 
 func init() {
@@ -53,7 +63,7 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 			}
 
 			// Log global configuration if verbosity is enabled
-			klog.V(2).Infof("Global configuration - Verbosity: %d, All Namespaces: %t",
+			logDebugf("Global configuration - Verbosity: %d, All Namespaces: %t",
 				globalConfig.Verbosity, globalConfig.AllNamespaces)
 		},
 	}

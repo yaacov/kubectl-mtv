@@ -9,7 +9,6 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/mapping"
 	"github.com/yaacov/kubectl-mtv/pkg/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/provider"
-	"k8s.io/klog/v2"
 )
 
 // getOutputFormatCompletions returns valid output format options for completion
@@ -32,6 +31,20 @@ func printCommandError(err error, operation string, namespace string) {
 	fmt.Printf("Error %s: %v\n", operation, err)
 	fmt.Printf("Please ensure you have the correct permissions and the namespace '%s' exists.\n", namespace)
 	fmt.Printf("You can use the '--help' flag for more information on usage.\n")
+}
+
+// logNamespaceOperation logs namespace-specific operations with consistent formatting
+func logNamespaceOperation(operation string, namespace string, allNamespaces bool) {
+	if allNamespaces {
+		logInfof("%s from all namespaces", operation)
+	} else {
+		logInfof("%s from namespace: %s", operation, namespace)
+	}
+}
+
+// logOutputFormat logs the output format being used
+func logOutputFormat(format string) {
+	logDebugf("Output format: %s", format)
 }
 
 func newGetCmd() *cobra.Command {
@@ -76,13 +89,9 @@ func newGetPlanCmd() *cobra.Command {
 			config := GetGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
 
-			// Use klog for verbose output
-			if config.AllNamespaces {
-				klog.V(1).Info("Getting plans from all namespaces")
-			} else {
-				klog.V(1).Infof("Getting plans from namespace: %s", namespace)
-			}
-			klog.V(2).Infof("Output format: %s", outputFormat)
+			// Log the operation being performed
+			logNamespaceOperation("Getting plans", namespace, config.AllNamespaces)
+			logOutputFormat(outputFormat)
 
 			err := plan.ListPlans(config.KubeConfigFlags, namespace, outputFormat)
 			if err != nil {
@@ -136,13 +145,9 @@ func newGetProviderCmd() *cobra.Command {
 			config := GetGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
 
-			// Use klog for verbose output
-			if config.AllNamespaces {
-				klog.V(1).Info("Getting providers from all namespaces")
-			} else {
-				klog.V(1).Infof("Getting providers from namespace: %s", namespace)
-			}
-			klog.V(2).Infof("Output format: %s", outputFormat)
+			// Log the operation being performed
+			logNamespaceOperation("Getting providers", namespace, config.AllNamespaces)
+			logOutputFormat(outputFormat)
 
 			baseURL := ""
 			err := provider.List(config.KubeConfigFlags, namespace, baseURL, outputFormat)
