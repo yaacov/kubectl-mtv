@@ -119,9 +119,13 @@ func newGetPlanVMsCmd() *cobra.Command {
 			// Get plan name from positional argument
 			name := args[0]
 
-			// Resolve the appropriate namespace based on context and flags
-			namespace := client.ResolveNamespace(kubeConfigFlags)
-			err := plan.ListVMs(kubeConfigFlags, name, namespace, watch)
+			config := GetGlobalConfig()
+			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
+
+			// Log the operation being performed
+			logNamespaceOperation("Getting VMs from plan", namespace, config.AllNamespaces)
+
+			err := plan.ListVMs(config.KubeConfigFlags, name, namespace, watch)
 			if err != nil {
 				printCommandError(err, "getting VMs from plan", namespace)
 			}
@@ -173,8 +177,14 @@ func newGetMappingCmd() *cobra.Command {
 		Short: "Get mappings",
 		Long:  `Get network and storage mappings`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			namespace := client.ResolveNamespace(kubeConfigFlags)
-			err := mapping.List(kubeConfigFlags, mappingType, namespace, outputFormat)
+			config := GetGlobalConfig()
+			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
+
+			// Log the operation being performed
+			logNamespaceOperation("Getting mappings", namespace, config.AllNamespaces)
+			logOutputFormat(outputFormat)
+
+			err := mapping.List(config.KubeConfigFlags, mappingType, namespace, outputFormat)
 			if err != nil {
 				printCommandError(err, "getting mappings", namespace)
 			}
@@ -237,13 +247,18 @@ func newGetInventoryHostCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
-			namespace := client.ResolveNamespace(kubeConfigFlags)
+			config := GetGlobalConfig()
+			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
+
+			// Log the operation being performed
+			logNamespaceOperation("Getting hosts from provider", namespace, config.AllNamespaces)
+			logOutputFormat(outputFormat)
 
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+				inventoryURL = client.DiscoverInventoryURL(config.KubeConfigFlags, namespace)
 			}
 
-			err := inventory.ListHosts(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
+			err := inventory.ListHosts(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 			if err != nil {
 				printCommandError(err, "getting hosts from provider", namespace)
 			}
@@ -273,13 +288,18 @@ func newGetInventoryNamespaceCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
-			namespace := client.ResolveNamespace(kubeConfigFlags)
+			config := GetGlobalConfig()
+			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
+
+			// Log the operation being performed
+			logNamespaceOperation("Getting namespaces from provider", namespace, config.AllNamespaces)
+			logOutputFormat(outputFormat)
 
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+				inventoryURL = client.DiscoverInventoryURL(config.KubeConfigFlags, namespace)
 			}
 
-			err := inventory.ListNamespaces(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
+			err := inventory.ListNamespaces(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 			if err != nil {
 				printCommandError(err, "getting namespaces from provider", namespace)
 			}
@@ -309,13 +329,18 @@ func newGetInventoryNetworkCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
-			namespace := client.ResolveNamespace(kubeConfigFlags)
+			config := GetGlobalConfig()
+			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
+
+			// Log the operation being performed
+			logNamespaceOperation("Getting networks from provider", namespace, config.AllNamespaces)
+			logOutputFormat(outputFormat)
 
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+				inventoryURL = client.DiscoverInventoryURL(config.KubeConfigFlags, namespace)
 			}
 
-			err := inventory.ListNetworks(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
+			err := inventory.ListNetworks(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 			if err != nil {
 				printCommandError(err, "getting networks from provider", namespace)
 			}
@@ -345,13 +370,18 @@ func newGetInventoryStorageCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
-			namespace := client.ResolveNamespace(kubeConfigFlags)
+			config := GetGlobalConfig()
+			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
+
+			// Log the operation being performed
+			logNamespaceOperation("Getting storage from provider", namespace, config.AllNamespaces)
+			logOutputFormat(outputFormat)
 
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+				inventoryURL = client.DiscoverInventoryURL(config.KubeConfigFlags, namespace)
 			}
 
-			err := inventory.ListStorage(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
+			err := inventory.ListStorage(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 			if err != nil {
 				printCommandError(err, "getting storage from provider", namespace)
 			}
@@ -382,13 +412,18 @@ func newGetInventoryVMCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
-			namespace := client.ResolveNamespace(kubeConfigFlags)
+			config := GetGlobalConfig()
+			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
+
+			// Log the operation being performed
+			logNamespaceOperation("Getting VMs from provider", namespace, config.AllNamespaces)
+			logOutputFormat(outputFormat)
 
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+				inventoryURL = client.DiscoverInventoryURL(config.KubeConfigFlags, namespace)
 			}
 
-			err := inventory.ListVMs(kubeConfigFlags, provider, namespace, inventoryURL, outputFormat, extendedOutput, query, watch)
+			err := inventory.ListVMs(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, extendedOutput, query, watch)
 			if err != nil {
 				printCommandError(err, "getting VMs from provider", namespace)
 			}
