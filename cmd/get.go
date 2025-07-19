@@ -9,6 +9,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/mapping"
 	"github.com/yaacov/kubectl-mtv/pkg/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/provider"
+	"k8s.io/klog/v2"
 )
 
 // getOutputFormatCompletions returns valid output format options for completion
@@ -72,8 +73,18 @@ func newGetPlanCmd() *cobra.Command {
 		Short: "Get migration plans",
 		Long:  `Get migration plans`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			namespace := client.ResolveNamespace(kubeConfigFlags)
-			err := plan.ListPlans(kubeConfigFlags, namespace, outputFormat)
+			config := GetGlobalConfig()
+			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
+
+			// Use klog for verbose output
+			if config.AllNamespaces {
+				klog.V(1).Info("Getting plans from all namespaces")
+			} else {
+				klog.V(1).Infof("Getting plans from namespace: %s", namespace)
+			}
+			klog.V(2).Infof("Output format: %s", outputFormat)
+
+			err := plan.ListPlans(config.KubeConfigFlags, namespace, outputFormat)
 			if err != nil {
 				printCommandError(err, "getting plans", namespace)
 			}
@@ -122,9 +133,19 @@ func newGetProviderCmd() *cobra.Command {
 		Short: "Get providers",
 		Long:  `Get virtualization providers`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			namespace := client.ResolveNamespace(kubeConfigFlags)
+			config := GetGlobalConfig()
+			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
+
+			// Use klog for verbose output
+			if config.AllNamespaces {
+				klog.V(1).Info("Getting providers from all namespaces")
+			} else {
+				klog.V(1).Infof("Getting providers from namespace: %s", namespace)
+			}
+			klog.V(2).Infof("Output format: %s", outputFormat)
+
 			baseURL := ""
-			err := provider.List(kubeConfigFlags, namespace, baseURL, outputFormat)
+			err := provider.List(config.KubeConfigFlags, namespace, baseURL, outputFormat)
 			if err != nil {
 				printCommandError(err, "getting providers", namespace)
 			}

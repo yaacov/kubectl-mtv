@@ -29,3 +29,13 @@ func ResolveNamespace(configFlags *genericclioptions.ConfigFlags) string {
 	// Fall back to default namespace if not found in kubeconfig
 	return "default"
 }
+
+// ResolveNamespaceWithAllFlag determines the effective namespace considering the all-namespaces flag:
+// 1. If allNamespaces is true, return empty string (indicates all namespaces)
+// 2. Otherwise, use the standard ResolveNamespace logic
+func ResolveNamespaceWithAllFlag(configFlags *genericclioptions.ConfigFlags, allNamespaces bool) string {
+	if allNamespaces {
+		return "" // Empty string indicates all namespaces in Kubernetes APIs
+	}
+	return ResolveNamespace(configFlags)
+}
