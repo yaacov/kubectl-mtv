@@ -44,6 +44,9 @@ func newCreateProviderCmd() *cobra.Command {
 	var insecureSkipTLS bool
 	var vddkInitImage string
 
+	// OpenStack specific flags
+	var domainName, projectName, regionName string
+
 	// Check if MTV_VDDK_INIT_IMAGE environment variable is set
 	if envVddkInitImage := os.Getenv("MTV_VDDK_INIT_IMAGE"); envVddkInitImage != "" {
 		vddkInitImage = envVddkInitImage
@@ -71,7 +74,8 @@ func newCreateProviderCmd() *cobra.Command {
 			}
 
 			err := provider.Create(kubeConfigFlags, providerType.GetValue(), name, namespace, secret,
-				url, username, password, cacert, insecureSkipTLS, vddkInitImage, token)
+				url, username, password, cacert, insecureSkipTLS, vddkInitImage, token,
+				domainName, projectName, regionName)
 			if err != nil {
 				printCommandError(err, "creating provider", namespace)
 			}
@@ -93,10 +97,19 @@ func newCreateProviderCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&url, "url", "U", "", "Provider URL")
 	cmd.Flags().StringVarP(&username, "username", "u", "", "Provider credentials username")
 	cmd.Flags().StringVarP(&password, "password", "p", "", "Provider credentials password")
-	cmd.Flags().StringVarP(&token, "token", "T", "", "Provider authentication token (used for openshift provider)")
 	cmd.Flags().StringVar(&cacert, "cacert", "", "Provider CA certificate (use @filename to load from file)")
 	cmd.Flags().BoolVar(&insecureSkipTLS, "provider-insecure-skip-tls", false, "Skip TLS verification when connecting to the provider")
+
+	// OpenShift specific flags
+	cmd.Flags().StringVarP(&token, "token", "T", "", "Provider authentication token (used for openshift provider)")
+
+	// VSphere specific flags
 	cmd.Flags().StringVar(&vddkInitImage, "vddk-init-image", vddkInitImage, "Virtual Disk Development Kit (VDDK) container init image path")
+
+	// OpenStack specific flags
+	cmd.Flags().StringVar(&domainName, "provider-domain-name", "", "OpenStack domain name")
+	cmd.Flags().StringVar(&projectName, "provider-project-name", "", "OpenStack project name")
+	cmd.Flags().StringVar(&regionName, "provider-region-name", "", "OpenStack region name")
 
 	if err := cmd.MarkFlagRequired("type"); err != nil {
 		panic(err)
@@ -161,8 +174,6 @@ func newCreatePlanCmd() *cobra.Command {
 					vmList = append(vmList, newVM)
 				}
 			}
-
-			// Note: DiskBus field was deprecated in 2.8 and has been removed
 
 			// Create transfer network reference if provided
 			if transferNetwork != "" {
