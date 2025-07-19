@@ -29,7 +29,6 @@ func addOutputFormatCompletion(cmd *cobra.Command, flagName string) {
 // It prints helpful error information when an error occurs
 func printCommandError(err error, operation string, namespace string) {
 	fmt.Printf("Error %s: %v\n", operation, err)
-	fmt.Printf("Please ensure you have the correct permissions and the namespace '%s' exists.\n", namespace)
 	fmt.Printf("You can use the '--help' flag for more information on usage.\n")
 }
 

@@ -344,7 +344,6 @@ func newCreateVddkCmd() *cobra.Command {
 			err := vddk.BuildImage(vddkTarGz, vddkTag, vddkBuildDir, vddkPush)
 			if err != nil {
 				fmt.Printf("Error building VDDK image: %v\n", err)
-				fmt.Printf("Please ensure you have the correct permissions and Docker/Podman is available.\n")
 				fmt.Printf("You can use the '--help' flag for more information on usage.\n")
 			}
 			return nil
