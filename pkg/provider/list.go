@@ -8,11 +8,58 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/dynamic"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	"github.com/yaacov/kubectl-mtv/pkg/provider/providerutil"
 )
+
+// getProviders retrieves all providers from the given namespace
+func getProviders(dynamicClient dynamic.Interface, namespace string) (*unstructured.UnstructuredList, error) {
+	if namespace != "" {
+		return dynamicClient.Resource(client.ProvidersGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	} else {
+		return dynamicClient.Resource(client.ProvidersGVR).List(context.TODO(), metav1.ListOptions{})
+	}
+}
+
+// getSpecificProvider retrieves a specific provider by name
+func getSpecificProvider(dynamicClient dynamic.Interface, namespace, providerName string) (*unstructured.UnstructuredList, error) {
+	if namespace != "" {
+		// If namespace is specified, get the specific resource
+		provider, err := dynamicClient.Resource(client.ProvidersGVR).Namespace(namespace).Get(context.TODO(), providerName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create a list with just this provider
+		return &unstructured.UnstructuredList{
+			Items: []unstructured.Unstructured{*provider},
+		}, nil
+	} else {
+		// If no namespace specified, list all and filter by name
+		providers, err := dynamicClient.Resource(client.ProvidersGVR).List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list providers: %v", err)
+		}
+
+		var filteredItems []unstructured.Unstructured
+		for _, provider := range providers.Items {
+			if provider.GetName() == providerName {
+				filteredItems = append(filteredItems, provider)
+			}
+		}
+
+		if len(filteredItems) == 0 {
+			return nil, fmt.Errorf("provider '%s' not found", providerName)
+		}
+
+		return &unstructured.UnstructuredList{
+			Items: filteredItems,
+		}, nil
+	}
+}
 
 // List lists providers
 func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string) error {
@@ -24,48 +71,13 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 	var providers *unstructured.UnstructuredList
 	if providerName != "" {
 		// Get specific provider by name
-		var provider *unstructured.Unstructured
-		var err error
-
-		if namespace == "" {
-			// When listing across all namespaces, we need to search in all namespaces
-			allProviders, listErr := c.Resource(client.ProvidersGVR).List(context.TODO(), metav1.ListOptions{})
-			if listErr != nil {
-				return fmt.Errorf("failed to list providers: %v", listErr)
-			}
-
-			// Find the provider by name
-			for _, p := range allProviders.Items {
-				if p.GetName() == providerName {
-					provider = &p
-					break
-				}
-			}
-			if provider == nil {
-				return fmt.Errorf("provider %s not found", providerName)
-			}
-		} else {
-			// Get from specific namespace
-			provider, err = c.Resource(client.ProvidersGVR).Namespace(namespace).Get(context.TODO(), providerName, metav1.GetOptions{})
-			if err != nil {
-				return fmt.Errorf("failed to get provider: %v", err)
-			}
-		}
-
-		// Create a list with just this provider
-		providers = &unstructured.UnstructuredList{
-			Items: []unstructured.Unstructured{*provider},
+		providers, err = getSpecificProvider(c, namespace, providerName)
+		if err != nil {
+			return fmt.Errorf("failed to get provider: %v", err)
 		}
 	} else {
 		// Get all providers
-		var err error
-		if namespace == "" {
-			// List across all namespaces
-			providers, err = c.Resource(client.ProvidersGVR).List(context.TODO(), metav1.ListOptions{})
-		} else {
-			// List in specific namespace
-			providers, err = c.Resource(client.ProvidersGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
-		}
+		providers, err = getProviders(c, namespace)
 		if err != nil {
 			return fmt.Errorf("failed to list providers: %v", err)
 		}
