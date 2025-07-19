@@ -464,11 +464,17 @@ func newGetInventoryVMCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Inventory service URL")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml, planvms)")
 	cmd.Flags().BoolVar(&extendedOutput, "extended", false, "Show extended output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
-	addOutputFormatCompletion(cmd, "output")
+
+	// Custom completion for inventory VM output format that includes planvms
+	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"table", "json", "yaml", "planvms"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }
