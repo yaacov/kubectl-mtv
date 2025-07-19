@@ -15,15 +15,30 @@ import (
 )
 
 // List lists providers
-func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string) error {
+func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
 	}
 
-	providers, err := c.Resource(client.ProvidersGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to list providers: %v", err)
+	var providers *unstructured.UnstructuredList
+	if providerName != "" {
+		// Get specific provider by name
+		provider, err := c.Resource(client.ProvidersGVR).Namespace(namespace).Get(context.TODO(), providerName, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get provider: %v", err)
+		}
+
+		// Create a list with just this provider
+		providers = &unstructured.UnstructuredList{
+			Items: []unstructured.Unstructured{*provider},
+		}
+	} else {
+		// Get all providers
+		providers, err = c.Resource(client.ProvidersGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to list providers: %v", err)
+		}
 	}
 
 	// Format validation
@@ -88,7 +103,8 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 	}
 
 	// Handle different output formats
-	if outputFormat == "json" {
+	switch outputFormat {
+	case "json":
 		// Use JSON printer
 		jsonPrinter := output.NewJSONPrinter().
 			WithPrettyPrint(true).
@@ -98,7 +114,7 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 			return jsonPrinter.PrintEmpty("No providers found in namespace " + namespace)
 		}
 		return jsonPrinter.Print()
-	} else if outputFormat == "yaml" {
+	case "yaml":
 		// Use YAML printer
 		yamlPrinter := output.NewYAMLPrinter().
 			AddItems(items)
@@ -107,7 +123,7 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 			return yamlPrinter.PrintEmpty("No providers found in namespace " + namespace)
 		}
 		return yamlPrinter.Print()
-	} else {
+	default:
 		// Use Table printer (default)
 		tablePrinter := output.NewTablePrinter().WithHeaders(
 			output.Header{DisplayName: "NAME", JSONPath: "metadata.name"},

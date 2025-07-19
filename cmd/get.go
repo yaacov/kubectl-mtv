@@ -82,18 +82,29 @@ func newGetPlanCmd() *cobra.Command {
 	var outputFormat string
 
 	cmd := &cobra.Command{
-		Use:   "plan",
+		Use:   "plan [NAME]",
 		Short: "Get migration plans",
 		Long:  `Get migration plans`,
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := GetGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
 
+			// Get optional plan name from arguments
+			var planName string
+			if len(args) > 0 {
+				planName = args[0]
+			}
+
 			// Log the operation being performed
-			logNamespaceOperation("Getting plans", namespace, config.AllNamespaces)
+			if planName != "" {
+				logNamespaceOperation("Getting plan", namespace, config.AllNamespaces)
+			} else {
+				logNamespaceOperation("Getting plans", namespace, config.AllNamespaces)
+			}
 			logOutputFormat(outputFormat)
 
-			err := plan.ListPlans(config.KubeConfigFlags, namespace, outputFormat)
+			err := plan.ListPlans(config.KubeConfigFlags, namespace, outputFormat, planName)
 			if err != nil {
 				printCommandError(err, "getting plans", namespace)
 			}
@@ -142,19 +153,30 @@ func newGetProviderCmd() *cobra.Command {
 	var outputFormat string
 
 	cmd := &cobra.Command{
-		Use:   "provider",
+		Use:   "provider [NAME]",
 		Short: "Get providers",
 		Long:  `Get virtualization providers`,
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := GetGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
 
+			// Get optional provider name from arguments
+			var providerName string
+			if len(args) > 0 {
+				providerName = args[0]
+			}
+
 			// Log the operation being performed
-			logNamespaceOperation("Getting providers", namespace, config.AllNamespaces)
+			if providerName != "" {
+				logNamespaceOperation("Getting provider", namespace, config.AllNamespaces)
+			} else {
+				logNamespaceOperation("Getting providers", namespace, config.AllNamespaces)
+			}
 			logOutputFormat(outputFormat)
 
 			baseURL := ""
-			err := provider.List(config.KubeConfigFlags, namespace, baseURL, outputFormat)
+			err := provider.List(config.KubeConfigFlags, namespace, baseURL, outputFormat, providerName)
 			if err != nil {
 				printCommandError(err, "getting providers", namespace)
 			}
@@ -173,18 +195,29 @@ func newGetMappingCmd() *cobra.Command {
 	var mappingType string
 
 	cmd := &cobra.Command{
-		Use:   "mapping",
+		Use:   "mapping [NAME]",
 		Short: "Get mappings",
 		Long:  `Get network and storage mappings`,
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := GetGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
 
+			// Get optional mapping name from arguments
+			var mappingName string
+			if len(args) > 0 {
+				mappingName = args[0]
+			}
+
 			// Log the operation being performed
-			logNamespaceOperation("Getting mappings", namespace, config.AllNamespaces)
+			if mappingName != "" {
+				logNamespaceOperation("Getting mapping", namespace, config.AllNamespaces)
+			} else {
+				logNamespaceOperation("Getting mappings", namespace, config.AllNamespaces)
+			}
 			logOutputFormat(outputFormat)
 
-			err := mapping.List(config.KubeConfigFlags, mappingType, namespace, outputFormat)
+			err := mapping.List(config.KubeConfigFlags, mappingType, namespace, outputFormat, mappingName)
 			if err != nil {
 				printCommandError(err, "getting mappings", namespace)
 			}
@@ -193,7 +226,7 @@ func newGetMappingCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
-	cmd.Flags().StringVarP(&mappingType, "type", "t", "", "Mapping type (network, storage)")
+	cmd.Flags().StringVarP(&mappingType, "type", "t", "", "Mapping type (network, storage, all)")
 	addOutputFormatCompletion(cmd, "output")
 
 	return cmd
