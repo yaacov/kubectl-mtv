@@ -27,17 +27,22 @@ func validateProviderOptions(options providerutil.ProviderOptions, providerType 
 	if options.URL == "" {
 		return fmt.Errorf("provider URL is required")
 	}
-	if options.Username == "" {
-		return fmt.Errorf("provider username is required")
+
+	// If token is provided, username and password are not required
+	if options.Token == "" {
+		if options.Username == "" {
+			return fmt.Errorf("provider username is required (unless token is provided)")
+		}
+		if options.Password == "" {
+			return fmt.Errorf("provider password is required (unless token is provided)")
+		}
 	}
-	if options.Password == "" {
-		return fmt.Errorf("provider password is required")
+
+	if options.Secret != "" && (options.Username != "" || options.Password != "" || options.Token != "") {
+		return fmt.Errorf("if a secret is provided, username, password, and token should not be specified")
 	}
-	if options.Secret != "" && (options.Username != "" || options.Password != "") {
-		return fmt.Errorf("if a secret is provided, username and password should not be specified")
-	}
-	if options.Secret == "" && (options.Username == "" || options.Password == "") {
-		return fmt.Errorf("if no secret is provided, username and password must be specified")
+	if options.Secret == "" && options.Token == "" && (options.Username == "" || options.Password == "") {
+		return fmt.Errorf("if no secret is provided, either token or username and password must be specified")
 	}
 
 	return nil
@@ -146,7 +151,7 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 
 	if options.Secret == "" {
 		createdSecret, err = createSecret(configFlags, options.Namespace, options.Name,
-			options.Username, options.Password, options.URL, options.CACert, options.InsecureSkipTLS,
+			options.Username, options.Password, options.URL, options.CACert, options.Token, options.InsecureSkipTLS,
 			options.DomainName, options.ProjectName, options.RegionName, providerType)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create %s secret: %v", providerType, err)

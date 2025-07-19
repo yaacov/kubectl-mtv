@@ -14,7 +14,7 @@ import (
 )
 
 // createSecret creates a secret for generic providers (oVirt, OpenStack)
-func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName, user, password, url, cacert string, insecureSkipTLS bool, domainName, projectName, regionName, providerType string) (*corev1.Secret, error) {
+func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName, user, password, url, cacert, token string, insecureSkipTLS bool, domainName, projectName, regionName, providerType string) (*corev1.Secret, error) {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get client: %v", err)
@@ -24,9 +24,15 @@ func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, provide
 
 	// Prepare secret data
 	secretData := map[string][]byte{
-		"user":     []byte(user),
-		"password": []byte(password),
-		"url":      []byte(url),
+		"url": []byte(url),
+	}
+
+	// Add authentication data based on what's provided
+	if token != "" {
+		secretData["token"] = []byte(token)
+	} else {
+		secretData["user"] = []byte(user)
+		secretData["password"] = []byte(password)
 	}
 
 	// Add CA certificate if provided
