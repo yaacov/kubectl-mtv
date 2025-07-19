@@ -179,14 +179,26 @@ func listMappings(configFlags *genericclioptions.ConfigFlags, mappingType, names
 		return yamlPrinter.Print()
 	default:
 		// Table output (default)
-		tablePrinter := output.NewTablePrinter().WithHeaders(
-			output.Header{DisplayName: "NAME", JSONPath: "name"},
+		var headers []output.Header
+
+		// Add NAME column first
+		headers = append(headers, output.Header{DisplayName: "NAME", JSONPath: "name"})
+
+		// Add NAMESPACE column after NAME when listing across all namespaces
+		if namespace == "" {
+			headers = append(headers, output.Header{DisplayName: "NAMESPACE", JSONPath: "namespace"})
+		}
+
+		// Add remaining columns
+		headers = append(headers,
 			output.Header{DisplayName: "TYPE", JSONPath: "type"},
 			output.Header{DisplayName: "SOURCE", JSONPath: "source"},
 			output.Header{DisplayName: "TARGET", JSONPath: "target"},
 			output.Header{DisplayName: "OWNER", JSONPath: "owner"},
 			output.Header{DisplayName: "CREATED", JSONPath: "created"},
-		).AddItems(allItems)
+		)
+
+		tablePrinter := output.NewTablePrinter().WithHeaders(headers...).AddItems(allItems)
 
 		if len(allItems) == 0 {
 			return tablePrinter.PrintEmpty("No mappings found in namespace " + namespace)

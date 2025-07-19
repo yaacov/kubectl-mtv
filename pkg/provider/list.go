@@ -24,9 +24,32 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 	var providers *unstructured.UnstructuredList
 	if providerName != "" {
 		// Get specific provider by name
-		provider, err := c.Resource(client.ProvidersGVR).Namespace(namespace).Get(context.TODO(), providerName, metav1.GetOptions{})
-		if err != nil {
-			return fmt.Errorf("failed to get provider: %v", err)
+		var provider *unstructured.Unstructured
+		var err error
+
+		if namespace == "" {
+			// When listing across all namespaces, we need to search in all namespaces
+			allProviders, listErr := c.Resource(client.ProvidersGVR).List(context.TODO(), metav1.ListOptions{})
+			if listErr != nil {
+				return fmt.Errorf("failed to list providers: %v", listErr)
+			}
+
+			// Find the provider by name
+			for _, p := range allProviders.Items {
+				if p.GetName() == providerName {
+					provider = &p
+					break
+				}
+			}
+			if provider == nil {
+				return fmt.Errorf("provider %s not found", providerName)
+			}
+		} else {
+			// Get from specific namespace
+			provider, err = c.Resource(client.ProvidersGVR).Namespace(namespace).Get(context.TODO(), providerName, metav1.GetOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to get provider: %v", err)
+			}
 		}
 
 		// Create a list with just this provider
@@ -35,7 +58,14 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 		}
 	} else {
 		// Get all providers
-		providers, err = c.Resource(client.ProvidersGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+		var err error
+		if namespace == "" {
+			// List across all namespaces
+			providers, err = c.Resource(client.ProvidersGVR).List(context.TODO(), metav1.ListOptions{})
+		} else {
+			// List in specific namespace
+			providers, err = c.Resource(client.ProvidersGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+		}
 		if err != nil {
 			return fmt.Errorf("failed to list providers: %v", err)
 		}
@@ -125,8 +155,18 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 		return yamlPrinter.Print()
 	default:
 		// Use Table printer (default)
-		tablePrinter := output.NewTablePrinter().WithHeaders(
-			output.Header{DisplayName: "NAME", JSONPath: "metadata.name"},
+		var headers []output.Header
+
+		// Add NAME column first
+		headers = append(headers, output.Header{DisplayName: "NAME", JSONPath: "metadata.name"})
+
+		// Add NAMESPACE column after NAME when listing across all namespaces
+		if namespace == "" {
+			headers = append(headers, output.Header{DisplayName: "NAMESPACE", JSONPath: "metadata.namespace"})
+		}
+
+		// Add remaining columns
+		headers = append(headers,
 			output.Header{DisplayName: "TYPE", JSONPath: "spec.type"},
 			output.Header{DisplayName: "URL", JSONPath: "spec.url"},
 			output.Header{DisplayName: "STATUS", JSONPath: "status.phase"},
@@ -135,7 +175,9 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 			output.Header{DisplayName: "READY", JSONPath: "conditionStatuses.ReadyStatus"},
 			output.Header{DisplayName: "VMS", JSONPath: "vmCount"},
 			output.Header{DisplayName: "HOSTS", JSONPath: "hostCount"},
-		).AddItems(items)
+		)
+
+		tablePrinter := output.NewTablePrinter().WithHeaders(headers...).AddItems(items)
 
 		if len(providers.Items) == 0 {
 			if err := tablePrinter.PrintEmpty("No providers found in namespace " + namespace); err != nil {

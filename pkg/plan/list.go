@@ -153,8 +153,18 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 	}
 
 	// Use Table printer (default)
-	tablePrinter := output.NewTablePrinter().WithHeaders(
-		output.Header{DisplayName: "NAME", JSONPath: "metadata.name"},
+	var headers []output.Header
+
+	// Add NAME column first
+	headers = append(headers, output.Header{DisplayName: "NAME", JSONPath: "metadata.name"})
+
+	// Add NAMESPACE column after NAME when listing across all namespaces
+	if namespace == "" {
+		headers = append(headers, output.Header{DisplayName: "NAMESPACE", JSONPath: "metadata.namespace"})
+	}
+
+	// Add remaining columns
+	headers = append(headers,
 		output.Header{DisplayName: "SOURCE", JSONPath: "source"},
 		output.Header{DisplayName: "TARGET", JSONPath: "target"},
 		output.Header{DisplayName: "VMS", JSONPath: "vms"},
@@ -164,7 +174,9 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 		output.Header{DisplayName: "CUTOVER", JSONPath: "cutover"},
 		output.Header{DisplayName: "ARCHIVED", JSONPath: "archived"},
 		output.Header{DisplayName: "CREATED", JSONPath: "created"},
-	).AddItems(items)
+	)
+
+	tablePrinter := output.NewTablePrinter().WithHeaders(headers...).AddItems(items)
 
 	if len(plans.Items) == 0 {
 		if err := tablePrinter.PrintEmpty("No plans found in namespace " + namespace); err != nil {
