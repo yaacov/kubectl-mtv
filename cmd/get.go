@@ -79,6 +79,7 @@ func newGetCmd() *cobra.Command {
 
 func newGetPlanCmd() *cobra.Command {
 	var outputFormat string
+	var watch bool
 
 	cmd := &cobra.Command{
 		Use:   "plan [NAME]",
@@ -103,7 +104,7 @@ func newGetPlanCmd() *cobra.Command {
 			}
 			logOutputFormat(outputFormat)
 
-			err := plan.ListPlans(config.KubeConfigFlags, namespace, outputFormat, planName)
+			err := plan.List(config.KubeConfigFlags, namespace, watch, outputFormat, planName)
 			if err != nil {
 				printCommandError(err, "getting plans", namespace)
 			}
@@ -112,6 +113,7 @@ func newGetPlanCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	addOutputFormatCompletion(cmd, "output")
 
 	return cmd
