@@ -17,8 +17,8 @@ func CreateStorage(configFlags *genericclioptions.ConfigFlags, name, namespace, 
 }
 
 // List lists network and storage mappings
-func List(configFlags *genericclioptions.ConfigFlags, mappingType, namespace, outputFormat string) error {
-	return listMappings(configFlags, mappingType, namespace, outputFormat)
+func List(configFlags *genericclioptions.ConfigFlags, mappingType, namespace, outputFormat string, mappingName string) error {
+	return listMappings(configFlags, mappingType, namespace, outputFormat, mappingName)
 }
 
 // Delete deletes a network or storage mapping

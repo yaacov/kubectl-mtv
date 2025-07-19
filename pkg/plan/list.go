@@ -17,15 +17,30 @@ import (
 )
 
 // ListPlans lists migration plans without watch functionality
-func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, outputFormat string) error {
+func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, outputFormat string, planName string) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
 	}
 
-	plans, err := c.Resource(client.PlansGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to list plans: %v", err)
+	var plans *unstructured.UnstructuredList
+	if planName != "" {
+		// Get specific plan by name
+		plan, err := c.Resource(client.PlansGVR).Namespace(namespace).Get(context.TODO(), planName, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get plan: %v", err)
+		}
+
+		// Create a list with just this plan
+		plans = &unstructured.UnstructuredList{
+			Items: []unstructured.Unstructured{*plan},
+		}
+	} else {
+		// Get all plans
+		plans, err = c.Resource(client.PlansGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to list plans: %v", err)
+		}
 	}
 
 	// Format validation
@@ -115,7 +130,8 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 	}
 
 	// Handle different output formats
-	if outputFormat == "json" {
+	switch outputFormat {
+	case "json":
 		// Use JSON printer
 		jsonPrinter := output.NewJSONPrinter().
 			WithPrettyPrint(true).
@@ -125,7 +141,7 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 			return jsonPrinter.PrintEmpty("No plans found in namespace " + namespace)
 		}
 		return jsonPrinter.Print()
-	} else if outputFormat == "yaml" {
+	case "yaml":
 		// Use YAML printer
 		yamlPrinter := output.NewYAMLPrinter().
 			AddItems(items)
@@ -170,9 +186,9 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, watchMod
 			return fmt.Errorf("watch mode only supports table output format")
 		}
 		return watch.Watch(func() error {
-			return ListPlans(configFlags, namespace, outputFormat)
+			return ListPlans(configFlags, namespace, outputFormat, "")
 		}, 15*time.Second)
 	}
 
-	return ListPlans(configFlags, namespace, outputFormat)
+	return ListPlans(configFlags, namespace, outputFormat, "")
 }
