@@ -33,6 +33,20 @@ func printCommandError(err error, operation string, namespace string) {
 	fmt.Printf("You can use the '--help' flag for more information on usage.\n")
 }
 
+// logNamespaceOperation logs namespace-specific operations with consistent formatting
+func logNamespaceOperation(operation string, namespace string, allNamespaces bool) {
+	if allNamespaces {
+		logInfof("%s from all namespaces", operation)
+	} else {
+		logInfof("%s from namespace: %s", operation, namespace)
+	}
+}
+
+// logOutputFormat logs the output format being used
+func logOutputFormat(format string) {
+	logDebugf("Output format: %s", format)
+}
+
 func newGetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get",
@@ -72,8 +86,14 @@ func newGetPlanCmd() *cobra.Command {
 		Short: "Get migration plans",
 		Long:  `Get migration plans`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			namespace := client.ResolveNamespace(kubeConfigFlags)
-			err := plan.ListPlans(kubeConfigFlags, namespace, outputFormat)
+			config := GetGlobalConfig()
+			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
+
+			// Log the operation being performed
+			logNamespaceOperation("Getting plans", namespace, config.AllNamespaces)
+			logOutputFormat(outputFormat)
+
+			err := plan.ListPlans(config.KubeConfigFlags, namespace, outputFormat)
 			if err != nil {
 				printCommandError(err, "getting plans", namespace)
 			}
@@ -122,9 +142,15 @@ func newGetProviderCmd() *cobra.Command {
 		Short: "Get providers",
 		Long:  `Get virtualization providers`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			namespace := client.ResolveNamespace(kubeConfigFlags)
+			config := GetGlobalConfig()
+			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
+
+			// Log the operation being performed
+			logNamespaceOperation("Getting providers", namespace, config.AllNamespaces)
+			logOutputFormat(outputFormat)
+
 			baseURL := ""
-			err := provider.List(kubeConfigFlags, namespace, baseURL, outputFormat)
+			err := provider.List(config.KubeConfigFlags, namespace, baseURL, outputFormat)
 			if err != nil {
 				printCommandError(err, "getting providers", namespace)
 			}
