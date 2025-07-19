@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/dynamic"
 
@@ -15,7 +16,15 @@ import (
 
 // getNetworkMappings retrieves all network mappings from the given namespace
 func getNetworkMappings(dynamicClient dynamic.Interface, namespace string) ([]map[string]interface{}, error) {
-	networks, err := dynamicClient.Resource(client.NetworkMapGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	var networks *unstructured.UnstructuredList
+	var err error
+
+	if namespace != "" {
+		networks, err = dynamicClient.Resource(client.NetworkMapGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	} else {
+		networks, err = dynamicClient.Resource(client.NetworkMapGVR).List(context.TODO(), metav1.ListOptions{})
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to list network mappings: %v", err)
 	}
@@ -31,7 +40,15 @@ func getNetworkMappings(dynamicClient dynamic.Interface, namespace string) ([]ma
 
 // getStorageMappings retrieves all storage mappings from the given namespace
 func getStorageMappings(dynamicClient dynamic.Interface, namespace string) ([]map[string]interface{}, error) {
-	storage, err := dynamicClient.Resource(client.StorageMapGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	var storage *unstructured.UnstructuredList
+	var err error
+
+	if namespace != "" {
+		storage, err = dynamicClient.Resource(client.StorageMapGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	} else {
+		storage, err = dynamicClient.Resource(client.StorageMapGVR).List(context.TODO(), metav1.ListOptions{})
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to list storage mappings: %v", err)
 	}
@@ -47,24 +64,70 @@ func getStorageMappings(dynamicClient dynamic.Interface, namespace string) ([]ma
 
 // getSpecificNetworkMapping retrieves a specific network mapping by name
 func getSpecificNetworkMapping(dynamicClient dynamic.Interface, namespace, mappingName string) ([]map[string]interface{}, error) {
-	networkMap, err := dynamicClient.Resource(client.NetworkMapGVR).Namespace(namespace).Get(context.TODO(), mappingName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
+	if namespace != "" {
+		// If namespace is specified, get the specific resource
+		networkMap, err := dynamicClient.Resource(client.NetworkMapGVR).Namespace(namespace).Get(context.TODO(), mappingName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
 
-	item := createMappingItem(*networkMap, "NetworkMap")
-	return []map[string]interface{}{item}, nil
+		item := createMappingItem(*networkMap, "NetworkMap")
+		return []map[string]interface{}{item}, nil
+	} else {
+		// If no namespace specified, list all and filter by name
+		networks, err := dynamicClient.Resource(client.NetworkMapGVR).List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list network mappings: %v", err)
+		}
+
+		var items []map[string]interface{}
+		for _, mapping := range networks.Items {
+			if mapping.GetName() == mappingName {
+				item := createMappingItem(mapping, "NetworkMap")
+				items = append(items, item)
+			}
+		}
+
+		if len(items) == 0 {
+			return nil, fmt.Errorf("network mapping '%s' not found", mappingName)
+		}
+
+		return items, nil
+	}
 }
 
 // getSpecificStorageMapping retrieves a specific storage mapping by name
 func getSpecificStorageMapping(dynamicClient dynamic.Interface, namespace, mappingName string) ([]map[string]interface{}, error) {
-	storageMap, err := dynamicClient.Resource(client.StorageMapGVR).Namespace(namespace).Get(context.TODO(), mappingName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
+	if namespace != "" {
+		// If namespace is specified, get the specific resource
+		storageMap, err := dynamicClient.Resource(client.StorageMapGVR).Namespace(namespace).Get(context.TODO(), mappingName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
 
-	item := createMappingItem(*storageMap, "StorageMap")
-	return []map[string]interface{}{item}, nil
+		item := createMappingItem(*storageMap, "StorageMap")
+		return []map[string]interface{}{item}, nil
+	} else {
+		// If no namespace specified, list all and filter by name
+		storage, err := dynamicClient.Resource(client.StorageMapGVR).List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list storage mappings: %v", err)
+		}
+
+		var items []map[string]interface{}
+		for _, mapping := range storage.Items {
+			if mapping.GetName() == mappingName {
+				item := createMappingItem(mapping, "StorageMap")
+				items = append(items, item)
+			}
+		}
+
+		if len(items) == 0 {
+			return nil, fmt.Errorf("storage mapping '%s' not found", mappingName)
+		}
+
+		return items, nil
+	}
 }
 
 // getSpecificAllMappings retrieves a specific mapping by name from both network and storage mappings
@@ -179,14 +242,26 @@ func listMappings(configFlags *genericclioptions.ConfigFlags, mappingType, names
 		return yamlPrinter.Print()
 	default:
 		// Table output (default)
-		tablePrinter := output.NewTablePrinter().WithHeaders(
-			output.Header{DisplayName: "NAME", JSONPath: "name"},
+		var headers []output.Header
+
+		// Add NAME column first
+		headers = append(headers, output.Header{DisplayName: "NAME", JSONPath: "name"})
+
+		// Add NAMESPACE column after NAME when listing across all namespaces
+		if namespace == "" {
+			headers = append(headers, output.Header{DisplayName: "NAMESPACE", JSONPath: "namespace"})
+		}
+
+		// Add remaining columns
+		headers = append(headers,
 			output.Header{DisplayName: "TYPE", JSONPath: "type"},
 			output.Header{DisplayName: "SOURCE", JSONPath: "source"},
 			output.Header{DisplayName: "TARGET", JSONPath: "target"},
 			output.Header{DisplayName: "OWNER", JSONPath: "owner"},
 			output.Header{DisplayName: "CREATED", JSONPath: "created"},
-		).AddItems(allItems)
+		)
+
+		tablePrinter := output.NewTablePrinter().WithHeaders(headers...).AddItems(allItems)
 
 		if len(allItems) == 0 {
 			return tablePrinter.PrintEmpty("No mappings found in namespace " + namespace)

@@ -9,12 +9,59 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/dynamic"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	"github.com/yaacov/kubectl-mtv/pkg/plan/status"
 	"github.com/yaacov/kubectl-mtv/pkg/watch"
 )
+
+// getPlans retrieves all plans from the given namespace
+func getPlans(dynamicClient dynamic.Interface, namespace string) (*unstructured.UnstructuredList, error) {
+	if namespace != "" {
+		return dynamicClient.Resource(client.PlansGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	} else {
+		return dynamicClient.Resource(client.PlansGVR).List(context.TODO(), metav1.ListOptions{})
+	}
+}
+
+// getSpecificPlan retrieves a specific plan by name
+func getSpecificPlan(dynamicClient dynamic.Interface, namespace, planName string) (*unstructured.UnstructuredList, error) {
+	if namespace != "" {
+		// If namespace is specified, get the specific resource
+		plan, err := dynamicClient.Resource(client.PlansGVR).Namespace(namespace).Get(context.TODO(), planName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create a list with just this plan
+		return &unstructured.UnstructuredList{
+			Items: []unstructured.Unstructured{*plan},
+		}, nil
+	} else {
+		// If no namespace specified, list all and filter by name
+		plans, err := dynamicClient.Resource(client.PlansGVR).List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list plans: %v", err)
+		}
+
+		var filteredItems []unstructured.Unstructured
+		for _, plan := range plans.Items {
+			if plan.GetName() == planName {
+				filteredItems = append(filteredItems, plan)
+			}
+		}
+
+		if len(filteredItems) == 0 {
+			return nil, fmt.Errorf("plan '%s' not found", planName)
+		}
+
+		return &unstructured.UnstructuredList{
+			Items: filteredItems,
+		}, nil
+	}
+}
 
 // ListPlans lists migration plans without watch functionality
 func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, outputFormat string, planName string) error {
@@ -26,18 +73,13 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 	var plans *unstructured.UnstructuredList
 	if planName != "" {
 		// Get specific plan by name
-		plan, err := c.Resource(client.PlansGVR).Namespace(namespace).Get(context.TODO(), planName, metav1.GetOptions{})
+		plans, err = getSpecificPlan(c, namespace, planName)
 		if err != nil {
 			return fmt.Errorf("failed to get plan: %v", err)
 		}
-
-		// Create a list with just this plan
-		plans = &unstructured.UnstructuredList{
-			Items: []unstructured.Unstructured{*plan},
-		}
 	} else {
 		// Get all plans
-		plans, err = c.Resource(client.PlansGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+		plans, err = getPlans(c, namespace)
 		if err != nil {
 			return fmt.Errorf("failed to list plans: %v", err)
 		}
@@ -153,8 +195,18 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 	}
 
 	// Use Table printer (default)
-	tablePrinter := output.NewTablePrinter().WithHeaders(
-		output.Header{DisplayName: "NAME", JSONPath: "metadata.name"},
+	var headers []output.Header
+
+	// Add NAME column first
+	headers = append(headers, output.Header{DisplayName: "NAME", JSONPath: "metadata.name"})
+
+	// Add NAMESPACE column after NAME when listing across all namespaces
+	if namespace == "" {
+		headers = append(headers, output.Header{DisplayName: "NAMESPACE", JSONPath: "metadata.namespace"})
+	}
+
+	// Add remaining columns
+	headers = append(headers,
 		output.Header{DisplayName: "SOURCE", JSONPath: "source"},
 		output.Header{DisplayName: "TARGET", JSONPath: "target"},
 		output.Header{DisplayName: "VMS", JSONPath: "vms"},
@@ -164,7 +216,9 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 		output.Header{DisplayName: "CUTOVER", JSONPath: "cutover"},
 		output.Header{DisplayName: "ARCHIVED", JSONPath: "archived"},
 		output.Header{DisplayName: "CREATED", JSONPath: "created"},
-	).AddItems(items)
+	)
+
+	tablePrinter := output.NewTablePrinter().WithHeaders(headers...).AddItems(items)
 
 	if len(plans.Items) == 0 {
 		if err := tablePrinter.PrintEmpty("No plans found in namespace " + namespace); err != nil {
