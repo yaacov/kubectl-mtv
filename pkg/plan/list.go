@@ -234,15 +234,15 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 }
 
 // List lists migration plans with optional watch mode
-func List(configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool, outputFormat string) error {
+func List(configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool, outputFormat string, planName string) error {
 	if watchMode {
 		if outputFormat != "table" {
 			return fmt.Errorf("watch mode only supports table output format")
 		}
 		return watch.Watch(func() error {
-			return ListPlans(configFlags, namespace, outputFormat, "")
+			return ListPlans(configFlags, namespace, outputFormat, planName)
 		}, 15*time.Second)
 	}
 
-	return ListPlans(configFlags, namespace, outputFormat, "")
+	return ListPlans(configFlags, namespace, outputFormat, planName)
 }
