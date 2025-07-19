@@ -24,13 +24,10 @@ func newStartPlanCmd() *cobra.Command {
 	var cutoverTimeStr string
 
 	cmd := &cobra.Command{
-		Use:   "plan NAME",
-		Short: "Start a migration plan",
-		Args:  cobra.ExactArgs(1),
+		Use:   "plan NAME [NAME...]",
+		Short: "Start one or more migration plans",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get name from positional argument
-			name := args[0]
-
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -44,9 +41,13 @@ func newStartPlanCmd() *cobra.Command {
 				cutoverTime = &t
 			}
 
-			err := plan.Start(kubeConfigFlags, name, namespace, cutoverTime)
-			if err != nil {
-				printCommandError(err, "starting plan", namespace)
+			// Loop over each plan name and start it
+			for _, name := range args {
+				err := plan.Start(kubeConfigFlags, name, namespace, cutoverTime)
+				if err != nil {
+					printCommandError(err, "starting plan", namespace)
+					// Continue with other plans even if one fails
+				}
 			}
 			return nil
 		},

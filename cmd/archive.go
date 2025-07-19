@@ -19,19 +19,20 @@ func newArchiveCmd() *cobra.Command {
 
 func newArchivePlanCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "plan NAME",
-		Short: "Archive a migration plan",
-		Args:  cobra.ExactArgs(1),
+		Use:   "plan NAME [NAME...]",
+		Short: "Archive one or more migration plans",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get name from positional argument
-			name := args[0]
-
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
-			err := plan.Archive(kubeConfigFlags, name, namespace, true)
-			if err != nil {
-				printCommandError(err, "archiving plan", namespace)
+			// Loop over each plan name and archive it
+			for _, name := range args {
+				err := plan.Archive(kubeConfigFlags, name, namespace, true)
+				if err != nil {
+					printCommandError(err, "archiving plan", namespace)
+					// Continue with other plans even if one fails
+				}
 			}
 			return nil
 		},

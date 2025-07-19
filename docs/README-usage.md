@@ -407,12 +407,9 @@ kubectl mtv start plan <plan-name>
 kubectl mtv start plan production-migration
 ```
 
-### Cancel Migration
+### Cancel Migration workload
 
 ```bash
-# Cancel a running migration
-kubectl mtv cancel plan <plan-name>
-
 # Cancel specific VMs in a plan
 kubectl mtv cancel plan <plan-name> --vms vm1,vm2
 ```
