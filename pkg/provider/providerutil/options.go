@@ -10,6 +10,12 @@ type ProviderOptions struct {
 	Password        string
 	CACert          string
 	InsecureSkipTLS bool
-	VddkInitImage   string
-	Token           string
+	// VSphere specific options
+	VddkInitImage string
+	// OpenShift specific options
+	Token string
+	// OpenStack specific options
+	DomainName  string
+	ProjectName string
+	RegionName  string
 }

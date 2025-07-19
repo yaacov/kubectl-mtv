@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	"github.com/yaacov/kubectl-mtv/pkg/provider/generic"
 	"github.com/yaacov/kubectl-mtv/pkg/provider/openshift"
 	"github.com/yaacov/kubectl-mtv/pkg/provider/ova"
 	"github.com/yaacov/kubectl-mtv/pkg/provider/providerutil"
@@ -16,7 +17,8 @@ import (
 
 // Create creates a new provider
 func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, namespace, secret string,
-	url, username, password, cacert string, insecureSkipTLS bool, vddkInitImage string, token string) error {
+	url, username, password, cacert string, insecureSkipTLS bool, vddkInitImage string, token string,
+	domainName, projectName, regionName string) error {
 	// Create provider options
 	options := providerutil.ProviderOptions{
 		Name:            name,
@@ -29,6 +31,9 @@ func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, name
 		InsecureSkipTLS: insecureSkipTLS,
 		VddkInitImage:   vddkInitImage,
 		Token:           token,
+		DomainName:      domainName,
+		ProjectName:     projectName,
+		RegionName:      regionName,
 	}
 
 	var providerResource *forkliftv1beta1.Provider
@@ -43,6 +48,10 @@ func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, name
 		providerResource, secretResource, err = ova.CreateProvider(configFlags, options)
 	case "openshift":
 		providerResource, secretResource, err = openshift.CreateProvider(configFlags, options)
+	case "ovirt":
+		providerResource, secretResource, err = generic.CreateProvider(configFlags, options, "ovirt")
+	case "openstack":
+		providerResource, secretResource, err = generic.CreateProvider(configFlags, options, "openstack")
 	default:
 		// If the provider type is not recognized, return an error
 		return fmt.Errorf("unsupported provider type: %s", providerType)
