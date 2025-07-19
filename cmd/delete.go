@@ -32,7 +32,7 @@ func newDeleteMappingCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
-			
+
 			// Loop over each mapping name and delete it
 			for _, name := range args {
 				err := mapping.Delete(kubeConfigFlags, name, namespace, mappingType)
@@ -58,7 +58,7 @@ func newDeletePlanCmdMain() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
-			
+
 			// Loop over each plan name and delete it
 			for _, name := range args {
 				err := plan.Delete(kubeConfigFlags, name, namespace)
@@ -82,7 +82,7 @@ func newDeleteProviderCmdMain() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
-			
+
 			// Loop over each provider name and delete it
 			for _, name := range args {
 				err := provider.Delete(kubeConfigFlags, name, namespace)

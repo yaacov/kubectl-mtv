@@ -7,13 +7,13 @@ import (
 )
 
 // CreateNetwork creates a new network mapping
-func CreateNetwork(configFlags *genericclioptions.ConfigFlags, name, namespace, sourceProvider, targetProvider, fromFile string) error {
-	return createNetworkMapping(configFlags, name, namespace, sourceProvider, targetProvider, fromFile)
+func CreateNetwork(configFlags *genericclioptions.ConfigFlags, name, namespace, sourceProvider, targetProvider, fromFile, networkPairs, inventoryURL string) error {
+	return createNetworkMapping(configFlags, name, namespace, sourceProvider, targetProvider, fromFile, networkPairs, inventoryURL)
 }
 
 // CreateStorage creates a new storage mapping
-func CreateStorage(configFlags *genericclioptions.ConfigFlags, name, namespace, sourceProvider, targetProvider, fromFile string) error {
-	return createStorageMapping(configFlags, name, namespace, sourceProvider, targetProvider, fromFile)
+func CreateStorage(configFlags *genericclioptions.ConfigFlags, name, namespace, sourceProvider, targetProvider, fromFile, storagePairs, inventoryURL string) error {
+	return createStorageMapping(configFlags, name, namespace, sourceProvider, targetProvider, fromFile, storagePairs, inventoryURL)
 }
 
 // List lists network and storage mappings
