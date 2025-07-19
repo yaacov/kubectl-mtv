@@ -34,7 +34,7 @@ The Forklift project (upstream of Migration Toolkit for Virtualization) simplifi
   - [VDDK Image Management](#vddk-image-management)
 - [Environment Variables](#environment-variables)
 - [Tutorials](#tutorials)
-- [planvms VM List Editing](./README_planvms.md)
+- [planvms VM List Editing](docs/README_planvms.md)
 - [Logo Attribution](#logo-attribution)
 - [License](#license)
 
@@ -97,7 +97,7 @@ Make sure `$GOPATH/bin` is in your PATH to use as a kubectl plugin.
 
 ## Usage
 
-See the demo documentation for a migration [demo flow using kubectl-mtv](./README_demo.md).
+See the demo documentation for a migration [demo flow using kubectl-mtv](docs/README_demo.md).
 
 ### Global Flags
 
@@ -524,7 +524,7 @@ It is strongly recommended that Forklift (Migration Toolkit for Virtualization/M
 
 #### Creating and Using a VDDK Image
 
-See [VDDK Image Creation and Usage](./README_vddk.md) for a step-by-step guide.
+See [VDDK Image Creation and Usage](docs/README_vddk.md) for a step-by-step guide.
 
 #### Command Example
 
@@ -541,8 +541,8 @@ The following environment variables are used by `kubectl-mtv`:
 
 ## Tutorials
 
-- [Migration Demo Tutorial](./README_demo.md): Step-by-step guide to performing a VM migration
-- [Inventory Commands Tutorial](./README_inventory.md): Comprehensive guide to using inventory commands and queries
+- [Migration Demo Tutorial](docs/README_demo.md): Step-by-step guide to performing a VM migration
+- [Inventory Commands Tutorial](docs/README_inventory.md): Comprehensive guide to using inventory commands and queries
 
 ## Logo Attribution
 
@@ -551,3 +551,9 @@ The gopher logo is from [github.com/egonelbre/gophers](https://github.com/egonel
 ## License
 
 Apache-2.0 license
+
+## Documentation
+
+- [Installation Guide](docs/README-install.md)
+- [Usage Guide](docs/README-usage.md)
+- [Development Guide](docs/README-development.md)
