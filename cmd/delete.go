@@ -26,18 +26,20 @@ func newDeleteMappingCmd() *cobra.Command {
 	var mappingType string
 
 	cmd := &cobra.Command{
-		Use:   "mapping NAME",
-		Short: "Delete a mapping",
-		Args:  cobra.ExactArgs(1),
+		Use:   "mapping NAME [NAME...]",
+		Short: "Delete one or more mappings",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get name from positional argument
-			name := args[0]
-
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
-			err := mapping.Delete(kubeConfigFlags, name, namespace, mappingType)
-			if err != nil {
-				printCommandError(err, "deleting mapping", namespace)
+			
+			// Loop over each mapping name and delete it
+			for _, name := range args {
+				err := mapping.Delete(kubeConfigFlags, name, namespace, mappingType)
+				if err != nil {
+					printCommandError(err, "deleting mapping", namespace)
+					// Continue with other mappings even if one fails
+				}
 			}
 			return nil
 		},
@@ -50,18 +52,20 @@ func newDeleteMappingCmd() *cobra.Command {
 
 func newDeletePlanCmdMain() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "plan NAME",
-		Short: "Delete a migration plan",
-		Args:  cobra.ExactArgs(1),
+		Use:   "plan NAME [NAME...]",
+		Short: "Delete one or more migration plans",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get name from positional argument
-			name := args[0]
-
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
-			err := plan.Delete(kubeConfigFlags, name, namespace)
-			if err != nil {
-				printCommandError(err, "deleting plan", namespace)
+			
+			// Loop over each plan name and delete it
+			for _, name := range args {
+				err := plan.Delete(kubeConfigFlags, name, namespace)
+				if err != nil {
+					printCommandError(err, "deleting plan", namespace)
+					// Continue with other plans even if one fails
+				}
 			}
 			return nil
 		},
@@ -72,18 +76,20 @@ func newDeletePlanCmdMain() *cobra.Command {
 
 func newDeleteProviderCmdMain() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "provider NAME",
-		Short: "Delete a provider",
-		Args:  cobra.ExactArgs(1),
+		Use:   "provider NAME [NAME...]",
+		Short: "Delete one or more providers",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get name from positional argument
-			name := args[0]
-
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
-			err := provider.Delete(kubeConfigFlags, name, namespace)
-			if err != nil {
-				printCommandError(err, "deleting provider", namespace)
+			
+			// Loop over each provider name and delete it
+			for _, name := range args {
+				err := provider.Delete(kubeConfigFlags, name, namespace)
+				if err != nil {
+					printCommandError(err, "deleting provider", namespace)
+					// Continue with other providers even if one fails
+				}
 			}
 			return nil
 		},
