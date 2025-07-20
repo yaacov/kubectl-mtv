@@ -16,8 +16,12 @@ import pytest
 
 def pytest_addoption(parser):
     """Add custom command-line options."""
-    # No custom options needed - namespace is always preserved
-    pass
+    parser.addoption(
+        "--namespace-suffix",
+        action="store",
+        default=None,
+        help="Custom suffix for the test namespace (will be used as kubectl-mtv-shared-<suffix>)"
+    )
 
 # Import utils to load .env file
 try:
@@ -193,8 +197,15 @@ def test_namespace(cluster_check, kubectl_mtv_binary, request) -> Generator[Test
     
     # Use or create the shared namespace
     if not hasattr(request.session, '_shared_test_context'):
-        # Create shared namespace for the first time in this session
-        namespace_name = f"kubectl-mtv-shared-{uuid.uuid4().hex[:8]}"
+        # Get custom namespace suffix if provided
+        namespace_suffix = request.config.getoption("--namespace-suffix")
+        
+        if namespace_suffix:
+            # Use custom suffix
+            namespace_name = f"kubectl-mtv-shared-{namespace_suffix}"
+        else:
+            # Generate random suffix
+            namespace_name = f"kubectl-mtv-shared-{uuid.uuid4().hex[:8]}"
         
         # Create namespace
         subprocess.run(
@@ -202,27 +213,11 @@ def test_namespace(cluster_check, kubectl_mtv_binary, request) -> Generator[Test
             shell=True,
             check=True
         )
-        
-        print(f"\n=== SHARED NAMESPACE MODE ===")
-        print(f"Shared test namespace: {namespace_name}")
-        print(f"All tests will run in this namespace")
-        print(f"Namespace will be preserved for debugging")
-        print(f"To manually cleanup later, run: make test-cleanup")
-        print(f"==============================\n")
-        
+                
         # Create and store shared context
         context = TestContext(namespace_name, kubectl_mtv_binary)
         request.session._shared_test_context = context
         request.session._shared_namespace_name = namespace_name
-        
-        # Register session cleanup (resources only, not namespace)
-        def cleanup_shared_resources():
-            print(f"\n=== SESSION CLEANUP ===")
-            context.cleanup_resources(session_cleanup=True)
-            print(f"Resources cleaned up, namespace preserved: {namespace_name}")
-            print(f"=======================\n")
-        
-        request.addfinalizer(cleanup_shared_resources)
     
     # Return the shared context
     yield request.session._shared_test_context

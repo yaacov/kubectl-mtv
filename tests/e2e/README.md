@@ -11,6 +11,11 @@ This directory contains end-to-end (e2e) tests for kubectl-mtv. The tests are de
 - Automatic resource cleanup (resources are removed, namespace preserved)
 - Unique resource naming to prevent conflicts
 
+The namespace is named `kubectl-mtv-shared-<suffix>` where the suffix is either:
+
+- A random 8-character hex string (default)
+- A custom suffix specified with `--namespace-suffix` flag
+
 ## Prerequisites
 
 ### Cluster Requirements
@@ -153,9 +158,12 @@ pytest test_provider_vsphere.py -v
 # Run by markers
 pytest -v -m version                    # Version tests
 pytest -v -m provider                   # All provider tests
-pytest -v -m "openshift"               # OpenShift provider tests
+pytest -v -m "openshift"                # OpenShift provider tests
 pytest -v -m "requires_credentials"     # Tests needing credentials
 pytest -v -m "not requires_credentials" # Tests not needing credentials
+
+# Use custom namespace suffix for debugging
+pytest -v --namespace-suffix mytest     # Creates kubectl-mtv-shared-mytest
 
 # Debug failed tests by preserving namespace and resources
 pytest --no-cleanup test_provider_openshift.py -v
