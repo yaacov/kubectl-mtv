@@ -9,6 +9,8 @@ import time
 
 import pytest
 
+from utils import verify_provider_created
+
 
 @pytest.mark.provider
 @pytest.mark.openstack
@@ -57,7 +59,7 @@ class TestOpenStackProvider:
         test_namespace.track_resource("provider", provider_name)
         
         # Verify provider was created
-        self._verify_provider_created(test_namespace, provider_name, "openstack")
+        verify_provider_created(test_namespace, provider_name, "openstack")
     
     def test_create_openstack_provider_with_region(self, test_namespace, provider_credentials):
         """Test creating an OpenStack provider with specific region."""
@@ -99,7 +101,7 @@ class TestOpenStackProvider:
         test_namespace.track_resource("provider", provider_name)
         
         # Verify provider was created
-        self._verify_provider_created(test_namespace, provider_name, "openstack")
+        verify_provider_created(test_namespace, provider_name, "openstack")
     
     def test_create_openstack_provider_with_insecure_tls(self, test_namespace, provider_credentials):
         """Test creating an OpenStack provider with insecure TLS skip."""
