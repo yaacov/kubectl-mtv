@@ -34,12 +34,12 @@ class TestOpenStackProvider:
             f"--url '{creds['url']}'",
             f"--username '{creds['username']}'",
             f"--password '{creds['password']}'",
-            f"--domain-name '{creds['domain_name']}'",
-            f"--project-name '{creds['project_name']}'"
+            f"--provider-domain-name '{creds['domain_name']}'",
+            f"--provider-project-name '{creds['project_name']}'"
         ]
         
         if creds.get("region_name"):
-            cmd_parts.append(f"--region-name '{creds['region_name']}'")
+            cmd_parts.append(f"--provider-region-name '{creds['region_name']}'")
         
         if creds.get("cacert"):
             cmd_parts.append(f"--cacert '{creds['cacert']}'")
@@ -76,9 +76,9 @@ class TestOpenStackProvider:
             f"--url '{creds['url']}'",
             f"--username '{creds['username']}'",
             f"--password '{creds['password']}'",
-            f"--domain-name '{creds['domain_name']}'",
-            f"--project-name '{creds['project_name']}'",
-            f"--region-name '{creds['region_name']}'"
+            f"--provider-domain-name '{creds['domain_name']}'",
+            f"--provider-project-name '{creds['project_name']}'",
+            f"--provider-region-name '{creds['region_name']}'"
         ]
         
         # Add insecure flag if specified in credentials
@@ -118,8 +118,8 @@ class TestOpenStackProvider:
             f"--url '{creds['url']}' "
             f"--username '{creds['username']}' "
             f"--password '{creds['password']}' "
-            f"--domain-name '{creds['domain_name']}' "
-            f"--project-name '{creds['project_name']}' "
+            f"--provider-domain-name '{creds['domain_name']}' "
+            f"--provider-project-name '{creds['project_name']}' "
             "--provider-insecure-skip-tls"
         )
         
