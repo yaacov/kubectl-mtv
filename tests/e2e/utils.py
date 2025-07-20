@@ -3,12 +3,16 @@ Utility functions for kubectl-mtv e2e tests.
 """
 
 import json
+import logging
 import os
 import time
 from pathlib import Path
 from typing import Optional
 
 import pytest
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 
 def load_env_file(env_file: Optional[str] = None) -> None:
@@ -24,12 +28,12 @@ def load_env_file(env_file: Optional[str] = None) -> None:
         
         if env_path.exists():
             load_dotenv(env_path)
-            print(f"Loaded environment variables from {env_path}")
+            logging.info(f"Loaded environment variables from {env_path}")
         else:
-            print(f"No .env file found at {env_path}")
+            logging.info(f"No .env file found at {env_path}")
     
     except ImportError:
-        print("python-dotenv not installed, skipping .env file loading")
+        logging.warning("python-dotenv not installed, skipping .env file loading")
 
 
 def get_env_with_fallback(primary_key: str, fallback_key: str, default: str = "") -> str:
@@ -72,7 +76,7 @@ def verify_provider_created(test_namespace, provider_name: str, provider_type: s
     
     # Check provider status for errors
     status = provider_data.get("status", {})
-    print(f"Provider {provider_name} status: {status}")
+    logging.info(f"Provider {provider_name} status: {status}")
     
     # Check for error conditions
     conditions = status.get("conditions", [])
@@ -95,7 +99,7 @@ def verify_provider_created(test_namespace, provider_name: str, provider_type: s
     if status.get("phase") == "Failed":
         pytest.fail(f"Provider {provider_name} is in Failed phase: {status}")
     
-    print(f"Provider {provider_name} verified successfully")
+    logging.info(f"Provider {provider_name} verified successfully")
 
 
 # Load .env file when module is imported
