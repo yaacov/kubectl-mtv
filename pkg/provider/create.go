@@ -7,6 +7,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/provider/generic"
 	"github.com/yaacov/kubectl-mtv/pkg/provider/openshift"
+	"github.com/yaacov/kubectl-mtv/pkg/provider/openstack"
 	"github.com/yaacov/kubectl-mtv/pkg/provider/ova"
 	"github.com/yaacov/kubectl-mtv/pkg/provider/providerutil"
 	"github.com/yaacov/kubectl-mtv/pkg/provider/vsphere"
@@ -51,7 +52,7 @@ func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, name
 	case "ovirt":
 		providerResource, secretResource, err = generic.CreateProvider(configFlags, options, "ovirt")
 	case "openstack":
-		providerResource, secretResource, err = generic.CreateProvider(configFlags, options, "openstack")
+		providerResource, secretResource, err = openstack.CreateProvider(configFlags, options)
 	default:
 		// If the provider type is not recognized, return an error
 		return fmt.Errorf("unsupported provider type: %s", providerType)
