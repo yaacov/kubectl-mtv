@@ -42,3 +42,12 @@ Thumbs.db
 # Debug files
 debug
 __debug_bin
+
+# Test environment files with credentials
+tests/e2e/.env
+tests/e2e/venv/
+tests/e2e/reports/
+tests/e2e/.pytest_cache/
+tests/e2e/__pycache__/
+tests/e2e/*.pyc
+tests/e2e/*.pyo
