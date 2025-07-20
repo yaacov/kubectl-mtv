@@ -14,6 +14,15 @@ from typing import Generator, Dict, Any
 
 import pytest
 
+def pytest_addoption(parser):
+    """Add custom command-line options."""
+    parser.addoption(
+        "--no-cleanup",
+        action="store_true",
+        default=False,
+        help="Skip cleanup of test namespace and resources for debugging"
+    )
+
 # Import utils to load .env file
 try:
     from . import utils
@@ -40,9 +49,10 @@ class KubectlMTVError(Exception):
 class TestContext:
     """Test context with namespace and cleanup management."""
     
-    def __init__(self, namespace: str, binary_path: str):
+    def __init__(self, namespace: str, binary_path: str, no_cleanup: bool = False):
         self.namespace = namespace
         self.binary_path = binary_path
+        self.no_cleanup = no_cleanup
         self._created_resources = []
     
     def run_mtv_command(self, command: str, check: bool = True, capture_output: bool = True) -> subprocess.CompletedProcess:
@@ -91,6 +101,10 @@ class TestContext:
     
     def cleanup_resources(self):
         """Clean up tracked resources."""
+        if self.no_cleanup:
+            print(f"Skipping resource cleanup (no-cleanup mode enabled)")
+            return
+            
         for resource_type, resource_name in reversed(self._created_resources):
             try:
                 self.run_kubectl_command(f"delete {resource_type} {resource_name}", check=False)
@@ -167,10 +181,13 @@ def kubectl_mtv_binary():
 
 
 @pytest.fixture
-def test_namespace(cluster_check, kubectl_mtv_binary) -> Generator[TestContext, None, None]:
+def test_namespace(cluster_check, kubectl_mtv_binary, request) -> Generator[TestContext, None, None]:
     """Create a temporary namespace for testing and provide test context."""
     # Generate unique namespace name
     namespace_name = f"kubectl-mtv-test-{uuid.uuid4().hex[:8]}"
+    
+    # Check if cleanup should be skipped
+    no_cleanup = request.config.getoption("--no-cleanup")
     
     # Create namespace
     subprocess.run(
@@ -179,21 +196,41 @@ def test_namespace(cluster_check, kubectl_mtv_binary) -> Generator[TestContext, 
         check=True
     )
     
+    # Print namespace info if no cleanup is requested
+    if no_cleanup:
+        print(f"\n=== DEBUG MODE ===")
+        print(f"Test namespace: {namespace_name}")
+        print(f"Cleanup disabled - namespace will be preserved for debugging")
+        print(f"To manually cleanup later, run: kubectl delete namespace {namespace_name}")
+        print(f"==================\n")
+    
     try:
         # Create test context
-        context = TestContext(namespace_name, kubectl_mtv_binary)
+        context = TestContext(namespace_name, kubectl_mtv_binary, no_cleanup)
         yield context
         
-        # Cleanup tracked resources
-        context.cleanup_resources()
+        # Cleanup tracked resources (unless no-cleanup is specified)
+        if not no_cleanup:
+            context.cleanup_resources()
+        else:
+            print(f"\n=== DEBUG INFO ===")
+            print(f"Skipping resource cleanup in namespace: {namespace_name}")
+            if context._created_resources:
+                print(f"Created resources:")
+                for resource_type, resource_name in context._created_resources:
+                    print(f"  - {resource_type}/{resource_name}")
+            print(f"==================\n")
         
     finally:
-        # Always cleanup namespace
-        subprocess.run(
-            f"kubectl delete namespace {namespace_name} --ignore-not-found=true",
-            shell=True,
-            check=False
-        )
+        # Cleanup namespace (unless no-cleanup is specified)
+        if not no_cleanup:
+            subprocess.run(
+                f"kubectl delete namespace {namespace_name} --ignore-not-found=true",
+                shell=True,
+                check=False
+            )
+        else:
+            print(f"Namespace {namespace_name} preserved for debugging")
 
 
 @pytest.fixture(scope="session")

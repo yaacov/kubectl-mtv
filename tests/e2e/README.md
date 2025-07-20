@@ -113,6 +113,28 @@ make test-report
 make test-coverage
 ```
 
+### Debug Mode (Preserve Test Environment)
+
+For debugging failed tests, use the debug targets that preserve namespaces and resources:
+
+```bash
+# Debug versions of all test targets (namespace and resources preserved)
+make debug-test                # All tests
+make debug-test-version        # Version tests only
+make debug-test-providers      # All provider tests
+make debug-test-openshift      # OpenShift provider tests
+make debug-test-vsphere        # VMware vSphere tests
+make debug-test-ovirt          # oVirt tests
+make debug-test-openstack      # OpenStack tests
+make debug-test-ova            # OVA tests
+make debug-test-errors         # Error/edge case tests
+make debug-test-no-creds       # Tests without credentials
+
+# The debug targets will print namespace information for manual inspection
+# Example: Test namespace: kubectl-mtv-test-a1b2c3d4
+# You can then inspect resources manually before cleaning up
+```
+
 ### Using pytest directly
 
 You can also run tests directly with pytest:
@@ -132,6 +154,9 @@ pytest -v -m provider                   # All provider tests
 pytest -v -m "openshift"               # OpenShift provider tests
 pytest -v -m "requires_credentials"     # Tests needing credentials
 pytest -v -m "not requires_credentials" # Tests not needing credentials
+
+# Debug failed tests by preserving namespace and resources
+pytest --no-cleanup test_provider_openshift.py -v
 ```
 
 ### Run Tests with Different Output Formats
@@ -278,6 +303,34 @@ MTV_VDDK_INIT_IMAGE=registry.example.com/vddk-init:latest
 
 - Each test gets its own temporary namespace (`kubectl-mtv-test-<random>`)
 - Namespaces are automatically created before tests and cleaned up after
+- For debugging failed tests, use `--no-cleanup` to preserve the test namespace and resources
+
+### Debugging Failed Tests
+
+When tests fail, you can preserve the test environment for debugging:
+
+```bash
+# Using pytest directly
+pytest --no-cleanup test_provider_openshift.py -v
+
+# Using make targets (easier)
+make debug-test-openshift
+
+# The test will print the namespace name for manual inspection
+# Example output:
+# === DEBUG MODE ===
+# Test namespace: kubectl-mtv-test-a1b2c3d4
+# Cleanup disabled - namespace will be preserved for debugging
+# To manually cleanup later, run: kubectl delete namespace kubectl-mtv-test-a1b2c3d4
+# ==================
+
+# You can then inspect the namespace manually:
+kubectl get all -n kubectl-mtv-test-a1b2c3d4
+kubectl describe provider test-provider -n kubectl-mtv-test-a1b2c3d4
+
+# When done debugging, cleanup manually:
+kubectl delete namespace kubectl-mtv-test-a1b2c3d4
+```
 - All test resources are created within these temporary namespaces
 
 ### Resource Cleanup
@@ -420,4 +473,8 @@ make test-report
 
 # View test results
 open reports/report.html
+
+# Debug failed tests (preserve environment)
+make debug-test-openshift
+# Then manually inspect: kubectl get all -n kubectl-mtv-test-XXXXXXXX
 ```

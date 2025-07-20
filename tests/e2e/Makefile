@@ -33,6 +33,20 @@ help:
 	@echo "  test-fast      - Run tests in parallel"
 	@echo "  test-report    - Run tests and generate HTML report"
 	@echo "  test-coverage  - Run tests with coverage report"
+	@echo ""
+	@echo "Debug targets (preserve namespace/resources for debugging):"
+	@echo "  debug-test           - Run all tests without cleanup"
+	@echo "  debug-test-version   - Run version tests without cleanup"
+	@echo "  debug-test-providers - Run all provider tests without cleanup"
+	@echo "  debug-test-openshift - Run OpenShift provider tests without cleanup"
+	@echo "  debug-test-vsphere   - Run VMware vSphere tests without cleanup"
+	@echo "  debug-test-ovirt     - Run oVirt tests without cleanup"
+	@echo "  debug-test-openstack - Run OpenStack tests without cleanup"
+	@echo "  debug-test-ova       - Run OVA tests without cleanup"
+	@echo "  debug-test-errors    - Run error tests without cleanup"
+	@echo "  debug-test-no-creds  - Run credential-free tests without cleanup"
+	@echo ""
+	@echo "Utility targets:"
 	@echo "  clean          - Clean up test artifacts"
 	@echo "  clean-all      - Clean up everything including venv"
 	@echo "  lint           - Run Python linting"
@@ -114,6 +128,57 @@ test-no-creds: setup check-binary
 test-fast: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
 	$(PYTEST) $(TEST_DIR) -v -n auto
+
+# Debug versions of tests (preserve namespace and resources for debugging)
+.PHONY: debug-test
+debug-test: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) $(TEST_DIR) -v --no-cleanup
+
+.PHONY: debug-test-version
+debug-test-version: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) test_version.py -v -m version --no-cleanup
+
+.PHONY: debug-test-providers
+debug-test-providers: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m provider --no-cleanup
+
+.PHONY: debug-test-openshift
+debug-test-openshift: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m openshift --no-cleanup
+
+.PHONY: debug-test-vsphere
+debug-test-vsphere: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m vsphere --no-cleanup
+
+.PHONY: debug-test-ovirt
+debug-test-ovirt: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m ovirt --no-cleanup
+
+.PHONY: debug-test-openstack
+debug-test-openstack: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m openstack --no-cleanup
+
+.PHONY: debug-test-ova
+debug-test-ova: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m ova --no-cleanup
+
+.PHONY: debug-test-errors
+debug-test-errors: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m error_cases --no-cleanup
+
+.PHONY: debug-test-no-creds
+debug-test-no-creds: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m "not requires_credentials" --no-cleanup
 
 # Run tests and generate HTML report
 .PHONY: test-report
