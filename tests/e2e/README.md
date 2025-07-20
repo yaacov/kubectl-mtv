@@ -183,9 +183,8 @@ pytest -v -m "not requires_credentials" # Tests not needing credentials
 # Use custom namespace suffix for debugging
 pytest -v --namespace-suffix mytest     # Creates kubectl-mtv-shared-mytest
 
-# Debug failed tests by preserving namespace and resources
-# Keep just the namespace for inspection
-pytest --no-cleanup providers/test_openshift.py -v
+# Debug failed tests by inspecting the preserved namespace
+# The shared namespace and its resources remain for inspection after test completion
 ```
 
 ### Run Tests with Different Output Formats
@@ -272,7 +271,7 @@ Tests are organized with pytest markers for easy filtering:
 
 ### Test Fixtures
 
-- **test_namespace**: Creates a temporary namespace for each test and cleans up afterwards
+- **test_namespace**: Provides access to a shared namespace for all tests and manages resource cleanup
 - **cluster_check**: Verifies cluster connectivity and admin privileges
 - **provider_credentials**: Loads provider credentials from environment variables
 - **kubectl_mtv_binary**: Locates the kubectl-mtv binary
@@ -337,44 +336,39 @@ MTV_VDDK_INIT_IMAGE=registry.example.com/vddk-init:latest
 
 ### Namespaces
 
-- Each test gets its own temporary namespace (`kubectl-mtv-test-<random>`)
-- Namespaces are automatically created before tests and cleaned up after
-- For debugging failed tests, use `--no-cleanup` to preserve the test namespace and resources
+- Tests run in a shared namespace (`kubectl-mtv-shared-<suffix>`) that is preserved for debugging
+- The shared namespace is created once per test session and reused across tests
+- Resources within the namespace are automatically tracked and cleaned up after tests
+- Namespaces are preserved for post-test debugging and inspection
 
 ### Debugging Failed Tests
 
-When tests fail, you can preserve the test environment for debugging:
+When tests fail, the shared namespace is preserved for debugging:
 
 ```bash
-# Using pytest directly
-pytest --no-cleanup test_provider_openshift.py -v
+# Using pytest directly with custom namespace suffix for easy identification
+pytest providers/test_openshift.py -v --namespace-suffix mytest
 
-# Using make targets (easier)
-make debug-test-openshift
-
-# The test will print the namespace name for manual inspection
-# Example output:
-# === DEBUG MODE ===
-# Test namespace: kubectl-mtv-test-a1b2c3d4
-# Cleanup disabled - namespace will be preserved for debugging
-# To manually cleanup later, run: kubectl delete namespace kubectl-mtv-test-a1b2c3d4
-# ==================
-
-# You can then inspect the namespace manually:
-kubectl get all -n kubectl-mtv-test-a1b2c3d4
-kubectl describe provider test-provider -n kubectl-mtv-test-a1b2c3d4
+# The test will create and preserve namespace: kubectl-mtv-shared-mytest
+# You can then inspect the namespace and resources manually:
+kubectl get all -n kubectl-mtv-shared-mytest
+kubectl describe provider test-provider -n kubectl-mtv-shared-mytest
 
 # When done debugging, cleanup manually:
-kubectl delete namespace kubectl-mtv-test-a1b2c3d4
+kubectl delete namespace kubectl-mtv-shared-mytest
+
+# Or use the cleanup target to remove all test namespaces:
+make cleanup
 ```
 
 - All test resources are created within these temporary namespaces
 
 ### Resource Cleanup
 
-- Tests track created resources and clean them up automatically
+- Tests track created resources and clean them up automatically after each test
+- The shared namespace is preserved for debugging even after resource cleanup
 - Even if tests fail, cleanup is attempted in the teardown phase
-- Namespaces are always deleted at the end of each test
+- Use `make cleanup` to remove all test namespaces when done debugging
 
 ### Credential Handling
 
