@@ -133,52 +133,52 @@ test-fast: setup check-binary
 .PHONY: debug-test
 debug-test: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) $(TEST_DIR) -v --no-cleanup
+	$(PYTEST) $(TEST_DIR) -v --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
 
 .PHONY: debug-test-version
 debug-test-version: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) test_version.py -v -m version --no-cleanup
+	$(PYTEST) test_version.py -v -m version --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
 
 .PHONY: debug-test-providers
 debug-test-providers: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m provider --no-cleanup
+	$(PYTEST) -v -m provider --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
 
 .PHONY: debug-test-openshift
 debug-test-openshift: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m openshift --no-cleanup
+	$(PYTEST) -v -m openshift --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
 
 .PHONY: debug-test-vsphere
 debug-test-vsphere: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m vsphere --no-cleanup
+	$(PYTEST) -v -m vsphere --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
 
 .PHONY: debug-test-ovirt
 debug-test-ovirt: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m ovirt --no-cleanup
+	$(PYTEST) -v -m ovirt --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
 
 .PHONY: debug-test-openstack
 debug-test-openstack: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m openstack --no-cleanup
+	$(PYTEST) -v -m openstack --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
 
 .PHONY: debug-test-ova
 debug-test-ova: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m ova --no-cleanup
+	$(PYTEST) -v -m ova --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
 
 .PHONY: debug-test-errors
 debug-test-errors: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m error_cases --no-cleanup
+	$(PYTEST) -v -m error_cases --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
 
 .PHONY: debug-test-no-creds
 debug-test-no-creds: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m "not requires_credentials" --no-cleanup
+	$(PYTEST) -v -m "not requires_credentials" --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
 
 # Run tests and generate HTML report
 .PHONY: test-report
