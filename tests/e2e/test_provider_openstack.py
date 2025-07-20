@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-from utils import verify_provider_created
+from utils import verify_provider_created, generate_unique_resource_name
 
 
 @pytest.mark.provider
@@ -27,7 +27,7 @@ class TestOpenStackProvider:
         if not all([creds.get(field) for field in required_fields]):
             pytest.skip("OpenStack credentials not available in environment")
         
-        provider_name = "test-openstack-provider"
+        provider_name = generate_unique_resource_name("test-openstack-provider")
         
         # Build create command
         cmd_parts = [
@@ -70,7 +70,7 @@ class TestOpenStackProvider:
         if not all([creds.get(field) for field in required_fields]):
             pytest.skip("OpenStack credentials with region not available in environment")
         
-        provider_name = "test-openstack-region-provider"
+        provider_name = generate_unique_resource_name("test-openstack-region-provider")
         
         # Build create command with specific region
         cmd_parts = [
@@ -112,7 +112,7 @@ class TestOpenStackProvider:
         if not all([creds.get(field) for field in required_fields]):
             pytest.skip("OpenStack credentials not available in environment")
         
-        provider_name = "test-openstack-insecure-provider"
+        provider_name = generate_unique_resource_name("test-openstack-insecure-provider")
         
         # Build create command with insecure TLS
         create_cmd = (

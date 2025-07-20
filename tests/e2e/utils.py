@@ -44,7 +44,7 @@ def get_env_with_fallback(primary_key: str, fallback_key: str, default: str = ""
 
 def generate_unique_resource_name(base_name: str) -> str:
     """Generate a unique resource name with UUID suffix to avoid conflicts in shared namespace."""
-    return f"{base_name}-{uuid.uuid4().hex[:8]}"
+    return f"{base_name}-{uuid.uuid4().hex[:4]}"
 
 
 def verify_provider_created(test_namespace, provider_name: str, provider_type: str):

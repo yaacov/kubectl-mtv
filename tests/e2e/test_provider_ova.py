@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from utils import verify_provider_created
+from utils import verify_provider_created, generate_unique_resource_name
 
 
 @pytest.mark.provider
@@ -25,7 +25,7 @@ class TestOVAProvider:
         if not creds.get("url"):
             pytest.skip("OVA URL not available in environment")
         
-        provider_name = "test-ova-provider"
+        provider_name = generate_unique_resource_name("test-ova-provider")
         
         # Build create command
         create_cmd = f"create provider {provider_name} --type ova --url '{creds['url']}'"

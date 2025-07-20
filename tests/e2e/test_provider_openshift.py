@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from utils import verify_provider_created
+from utils import verify_provider_created, generate_unique_resource_name
 
 
 @pytest.mark.provider
@@ -19,7 +19,7 @@ class TestOpenShiftProvider:
     def test_create_openshift_provider(self, test_namespace, provider_credentials):
         """Test creating an OpenShift target provider."""
         creds = provider_credentials["openshift"]
-        provider_name = "test-openshift-provider"
+        provider_name = generate_unique_resource_name("test-openshift-provider")
         
         # For OpenShift provider, we can often use the current cluster
         if creds.get("url") and creds.get("token"):
@@ -44,7 +44,7 @@ class TestOpenShiftProvider:
     
     def test_list_providers_after_creation(self, test_namespace):
         """Test listing providers after creating one."""
-        provider_name = "test-list-provider"
+        provider_name = generate_unique_resource_name("test-list-provider")
         
         # Create a simple OpenShift provider
         result = test_namespace.run_mtv_command(
@@ -62,7 +62,7 @@ class TestOpenShiftProvider:
     
     def test_get_provider_details(self, test_namespace):
         """Test getting details of a created provider."""
-        provider_name = "test-details-provider"
+        provider_name = generate_unique_resource_name("test-details-provider")
         
         # Create a simple OpenShift provider
         result = test_namespace.run_mtv_command(
@@ -91,7 +91,7 @@ class TestOpenShiftProvider:
     
     def test_delete_provider(self, test_namespace):
         """Test deleting a provider."""
-        provider_name = "test-delete-provider"
+        provider_name = generate_unique_resource_name("test-delete-provider")
         
         # Create a simple OpenShift provider
         result = test_namespace.run_mtv_command(
