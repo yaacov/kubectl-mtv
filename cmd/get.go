@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/inventory"
@@ -25,13 +23,6 @@ func addOutputFormatCompletion(cmd *cobra.Command, flagName string) {
 	}
 }
 
-// printCommandError provides consistent error messaging across commands
-// It prints helpful error information when an error occurs
-func printCommandError(err error, operation string, namespace string) {
-	fmt.Printf("Error %s: %v\n", operation, err)
-	fmt.Printf("You can use the '--help' flag for more information on usage.\n")
-}
-
 // logNamespaceOperation logs namespace-specific operations with consistent formatting
 func logNamespaceOperation(operation string, namespace string, allNamespaces bool) {
 	if allNamespaces {
@@ -48,9 +39,10 @@ func logOutputFormat(format string) {
 
 func newGetCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get resources",
-		Long:  `Get various MTV resources including plans, providers, mappings, and inventory`,
+		Use:          "get",
+		Short:        "Get resources",
+		Long:         `Get various MTV resources including plans, providers, mappings, and inventory`,
+		SilenceUsage: true,
 	}
 
 	// Add plan subcommand with plural alias
@@ -82,10 +74,11 @@ func newGetPlanCmd() *cobra.Command {
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:   "plan [NAME]",
-		Short: "Get migration plans",
-		Long:  `Get migration plans`,
-		Args:  cobra.MaximumNArgs(1),
+		Use:          "plan [NAME]",
+		Short:        "Get migration plans",
+		Long:         `Get migration plans`,
+		Args:         cobra.MaximumNArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := GetGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
@@ -104,11 +97,7 @@ func newGetPlanCmd() *cobra.Command {
 			}
 			logOutputFormat(outputFormat)
 
-			err := plan.List(config.KubeConfigFlags, namespace, watch, outputFormat, planName)
-			if err != nil {
-				printCommandError(err, "getting plans", namespace)
-			}
-			return nil
+			return plan.List(config.KubeConfigFlags, namespace, watch, outputFormat, planName)
 		},
 	}
 
@@ -123,10 +112,11 @@ func newGetPlanVMsCmd() *cobra.Command {
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:   "plan-vms NAME",
-		Short: "Get VMs in a migration plan",
-		Long:  `Get VMs in a migration plan`,
-		Args:  cobra.ExactArgs(1),
+		Use:          "plan-vms NAME",
+		Short:        "Get VMs in a migration plan",
+		Long:         `Get VMs in a migration plan`,
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get plan name from positional argument
 			name := args[0]
@@ -137,11 +127,7 @@ func newGetPlanVMsCmd() *cobra.Command {
 			// Log the operation being performed
 			logNamespaceOperation("Getting VMs from plan", namespace, config.AllNamespaces)
 
-			err := plan.ListVMs(config.KubeConfigFlags, name, namespace, watch)
-			if err != nil {
-				printCommandError(err, "getting VMs from plan", namespace)
-			}
-			return nil
+			return plan.ListVMs(config.KubeConfigFlags, name, namespace, watch)
 		},
 	}
 
@@ -154,10 +140,11 @@ func newGetProviderCmd() *cobra.Command {
 	var outputFormat string
 
 	cmd := &cobra.Command{
-		Use:   "provider [NAME]",
-		Short: "Get providers",
-		Long:  `Get virtualization providers`,
-		Args:  cobra.MaximumNArgs(1),
+		Use:          "provider [NAME]",
+		Short:        "Get providers",
+		Long:         `Get virtualization providers`,
+		Args:         cobra.MaximumNArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := GetGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
@@ -177,11 +164,7 @@ func newGetProviderCmd() *cobra.Command {
 			logOutputFormat(outputFormat)
 
 			baseURL := ""
-			err := provider.List(config.KubeConfigFlags, namespace, baseURL, outputFormat, providerName)
-			if err != nil {
-				printCommandError(err, "getting providers", namespace)
-			}
-			return nil
+			return provider.List(config.KubeConfigFlags, namespace, baseURL, outputFormat, providerName)
 		},
 	}
 
@@ -196,10 +179,11 @@ func newGetMappingCmd() *cobra.Command {
 	var mappingType string
 
 	cmd := &cobra.Command{
-		Use:   "mapping [NAME]",
-		Short: "Get mappings",
-		Long:  `Get network and storage mappings`,
-		Args:  cobra.MaximumNArgs(1),
+		Use:          "mapping [NAME]",
+		Short:        "Get mappings",
+		Long:         `Get network and storage mappings`,
+		Args:         cobra.MaximumNArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := GetGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.KubeConfigFlags, config.AllNamespaces)
@@ -218,11 +202,7 @@ func newGetMappingCmd() *cobra.Command {
 			}
 			logOutputFormat(outputFormat)
 
-			err := mapping.List(config.KubeConfigFlags, mappingType, namespace, outputFormat, mappingName)
-			if err != nil {
-				printCommandError(err, "getting mappings", namespace)
-			}
-			return nil
+			return mapping.List(config.KubeConfigFlags, mappingType, namespace, outputFormat, mappingName)
 		},
 	}
 
@@ -235,9 +215,10 @@ func newGetMappingCmd() *cobra.Command {
 
 func newGetInventoryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "inventory",
-		Short: "Get inventory resources",
-		Long:  `Get inventory resources from providers`,
+		Use:          "inventory",
+		Short:        "Get inventory resources",
+		Long:         `Get inventory resources from providers`,
+		SilenceUsage: true,
 	}
 
 	// Add host subcommand with plural alias
@@ -275,10 +256,11 @@ func newGetInventoryHostCmd() *cobra.Command {
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:   "host PROVIDER",
-		Short: "Get hosts from a provider",
-		Long:  `Get hosts from a provider`,
-		Args:  cobra.ExactArgs(1),
+		Use:          "host PROVIDER",
+		Short:        "Get hosts from a provider",
+		Long:         `Get hosts from a provider`,
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := GetGlobalConfig()
@@ -292,11 +274,7 @@ func newGetInventoryHostCmd() *cobra.Command {
 				inventoryURL = client.DiscoverInventoryURL(config.KubeConfigFlags, namespace)
 			}
 
-			err := inventory.ListHosts(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
-			if err != nil {
-				printCommandError(err, "getting hosts from provider", namespace)
-			}
-			return nil
+			return inventory.ListHosts(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 		},
 	}
 
@@ -316,10 +294,11 @@ func newGetInventoryNamespaceCmd() *cobra.Command {
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:   "namespace PROVIDER",
-		Short: "Get namespaces from a provider",
-		Long:  `Get namespaces from a provider`,
-		Args:  cobra.ExactArgs(1),
+		Use:          "namespace PROVIDER",
+		Short:        "Get namespaces from a provider",
+		Long:         `Get namespaces from a provider`,
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := GetGlobalConfig()
@@ -333,11 +312,7 @@ func newGetInventoryNamespaceCmd() *cobra.Command {
 				inventoryURL = client.DiscoverInventoryURL(config.KubeConfigFlags, namespace)
 			}
 
-			err := inventory.ListNamespaces(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
-			if err != nil {
-				printCommandError(err, "getting namespaces from provider", namespace)
-			}
-			return nil
+			return inventory.ListNamespaces(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 		},
 	}
 
@@ -357,10 +332,11 @@ func newGetInventoryNetworkCmd() *cobra.Command {
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:   "network PROVIDER",
-		Short: "Get networks from a provider",
-		Long:  `Get networks from a provider`,
-		Args:  cobra.ExactArgs(1),
+		Use:          "network PROVIDER",
+		Short:        "Get networks from a provider",
+		Long:         `Get networks from a provider`,
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := GetGlobalConfig()
@@ -374,11 +350,7 @@ func newGetInventoryNetworkCmd() *cobra.Command {
 				inventoryURL = client.DiscoverInventoryURL(config.KubeConfigFlags, namespace)
 			}
 
-			err := inventory.ListNetworks(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
-			if err != nil {
-				printCommandError(err, "getting networks from provider", namespace)
-			}
-			return nil
+			return inventory.ListNetworks(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 		},
 	}
 
@@ -398,10 +370,11 @@ func newGetInventoryStorageCmd() *cobra.Command {
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:   "storage PROVIDER",
-		Short: "Get storage from a provider",
-		Long:  `Get storage from a provider`,
-		Args:  cobra.ExactArgs(1),
+		Use:          "storage PROVIDER",
+		Short:        "Get storage from a provider",
+		Long:         `Get storage from a provider`,
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := GetGlobalConfig()
@@ -415,11 +388,7 @@ func newGetInventoryStorageCmd() *cobra.Command {
 				inventoryURL = client.DiscoverInventoryURL(config.KubeConfigFlags, namespace)
 			}
 
-			err := inventory.ListStorage(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
-			if err != nil {
-				printCommandError(err, "getting storage from provider", namespace)
-			}
-			return nil
+			return inventory.ListStorage(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, query, watch)
 		},
 	}
 
@@ -440,10 +409,11 @@ func newGetInventoryVMCmd() *cobra.Command {
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:   "vm PROVIDER",
-		Short: "Get VMs from a provider",
-		Long:  `Get VMs from a provider`,
-		Args:  cobra.ExactArgs(1),
+		Use:          "vm PROVIDER",
+		Short:        "Get VMs from a provider",
+		Long:         `Get VMs from a provider`,
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := GetGlobalConfig()
@@ -457,11 +427,7 @@ func newGetInventoryVMCmd() *cobra.Command {
 				inventoryURL = client.DiscoverInventoryURL(config.KubeConfigFlags, namespace)
 			}
 
-			err := inventory.ListVMs(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, extendedOutput, query, watch)
-			if err != nil {
-				printCommandError(err, "getting VMs from provider", namespace)
-			}
-			return nil
+			return inventory.ListVMs(config.KubeConfigFlags, provider, namespace, inventoryURL, outputFormat, extendedOutput, query, watch)
 		},
 	}
 

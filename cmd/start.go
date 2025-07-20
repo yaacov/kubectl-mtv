@@ -11,9 +11,10 @@ import (
 
 func newStartCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "start",
-		Short: "Start resources",
-		Long:  `Start various MTV resources`,
+		Use:          "start",
+		Short:        "Start resources",
+		Long:         `Start various MTV resources`,
+		SilenceUsage: true,
 	}
 
 	cmd.AddCommand(newStartPlanCmd())
@@ -24,9 +25,10 @@ func newStartPlanCmd() *cobra.Command {
 	var cutoverTimeStr string
 
 	cmd := &cobra.Command{
-		Use:   "plan NAME [NAME...]",
-		Short: "Start one or more migration plans",
-		Args:  cobra.MinimumNArgs(1),
+		Use:          "plan NAME [NAME...]",
+		Short:        "Start one or more migration plans",
+		Args:         cobra.MinimumNArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
@@ -45,8 +47,7 @@ func newStartPlanCmd() *cobra.Command {
 			for _, name := range args {
 				err := plan.Start(kubeConfigFlags, name, namespace, cutoverTime)
 				if err != nil {
-					printCommandError(err, "starting plan", namespace)
-					// Continue with other plans even if one fails
+					return err
 				}
 			}
 			return nil

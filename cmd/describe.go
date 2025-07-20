@@ -10,9 +10,10 @@ import (
 
 func newDescribeCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "describe",
-		Short: "Describe resources",
-		Long:  `Describe migration plans and VMs in migration plans`,
+		Use:          "describe",
+		Short:        "Describe resources",
+		Long:         `Describe migration plans and VMs in migration plans`,
+		SilenceUsage: true,
 	}
 
 	cmd.AddCommand(newDescribePlanSubCmd())
@@ -23,20 +24,17 @@ func newDescribeCmd() *cobra.Command {
 
 func newDescribePlanSubCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "plan NAME",
-		Short: "Describe a migration plan",
-		Args:  cobra.ExactArgs(1),
+		Use:          "plan NAME",
+		Short:        "Describe a migration plan",
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get name from positional argument
 			name := args[0]
 
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
-			err := plan.Describe(kubeConfigFlags, name, namespace)
-			if err != nil {
-				printCommandError(err, "describing plan", namespace)
-			}
-			return nil
+			return plan.Describe(kubeConfigFlags, name, namespace)
 		},
 	}
 
@@ -48,20 +46,17 @@ func newDescribeVMSubCmd() *cobra.Command {
 	var vmName string
 
 	cmd := &cobra.Command{
-		Use:   "plan-vm NAME",
-		Short: "Describe VM status in a migration plan",
-		Args:  cobra.ExactArgs(1),
+		Use:          "plan-vm NAME",
+		Short:        "Describe VM status in a migration plan",
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get plan name from positional argument
 			name := args[0]
 
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
-			err := plan.DescribeVM(kubeConfigFlags, name, namespace, vmName, watch)
-			if err != nil {
-				printCommandError(err, "describing VM in plan", namespace)
-			}
-			return nil
+			return plan.DescribeVM(kubeConfigFlags, name, namespace, vmName, watch)
 		},
 	}
 

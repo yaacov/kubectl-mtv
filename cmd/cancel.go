@@ -14,9 +14,10 @@ import (
 
 func newCancelCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cancel",
-		Short: "Cancel resources",
-		Long:  `Cancel various MTV resources`,
+		Use:          "cancel",
+		Short:        "Cancel resources",
+		Long:         `Cancel various MTV resources`,
+		SilenceUsage: true,
 	}
 
 	cmd.AddCommand(newCancelVMsCmd())
@@ -27,9 +28,10 @@ func newCancelVMsCmd() *cobra.Command {
 	var vmNamesOrFile string
 
 	cmd := &cobra.Command{
-		Use:   "plan NAME",
-		Short: "Cancel specific VMs in a running migration plan",
-		Args:  cobra.ExactArgs(1),
+		Use:          "plan NAME",
+		Short:        "Cancel specific VMs in a running migration plan",
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get plan name from positional argument
 			planName := args[0]
@@ -67,11 +69,7 @@ func newCancelVMsCmd() *cobra.Command {
 				return fmt.Errorf("no VM names specified to cancel")
 			}
 
-			err := plan.Cancel(kubeConfigFlags, planName, namespace, vmNames)
-			if err != nil {
-				printCommandError(err, "canceling VMs in plan", namespace)
-			}
-			return nil
+			return plan.Cancel(kubeConfigFlags, planName, namespace, vmNames)
 		},
 	}
 

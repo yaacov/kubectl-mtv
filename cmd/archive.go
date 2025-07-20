@@ -8,9 +8,10 @@ import (
 
 func newArchiveCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "archive",
-		Short: "Archive resources",
-		Long:  `Archive various MTV resources`,
+		Use:          "archive",
+		Short:        "Archive resources",
+		Long:         `Archive various MTV resources`,
+		SilenceUsage: true,
 	}
 
 	cmd.AddCommand(newArchivePlanCmd())
@@ -19,9 +20,10 @@ func newArchiveCmd() *cobra.Command {
 
 func newArchivePlanCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "plan NAME [NAME...]",
-		Short: "Archive one or more migration plans",
-		Args:  cobra.MinimumNArgs(1),
+		Use:          "plan NAME [NAME...]",
+		Short:        "Archive one or more migration plans",
+		Args:         cobra.MinimumNArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
@@ -30,8 +32,7 @@ func newArchivePlanCmd() *cobra.Command {
 			for _, name := range args {
 				err := plan.Archive(kubeConfigFlags, name, namespace, true)
 				if err != nil {
-					printCommandError(err, "archiving plan", namespace)
-					// Continue with other plans even if one fails
+					return err
 				}
 			}
 			return nil

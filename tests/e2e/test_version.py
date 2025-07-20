@@ -25,7 +25,7 @@ class TestVersion:
         assert len(result.stdout.strip()) > 0
         
         # Should contain client version info
-        assert "Client Version" in result.stdout or "version" in result.stdout.lower()
+        assert "Operator version" in result.stdout
     
     def test_version_command_json_output(self, test_namespace):
         """Test version command with JSON output format."""
@@ -38,8 +38,13 @@ class TestVersion:
             version_data = json.loads(result.stdout)
             assert isinstance(version_data, dict)
             
-            # Should have client version information
-            assert "clientVersion" in version_data or "client" in version_data
+            # Should have required fields
+            required_fields = ["clientVersion", "operatorVersion", "operatorStatus", "inventoryURL", "inventoryStatus"]
+            for field in required_fields:
+                assert field in version_data, f"Missing required field: {field}"
+            
+            # Client version should not be empty
+            assert version_data["clientVersion"], "Client version should not be empty"
             
         except json.JSONDecodeError:
             pytest.fail(f"Version command did not return valid JSON: {result.stdout}")
@@ -55,8 +60,13 @@ class TestVersion:
             version_data = yaml.safe_load(result.stdout)
             assert isinstance(version_data, dict)
             
-            # Should have client version information
-            assert "clientVersion" in version_data or "client" in version_data
+            # Should have required fields
+            required_fields = ["clientVersion", "operatorVersion", "operatorStatus", "inventoryURL", "inventoryStatus"]
+            for field in required_fields:
+                assert field in version_data, f"Missing required field: {field}"
+            
+            # Client version should not be empty
+            assert version_data["clientVersion"], "Client version should not be empty"
             
         except yaml.YAMLError:
             pytest.fail(f"Version command did not return valid YAML: {result.stdout}")
@@ -69,8 +79,7 @@ class TestVersion:
         assert result.stdout is not None
         
         # Table output should contain version information
-        lines = result.stdout.strip().split('\n')
-        assert len(lines) >= 1
+        assert "Operator version" in result.stdout
     
     def test_version_shows_server_info_when_available(self, test_namespace):
         """Test that version command shows server info when MTV is installed."""

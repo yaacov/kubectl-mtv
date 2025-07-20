@@ -17,9 +17,19 @@ import pytest
 # Import utils to load .env file
 try:
     from . import utils
+    # Explicitly ensure .env file is loaded
+    utils.load_env_file()
 except ImportError:
-    # Handle case where utils might not be importable
-    pass
+    # Fallback: try to load .env file manually if utils import fails
+    try:
+        from pathlib import Path
+        from dotenv import load_dotenv
+        env_path = Path(__file__).parent / ".env"
+        if env_path.exists():
+            load_dotenv(env_path)
+            print(f"Loaded environment variables from {env_path}")
+    except ImportError:
+        print("Warning: Could not load .env file - python-dotenv not available")
 
 
 class KubectlMTVError(Exception):
@@ -118,10 +128,12 @@ def check_cluster_login() -> bool:
 
 def find_kubectl_mtv_binary() -> str:
     """Find the kubectl-mtv binary."""
-    # First try in the current directory
-    current_dir = Path.cwd()
-    binary_path = current_dir / "kubectl-mtv"
+    # Get the project root directory (tests/e2e -> project root is two levels up)
+    current_dir = Path(__file__).parent  # tests/e2e directory
+    project_root = current_dir.parent.parent  # project root directory
     
+    # First try in the project root (most common location after 'make')
+    binary_path = project_root / "kubectl-mtv"
     if binary_path.exists() and binary_path.is_file():
         return str(binary_path)
     
@@ -135,19 +147,7 @@ def find_kubectl_mtv_binary() -> str:
     
     if result.returncode == 0:
         return result.stdout.strip()
-    
-    # Try common build locations
-    build_locations = [
-        current_dir.parent / "kubectl-mtv",
-        current_dir.parent.parent / "kubectl-mtv",
-        Path("/usr/local/bin/kubectl-mtv"),
-        Path("/usr/bin/kubectl-mtv"),
-    ]
-    
-    for path in build_locations:
-        if path.exists() and path.is_file():
-            return str(path)
-    
+        
     raise FileNotFoundError(
         "kubectl-mtv binary not found. Please build it first with 'make' or ensure it's in PATH."
     )
@@ -240,6 +240,8 @@ def provider_credentials() -> Dict[str, Any]:
         "openshift": {
             "url": os.getenv("OPENSHIFT_TARGET_URL"),
             "token": os.getenv("OPENSHIFT_TARGET_TOKEN"),
+            "cacert": os.getenv("OPENSHIFT_CACERT"),
+            "insecure": os.getenv("OPENSHIFT_INSECURE_SKIP_TLS", "false").lower() == "true",
         },
     }
 

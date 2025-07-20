@@ -11,9 +11,10 @@ import (
 
 func newCutoverCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "cutover",
-		Short: "Set cutover time for resources",
-		Long:  `Set cutover time for various MTV resources`,
+		Use:          "cutover",
+		Short:        "Set cutover time for resources",
+		Long:         `Set cutover time for various MTV resources`,
+		SilenceUsage: true,
 	}
 
 	cmd.AddCommand(newCutoverPlanCmd())
@@ -24,9 +25,10 @@ func newCutoverPlanCmd() *cobra.Command {
 	var cutoverTimeStr string
 
 	cmd := &cobra.Command{
-		Use:   "plan NAME [NAME...]",
-		Short: "Set the cutover time for one or more warm migration plans",
-		Args:  cobra.MinimumNArgs(1),
+		Use:          "plan NAME [NAME...]",
+		Short:        "Set the cutover time for one or more warm migration plans",
+		Args:         cobra.MinimumNArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
@@ -45,8 +47,7 @@ func newCutoverPlanCmd() *cobra.Command {
 			for _, planName := range args {
 				err := plan.Cutover(kubeConfigFlags, planName, namespace, cutoverTime)
 				if err != nil {
-					printCommandError(err, "setting cutover time for plan", namespace)
-					// Continue with other plans even if one fails
+					return err
 				}
 			}
 			return nil

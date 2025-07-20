@@ -22,9 +22,10 @@ import (
 
 func newCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create resources",
-		Long:  `Create various MTV resources like providers, plans, mappings, and VDDK images`,
+		Use:          "create",
+		Short:        "Create resources",
+		Long:         `Create various MTV resources like providers, plans, mappings, and VDDK images`,
+		SilenceUsage: true,
 	}
 
 	cmd.AddCommand(newCreateProviderCmd())
@@ -53,9 +54,10 @@ func newCreateProviderCmd() *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "provider NAME",
-		Short: "Create a new provider",
-		Args:  cobra.ExactArgs(1),
+		Use:          "provider NAME",
+		Short:        "Create a new provider",
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get name from positional argument
 			name := args[0]
@@ -73,13 +75,9 @@ func newCreateProviderCmd() *cobra.Command {
 				cacert = string(fileContent)
 			}
 
-			err := provider.Create(kubeConfigFlags, providerType.GetValue(), name, namespace, secret,
+			return provider.Create(kubeConfigFlags, providerType.GetValue(), name, namespace, secret,
 				url, username, password, cacert, insecureSkipTLS, vddkInitImage, token,
 				domainName, projectName, regionName)
-			if err != nil {
-				printCommandError(err, "creating provider", namespace)
-			}
-			return nil
 		},
 	}
 
@@ -132,9 +130,10 @@ func newCreatePlanCmd() *cobra.Command {
 	var migrationType string
 
 	cmd := &cobra.Command{
-		Use:   "plan NAME",
-		Short: "Create a migration plan",
-		Args:  cobra.ExactArgs(1),
+		Use:          "plan NAME",
+		Short:        "Create a migration plan",
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get name from positional argument
 			name = args[0]
@@ -230,10 +229,7 @@ func newCreatePlanCmd() *cobra.Command {
 			}
 
 			err := plan.Create(opts)
-			if err != nil {
-				printCommandError(err, "creating plan", namespace)
-			}
-			return nil
+			return err
 		},
 	}
 
@@ -289,10 +285,11 @@ func newCreateMappingCmd() *cobra.Command {
 	var inventoryURL string
 
 	cmd := &cobra.Command{
-		Use:   "mapping NAME",
-		Short: "Create a new mapping",
-		Long:  `Create a new network or storage mapping`,
-		Args:  cobra.ExactArgs(1),
+		Use:          "mapping NAME",
+		Short:        "Create a new mapping",
+		Long:         `Create a new network or storage mapping`,
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get name from positional argument
 			name := args[0]
@@ -312,13 +309,10 @@ func newCreateMappingCmd() *cobra.Command {
 			case "storage":
 				err = mapping.CreateStorage(kubeConfigFlags, name, namespace, sourceProvider, targetProvider, fromFile, storagePairs, inventoryURL)
 			default:
-				return fmt.Errorf("unsupported mapping type: %s. Use 'network' or 'storage'", mappingType)
+				err = fmt.Errorf("unsupported mapping type: %s. Use 'network' or 'storage'", mappingType)
 			}
 
-			if err != nil {
-				printCommandError(err, "creating mapping", namespace)
-			}
-			return nil
+			return err
 		},
 	}
 

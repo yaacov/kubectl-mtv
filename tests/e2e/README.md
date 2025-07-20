@@ -76,20 +76,62 @@ echo "MTV_INVENTORY_URL=http://<inventory-service-ip>:<port>" >> .env
 
 ## Running Tests
 
-### Run All Tests
+### Using Makefile (Recommended)
+
+The easiest way to run tests is using the provided Makefile:
 
 ```bash
-pytest -v
+# Run all tests
+make test
+
+# Run version command tests only
+make test-version
+
+# Run all provider tests
+make test-providers
+
+# Run specific provider type tests
+make test-openshift      # OpenShift provider tests
+make test-vsphere        # VMware vSphere provider tests  
+make test-ovirt          # oVirt provider tests
+make test-openstack      # OpenStack provider tests
+make test-ova            # OVA provider tests
+
+# Run error/edge case tests
+make test-errors
+
+# Run tests that don't require credentials
+make test-no-creds
+
+# Run tests in parallel
+make test-fast
+
+# Generate HTML and JSON reports
+make test-report
+
+# Run with coverage
+make test-coverage
 ```
 
-### Run Specific Test Categories
+### Using pytest directly
+
+You can also run tests directly with pytest:
 
 ```bash
-# Test only the version command
-pytest test_version.py -v
+# Run all tests
+pytest -v
 
-# Test only provider creation
-pytest test_providers.py -v
+# Run specific test files
+pytest test_version.py -v
+pytest test_provider_openshift.py -v
+pytest test_provider_vsphere.py -v
+
+# Run by markers
+pytest -v -m version                    # Version tests
+pytest -v -m provider                   # All provider tests
+pytest -v -m "openshift"               # OpenShift provider tests
+pytest -v -m "requires_credentials"     # Tests needing credentials
+pytest -v -m "not requires_credentials" # Tests not needing credentials
 ```
 
 ### Run Tests with Different Output Formats
@@ -102,19 +144,74 @@ pytest --html=report.html --self-contained-html
 pytest --json-report --json-report-file=report.json
 ```
 
+### Test kubectl-mtv Output Formats
+
+The version command supports multiple output formats:
+
+```bash
+# Test default output
+./kubectl-mtv version
+
+# Test JSON output  
+./kubectl-mtv version -o json
+
+# Test YAML output
+./kubectl-mtv version -o yaml
+```
+
 ### Run Tests in Parallel
 
 ```bash
 # Run tests in parallel (requires pytest-xdist)
 pytest -n auto
+
+# Or using Makefile
+make test-fast
+```
+
+### Environment-Specific Testing
+
+```bash
+# Run only tests that work without provider credentials
+make test-no-creds
+
+# Run tests for specific provider types (requires credentials)
+make test-vsphere      # Requires VSPHERE_* env vars
+make test-ovirt        # Requires OVIRT_* env vars  
+make test-openstack    # Requires OPENSTACK_* env vars
+make test-ova          # Requires OVA_URL env var
+
+# OpenShift provider tests (usually work with current cluster)
+make test-openshift
 ```
 
 ## Test Structure
 
-### Test Categories
+### Test Files
+
+The tests are organized into separate files for better maintainability and targeted testing:
 
 1. **test_version.py**: Tests for the `kubectl mtv version` command
-2. **test_providers.py**: Tests for provider creation, listing, and management
+2. **test_provider_openshift.py**: OpenShift target provider tests
+3. **test_provider_vsphere.py**: VMware vSphere provider tests  
+4. **test_provider_ovirt.py**: oVirt provider tests
+5. **test_provider_openstack.py**: OpenStack provider tests
+6. **test_provider_ova.py**: OVA provider tests
+7. **test_provider_errors.py**: Error conditions and edge case tests
+
+### Test Markers
+
+Tests are organized with pytest markers for easy filtering:
+
+- `@pytest.mark.version` - Version command tests
+- `@pytest.mark.provider` - All provider-related tests
+- `@pytest.mark.openshift` - OpenShift provider tests
+- `@pytest.mark.vsphere` - VMware vSphere provider tests
+- `@pytest.mark.ovirt` - oVirt provider tests
+- `@pytest.mark.openstack` - OpenStack provider tests  
+- `@pytest.mark.ova` - OVA provider tests
+- `@pytest.mark.requires_credentials` - Tests requiring provider credentials
+- `@pytest.mark.error_cases` - Error condition and validation tests
 
 ### Test Fixtures
 
@@ -197,9 +294,19 @@ MTV_VDDK_INIT_IMAGE=registry.example.com/vddk-init:latest
 
 ## Writing New Tests
 
+### Test File Organization
+
+When adding new tests, follow the existing organization pattern:
+
+- **Version/CLI tests**: Add to `test_version.py`
+- **Provider-specific tests**: Add to appropriate `test_provider_<type>.py` file
+- **Error/validation tests**: Add to `test_provider_errors.py` 
+- **New functionality**: Create new test files with descriptive names
+
 ### Test Class Structure
 
 ```python
+@pytest.mark.your_marker
 class TestNewFeature:
     """Test cases for new feature."""
     
@@ -212,6 +319,14 @@ class TestNewFeature:
         # Track resources for cleanup
         test_namespace.track_resource("resource-type", "resource-name")
 ```
+
+### Adding New Markers
+
+When adding new test categories, remember to:
+
+1. Add the marker to `pytest.ini`
+2. Add corresponding Makefile targets if needed
+3. Update this README with the new marker documentation
 
 ### Best Practices
 
@@ -254,4 +369,55 @@ kubectl create namespace test-debug
 
 # Cleanup
 kubectl delete namespace test-debug
+```
+
+## Quick Start Examples
+
+### Run Basic Tests (No Credentials Required)
+
+```bash
+# Setup environment
+make setup
+
+# Check prerequisites  
+make check-cluster
+make check-binary
+
+# Run basic tests
+make test-version
+make test-openshift
+make test-errors
+```
+
+### Run Provider Tests with Credentials
+
+```bash
+# Setup credentials in .env file
+cp .env.template .env
+# Edit .env with your provider credentials
+
+# Run specific provider tests
+make test-vsphere     # Tests VMware vSphere provider
+make test-ovirt       # Tests oVirt provider  
+make test-openstack   # Tests OpenStack provider
+make test-ova         # Tests OVA provider
+```
+
+### Development Workflow
+
+```bash
+# Install dev dependencies
+make dev-setup
+
+# Run linting
+make lint
+
+# Run fast tests during development
+make test-no-creds
+
+# Run full test suite
+make test-report
+
+# View test results
+open reports/report.html
 ```

@@ -22,7 +22,14 @@ help:
 	@echo "  setup          - Set up Python virtual environment and install dependencies"
 	@echo "  test           - Run all tests"
 	@echo "  test-version   - Run version command tests only"
-	@echo "  test-providers - Run provider tests only"
+	@echo "  test-providers - Run all provider tests"
+	@echo "  test-openshift - Run OpenShift provider tests only"
+	@echo "  test-vsphere   - Run VMware vSphere provider tests only"
+	@echo "  test-ovirt     - Run oVirt provider tests only"
+	@echo "  test-openstack - Run OpenStack provider tests only"
+	@echo "  test-ova       - Run OVA provider tests only"
+	@echo "  test-errors    - Run provider error/edge case tests only"
+	@echo "  test-no-creds  - Run tests that don't require credentials"
 	@echo "  test-fast      - Run tests in parallel"
 	@echo "  test-report    - Run tests and generate HTML report"
 	@echo "  test-coverage  - Run tests with coverage report"
@@ -58,7 +65,49 @@ test-version: setup check-binary
 .PHONY: test-providers
 test-providers: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) test_providers.py -v -m provider
+	$(PYTEST) -v -m provider
+
+# Run OpenShift provider tests only
+.PHONY: test-openshift
+test-openshift: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m openshift
+
+# Run VMware vSphere provider tests only
+.PHONY: test-vsphere
+test-vsphere: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m vsphere
+
+# Run oVirt provider tests only
+.PHONY: test-ovirt
+test-ovirt: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m ovirt
+
+# Run OpenStack provider tests only
+.PHONY: test-openstack
+test-openstack: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m openstack
+
+# Run OVA provider tests only
+.PHONY: test-ova
+test-ova: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m ova
+
+# Run provider error/edge case tests only
+.PHONY: test-errors
+test-errors: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m error_cases
+
+# Run tests that don't require credentials
+.PHONY: test-no-creds
+test-no-creds: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m "not requires_credentials"
 
 # Run tests in parallel
 .PHONY: test-fast
@@ -163,6 +212,16 @@ info:
 	@echo "Virtual env: $(VENV_DIR)"
 	@echo "Test directory: $(TEST_DIR)"
 	@echo "Reports directory: $(REPORTS_DIR)"
+	@echo ""
+	@echo "Test Files"
+	@echo "=========="
+	@echo "test_version.py               - Version command tests"
+	@echo "test_provider_openshift.py    - OpenShift provider tests"
+	@echo "test_provider_vsphere.py      - VMware vSphere provider tests"
+	@echo "test_provider_ovirt.py        - oVirt provider tests"
+	@echo "test_provider_openstack.py    - OpenStack provider tests"
+	@echo "test_provider_ova.py          - OVA provider tests"
+	@echo "test_provider_errors.py       - Error condition tests"
 	@echo ""
 	@echo "Cluster Information"
 	@echo "==================="
