@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from utils import verify_provider_created, generate_unique_resource_name
+from ..utils import verify_provider_created, generate_unique_resource_name
 
 
 @pytest.mark.provider

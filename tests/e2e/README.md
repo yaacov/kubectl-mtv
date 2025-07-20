@@ -2,6 +2,16 @@
 
 This directory contains end-to-end (e2e) tests for kubectl-mtv. The tests are designed to run against a live OpenShift/Kubernetes cluster with the Migration Toolkit for Virtualization (MTV) or Forklift installed.
 
+## Test Organization
+
+Tests are organized by functionality into subdirectories:
+
+- **`providers/`** - Provider creation and management tests
+- **`version/`** - Version command tests  
+- **`inventory/`** - Inventory discovery and listing tests
+- **`plans/`** - Migration plan management and operations
+- **`mappings/`** - Network and storage mapping tests
+
 ## Test Architecture
 
 **Shared Namespace Design**: All tests run in a shared namespace that is created once per test session and preserved for debugging. This approach provides:
@@ -98,11 +108,12 @@ The easiest way to run tests is using the provided Makefile:
 # Run all tests
 make test
 
-# Run version command tests only
-make test-version
-
-# Run all provider tests
-make test-providers
+# Run tests by category
+make test-version        # Version command tests only
+make test-providers      # All provider tests
+make test-inventory      # Inventory command tests only  
+make test-plans          # Migration plan tests only
+make test-mappings       # Mapping tests only
 
 # Run specific provider type tests
 make test-openshift      # OpenShift provider tests
@@ -150,10 +161,17 @@ You can also run tests directly with pytest:
 # Run all tests
 pytest -v
 
+# Run tests by category
+pytest version/ -v                      # Version tests
+pytest providers/ -v                    # All provider tests  
+pytest inventory/ -v                    # Inventory tests
+pytest plans/ -v                        # Plan tests
+pytest mappings/ -v                     # Mapping tests
+
 # Run specific test files
-pytest test_version.py -v
-pytest test_provider_openshift.py -v
-pytest test_provider_vsphere.py -v
+pytest version/test_version.py -v
+pytest providers/test_openshift.py -v
+pytest providers/test_vsphere.py -v
 
 # Run by markers
 pytest -v -m version                    # Version tests
@@ -166,7 +184,8 @@ pytest -v -m "not requires_credentials" # Tests not needing credentials
 pytest -v --namespace-suffix mytest     # Creates kubectl-mtv-shared-mytest
 
 # Debug failed tests by preserving namespace and resources
-pytest --no-cleanup test_provider_openshift.py -v
+# Keep just the namespace for inspection
+pytest --no-cleanup providers/test_openshift.py -v
 ```
 
 ### Run Tests with Different Output Formats
@@ -224,15 +243,18 @@ make test-openshift
 
 ### Test Files
 
-The tests are organized into separate files for better maintainability and targeted testing:
+The tests are organized into directories by functionality:
 
-1. **test_version.py**: Tests for the `kubectl mtv version` command
-2. **test_provider_openshift.py**: OpenShift target provider tests
-3. **test_provider_vsphere.py**: VMware vSphere provider tests  
-4. **test_provider_ovirt.py**: oVirt provider tests
-5. **test_provider_openstack.py**: OpenStack provider tests
-6. **test_provider_ova.py**: OVA provider tests
-7. **test_provider_errors.py**: Error conditions and edge case tests
+1. **version/test_version.py**: Tests for the `kubectl mtv version` command
+2. **providers/test_openshift.py**: OpenShift target provider tests
+3. **providers/test_vsphere.py**: VMware vSphere provider tests  
+4. **providers/test_ovirt.py**: oVirt provider tests
+5. **providers/test_openstack.py**: OpenStack provider tests
+6. **providers/test_ova.py**: OVA provider tests
+7. **providers/test_errors.py**: Error conditions and edge case tests
+8. **inventory/test_inventory.py**: Inventory discovery and listing tests
+9. **plans/test_plans.py**: Migration plan management tests
+10. **mappings/test_mappings.py**: Network and storage mapping tests
 
 ### Test Markers
 
@@ -366,10 +388,13 @@ kubectl delete namespace kubectl-mtv-test-a1b2c3d4
 
 When adding new tests, follow the existing organization pattern:
 
-- **Version/CLI tests**: Add to `test_version.py`
-- **Provider-specific tests**: Add to appropriate `test_provider_<type>.py` file
-- **Error/validation tests**: Add to `test_provider_errors.py`
-- **New functionality**: Create new test files with descriptive names
+- **Version/CLI tests**: Add to `version/test_version.py`
+- **Provider-specific tests**: Add to appropriate `providers/test_<type>.py` file
+- **Error/validation tests**: Add to `providers/test_errors.py`
+- **Inventory tests**: Add to `inventory/test_inventory.py`
+- **Plan tests**: Add to `plans/test_plans.py`
+- **Mapping tests**: Add to `mappings/test_mappings.py`
+- **New functionality**: Create new test files with descriptive names in appropriate directories
 
 ### Test Class Structure
 

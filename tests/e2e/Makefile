@@ -21,14 +21,23 @@ help:
 	@echo "Available targets:"
 	@echo "  setup          - Set up Python virtual environment and install dependencies"
 	@echo "  test           - Run all tests"
+	@echo ""
+	@echo "Test Categories:"
 	@echo "  test-version   - Run version command tests only"
 	@echo "  test-providers - Run all provider tests"
+	@echo "  test-inventory - Run inventory command tests only" 
+	@echo "  test-plans     - Run migration plan tests only"
+	@echo "  test-mappings  - Run mapping tests only"
+	@echo ""
+	@echo "Provider Tests:"
 	@echo "  test-openshift - Run OpenShift provider tests only"
 	@echo "  test-vsphere   - Run VMware vSphere provider tests only"
 	@echo "  test-ovirt     - Run oVirt provider tests only"
 	@echo "  test-openstack - Run OpenStack provider tests only"
 	@echo "  test-ova       - Run OVA provider tests only"
 	@echo "  test-errors    - Run provider error/edge case tests only"
+	@echo ""
+	@echo "Test Options:"
 	@echo "  test-no-creds  - Run tests that don't require credentials"
 	@echo "  test-fast      - Run tests in parallel"
 	@echo "  test-report    - Run tests and generate HTML report"
@@ -63,49 +72,67 @@ test: setup check-binary
 .PHONY: test-version
 test-version: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) test_version.py -v -m version
+	$(PYTEST) version/ -v -m version
+
+# Run inventory tests only
+.PHONY: test-inventory
+test-inventory: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) inventory/ -v -m inventory
+
+# Run plan tests only
+.PHONY: test-plans
+test-plans: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) plans/ -v -m plan
+
+# Run mapping tests only
+.PHONY: test-mappings
+test-mappings: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) mappings/ -v -m mapping
 
 # Run provider tests only
 .PHONY: test-providers
 test-providers: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m provider
+	$(PYTEST) providers/ -v -m provider
 
 # Run OpenShift provider tests only
 .PHONY: test-openshift
 test-openshift: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m openshift
+	$(PYTEST) providers/ -v -m openshift
 
 # Run VMware vSphere provider tests only
 .PHONY: test-vsphere
 test-vsphere: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m vsphere
+	$(PYTEST) providers/ -v -m vsphere
 
 # Run oVirt provider tests only
 .PHONY: test-ovirt
 test-ovirt: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m ovirt
+	$(PYTEST) providers/ -v -m ovirt
 
 # Run OpenStack provider tests only
 .PHONY: test-openstack
 test-openstack: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m openstack
+	$(PYTEST) providers/ -v -m openstack
 
 # Run OVA provider tests only
 .PHONY: test-ova
 test-ova: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m ova
+	$(PYTEST) providers/ -v -m ova
 
 # Run provider error/edge case tests only
 .PHONY: test-errors
 test-errors: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m error_cases
+	$(PYTEST) providers/ -v -m error_cases
 
 # Run tests that don't require credentials
 .PHONY: test-no-creds
@@ -213,7 +240,7 @@ pre-commit: check-cluster check-binary lint test
 .PHONY: smoke-test
 smoke-test: setup check-binary
 	@echo "Running smoke test..."
-	$(PYTEST) test_version.py::TestVersion::test_version_command_basic -v
+	$(PYTEST) version/test_version.py::TestVersion::test_version_command_basic -v
 
 # Install development dependencies
 .PHONY: dev-setup
@@ -237,15 +264,27 @@ info:
 	@echo "- Use 'make cleanup' to remove test namespaces"
 	@echo "- Use 'make list-ns' to see current test namespaces"
 	@echo ""
-	@echo "Test Files"
-	@echo "=========="
-	@echo "test_version.py               - Version command tests"
-	@echo "test_provider_openshift.py    - OpenShift provider tests"
-	@echo "test_provider_vsphere.py      - VMware vSphere provider tests"
-	@echo "test_provider_ovirt.py        - oVirt provider tests"
-	@echo "test_provider_openstack.py    - OpenStack provider tests"
-	@echo "test_provider_ova.py          - OVA provider tests"
-	@echo "test_provider_errors.py       - Error condition tests"
+	@echo "Test Files by Category"
+	@echo "======================"
+	@echo "Version Tests:"
+	@echo "  version/test_version.py           - Version command tests"
+	@echo ""
+	@echo "Provider Tests:"
+	@echo "  providers/test_openshift.py       - OpenShift provider tests"
+	@echo "  providers/test_vsphere.py         - VMware vSphere provider tests"
+	@echo "  providers/test_ovirt.py           - oVirt provider tests"
+	@echo "  providers/test_openstack.py       - OpenStack provider tests"
+	@echo "  providers/test_ova.py             - OVA provider tests"
+	@echo "  providers/test_errors.py          - Error condition tests"
+	@echo ""
+	@echo "Inventory Tests:"
+	@echo "  inventory/test_inventory.py       - Inventory listing and querying"
+	@echo ""
+	@echo "Plan Tests:"
+	@echo "  plans/test_plans.py               - Migration plan operations"
+	@echo ""
+	@echo "Mapping Tests:"
+	@echo "  mappings/test_mappings.py         - Network and storage mappings"
 	@echo ""
 	@echo "Cluster Information"
 	@echo "==================="

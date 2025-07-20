@@ -1,14 +1,14 @@
 """
 Test cases for kubectl-mtv oVirt provider creation.
 
-This test validates the creation of oVirt providers.
+This test validates the creation of oVirt/Red Hat Virtualization providers.
 """
 
 import json
 
 import pytest
 
-from utils import verify_provider_created
+from ..utils import verify_provider_created, generate_unique_resource_name
 
 
 @pytest.mark.provider
@@ -25,7 +25,8 @@ class TestOVirtProvider:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("oVirt credentials not available in environment")
         
-        provider_name = "test-ovirt-provider"
+        # Generate unique provider name (important for shared namespace)
+        provider_name = generate_unique_resource_name("test-ovirt-provider")
         
         # Build create command
         cmd_parts = [
@@ -62,7 +63,8 @@ class TestOVirtProvider:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("oVirt credentials not available in environment")
         
-        provider_name = "test-ovirt-insecure-provider"
+        # Generate unique provider name (important for shared namespace)
+        provider_name = generate_unique_resource_name("test-ovirt-insecure-provider")
         
         # Build create command with insecure TLS
         create_cmd = (
@@ -83,7 +85,7 @@ class TestOVirtProvider:
         # Verify provider was created
         verify_provider_created(test_namespace, provider_name, "ovirt")
     
-    def test_create_ovirt_provider_with_ca_cert(self, test_namespace, provider_credentials, temp_file):
+    def test_create_ovirt_provider_with_ca_cert(self, test_namespace, provider_credentials):
         """Test creating an oVirt provider with CA certificate."""
         creds = provider_credentials["ovirt"]
         
@@ -92,19 +94,15 @@ class TestOVirtProvider:
         if not all([creds.get(field) for field in required_fields]):
             pytest.skip("oVirt credentials with CA certificate not available in environment")
         
-        provider_name = "test-ovirt-cacert-provider"
+        provider_name = generate_unique_resource_name("test-ovirt-cacert-provider")
         
-        # Write CA cert to temp file
-        with open(temp_file, 'w') as f:
-            f.write(creds['cacert'])
-        
-        # Build create command with CA cert file
+        # Build create command with CA cert
         create_cmd = (
             f"create provider {provider_name} --type ovirt "
             f"--url '{creds['url']}' "
             f"--username '{creds['username']}' "
             f"--password '{creds['password']}' "
-            f"--cacert @{temp_file}"
+            f"--cacert '{creds['cacert']}'"
         )
         
         # Create provider
@@ -116,3 +114,15 @@ class TestOVirtProvider:
         
         # Verify provider was created
         verify_provider_created(test_namespace, provider_name, "ovirt")
+    
+    def test_create_ovirt_provider_missing_credentials(self, test_namespace):
+        """Test creating an oVirt provider with missing required fields."""
+        provider_name = generate_unique_resource_name("test-incomplete-ovirt-provider")
+        
+        # This should fail because oVirt requires URL, username, password
+        result = test_namespace.run_mtv_command(
+            f"create provider {provider_name} --type ovirt",
+            check=False
+        )
+        
+        assert result.returncode != 0
