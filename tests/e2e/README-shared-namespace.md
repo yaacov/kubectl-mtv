@@ -32,12 +32,14 @@ pytest tests/e2e/ --shared-namespace --no-cleanup
 ## How It Works
 
 ### Individual Namespace Mode (Default)
+
 - Each test function gets its own unique namespace (e.g., `kubectl-mtv-test-abc12345`)
 - Resources are tracked and cleaned up after each test
 - Namespace is deleted after test completion
 - Provides maximum isolation but slower execution
 
 ### Shared Namespace Mode
+
 - All tests in the collection share a single namespace (e.g., `kubectl-mtv-shared-abc12345`)
 - Resources are tracked but only cleaned up at the end of the test session
 - Namespace is deleted after all tests complete
@@ -60,11 +62,13 @@ def test_create_provider(test_namespace):
 ## Benefits
 
 ### Shared Namespace Benefits
+
 - **Faster execution**: No namespace creation/deletion overhead per test
 - **Reduced API calls**: Less load on the Kubernetes API server
 - **Efficient for large test suites**: Particularly beneficial when running many tests
 
 ### Individual Namespace Benefits
+
 - **Complete isolation**: Tests cannot interfere with each other
 - **Easier debugging**: Each test has its own clean environment
 - **No naming conflicts**: Resource names can be simple and predictable
