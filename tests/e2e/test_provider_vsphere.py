@@ -25,8 +25,8 @@ class TestVSphereProvider:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("VMware vSphere credentials not available in environment")
         
-        # Generate unique provider name (important for shared namespace mode)
-        provider_name = generate_unique_resource_name("test-vsphere-provider", test_namespace.shared_namespace)
+        # Generate unique provider name (important for shared namespace)
+        provider_name = generate_unique_resource_name("test-vsphere-provider")
         
         # Build create command
         cmd_parts = [
@@ -66,7 +66,8 @@ class TestVSphereProvider:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("VMware vSphere credentials not available in environment")
         
-        provider_name = "test-vsphere-insecure-provider"
+        # Generate unique provider name (important for shared namespace)
+        provider_name = generate_unique_resource_name("test-vsphere-insecure-provider")
         
         # Build create command with insecure TLS
         create_cmd = (

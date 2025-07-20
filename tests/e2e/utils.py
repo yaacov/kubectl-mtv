@@ -42,14 +42,9 @@ def get_env_with_fallback(primary_key: str, fallback_key: str, default: str = ""
     return os.getenv(primary_key) or os.getenv(fallback_key) or default
 
 
-def generate_unique_resource_name(base_name: str, shared_namespace: bool = False) -> str:
-    """Generate a unique resource name, optionally with additional uniqueness for shared namespaces."""
-    if shared_namespace:
-        # Add UUID suffix for shared namespace to avoid conflicts
-        return f"{base_name}-{uuid.uuid4().hex[:8]}"
-    else:
-        # For individual namespaces, base name is usually sufficient
-        return base_name
+def generate_unique_resource_name(base_name: str) -> str:
+    """Generate a unique resource name with UUID suffix to avoid conflicts in shared namespace."""
+    return f"{base_name}-{uuid.uuid4().hex[:8]}"
 
 
 def verify_provider_created(test_namespace, provider_name: str, provider_type: str):

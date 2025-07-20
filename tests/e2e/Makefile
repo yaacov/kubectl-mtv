@@ -34,19 +34,9 @@ help:
 	@echo "  test-report    - Run tests and generate HTML report"
 	@echo "  test-coverage  - Run tests with coverage report"
 	@echo ""
-	@echo "Debug targets (preserve namespace/resources for debugging):"
-	@echo "  debug-test           - Run all tests without cleanup"
-	@echo "  debug-test-version   - Run version tests without cleanup"
-	@echo "  debug-test-providers - Run all provider tests without cleanup"
-	@echo "  debug-test-openshift - Run OpenShift provider tests without cleanup"
-	@echo "  debug-test-vsphere   - Run VMware vSphere tests without cleanup"
-	@echo "  debug-test-ovirt     - Run oVirt tests without cleanup"
-	@echo "  debug-test-openstack - Run OpenStack tests without cleanup"
-	@echo "  debug-test-ova       - Run OVA tests without cleanup"
-	@echo "  debug-test-errors    - Run error tests without cleanup"
-	@echo "  debug-test-no-creds  - Run credential-free tests without cleanup"
-	@echo ""
 	@echo "Utility targets:"
+	@echo "  cleanup        - Clean up test namespaces"
+	@echo "  list-ns        - List current test namespaces"
 	@echo "  clean          - Clean up test artifacts"
 	@echo "  clean-all      - Clean up everything including venv"
 	@echo "  lint           - Run Python linting"
@@ -129,56 +119,18 @@ test-fast: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
 	$(PYTEST) $(TEST_DIR) -v -n auto
 
-# Debug versions of tests (preserve namespace and resources for debugging)
-.PHONY: debug-test
-debug-test: setup check-binary
-	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) $(TEST_DIR) -v --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
+# Cleanup test namespaces
+.PHONY: cleanup
+cleanup:
+	@echo "Cleaning up test namespaces..."
+	@kubectl get namespaces -o name | grep "namespace/kubectl-mtv-shared-" | xargs -r kubectl delete --ignore-not-found=true
+	@echo "Test namespaces cleaned up."
 
-.PHONY: debug-test-version
-debug-test-version: setup check-binary
-	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) test_version.py -v -m version --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
-
-.PHONY: debug-test-providers
-debug-test-providers: setup check-binary
-	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m provider --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
-
-.PHONY: debug-test-openshift
-debug-test-openshift: setup check-binary
-	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m openshift --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
-
-.PHONY: debug-test-vsphere
-debug-test-vsphere: setup check-binary
-	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m vsphere --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
-
-.PHONY: debug-test-ovirt
-debug-test-ovirt: setup check-binary
-	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m ovirt --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
-
-.PHONY: debug-test-openstack
-debug-test-openstack: setup check-binary
-	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m openstack --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
-
-.PHONY: debug-test-ova
-debug-test-ova: setup check-binary
-	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m ova --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
-
-.PHONY: debug-test-errors
-debug-test-errors: setup check-binary
-	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m error_cases --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
-
-.PHONY: debug-test-no-creds
-debug-test-no-creds: setup check-binary
-	@mkdir -p $(REPORTS_DIR)
-	$(PYTEST) -v -m "not requires_credentials" --no-cleanup --log-cli-level=INFO --log-cli-format='%(levelname)s: %(message)s' -s
+# List current test namespaces
+.PHONY: list-ns
+list-ns:
+	@echo "Current test namespaces:"
+	@kubectl get namespaces -o name | grep "kubectl-mtv-shared-" | sed 's/namespace\///' || echo "No test namespaces found."
 
 # Run tests and generate HTML report
 .PHONY: test-report
@@ -277,6 +229,13 @@ info:
 	@echo "Virtual env: $(VENV_DIR)"
 	@echo "Test directory: $(TEST_DIR)"
 	@echo "Reports directory: $(REPORTS_DIR)"
+	@echo ""
+	@echo "Test Configuration"
+	@echo "=================="
+	@echo "- All tests run in shared namespace (preserved for debugging)"
+	@echo "- Resources are cleaned up automatically"
+	@echo "- Use 'make cleanup' to remove test namespaces"
+	@echo "- Use 'make list-ns' to see current test namespaces"
 	@echo ""
 	@echo "Test Files"
 	@echo "=========="

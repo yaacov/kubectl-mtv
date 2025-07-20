@@ -2,6 +2,15 @@
 
 This directory contains end-to-end (e2e) tests for kubectl-mtv. The tests are designed to run against a live OpenShift/Kubernetes cluster with the Migration Toolkit for Virtualization (MTV) or Forklift installed.
 
+## Test Architecture
+
+**Shared Namespace Design**: All tests run in a shared namespace that is created once per test session and preserved for debugging. This approach provides:
+
+- Faster test execution (no namespace creation/deletion overhead)
+- Easier debugging (namespace remains for inspection)
+- Automatic resource cleanup (resources are removed, namespace preserved)
+- Unique resource naming to prevent conflicts
+
 ## Prerequisites
 
 ### Cluster Requirements
@@ -113,26 +122,19 @@ make test-report
 make test-coverage
 ```
 
-### Debug Mode (Preserve Test Environment)
+### Namespace Management
 
-For debugging failed tests, use the debug targets that preserve namespaces and resources:
+Tests use a shared namespace that is preserved for debugging:
 
 ```bash
-# Debug versions of all test targets (namespace and resources preserved)
-make debug-test                # All tests
-make debug-test-version        # Version tests only
-make debug-test-providers      # All provider tests
-make debug-test-openshift      # OpenShift provider tests
-make debug-test-vsphere        # VMware vSphere tests
-make debug-test-ovirt          # oVirt tests
-make debug-test-openstack      # OpenStack tests
-make debug-test-ova            # OVA tests
-make debug-test-errors         # Error/edge case tests
-make debug-test-no-creds       # Tests without credentials
+# List current test namespaces
+make list-ns
 
-# The debug targets will print namespace information for manual inspection
-# Example: Test namespace: kubectl-mtv-test-a1b2c3d4
-# You can then inspect resources manually before cleaning up
+# Clean up test namespaces when done debugging
+make cleanup
+
+# Show test environment info
+make info
 ```
 
 ### Using pytest directly
@@ -303,7 +305,7 @@ MTV_VDDK_INIT_IMAGE=registry.example.com/vddk-init:latest
 
 ## Test Behavior
 
-### Namespace Management
+### Namespaces
 
 - Each test gets its own temporary namespace (`kubectl-mtv-test-<random>`)
 - Namespaces are automatically created before tests and cleaned up after

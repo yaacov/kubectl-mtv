@@ -73,3 +73,24 @@ test:
 	go test -coverprofile=coverage.out ./pkg/... ./cmd/...
 	go tool cover -func=coverage.out
 	@rm coverage.out
+
+.PHONY: test-e2e
+test-e2e: kubectl-mtv
+	@echo "Running e2e tests..."
+	cd tests/e2e && python -m pytest -v
+
+.PHONY: test-e2e-provider
+test-e2e-provider: kubectl-mtv
+	@echo "Running provider e2e tests..."
+	cd tests/e2e && python -m pytest -v -m provider
+
+.PHONY: test-cleanup
+test-cleanup:
+	@echo "Cleaning up test namespaces..."
+	@kubectl get namespaces -o name | grep "namespace/kubectl-mtv-shared-" | xargs -r kubectl delete --ignore-not-found=true
+	@echo "Test namespaces cleaned up."
+
+.PHONY: test-list-namespaces
+test-list-namespaces:
+	@echo "Current test namespaces:"
+	@kubectl get namespaces -o name | grep "kubectl-mtv-shared-" | sed 's/namespace\///' || echo "No test namespaces found."

@@ -16,18 +16,8 @@ import pytest
 
 def pytest_addoption(parser):
     """Add custom command-line options."""
-    parser.addoption(
-        "--no-cleanup",
-        action="store_true",
-        default=False,
-        help="Skip cleanup of test namespace and resources for debugging"
-    )
-    parser.addoption(
-        "--shared-namespace",
-        action="store_true",
-        default=False,
-        help="Use shared namespace for all tests in a collection to speed up test execution"
-    )
+    # No custom options needed - namespace is always preserved
+    pass
 
 # Import utils to load .env file
 try:
@@ -55,13 +45,11 @@ class KubectlMTVError(Exception):
 class TestContext:
     """Test context with namespace and cleanup management."""
     
-    def __init__(self, namespace: str, binary_path: str, no_cleanup: bool = False, shared_namespace: bool = False):
+    def __init__(self, namespace: str, binary_path: str):
         self.namespace = namespace
         self.binary_path = binary_path
-        self.no_cleanup = no_cleanup
-        self.shared_namespace = shared_namespace
         self._created_resources = []
-        self._session_resources = getattr(TestContext, '_session_resources', [])
+        # Track session-level resources for shared cleanup
         if not hasattr(TestContext, '_session_resources'):
             TestContext._session_resources = []
     
@@ -109,26 +97,13 @@ class TestContext:
         """Track a resource for cleanup."""
         resource_tuple = (resource_type, resource_name)
         self._created_resources.append(resource_tuple)
-        
-        # If using shared namespace, also track in session resources
-        if self.shared_namespace:
-            TestContext._session_resources.append(resource_tuple)
+        # Also track in session resources for session-level cleanup
+        TestContext._session_resources.append(resource_tuple)
     
     def cleanup_resources(self, session_cleanup: bool = False):
-        """Clean up tracked resources."""
-        if self.no_cleanup:
-            print(f"Skipping resource cleanup (no-cleanup mode enabled)")
-            return
-        
-        # For shared namespace, only clean up on session cleanup or if not shared
-        if self.shared_namespace and not session_cleanup:
-            print(f"Skipping resource cleanup (shared namespace mode - resources will be cleaned up at session end)")
-            return
-            
+        """Clean up tracked resources but preserve namespace."""
         # Choose which resources to clean up
-        resources_to_clean = self._created_resources
-        if session_cleanup and self.shared_namespace:
-            resources_to_clean = TestContext._session_resources
+        resources_to_clean = TestContext._session_resources if session_cleanup else self._created_resources
             
         for resource_type, resource_name in reversed(resources_to_clean):
             try:
@@ -138,7 +113,7 @@ class TestContext:
                 print(f"Warning: Failed to cleanup {resource_type}/{resource_name}: {e}")
         
         # Clear the appropriate resource list after cleanup
-        if session_cleanup and self.shared_namespace:
+        if session_cleanup:
             TestContext._session_resources.clear()
         else:
             self._created_resources.clear()
@@ -214,117 +189,43 @@ def kubectl_mtv_binary():
 
 @pytest.fixture
 def test_namespace(cluster_check, kubectl_mtv_binary, request) -> Generator[TestContext, None, None]:
-    """Create a temporary namespace for testing and provide test context.
+    """Create a shared namespace for all tests in the session (preserved for debugging)."""
     
-    If --shared-namespace is used, this will return the shared namespace context.
-    Otherwise, it creates a new namespace for each test.
-    """
-    # Check if shared namespace mode is enabled
-    shared_namespace_mode = request.config.getoption("--shared-namespace")
-    
-    if shared_namespace_mode:
-        # Use or create the shared namespace
-        if not hasattr(request.session, '_shared_test_context'):
-            # Create shared namespace for the first time in this session
-            namespace_name = f"kubectl-mtv-shared-{uuid.uuid4().hex[:8]}"
-            no_cleanup = request.config.getoption("--no-cleanup")
-            
-            # Create namespace
-            subprocess.run(
-                f"kubectl create namespace {namespace_name}",
-                shell=True,
-                check=True
-            )
-            
-            print(f"\n=== SHARED NAMESPACE MODE ===")
-            print(f"Shared test namespace: {namespace_name}")
-            print(f"All tests will run in this namespace")
-            if no_cleanup:
-                print(f"Cleanup disabled - namespace will be preserved for debugging")
-            print(f"==============================\n")
-            
-            # Create and store shared context
-            context = TestContext(namespace_name, kubectl_mtv_binary, no_cleanup, shared_namespace=True)
-            request.session._shared_test_context = context
-            request.session._shared_namespace_name = namespace_name
-            
-            # Register session cleanup
-            def cleanup_shared_namespace():
-                if not no_cleanup:
-                    print(f"\n=== SESSION CLEANUP ===")
-                    context.cleanup_resources(session_cleanup=True)
-                    print(f"=======================\n")
-                    
-                    # Cleanup namespace
-                    subprocess.run(
-                        f"kubectl delete namespace {namespace_name} --ignore-not-found=true",
-                        shell=True,
-                        check=False
-                    )
-                else:
-                    print(f"\n=== DEBUG INFO ===")
-                    print(f"Skipping session resource cleanup in namespace: {namespace_name}")
-                    if hasattr(TestContext, '_session_resources') and TestContext._session_resources:
-                        print(f"Created resources:")
-                        for resource_type, resource_name in TestContext._session_resources:
-                            print(f"  - {resource_type}/{resource_name}")
-                    print(f"Shared namespace {namespace_name} preserved for debugging")
-                    print(f"==================\n")
-            
-            request.addfinalizer(cleanup_shared_namespace)
+    # Use or create the shared namespace
+    if not hasattr(request.session, '_shared_test_context'):
+        # Create shared namespace for the first time in this session
+        namespace_name = f"kubectl-mtv-shared-{uuid.uuid4().hex[:8]}"
         
-        # Return the shared context
-        yield request.session._shared_test_context
-        return
-    
-    # Create individual namespace for this test (original behavior)
-    namespace_name = f"kubectl-mtv-test-{uuid.uuid4().hex[:8]}"
-    
-    # Check if cleanup should be skipped
-    no_cleanup = request.config.getoption("--no-cleanup")
-    
-    # Create namespace
-    subprocess.run(
-        f"kubectl create namespace {namespace_name}",
-        shell=True,
-        check=True
-    )
-    
-    # Print namespace info if no cleanup is requested
-    if no_cleanup:
-        print(f"\n=== DEBUG MODE ===")
-        print(f"Test namespace: {namespace_name}")
-        print(f"Cleanup disabled - namespace will be preserved for debugging")
-        print(f"To manually cleanup later, run: kubectl delete namespace {namespace_name}")
-        print(f"==================\n")
-    
-    try:
-        # Create test context
-        context = TestContext(namespace_name, kubectl_mtv_binary, no_cleanup, shared_namespace=False)
-        yield context
+        # Create namespace
+        subprocess.run(
+            f"kubectl create namespace {namespace_name}",
+            shell=True,
+            check=True
+        )
         
-        # Cleanup tracked resources (unless no-cleanup is specified)
-        if not no_cleanup:
-            context.cleanup_resources()
-        else:
-            print(f"\n=== DEBUG INFO ===")
-            print(f"Skipping resource cleanup in namespace: {namespace_name}")
-            if context._created_resources:
-                print(f"Created resources:")
-                for resource_type, resource_name in context._created_resources:
-                    print(f"  - {resource_type}/{resource_name}")
-            print(f"==================\n")
+        print(f"\n=== SHARED NAMESPACE MODE ===")
+        print(f"Shared test namespace: {namespace_name}")
+        print(f"All tests will run in this namespace")
+        print(f"Namespace will be preserved for debugging")
+        print(f"To manually cleanup later, run: make test-cleanup")
+        print(f"==============================\n")
         
-    finally:
-        # Cleanup namespace (unless no-cleanup is specified)
-        if not no_cleanup:
-            subprocess.run(
-                f"kubectl delete namespace {namespace_name} --ignore-not-found=true",
-                shell=True,
-                check=False
-            )
-        else:
-            print(f"Namespace {namespace_name} preserved for debugging")
+        # Create and store shared context
+        context = TestContext(namespace_name, kubectl_mtv_binary)
+        request.session._shared_test_context = context
+        request.session._shared_namespace_name = namespace_name
+        
+        # Register session cleanup (resources only, not namespace)
+        def cleanup_shared_resources():
+            print(f"\n=== SESSION CLEANUP ===")
+            context.cleanup_resources(session_cleanup=True)
+            print(f"Resources cleaned up, namespace preserved: {namespace_name}")
+            print(f"=======================\n")
+        
+        request.addfinalizer(cleanup_shared_resources)
+    
+    # Return the shared context
+    yield request.session._shared_test_context
 
 
 @pytest.fixture(scope="session")
