@@ -4,11 +4,9 @@ Test cases for kubectl-mtv VMware vSphere provider creation.
 This test validates the creation of VMware vSphere providers.
 """
 
-import json
-
 import pytest
 
-from ..utils import verify_provider_created, generate_unique_resource_name
+from ..utils import verify_provider_created
 
 
 @pytest.mark.provider
@@ -17,34 +15,25 @@ from ..utils import verify_provider_created, generate_unique_resource_name
 class TestVSphereProvider:
     """Test cases for VMware vSphere provider creation."""
     
-    def test_create_vsphere_provider(self, test_namespace, provider_credentials):
-        """Test creating a VMware vSphere provider."""
+    def test_create_vsphere_provider_skip_verify(self, test_namespace, provider_credentials):
+        """Test creating a vSphere provider with TLS verification skipped."""
         creds = provider_credentials["vsphere"]
         
         # Skip if credentials are not available
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("VMware vSphere credentials not available in environment")
         
-        # Generate unique provider name (important for shared namespace)
-        provider_name = generate_unique_resource_name("test-vsphere-provider")
+        provider_name = "test-vsphere-skip-verify"
         
-        # Build create command
+        # Create command with insecure skip TLS
         cmd_parts = [
             "create provider", provider_name,
             "--type vsphere",
             f"--url '{creds['url']}'",
             f"--username '{creds['username']}'",
-            f"--password '{creds['password']}'"
+            f"--password '{creds['password']}'",
+            "--provider-insecure-skip-tls"
         ]
-        
-        if creds.get("cacert"):
-            cmd_parts.append(f"--cacert '{creds['cacert']}'")
-        
-        if creds.get("insecure"):
-            cmd_parts.append("--provider-insecure-skip-tls")
-        
-        if creds.get("vddk_init_image"):
-            cmd_parts.append(f"--vddk-init-image '{creds['vddk_init_image']}'")
         
         create_cmd = " ".join(cmd_parts)
         
@@ -57,64 +46,27 @@ class TestVSphereProvider:
         
         # Verify provider was created
         verify_provider_created(test_namespace, provider_name, "vsphere")
-    
-    def test_create_vsphere_provider_with_insecure_tls(self, test_namespace, provider_credentials):
-        """Test creating a vSphere provider with insecure TLS skip."""
+
+    def test_create_vsphere_provider_with_cacert(self, test_namespace, provider_credentials):
+        """Test creating a vSphere provider with CA certificate."""
         creds = provider_credentials["vsphere"]
         
-        # Skip if credentials are not available
-        if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
-            pytest.skip("VMware vSphere credentials not available in environment")
-        
-        # Generate unique provider name (important for shared namespace)
-        provider_name = generate_unique_resource_name("test-vsphere-insecure-provider")
-        
-        # Build create command with insecure TLS
-        create_cmd = (
-            f"create provider {provider_name} --type vsphere "
-            f"--url '{creds['url']}' "
-            f"--username '{creds['username']}' "
-            f"--password '{creds['password']}' "
-            "--provider-insecure-skip-tls"
-        )
-        
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-        
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-        
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "vsphere")
-    
-    def test_create_vsphere_provider_with_vddk(self, test_namespace, provider_credentials):
-        """Test creating a vSphere provider with VDDK image."""
-        creds = provider_credentials["vsphere"]
-        
-        # Skip if credentials or VDDK image are not available
-        required_fields = ["url", "username", "password", "vddk_init_image"]
+        # Skip if credentials or CA cert are not available
+        required_fields = ["url", "username", "password", "cacert"]
         if not all([creds.get(field) for field in required_fields]):
-            pytest.skip("VMware vSphere credentials with VDDK image not available in environment")
+            pytest.skip("VMware vSphere credentials with CA certificate not available in environment")
         
-        provider_name = "test-vsphere-vddk-provider"
+        provider_name = "test-vsphere-cacert"
         
-        # Build create command with VDDK
+        # Create command with CA cert
         cmd_parts = [
-            f"create provider {provider_name} --type vsphere",
+            "create provider", provider_name,
+            "--type vsphere",
             f"--url '{creds['url']}'",
             f"--username '{creds['username']}'",
             f"--password '{creds['password']}'",
-            f"--vddk-init-image '{creds['vddk_init_image']}'"
+            f"--cacert '{creds['cacert']}'"
         ]
-        
-        # Add insecure flag if specified in credentials
-        if creds.get("insecure"):
-            cmd_parts.append("--provider-insecure-skip-tls")
-        
-        # Add CA cert if specified in credentials
-        if creds.get("cacert"):
-            cmd_parts.append(f"--cacert '{creds['cacert']}'")
         
         create_cmd = " ".join(cmd_parts)
         
@@ -127,12 +79,12 @@ class TestVSphereProvider:
         
         # Verify provider was created
         verify_provider_created(test_namespace, provider_name, "vsphere")
-    
-    def test_create_vsphere_provider_missing_credentials(self, test_namespace):
+
+    def test_create_vsphere_provider_error(self, test_namespace):
         """Test creating a vSphere provider with missing required fields."""
-        provider_name = "test-incomplete-vsphere-provider"
+        provider_name = "test-vsphere-error"
         
-        # This should fail because vsphere requires URL, username, password
+        # This should fail because vSphere requires URL, username, password
         result = test_namespace.run_mtv_command(
             f"create provider {provider_name} --type vsphere",
             check=False

@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import time
-import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -40,11 +39,6 @@ def load_env_file(env_file: Optional[str] = None) -> None:
 def get_env_with_fallback(primary_key: str, fallback_key: str, default: str = "") -> str:
     """Get environment variable with fallback to another key."""
     return os.getenv(primary_key) or os.getenv(fallback_key) or default
-
-
-def generate_unique_resource_name(base_name: str) -> str:
-    """Generate a unique resource name with UUID suffix to avoid conflicts in shared namespace."""
-    return f"{base_name}-{uuid.uuid4().hex[:4]}"
 
 
 def verify_provider_created(test_namespace, provider_name: str, provider_type: str):
