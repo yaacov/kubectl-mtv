@@ -252,6 +252,7 @@ The tests use environment variables to configure provider credentials. See `.env
 ### Required for Each Provider Type
 
 #### VMware vSphere
+
 ```bash
 VSPHERE_URL=https://vcenter.example.com
 VSPHERE_USERNAME=administrator@vsphere.local  
@@ -259,6 +260,7 @@ VSPHERE_PASSWORD=your-password
 ```
 
 #### oVirt
+
 ```bash
 OVIRT_URL=https://ovirt-engine.example.com/ovirt-engine/api
 OVIRT_USERNAME=admin@internal
@@ -266,6 +268,7 @@ OVIRT_PASSWORD=your-password
 ```
 
 #### OpenStack
+
 ```bash
 OPENSTACK_URL=https://openstack.example.com:5000/v3
 OPENSTACK_USERNAME=admin
@@ -275,6 +278,7 @@ OPENSTACK_PROJECT_NAME=admin
 ```
 
 #### OVA
+
 ```bash
 OVA_URL=https://example.com/path/to/vm.ova
 ```
@@ -331,6 +335,7 @@ kubectl describe provider test-provider -n kubectl-mtv-test-a1b2c3d4
 # When done debugging, cleanup manually:
 kubectl delete namespace kubectl-mtv-test-a1b2c3d4
 ```
+
 - All test resources are created within these temporary namespaces
 
 ### Resource Cleanup
@@ -353,7 +358,7 @@ When adding new tests, follow the existing organization pattern:
 
 - **Version/CLI tests**: Add to `test_version.py`
 - **Provider-specific tests**: Add to appropriate `test_provider_<type>.py` file
-- **Error/validation tests**: Add to `test_provider_errors.py` 
+- **Error/validation tests**: Add to `test_provider_errors.py`
 - **New functionality**: Create new test files with descriptive names
 
 ### Test Class Structure

@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from utils import verify_provider_created
+from utils import verify_provider_created, generate_unique_resource_name
 
 
 @pytest.mark.provider
@@ -25,7 +25,8 @@ class TestVSphereProvider:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("VMware vSphere credentials not available in environment")
         
-        provider_name = "test-vsphere-provider"
+        # Generate unique provider name (important for shared namespace mode)
+        provider_name = generate_unique_resource_name("test-vsphere-provider", test_namespace.shared_namespace)
         
         # Build create command
         cmd_parts = [
