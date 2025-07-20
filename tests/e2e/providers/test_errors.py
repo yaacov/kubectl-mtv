@@ -58,6 +58,10 @@ class TestProviderErrors:
             "already exists" in result2.stderr.lower()
             or "conflict" in result2.stderr.lower()
         )
+        
+        # Clean up the first provider since test passed
+        test_namespace.run_mtv_command(f"delete provider {provider_name}")
+        test_namespace.untrack_resource("provider", provider_name)
 
     def test_get_nonexistent_provider(self, test_namespace):
         """Test getting a provider that doesn't exist."""
