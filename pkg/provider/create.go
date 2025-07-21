@@ -18,7 +18,7 @@ import (
 
 // Create creates a new provider
 func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, namespace, secret string,
-	url, username, password, cacert string, insecureSkipTLS bool, vddkInitImage string, token string,
+	url, username, password, cacert string, insecureSkipTLS bool, vddkInitImage, sdkEndpoint string, token string,
 	domainName, projectName, regionName string) error {
 	// Create provider options
 	options := providerutil.ProviderOptions{
@@ -31,6 +31,7 @@ func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, name
 		CACert:          cacert,
 		InsecureSkipTLS: insecureSkipTLS,
 		VddkInitImage:   vddkInitImage,
+		SdkEndpoint:     sdkEndpoint,
 		Token:           token,
 		DomainName:      domainName,
 		ProjectName:     projectName,

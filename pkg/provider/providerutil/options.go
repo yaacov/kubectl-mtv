@@ -12,6 +12,7 @@ type ProviderOptions struct {
 	InsecureSkipTLS bool
 	// VSphere specific options
 	VddkInitImage string
+	SdkEndpoint   string
 	// OpenShift specific options
 	Token string
 	// OpenStack specific options
