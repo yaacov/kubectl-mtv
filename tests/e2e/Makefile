@@ -112,6 +112,12 @@ test-vsphere: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
 	$(PYTEST) providers/ -v -m vsphere
 
+# Run VMware ESXi provider tests only
+.PHONY: test-esxi
+test-esxi: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) providers/ -v -m esxi
+
 # Run oVirt provider tests only
 .PHONY: test-ovirt
 test-ovirt: setup check-binary
