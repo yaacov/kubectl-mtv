@@ -84,21 +84,6 @@ test-e2e-provider: kubectl-mtv
 	@echo "Running provider e2e tests..."
 	cd tests/e2e && python -m pytest -v -m provider
 
-.PHONY: test-e2e-esxi
-test-e2e-esxi: kubectl-mtv
-	@echo "Running ESXi provider e2e tests..."
-	cd tests/e2e && python -m pytest -v -m esxi
-
-.PHONY: test-e2e-vsphere
-test-e2e-vsphere: kubectl-mtv
-	@echo "Running vSphere provider e2e tests..."
-	cd tests/e2e && python -m pytest -v -m vsphere
-
-.PHONY: test-e2e-vmware
-test-e2e-vmware: kubectl-mtv
-	@echo "Running VMware (vSphere and ESXi) provider e2e tests..."
-	cd tests/e2e && python -m pytest -v -m "vsphere or esxi"
-
 .PHONY: test-cleanup
 test-cleanup:
 	@echo "Cleaning up test namespaces..."

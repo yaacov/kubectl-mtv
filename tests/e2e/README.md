@@ -119,7 +119,6 @@ make test-mappings       # Mapping tests only
 make test-openshift      # OpenShift provider tests
 make test-vsphere        # VMware vSphere provider tests  
 make test-esxi           # VMware ESXi provider tests
-make test-vmware         # VMware (vSphere and ESXi) provider tests
 make test-ovirt          # oVirt provider tests
 make test-openstack      # OpenStack provider tests
 make test-ova            # OVA provider tests
@@ -182,7 +181,6 @@ pytest -v -m provider                   # All provider tests
 pytest -v -m "openshift"                # OpenShift provider tests
 pytest -v -m "vsphere"                  # VMware vSphere provider tests
 pytest -v -m "esxi"                     # VMware ESXi provider tests
-pytest -v -m "vsphere or esxi"          # VMware (vSphere and ESXi) provider tests
 pytest -v -m "requires_credentials"     # Tests needing credentials
 pytest -v -m "not requires_credentials" # Tests not needing credentials
 

@@ -84,20 +84,6 @@ func newCreateProviderCmd() *cobra.Command {
 	cmd.Flags().Var(providerType, "type", "Provider type (openshift, vsphere, ovirt, openstack, ova)")
 	cmd.Flags().StringVar(&secret, "secret", "", "Secret containing provider credentials")
 
-	// Add completion for provider type flag
-	if err := cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return providerType.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
-	}); err != nil {
-		panic(err)
-	}
-
-	// Add completion for sdk-endpoint flag
-	if err := cmd.RegisterFlagCompletionFunc("sdk-endpoint", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"vcenter", "esxi"}, cobra.ShellCompDirectiveNoFileComp
-	}); err != nil {
-		panic(err)
-	}
-
 	// Provider credential flags
 	cmd.Flags().StringVarP(&url, "url", "U", "", "Provider URL")
 	cmd.Flags().StringVarP(&username, "username", "u", "", "Provider credentials username")
@@ -116,6 +102,20 @@ func newCreateProviderCmd() *cobra.Command {
 	cmd.Flags().StringVar(&domainName, "provider-domain-name", "", "OpenStack domain name")
 	cmd.Flags().StringVar(&projectName, "provider-project-name", "", "OpenStack project name")
 	cmd.Flags().StringVar(&regionName, "provider-region-name", "", "OpenStack region name")
+
+	// Add completion for provider type flag
+	if err := cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return providerType.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	// Add completion for sdk-endpoint flag
+	if err := cmd.RegisterFlagCompletionFunc("sdk-endpoint", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"vcenter", "esxi"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
 
 	if err := cmd.MarkFlagRequired("type"); err != nil {
 		panic(err)
