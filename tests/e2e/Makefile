@@ -44,6 +44,8 @@ help:
 	@echo "  test-coverage  - Run tests with coverage report"
 	@echo ""
 	@echo "Utility targets:"
+	@echo "  create-token   - Create service account and token for OpenShift tests"
+	@echo "  cleanup-token  - Clean up test service account and token"
 	@echo "  cleanup        - Clean up test namespaces"
 	@echo "  list-ns        - List current test namespaces"
 	@echo "  clean          - Clean up test artifacts"
@@ -158,6 +160,20 @@ cleanup:
 list-ns:
 	@echo "Current test namespaces:"
 	@kubectl get namespaces -o name | grep "kubectl-mtv-shared-" | sed 's/namespace\///' || echo "No test namespaces found."
+
+# Create service account and token for OpenShift tests
+.PHONY: create-token
+create-token: check-cluster
+	@echo "Creating service account and token for OpenShift tests..."
+	@chmod +x create-test-service-account.sh
+	@./create-test-service-account.sh
+
+# Clean up test service account and token
+.PHONY: cleanup-token
+cleanup-token: check-cluster
+	@echo "Cleaning up test service account and token..."
+	@chmod +x create-test-service-account.sh
+	@./create-test-service-account.sh --cleanup
 
 # Run tests and generate HTML report
 .PHONY: test-report
