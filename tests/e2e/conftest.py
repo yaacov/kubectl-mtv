@@ -248,6 +248,16 @@ def provider_credentials() -> Dict[str, Any]:
             == "true",
             "vddk_init_image": os.getenv("VSPHERE_VDDK_INIT_IMAGE"),
         },
+        # VMware ESXi credentials
+        "esxi": {
+            "url": os.getenv("ESXI_URL"),
+            "username": os.getenv("ESXI_USERNAME"),
+            "password": os.getenv("ESXI_PASSWORD"),
+            "cacert": os.getenv("ESXI_CACERT"),
+            "insecure": os.getenv("ESXI_INSECURE_SKIP_TLS", "false").lower()
+            == "true",
+            "vddk_init_image": os.getenv("ESXI_VDDK_INIT_IMAGE"),
+        },
         # oVirt credentials
         "ovirt": {
             "url": os.getenv("OVIRT_URL"),
