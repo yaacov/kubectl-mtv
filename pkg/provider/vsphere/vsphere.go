@@ -123,6 +123,14 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 		provider.Spec.Settings["vddkInitImage"] = options.VddkInitImage
 	}
 
+	// Set SDK endpoint if provided
+	if options.SdkEndpoint != "" {
+		if provider.Spec.Settings == nil {
+			provider.Spec.Settings = map[string]string{}
+		}
+		provider.Spec.Settings["sdkEndpoint"] = options.SdkEndpoint
+	}
+
 	// Create and set the Secret
 	var createdSecret *corev1.Secret
 	var err error
