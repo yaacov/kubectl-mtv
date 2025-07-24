@@ -25,7 +25,7 @@ class TestVersion:
         assert len(result.stdout.strip()) > 0
 
         # Should contain client version info
-        assert "Operator version" in result.stdout
+        assert "MTV Operator" in result.stdout
 
     def test_version_command_json_output(self, test_namespace):
         """Test version command with JSON output format."""
@@ -91,7 +91,7 @@ class TestVersion:
         assert result.stdout is not None
 
         # Table output should contain version information
-        assert "Operator version" in result.stdout
+        assert "MTV Operator" in result.stdout
 
     def test_version_shows_server_info_when_available(self, test_namespace):
         """Test that version command shows server info when MTV is installed."""
