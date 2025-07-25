@@ -6,10 +6,12 @@ This test validates the creation of OpenStack providers.
 
 import pytest
 
-from ..utils import verify_provider_created
+from ...utils import wait_for_provider_ready
 
 
+@pytest.mark.create
 @pytest.mark.provider
+@pytest.mark.providers
 @pytest.mark.openstack
 @pytest.mark.requires_credentials
 class TestOpenStackProvider:
@@ -53,8 +55,8 @@ class TestOpenStackProvider:
         # Track for cleanup
         test_namespace.track_resource("provider", provider_name)
 
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "openstack")
+        # Wait for provider to be ready
+        wait_for_provider_ready(test_namespace, provider_name)
 
     def test_create_openstack_provider_with_cacert(
         self, test_namespace, provider_credentials
@@ -103,8 +105,8 @@ class TestOpenStackProvider:
         # Track for cleanup
         test_namespace.track_resource("provider", provider_name)
 
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "openstack")
+        # Wait for provider to be ready
+        wait_for_provider_ready(test_namespace, provider_name)
 
     def test_create_openstack_provider_error(self, test_namespace):
         """Test creating an OpenStack provider with missing required fields."""

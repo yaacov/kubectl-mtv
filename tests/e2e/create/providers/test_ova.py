@@ -6,10 +6,12 @@ This test validates the creation of OVA (Open Virtualization Archive) providers.
 
 import pytest
 
-from ..utils import verify_provider_created
+from ...utils import wait_for_provider_ready
 
 
+@pytest.mark.create
 @pytest.mark.provider
+@pytest.mark.providers
 @pytest.mark.ova
 @pytest.mark.requires_credentials
 class TestOVAProvider:
@@ -23,7 +25,7 @@ class TestOVAProvider:
         if not creds.get("url"):
             pytest.skip("OVA URL not available in environment")
 
-        provider_name = "test-ova-provider"
+        provider_name = "test-ova-skip-verify"
 
         # Create command
         cmd_parts = [
@@ -42,8 +44,8 @@ class TestOVAProvider:
         # Track for cleanup
         test_namespace.track_resource("provider", provider_name)
 
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "ova")
+        # Wait for provider to be ready
+        wait_for_provider_ready(test_namespace, provider_name)
 
     def test_create_ova_provider_error(self, test_namespace):
         """Test creating an OVA provider with missing required fields."""

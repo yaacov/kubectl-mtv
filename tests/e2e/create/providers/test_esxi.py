@@ -6,10 +6,12 @@ This test validates the creation of VMware ESXi providers using the sdk-endpoint
 
 import pytest
 
-from ..utils import verify_provider_created
+from e2e.utils import wait_for_provider_ready
 
 
+@pytest.mark.create
 @pytest.mark.provider
+@pytest.mark.providers
 @pytest.mark.esxi
 @pytest.mark.requires_credentials
 class TestESXiProvider:
@@ -48,8 +50,8 @@ class TestESXiProvider:
         # Track for cleanup
         test_namespace.track_resource("provider", provider_name)
 
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "vsphere")
+        # Wait for provider to be ready
+        wait_for_provider_ready(test_namespace, provider_name)
 
     def test_create_esxi_provider_with_cacert(
         self, test_namespace, provider_credentials
@@ -87,12 +89,10 @@ class TestESXiProvider:
         # Track for cleanup
         test_namespace.track_resource("provider", provider_name)
 
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "vsphere")
+        # Wait for provider to be ready
+        wait_for_provider_ready(test_namespace, provider_name)
 
-    def test_create_esxi_provider_with_vddk(
-        self, test_namespace, provider_credentials
-    ):
+    def test_create_esxi_provider_with_vddk(self, test_namespace, provider_credentials):
         """Test creating an ESXi provider with VDDK init image."""
         creds = provider_credentials["esxi"]
 
@@ -127,8 +127,8 @@ class TestESXiProvider:
         # Track for cleanup
         test_namespace.track_resource("provider", provider_name)
 
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "vsphere")
+        # Wait for provider to be ready
+        wait_for_provider_ready(test_namespace, provider_name)
 
     def test_create_esxi_provider_error(self, test_namespace):
         """Test creating an ESXi provider with missing required fields."""
@@ -136,7 +136,8 @@ class TestESXiProvider:
 
         # This should fail because ESXi (vSphere type) requires URL, username, password
         result = test_namespace.run_mtv_command(
-            f"create provider {provider_name} --type vsphere --sdk-endpoint esxi", check=False
+            f"create provider {provider_name} --type vsphere --sdk-endpoint esxi",
+            check=False,
         )
 
         assert result.returncode != 0

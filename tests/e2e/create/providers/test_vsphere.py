@@ -1,37 +1,39 @@
 """
-Test cases for kubectl-mtv oVirt provider creation.
+Test cases for kubectl-mtv VMware vSphere provider creation.
 
-This test validates the creation of oVirt/Red Hat Virtualization providers.
+This test validates the creation of VMware vSphere providers.
 """
 
 import pytest
 
-from ..utils import verify_provider_created
+from ...utils import wait_for_provider_ready
 
 
+@pytest.mark.create
 @pytest.mark.provider
-@pytest.mark.ovirt
+@pytest.mark.providers
+@pytest.mark.vsphere
 @pytest.mark.requires_credentials
-class TestOVirtProvider:
-    """Test cases for oVirt provider creation."""
+class TestVSphereProvider:
+    """Test cases for VMware vSphere provider creation."""
 
-    def test_create_ovirt_provider_skip_verify(
+    def test_create_vsphere_provider_skip_verify(
         self, test_namespace, provider_credentials
     ):
-        """Test creating an oVirt provider with TLS verification skipped."""
-        creds = provider_credentials["ovirt"]
+        """Test creating a vSphere provider with TLS verification skipped."""
+        creds = provider_credentials["vsphere"]
 
         # Skip if credentials are not available
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
-            pytest.skip("oVirt credentials not available in environment")
+            pytest.skip("VMware vSphere credentials not available in environment")
 
-        provider_name = "test-ovirt-skip-verify"
+        provider_name = "test-vsphere-skip-verify"
 
         # Create command with insecure skip TLS
         cmd_parts = [
             "create provider",
             provider_name,
-            "--type ovirt",
+            "--type vsphere",
             f"--url '{creds['url']}'",
             f"--username '{creds['username']}'",
             f"--password '{creds['password']}'",
@@ -47,29 +49,29 @@ class TestOVirtProvider:
         # Track for cleanup
         test_namespace.track_resource("provider", provider_name)
 
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "ovirt")
+        # Wait for provider to be ready
+        wait_for_provider_ready(test_namespace, provider_name)
 
-    def test_create_ovirt_provider_with_cacert(
+    def test_create_vsphere_provider_with_cacert(
         self, test_namespace, provider_credentials
     ):
-        """Test creating an oVirt provider with CA certificate."""
-        creds = provider_credentials["ovirt"]
+        """Test creating a vSphere provider with CA certificate."""
+        creds = provider_credentials["vsphere"]
 
         # Skip if credentials or CA cert are not available
         required_fields = ["url", "username", "password", "cacert"]
         if not all([creds.get(field) for field in required_fields]):
             pytest.skip(
-                "oVirt credentials with CA certificate not available in environment"
+                "VMware vSphere credentials with CA certificate not available in environment"
             )
 
-        provider_name = "test-ovirt-cacert"
+        provider_name = "test-vsphere-cacert"
 
         # Create command with CA cert
         cmd_parts = [
             "create provider",
             provider_name,
-            "--type ovirt",
+            "--type vsphere",
             f"--url '{creds['url']}'",
             f"--username '{creds['username']}'",
             f"--password '{creds['password']}'",
@@ -85,16 +87,16 @@ class TestOVirtProvider:
         # Track for cleanup
         test_namespace.track_resource("provider", provider_name)
 
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "ovirt")
+        # Wait for provider to be ready
+        wait_for_provider_ready(test_namespace, provider_name)
 
-    def test_create_ovirt_provider_error(self, test_namespace):
-        """Test creating an oVirt provider with missing required fields."""
-        provider_name = "test-ovirt-error"
+    def test_create_vsphere_provider_error(self, test_namespace):
+        """Test creating a vSphere provider with missing required fields."""
+        provider_name = "test-vsphere-error"
 
-        # This should fail because oVirt requires URL, username, password
+        # This should fail because vSphere requires URL, username, password
         result = test_namespace.run_mtv_command(
-            f"create provider {provider_name} --type ovirt", check=False
+            f"create provider {provider_name} --type vsphere", check=False
         )
 
         assert result.returncode != 0

@@ -6,10 +6,12 @@ This test validates the creation of OpenShift target providers.
 
 import pytest
 
-from ..utils import verify_provider_created
+from ...utils import wait_for_provider_ready
 
 
+@pytest.mark.create
 @pytest.mark.provider
+@pytest.mark.providers
 @pytest.mark.openshift
 class TestOpenShiftProvider:
     """Test cases for OpenShift provider creation."""
@@ -17,19 +19,19 @@ class TestOpenShiftProvider:
     def test_create_openshift_provider_localhost(self, test_namespace):
         """Test creating a namespaced localhost OpenShift provider using current cluster context."""
         provider_name = "test-openshift-localhost"
-        
+
         # Create a simple OpenShift provider without URL or token (uses current cluster)
         create_cmd = f"create provider {provider_name} --type openshift"
-        
+
         # Create provider
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("provider", provider_name)
-        
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "openshift")
+
+        # Wait for provider to be ready
+        wait_for_provider_ready(test_namespace, provider_name)
 
     def test_create_openshift_provider_skip_verify(
         self, test_namespace, provider_credentials
@@ -57,8 +59,8 @@ class TestOpenShiftProvider:
         # Track for cleanup
         test_namespace.track_resource("provider", provider_name)
 
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "openshift")
+        # Wait for provider to be ready
+        wait_for_provider_ready(test_namespace, provider_name)
 
     def test_create_openshift_provider_with_cacert(
         self, test_namespace, provider_credentials
@@ -90,8 +92,8 @@ class TestOpenShiftProvider:
         # Track for cleanup
         test_namespace.track_resource("provider", provider_name)
 
-        # Verify provider was created
-        verify_provider_created(test_namespace, provider_name, "openshift")
+        # Wait for provider to be ready
+        wait_for_provider_ready(test_namespace, provider_name)
 
     def test_create_openshift_provider_error(self, test_namespace):
         """Test creating an OpenShift provider with invalid configuration."""

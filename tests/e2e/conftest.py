@@ -7,12 +7,18 @@ of kubectl-mtv against an OpenShift cluster.
 
 import os
 import subprocess
+import sys
 import tempfile
 import uuid
 from pathlib import Path
 from typing import Any, Dict, Generator
 
 import pytest
+
+# Add the tests directory to the Python path to fix relative imports
+current_dir = Path(__file__).parent
+tests_dir = current_dir.parent
+sys.path.insert(0, str(tests_dir))
 
 
 def pytest_addoption(parser):
@@ -25,25 +31,10 @@ def pytest_addoption(parser):
     )
 
 
-# Import utils to load .env file
-try:
-    from . import utils
+from . import utils
 
-    # Explicitly ensure .env file is loaded
-    utils.load_env_file()
-except ImportError:
-    # Fallback: try to load .env file manually if utils import fails
-    try:
-        from pathlib import Path
-
-        from dotenv import load_dotenv
-
-        env_path = Path(__file__).parent / ".env"
-        if env_path.exists():
-            load_dotenv(env_path)
-            print(f"Loaded environment variables from {env_path}")
-    except ImportError:
-        print("Warning: Could not load .env file - python-dotenv not available")
+# Explicitly ensure .env file is loaded
+utils.load_env_file()
 
 
 class KubectlMTVError(Exception):
@@ -202,7 +193,7 @@ def kubectl_mtv_binary():
     return find_kubectl_mtv_binary()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def test_namespace(
     cluster_check, kubectl_mtv_binary, request
 ) -> Generator[TestContext, None, None]:
@@ -254,8 +245,7 @@ def provider_credentials() -> Dict[str, Any]:
             "username": os.getenv("ESXI_USERNAME"),
             "password": os.getenv("ESXI_PASSWORD"),
             "cacert": os.getenv("ESXI_CACERT"),
-            "insecure": os.getenv("ESXI_INSECURE_SKIP_TLS", "false").lower()
-            == "true",
+            "insecure": os.getenv("ESXI_INSECURE_SKIP_TLS", "false").lower() == "true",
             "vddk_init_image": os.getenv("ESXI_VDDK_INIT_IMAGE"),
         },
         # oVirt credentials

@@ -7,7 +7,9 @@ This test validates error handling and validation for provider operations.
 import pytest
 
 
+@pytest.mark.create
 @pytest.mark.provider
+@pytest.mark.providers
 @pytest.mark.error_cases
 class TestProviderErrors:
     """Test cases for provider error conditions."""

@@ -36,90 +36,53 @@ def load_env_file(env_file: Optional[str] = None) -> None:
         logging.warning("python-dotenv not installed, skipping .env file loading")
 
 
-def get_env_with_fallback(
-    primary_key: str, fallback_key: str, default: str = ""
-) -> str:
-    """Get environment variable with fallback to another key."""
-    return os.getenv(primary_key) or os.getenv(fallback_key) or default
 
+def wait_for_provider_ready(test_namespace, provider_name: str, timeout: int = 300):
+    """Wait for a provider to have Ready condition = True using kubectl wait."""
+    logging.info(f"Waiting for provider {provider_name} to be ready...")
 
-def verify_provider_created(test_namespace, provider_name: str, provider_type: str):
-    """Verify that a provider was created successfully."""
-    # Wait a moment for provider to be created
-    time.sleep(2)
-
-    # Check if provider exists
-    result = test_namespace.run_mtv_command(
-        f"get provider {provider_name} -o json", check=False
+    # Use kubectl wait to wait for the Ready condition
+    wait_cmd = (
+        f"wait --for=condition=Ready provider/{provider_name} --timeout={timeout}s"
     )
 
-    # If command failed, provider doesn't exist
-    if result.returncode != 0:
-        pytest.fail(
-            f"Provider {provider_name} not found. Command output: {result.stderr}"
-        )
-
-    # Parse provider data
     try:
-        provider_list = json.loads(result.stdout)
-    except json.JSONDecodeError as e:
+        result = test_namespace.run_kubectl_command(wait_cmd, check=True)
+        logging.info(f"Provider {provider_name} is ready!")
+        return True
+    except Exception as e:
+        # If kubectl wait fails, get the provider status for better error reporting
+        try:
+            status_result = test_namespace.run_mtv_command(
+                f"get provider {provider_name} -o json", check=False
+            )
+            if status_result.returncode == 0:
+                provider_list = json.loads(status_result.stdout)
+                if len(provider_list) == 1:
+                    provider_data = provider_list[0]
+                    status = provider_data.get("status", {})
+                    conditions = status.get("conditions", [])
+
+                    # Find Ready condition for detailed error info
+                    for condition in conditions:
+                        if condition.get("type") == "Ready":
+                            condition_status = condition.get("status", "")
+                            condition_reason = condition.get("reason", "")
+                            condition_message = condition.get("message", "")
+
+                            if condition_status == "False":
+                                pytest.fail(
+                                    f"Provider {provider_name} failed to become ready. "
+                                    f"Reason: {condition_reason}, Message: {condition_message}"
+                                )
+                            break
+        except Exception:
+            pass  # Fall back to original error
+
+        # If we couldn't get detailed status, fail with the original kubectl wait error
         pytest.fail(
-            f"Failed to parse provider JSON output: {e}. Output: {result.stdout}"
+            f"Provider {provider_name} did not become ready within {timeout} seconds: {e}"
         )
-
-    if len(provider_list) != 1:
-        pytest.fail(f"Expected 1 provider, got {len(provider_list)}")
-
-    provider_data = provider_list[0]
-
-    # Verify basic provider properties
-    metadata = provider_data.get("metadata", {})
-    spec = provider_data.get("spec", {})
-
-    if metadata.get("name") != provider_name:
-        pytest.fail(
-            f"Provider name mismatch: expected {provider_name}, got {metadata.get('name')}"
-        )
-
-    if spec.get("type") != provider_type:
-        pytest.fail(
-            f"Provider type mismatch: expected {provider_type}, got {spec.get('type')}"
-        )
-
-    # Check provider status for errors
-    status = provider_data.get("status", {})
-    logging.info(f"Provider {provider_name} status: {status}")
-
-    # Check for error conditions
-    conditions = status.get("conditions", [])
-    for condition in conditions:
-        condition_type = condition.get("type", "")
-        condition_status = condition.get("status", "")
-        condition_reason = condition.get("reason", "")
-        condition_message = condition.get("message", "")
-
-        # Fail if there are explicit error conditions
-        if (
-            condition_type in ["Ready", "ConnectionTestSucceeded"]
-            and condition_status == "False"
-        ):
-            if condition_reason in [
-                "Error",
-                "Failed",
-                "ValidationFailed",
-                "ConnectionFailed",
-            ]:
-                pytest.fail(
-                    f"Provider {provider_name} is in error state. "
-                    f"Condition: {condition_type}={condition_status}, "
-                    f"Reason: {condition_reason}, Message: {condition_message}"
-                )
-
-    # Additional validation: check if provider has been marked as invalid
-    if status.get("phase") == "Failed":
-        pytest.fail(f"Provider {provider_name} is in Failed phase: {status}")
-
-    logging.info(f"Provider {provider_name} verified successfully")
 
 
 # Load .env file when module is imported
