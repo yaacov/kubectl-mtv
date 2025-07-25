@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, Generator
 
 import pytest
+from . import utils
 
 # Add the tests directory to the Python path to fix relative imports
 current_dir = Path(__file__).parent
@@ -30,8 +31,6 @@ def pytest_addoption(parser):
         help="Custom suffix for the test namespace (will be used as kubectl-mtv-shared-<suffix>)",
     )
 
-
-from . import utils
 
 # Explicitly ensure .env file is loaded
 utils.load_env_file()

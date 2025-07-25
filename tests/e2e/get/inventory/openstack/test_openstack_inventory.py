@@ -40,7 +40,7 @@ class TestOpenStackInventory:
 
         # Create command with insecure skip TLS
         cmd_parts = [
-             "create provider",
+            "create provider",
             provider_name,
             "--type openstack",
             f"--url '{creds['url']}'",

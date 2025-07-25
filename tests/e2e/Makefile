@@ -41,12 +41,13 @@ help:
 	@echo ""
 	@echo "Utility targets:"
 	@echo "  create-token   - Create service account and token for OpenShift tests"
-	@echo "  cleanup-token  - Clean up test service account and token"
-	@echo "  cleanup        - Clean up test namespaces"
+	@echo "  clean-token    - Clean up test service account and token"
+	@echo "  clean-test-namespaces - Clean up test namespaces"
 	@echo "  list-ns        - List current test namespaces"
 	@echo "  clean          - Clean up test artifacts"
 	@echo "  clean-all      - Clean up everything including venv"
 	@echo "  lint           - Run Python linting"
+	@echo "  format         - Format Python code with black"
 	@echo "  check-cluster  - Check cluster connectivity and permissions"
 	@echo "  check-binary   - Check if kubectl-mtv binary is available"
 
@@ -133,8 +134,8 @@ test-ova: setup check-binary
 	$(PYTEST) -v -m ova
 
 # Cleanup test namespaces
-.PHONY: cleanup
-cleanup:
+.PHONY: clean-test-namespaces
+clean-test-namespaces:
 	@echo "Cleaning up test namespaces..."
 	@kubectl get namespaces -o name | grep "namespace/kubectl-mtv-shared-" | xargs -r kubectl delete --ignore-not-found=true
 	@echo "Test namespaces cleaned up."
@@ -179,3 +180,30 @@ check-binary:
 		(test -f ../../../kubectl-mtv && echo "✅ Found kubectl-mtv in project root") || \
 		(echo "❌ kubectl-mtv binary not found. Run 'make' in project root to build it." && exit 1)
 	@echo "✅ kubectl-mtv binary is available"
+
+.PHONY: create-token
+create-token:
+	@echo "Creating service account and token for OpenShift tests..."
+	@./create-test-service-account.sh
+	@echo "Service account and token created."
+
+.PHONY: clean-token
+clean-token:
+	@echo "Cleaning up test service account and token..."
+	@kubectl delete serviceaccount test-mtv-sa --ignore-not-found=true
+	@kubectl delete secret test-mtv-sa-token --ignore-not-found=true
+	@echo "Test service account and token cleaned up."
+
+.PHONY: lint
+lint:
+	@echo "Running Python linting..."
+	@$(VENV_DIR)/bin/pip install --quiet flake8
+	@$(VENV_DIR)/bin/flake8 . --exclude=$(VENV_DIR) --max-line-length=120
+	@echo "Linting complete."
+
+.PHONY: format
+format:
+	@echo "Formatting Python code with black..."
+	@$(VENV_DIR)/bin/pip install --quiet black
+	@$(VENV_DIR)/bin/black . --exclude $(VENV_DIR)
+	@echo "Formatting complete."

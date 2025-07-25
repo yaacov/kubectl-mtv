@@ -4,8 +4,6 @@ Utility functions for kubectl-mtv e2e tests.
 
 import json
 import logging
-import os
-import time
 from pathlib import Path
 from typing import Optional
 
@@ -36,7 +34,6 @@ def load_env_file(env_file: Optional[str] = None) -> None:
         logging.warning("python-dotenv not installed, skipping .env file loading")
 
 
-
 def wait_for_provider_ready(test_namespace, provider_name: str, timeout: int = 300):
     """Wait for a provider to have Ready condition = True using kubectl wait."""
     logging.info(f"Waiting for provider {provider_name} to be ready...")
@@ -47,7 +44,7 @@ def wait_for_provider_ready(test_namespace, provider_name: str, timeout: int = 3
     )
 
     try:
-        result = test_namespace.run_kubectl_command(wait_cmd, check=True)
+        test_namespace.run_kubectl_command(wait_cmd, check=True)
         logging.info(f"Provider {provider_name} is ready!")
         return True
     except Exception as e:
