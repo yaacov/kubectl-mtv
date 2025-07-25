@@ -1,11 +1,37 @@
 package output
 
+// PrintJSON prints the given data as JSON using JSONPrinter
 import (
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 )
+
+// PrintJSONWithEmpty prints the given data as JSON using JSONPrinter with empty handling
+func PrintJSONWithEmpty(data interface{}, emptyMessage string) error {
+	// Convert data to []map[string]interface{} if possible
+	items, ok := data.([]map[string]interface{})
+	printer := NewJSONPrinter().WithPrettyPrint(true)
+
+	if ok {
+		if len(items) == 0 && emptyMessage != "" {
+			return printer.PrintEmpty(emptyMessage)
+		}
+		printer.AddItems(items)
+	} else if item, ok := data.(map[string]interface{}); ok {
+		printer.AddItem(item)
+	} else {
+		// Fallback: marshal any data
+		b, err := json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintln(os.Stdout, string(b))
+		return err
+	}
+	return printer.Print()
+}
 
 // JSONPrinter prints data as JSON
 type JSONPrinter struct {

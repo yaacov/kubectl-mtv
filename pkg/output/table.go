@@ -1,5 +1,6 @@
 package output
 
+// PrintTable prints the given data as a table using TablePrinter and headers
 import (
 	"fmt"
 	"io"
@@ -9,6 +10,45 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/query"
 )
+
+// PrintTableWithQuery prints the given data as a table using TablePrinter,
+// supporting dynamic headers from query options and empty message handling.
+func PrintTableWithQuery(data interface{}, defaultHeaders []Header, queryOpts *query.QueryOptions, emptyMessage string) error {
+	items, ok := data.([]map[string]interface{})
+	if !ok {
+		if item, ok := data.(map[string]interface{}); ok {
+			items = []map[string]interface{}{item}
+		} else {
+			return fmt.Errorf("unsupported data type for table output")
+		}
+	}
+
+	var printer *TablePrinter
+
+	// Check if we should use custom headers from SELECT clause
+	if queryOpts != nil && queryOpts.HasSelect {
+		headers := make([]Header, 0, len(queryOpts.Select))
+		for _, sel := range queryOpts.Select {
+			headers = append(headers, Header{
+				DisplayName: sel.Alias,
+				JSONPath:    sel.Alias,
+			})
+		}
+		printer = NewTablePrinter().
+			WithHeaders(headers...).
+			WithSelectOptions(queryOpts.Select)
+	} else {
+		// Use the provided default headers
+		printer = NewTablePrinter().WithHeaders(defaultHeaders...)
+	}
+
+	if len(items) == 0 && emptyMessage != "" {
+		return printer.PrintEmpty(emptyMessage)
+	}
+
+	printer.AddItems(items)
+	return printer.Print()
+}
 
 // Header represents a table column header with display text and a JSON path
 type Header struct {

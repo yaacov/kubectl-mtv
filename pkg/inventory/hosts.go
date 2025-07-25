@@ -7,7 +7,6 @@ import (
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	querypkg "github.com/yaacov/kubectl-mtv/pkg/query"
 	"github.com/yaacov/kubectl-mtv/pkg/watch"
@@ -31,8 +30,25 @@ func listHostsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName,
 		return err
 	}
 
-	// Fetch host inventory from the provider
-	data, err := client.FetchProviderInventory(kubeConfigFlags, inventoryURL, provider, "hosts?detail=4")
+	// Create a new provider client
+	providerClient := NewProviderClient(kubeConfigFlags, provider, inventoryURL)
+
+	// Get provider type to verify host support
+	providerType, err := providerClient.GetProviderType()
+	if err != nil {
+		return fmt.Errorf("failed to get provider type: %v", err)
+	}
+
+	// Fetch hosts inventory from the provider based on provider type
+	var data interface{}
+	switch providerType {
+	case "ovirt", "vsphere":
+		data, err = providerClient.GetHosts(4)
+	default:
+		return fmt.Errorf("provider type '%s' does not support host inventory", providerType)
+	}
+
+	// Error handling
 	if err != nil {
 		return fmt.Errorf("failed to fetch host inventory: %v", err)
 	}
@@ -72,59 +88,24 @@ func listHostsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName,
 	}
 
 	// Handle different output formats
-	if outputFormat == "json" {
-		// Use JSON printer
-		jsonPrinter := output.NewJSONPrinter().
-			WithPrettyPrint(true).
-			AddItems(hosts)
-
-		if len(hosts) == 0 {
-			return jsonPrinter.PrintEmpty(fmt.Sprintf("No hosts found for provider %s", providerName))
+	emptyMessage := fmt.Sprintf("No hosts found for provider %s", providerName)
+	switch outputFormat {
+	case "json":
+		return output.PrintJSONWithEmpty(hosts, emptyMessage)
+	case "yaml":
+		return output.PrintYAMLWithEmpty(hosts, emptyMessage)
+	default:
+		// Define default headers
+		defaultHeaders := []output.Header{
+			{DisplayName: "NAME", JSONPath: "name"},
+			{DisplayName: "ID", JSONPath: "id"},
+			{DisplayName: "STATUS", JSONPath: "status"},
+			{DisplayName: "VERSION", JSONPath: "productVersion"},
+			{DisplayName: "MGMT IP", JSONPath: "managementServerIp"},
+			{DisplayName: "CORES", JSONPath: "cpuCores"},
+			{DisplayName: "SOCKETS", JSONPath: "cpuSockets"},
+			{DisplayName: "MAINTENANCE", JSONPath: "inMaintenance"},
 		}
-		return jsonPrinter.Print()
-	} else if outputFormat == "yaml" {
-		// Use YAML printer
-		yamlPrinter := output.NewYAMLPrinter().
-			AddItems(hosts)
-
-		if len(hosts) == 0 {
-			return yamlPrinter.PrintEmpty(fmt.Sprintf("No hosts found for provider %s", providerName))
-		}
-		return yamlPrinter.Print()
-	} else {
-		var tablePrinter *output.TablePrinter
-
-		// Check if we should use custom headers from SELECT clause
-		if queryOpts.HasSelect {
-			headers := make([]output.Header, 0, len(queryOpts.Select))
-			for _, sel := range queryOpts.Select {
-				headers = append(headers, output.Header{
-					DisplayName: sel.Alias,
-					JSONPath:    sel.Alias,
-				})
-			}
-			tablePrinter = output.NewTablePrinter().
-				WithHeaders(headers...).
-				WithSelectOptions(queryOpts.Select)
-		} else {
-			// Use default Table printer
-			tablePrinter = output.NewTablePrinter().WithHeaders(
-				output.Header{DisplayName: "NAME", JSONPath: "name"},
-				output.Header{DisplayName: "ID", JSONPath: "id"},
-				output.Header{DisplayName: "STATUS", JSONPath: "status"},
-				output.Header{DisplayName: "VERSION", JSONPath: "productVersion"},
-				output.Header{DisplayName: "MGMT IP", JSONPath: "managementServerIp"},
-				output.Header{DisplayName: "CORES", JSONPath: "cpuCores"},
-				output.Header{DisplayName: "SOCKETS", JSONPath: "cpuSockets"},
-				output.Header{DisplayName: "MAINTENANCE", JSONPath: "inMaintenance"},
-			)
-		}
-
-		tablePrinter.AddItems(hosts)
-
-		if len(hosts) == 0 {
-			return tablePrinter.PrintEmpty(fmt.Sprintf("No hosts found for provider %s", providerName))
-		}
-		return tablePrinter.Print()
+		return output.PrintTableWithQuery(hosts, defaultHeaders, queryOpts, emptyMessage)
 	}
 }

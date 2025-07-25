@@ -9,7 +9,6 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	planv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan"
-	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	querypkg "github.com/yaacov/kubectl-mtv/pkg/query"
 	"github.com/yaacov/kubectl-mtv/pkg/watch"
@@ -72,25 +71,31 @@ func formatVMConcerns(vm map[string]interface{}) string {
 			result.WriteString("\n")
 		}
 
-		// Get category and use short form
+		// Get category and use short form using GetValueByPathString
 		categoryShort := "[?]" // Default if category unknown
-		if category, ok := concern["category"].(string); ok {
-			switch category {
-			case "Critical":
-				categoryShort = "[C]"
-			case "Warning":
-				categoryShort = "[W]"
-			case "Information":
-				categoryShort = "[I]"
-			default:
-				categoryShort = "[" + string(category[0]) + "]"
+		if categoryVal, err := querypkg.GetValueByPathString(concern, "category"); err == nil {
+			if category, ok := categoryVal.(string); ok {
+				switch category {
+				case "Critical":
+					categoryShort = "[C]"
+				case "Warning":
+					categoryShort = "[W]"
+				case "Information":
+					categoryShort = "[I]"
+				default:
+					categoryShort = "[" + string(category[0]) + "]"
+				}
 			}
 		}
 		result.WriteString(categoryShort + " ")
 
-		// Add assessment
-		if assessment, ok := concern["assessment"].(string); ok {
-			result.WriteString(assessment)
+		// Add assessment using GetValueByPathString
+		if assessmentVal, err := querypkg.GetValueByPathString(concern, "assessment"); err == nil {
+			if assessment, ok := assessmentVal.(string); ok {
+				result.WriteString(assessment)
+			} else {
+				result.WriteString("No details available")
+			}
 		} else {
 			result.WriteString("No details available")
 		}
@@ -145,8 +150,25 @@ func listVMsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, n
 		return err
 	}
 
-	// Fetch VM inventory from the provider
-	data, err := client.FetchProviderInventory(kubeConfigFlags, inventoryURL, provider, "vms?detail=4")
+	// Create a new provider client
+	providerClient := NewProviderClient(kubeConfigFlags, provider, inventoryURL)
+
+	// Get provider type to verify VM support
+	providerType, err := providerClient.GetProviderType()
+	if err != nil {
+		return fmt.Errorf("failed to get provider type: %v", err)
+	}
+
+	// Fetch VM inventory from the provider based on provider type
+	var data interface{}
+	switch providerType {
+	case "ovirt", "vsphere", "openstack", "ova", "openshift":
+		data, err = providerClient.GetVMs(4)
+	default:
+		return fmt.Errorf("provider type '%s' does not support VM inventory", providerType)
+	}
+
+	// Error handling
 	if err != nil {
 		return fmt.Errorf("failed to fetch VM inventory: %v", err)
 	}
@@ -245,26 +267,13 @@ func listVMsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, n
 	}
 
 	// Handle different output formats
-	if outputFormat == "json" {
-		// Use JSON printer
-		jsonPrinter := output.NewJSONPrinter().
-			WithPrettyPrint(true).
-			AddItems(vms)
-
-		if len(vms) == 0 {
-			return jsonPrinter.PrintEmpty(fmt.Sprintf("No VMs found for provider %s", providerName))
-		}
-		return jsonPrinter.Print()
-	} else if outputFormat == "yaml" {
-		// Use YAML printer
-		yamlPrinter := output.NewYAMLPrinter().
-			AddItems(vms)
-
-		if len(vms) == 0 {
-			return yamlPrinter.PrintEmpty(fmt.Sprintf("No VMs found for provider %s", providerName))
-		}
-		return yamlPrinter.Print()
-	} else if outputFormat == "planvms" {
+	emptyMessage := fmt.Sprintf("No VMs found for provider %s", providerName)
+	switch outputFormat {
+	case "json":
+		return output.PrintJSONWithEmpty(vms, emptyMessage)
+	case "yaml":
+		return output.PrintYAMLWithEmpty(vms, emptyMessage)
+	case "planvms":
 		// Convert inventory VMs to plan VM structs
 		planVMs := make([]planv1beta1.VM, 0, len(vms))
 		for _, vm := range vms {
@@ -293,7 +302,7 @@ func listVMsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, n
 		// Print the YAML to stdout
 		fmt.Println(string(yamlData))
 		return nil
-	} else {
+	default:
 		var tablePrinter *output.TablePrinter
 
 		// Check if we should use custom headers from SELECT clause
@@ -335,7 +344,7 @@ func listVMsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, n
 		}
 
 		if len(vms) == 0 {
-			return tablePrinter.PrintEmpty(fmt.Sprintf("No VMs found for provider %s", providerName))
+			return tablePrinter.PrintEmpty(emptyMessage)
 		}
 		return tablePrinter.Print()
 	}

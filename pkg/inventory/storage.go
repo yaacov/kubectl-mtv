@@ -5,10 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	querypkg "github.com/yaacov/kubectl-mtv/pkg/query"
 	"github.com/yaacov/kubectl-mtv/pkg/watch"
@@ -32,10 +30,13 @@ func listStorageOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerNam
 		return err
 	}
 
-	// Check provider type
-	providerType, _, err := unstructured.NestedString(provider.Object, "spec", "type")
+	// Create a new provider client
+	providerClient := NewProviderClient(kubeConfigFlags, provider, inventoryURL)
+
+	// Get provider type to determine which storage resource to fetch
+	providerType, err := providerClient.GetProviderType()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get provider type: %v", err)
 	}
 
 	// Define default headers based on provider type
@@ -59,17 +60,24 @@ func listStorageOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerNam
 		}
 	}
 
-	// Select appropriate subPath based on provider type
-	var subPath string
+	// Fetch storage inventory based on provider type
+	var data interface{}
 	switch providerType {
+	case "ovirt":
+		data, err = providerClient.GetStorageDomains(4)
+	case "vsphere":
+		data, err = providerClient.GetDatastores(4)
+	case "ova":
+		data, err = providerClient.GetResourceCollection("storages", 4)
+	case "openstack":
+		data, err = providerClient.GetVolumeTypes(4)
 	case "openshift":
-		subPath = "storageclasses?detail=4"
+		data, err = providerClient.GetStorageClasses(4)
 	default:
-		subPath = "datastores?detail=4"
+		// For other providers, use generic storage resource
+		data, err = providerClient.GetResourceCollection("storages", 4)
 	}
 
-	// Fetch storage inventory from the provider
-	data, err := client.FetchProviderInventory(kubeConfigFlags, inventoryURL, provider, subPath)
 	if err != nil {
 		return fmt.Errorf("failed to fetch storage inventory: %v", err)
 	}
@@ -127,50 +135,13 @@ func listStorageOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerNam
 	}
 
 	// Handle different output formats
-	if outputFormat == "json" {
-		// Use JSON printer
-		jsonPrinter := output.NewJSONPrinter().
-			WithPrettyPrint(true).
-			AddItems(storages)
-
-		if len(storages) == 0 {
-			return jsonPrinter.PrintEmpty(fmt.Sprintf("No storages found for provider %s", providerName))
-		}
-		return jsonPrinter.Print()
-	} else if outputFormat == "yaml" {
-		// Use YAML printer
-		yamlPrinter := output.NewYAMLPrinter().
-			AddItems(storages)
-
-		if len(storages) == 0 {
-			return yamlPrinter.PrintEmpty(fmt.Sprintf("No storages found for provider %s", providerName))
-		}
-		return yamlPrinter.Print()
-	} else {
-		var tablePrinter *output.TablePrinter
-
-		// Check if we should use custom headers from SELECT clause
-		if queryOpts.HasSelect {
-			headers := make([]output.Header, 0, len(queryOpts.Select))
-			for _, sel := range queryOpts.Select {
-				headers = append(headers, output.Header{
-					DisplayName: sel.Alias,
-					JSONPath:    sel.Alias,
-				})
-			}
-			tablePrinter = output.NewTablePrinter().
-				WithHeaders(headers...).
-				WithSelectOptions(queryOpts.Select)
-		} else {
-			// Use the predefined default headers based on provider type
-			tablePrinter = output.NewTablePrinter().WithHeaders(defaultHeaders...)
-		}
-
-		tablePrinter.AddItems(storages)
-
-		if len(storages) == 0 {
-			return tablePrinter.PrintEmpty(fmt.Sprintf("No storage resources found for provider %s", providerName))
-		}
-		return tablePrinter.Print()
+	emptyMessage := fmt.Sprintf("No storage resources found for provider %s", providerName)
+	switch outputFormat {
+	case "json":
+		return output.PrintJSONWithEmpty(storages, emptyMessage)
+	case "yaml":
+		return output.PrintYAMLWithEmpty(storages, emptyMessage)
+	default:
+		return output.PrintTableWithQuery(storages, defaultHeaders, queryOpts, emptyMessage)
 	}
 }
