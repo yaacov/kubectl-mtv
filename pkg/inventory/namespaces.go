@@ -7,7 +7,6 @@ import (
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/output"
 	querypkg "github.com/yaacov/kubectl-mtv/pkg/query"
 	"github.com/yaacov/kubectl-mtv/pkg/watch"
@@ -31,8 +30,27 @@ func listNamespacesOnce(kubeConfigFlags *genericclioptions.ConfigFlags, provider
 		return err
 	}
 
-	// Fetch namespace inventory from the provider
-	data, err := client.FetchProviderInventory(kubeConfigFlags, inventoryURL, provider, "namespaces?detail=4")
+	// Create a new provider client
+	providerClient := NewProviderClient(kubeConfigFlags, provider, inventoryURL)
+
+	// Get provider type to verify namespace support
+	providerType, err := providerClient.GetProviderType()
+	if err != nil {
+		return fmt.Errorf("failed to get provider type: %v", err)
+	}
+
+	// Fetch namespace inventory from the provider based on provider type
+	var data interface{}
+	switch providerType {
+	case "openshift":
+		data, err = providerClient.GetNamespaces(4)
+	case "openstack":
+		data, err = providerClient.GetProjects(4)
+	default:
+		return fmt.Errorf("provider type '%s' does not support namespace inventory", providerType)
+	}
+
+	// Error handling
 	if err != nil {
 		return fmt.Errorf("failed to fetch namespace inventory: %v", err)
 	}
@@ -72,50 +90,19 @@ func listNamespacesOnce(kubeConfigFlags *genericclioptions.ConfigFlags, provider
 	}
 
 	// Handle different output formats
-	if outputFormat == "json" {
-		jsonPrinter := output.NewJSONPrinter().
-			WithPrettyPrint(true).
-			AddItems(namespaces)
-
-		if len(namespaces) == 0 {
-			return jsonPrinter.PrintEmpty(fmt.Sprintf("No namespaces found for provider %s", providerName))
+	emptyMessage := fmt.Sprintf("No namespaces found for provider %s", providerName)
+	switch outputFormat {
+	case "json":
+		return output.PrintJSONWithEmpty(namespaces, emptyMessage)
+	case "yaml":
+		return output.PrintYAMLWithEmpty(namespaces, emptyMessage)
+	default:
+		// Define default headers
+		defaultHeaders := []output.Header{
+			{DisplayName: "NAME", JSONPath: "name"},
+			{DisplayName: "ID", JSONPath: "id"},
+			{DisplayName: "PROVIDER", JSONPath: "provider"},
 		}
-		return jsonPrinter.Print()
-	} else if outputFormat == "yaml" {
-		yamlPrinter := output.NewYAMLPrinter().
-			AddItems(namespaces)
-
-		if len(namespaces) == 0 {
-			return yamlPrinter.PrintEmpty(fmt.Sprintf("No namespaces found for provider %s", providerName))
-		}
-		return yamlPrinter.Print()
-	} else {
-		var tablePrinter *output.TablePrinter
-
-		if queryOpts.HasSelect {
-			headers := make([]output.Header, 0, len(queryOpts.Select))
-			for _, sel := range queryOpts.Select {
-				headers = append(headers, output.Header{
-					DisplayName: sel.Alias,
-					JSONPath:    sel.Alias,
-				})
-			}
-			tablePrinter = output.NewTablePrinter().
-				WithHeaders(headers...).
-				WithSelectOptions(queryOpts.Select)
-		} else {
-			tablePrinter = output.NewTablePrinter().WithHeaders(
-				output.Header{DisplayName: "NAME", JSONPath: "name"},
-				output.Header{DisplayName: "ID", JSONPath: "id"},
-				output.Header{DisplayName: "PROVIDER", JSONPath: "provider"},
-			)
-		}
-
-		tablePrinter.AddItems(namespaces)
-
-		if len(namespaces) == 0 {
-			return tablePrinter.PrintEmpty(fmt.Sprintf("No namespaces found for provider %s", providerName))
-		}
-		return tablePrinter.Print()
+		return output.PrintTableWithQuery(namespaces, defaultHeaders, queryOpts, emptyMessage)
 	}
 }

@@ -1,5 +1,6 @@
 package output
 
+// PrintYAML prints the given data as YAML using YAMLPrinter
 import (
 	"fmt"
 	"io"
@@ -7,6 +8,30 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
+
+// PrintYAMLWithEmpty prints the given data as YAML using YAMLPrinter with empty handling
+func PrintYAMLWithEmpty(data interface{}, emptyMessage string) error {
+	items, ok := data.([]map[string]interface{})
+	printer := NewYAMLPrinter()
+
+	if ok {
+		if len(items) == 0 && emptyMessage != "" {
+			return printer.PrintEmpty(emptyMessage)
+		}
+		printer.AddItems(items)
+	} else if item, ok := data.(map[string]interface{}); ok {
+		printer.AddItem(item)
+	} else {
+		// Fallback: marshal any data
+		b, err := yaml.Marshal(data)
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintln(os.Stdout, string(b))
+		return err
+	}
+	return printer.Print()
+}
 
 // YAMLPrinter prints data as YAML
 type YAMLPrinter struct {
