@@ -15,6 +15,7 @@ from typing import Any, Dict, Generator
 
 import pytest
 from . import utils
+from .utils_prepare import prepare_namespace_for_testing
 
 # Add the tests directory to the Python path to fix relative imports
 current_dir = Path(__file__).parent
@@ -217,6 +218,10 @@ def test_namespace(
 
         # Create and store shared context
         context = TestContext(namespace_name, kubectl_mtv_binary)
+
+        # Prepare the namespace for testing (create NADs)
+        prepare_namespace_for_testing(context)
+        
         request.session._shared_test_context = context
         request.session._shared_namespace_name = namespace_name
 
