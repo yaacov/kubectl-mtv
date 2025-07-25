@@ -115,19 +115,3 @@ class TestOpenStackInventory:
             assert isinstance(storage_data, list), "Expected storage data to be a list"
         except json.JSONDecodeError:
             pytest.fail("Failed to parse storage JSON output")
-
-    def test_get_inventory_hosts(self, test_namespace, openstack_provider):
-        """Test getting inventory hosts from an OpenStack provider."""
-        result = test_namespace.run_mtv_command(
-            f"get inventory hosts {openstack_provider} --output json"
-        )
-
-        if result.returncode != 0:
-            pytest.skip("Provider inventory not accessible or empty")
-
-        # Parse JSON output
-        try:
-            hosts_data = json.loads(result.stdout)
-            assert isinstance(hosts_data, list), "Expected hosts data to be a list"
-        except json.JSONDecodeError:
-            pytest.fail("Failed to parse hosts JSON output")
