@@ -25,24 +25,13 @@ class TestOpenShiftInventory:
 
         provider_name = "test-openshift-inventory-skip-verify"
 
-        if creds.get("url") and creds.get("token"):
-            # Use explicit credentials with token and skip verify
-            cmd_parts = [
-                "create provider",
-                provider_name,
-                "--type openshift",
-                f"--url '{creds['url']}'",
-                f"--token '{creds['token']}'",
-                "--provider-insecure-skip-tls",
-            ]
-        else:
-            # Use current cluster context with skip verify
-            cmd_parts = [
-                "create provider",
-                provider_name,
-                "--type openshift",
-                "--provider-insecure-skip-tls",
-            ]
+        # Use current cluster context with skip verify
+        cmd_parts = [
+            "create provider",
+            provider_name,
+            "--type openshift",
+            "--provider-insecure-skip-tls",
+        ]
 
         create_cmd = " ".join(cmd_parts)
 
