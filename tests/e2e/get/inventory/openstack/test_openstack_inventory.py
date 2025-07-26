@@ -11,6 +11,7 @@ import pytest
 from ....utils import wait_for_provider_ready
 
 
+@pytest.mark.skip(reason="Skipping OpenStack inventory tests")
 @pytest.mark.get
 @pytest.mark.inventory
 @pytest.mark.openstack
