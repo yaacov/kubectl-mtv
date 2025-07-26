@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/yaacov/kubectl-mtv/pkg/commands/version"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/version"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 

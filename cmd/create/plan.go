@@ -13,7 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/yaacov/kubectl-mtv/pkg/commands/plan"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )

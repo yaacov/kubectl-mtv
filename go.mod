@@ -1,13 +1,11 @@
 module github.com/yaacov/kubectl-mtv
 
-go 1.23.0
-
-toolchain go1.23.7
+go 1.24.0
 
 // Add your other dependencies here
 
 require (
-	github.com/kubev2v/forklift v0.0.0-20250718044255-6567482a00cb
+	github.com/kubev2v/forklift v0.0.0-20250725144853-4fe404a55bd2
 	github.com/spf13/cobra v1.9.1
 	github.com/yaacov/tree-search-language/v6 v6.0.7
 	gopkg.in/yaml.v3 v3.0.1
@@ -16,6 +14,7 @@ require (
 	k8s.io/cli-runtime v0.32.3
 	k8s.io/client-go v0.32.5
 	k8s.io/klog/v2 v2.130.1
+	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
@@ -75,5 +74,4 @@ require (
 	sigs.k8s.io/kustomize/api v0.18.0 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.18.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.3 // indirect
-	sigs.k8s.io/yaml v1.4.0 // indirect
 )

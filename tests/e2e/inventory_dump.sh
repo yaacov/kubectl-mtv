@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # inventory_dump.sh - Dump inventory data to JSON files for testing
-# This script finds the latest test namespace, discovers providers, and dumps
-# VMs, networks, and storage inventory to JSON files for each provider.
+# This script finds all test namespaces, discovers providers, and dumps
+# VMs, networks, and storage inventory to JSON files for each provider in each namespace.
 
 set -e
 
@@ -29,11 +29,11 @@ log_error() {
     echo "[ERROR] $1"
 }
 
-# Function to find the latest test namespace
-find_latest_test_namespace() {
+# Function to find all test namespaces
+find_all_test_namespaces() {
     # Look for namespaces starting with kubectl-mtv-shared-
     local test_namespaces
-    test_namespaces=$(kubectl get namespaces -o name | grep "kubectl-mtv-shared-" | sed 's/namespace\///' | sort -r | head -5)
+    test_namespaces=$(kubectl get namespaces -o name | grep "kubectl-mtv-shared-" | sed 's/namespace\///' | sort -r)
     
     if [[ -z "$test_namespaces" ]]; then
         # Default to a common test namespace
@@ -41,8 +41,8 @@ find_latest_test_namespace() {
         return
     fi
     
-    # Return the first (most recent) test namespace
-    echo "$test_namespaces" | head -1
+    # Return all test namespaces
+    echo "$test_namespaces"
 }
 
 # Function to find providers in the namespace
@@ -99,9 +99,9 @@ dump_provider_inventory() {
     local provider=$1
     local provider_type=$2
     local namespace=$3
-    local provider_dir="$OUTPUT_DIR/$provider"
+    local provider_dir="$OUTPUT_DIR/$namespace/$provider"
     
-    # Create provider directory
+    # Create provider directory under namespace
     mkdir -p "$provider_dir"
     
     # Dump VMs
@@ -156,12 +156,13 @@ EOF
 
 # Function to create summary report
 create_summary() {
-    local namespace=$1
+    local namespaces="$1"
     local summary_file="$OUTPUT_DIR/summary.json"
     
-    # Count total files and providers
-    local provider_count
-    provider_count=$(find "$OUTPUT_DIR" -maxdepth 1 -type d ! -path "$OUTPUT_DIR" | wc -l)
+    # Count total files and providers across all namespaces
+    local total_provider_count=0
+    local total_namespace_count
+    total_namespace_count=$(echo "$namespaces" | wc -l)
     
     local total_files
     total_files=$(find "$OUTPUT_DIR" -name "*.json" | wc -l)
@@ -170,55 +171,86 @@ create_summary() {
 {
     "dump_info": {
         "timestamp": "$TIMESTAMP",
-        "namespace": "$namespace",
         "output_directory": "$OUTPUT_DIR",
-        "total_providers": $provider_count,
+        "total_namespaces": $total_namespace_count,
         "total_json_files": $total_files
     },
-    "providers": [
+    "namespaces": [
 EOF
     
-    # Add provider summaries
-    local first=true
-    for provider_dir in "$OUTPUT_DIR"/*/; do
-        if [[ -d "$provider_dir" && -f "$provider_dir/metadata.json" ]]; then
-            if [[ "$first" == "true" ]]; then
-                first=false
+    # Add namespace summaries
+    local namespace_first=true
+    while IFS= read -r namespace; do
+        if [[ -n "$namespace" && -d "$OUTPUT_DIR/$namespace" ]]; then
+            if [[ "$namespace_first" == "true" ]]; then
+                namespace_first=false
             else
                 echo "," >> "$summary_file"
             fi
             
-            local provider_name
-            provider_name=$(jq -r '.provider_name' "$provider_dir/metadata.json")
-            
-            local provider_type
-            provider_type=$(jq -r '.provider_type' "$provider_dir/metadata.json")
-            
-            local vm_count
-            vm_count=$(jq '.items | length' "$provider_dir/vms.json" 2>/dev/null || echo "0")
-            
-            local network_count
-            network_count=$(jq '.items | length' "$provider_dir/networks.json" 2>/dev/null || echo "0")
-            
-            local storage_count
-            storage_count=$(jq '.items | length' "$provider_dir/storage.json" 2>/dev/null || echo "0")
+            local namespace_provider_count
+            namespace_provider_count=$(find "$OUTPUT_DIR/$namespace" -maxdepth 1 -type d ! -path "$OUTPUT_DIR/$namespace" | wc -l)
+            total_provider_count=$((total_provider_count + namespace_provider_count))
             
             cat >> "$summary_file" <<EOF
         {
-            "name": "$provider_name",
-            "type": "$provider_type",
-            "resources": {
-                "vms": $vm_count,
-                "networks": $network_count,
-                "storage": $storage_count
-            }
+            "namespace": "$namespace",
+            "provider_count": $namespace_provider_count,
+            "providers": [
+EOF
+            
+            # Add provider summaries for this namespace
+            local provider_first=true
+            for provider_dir in "$OUTPUT_DIR/$namespace"/*/; do
+                if [[ -d "$provider_dir" && -f "$provider_dir/metadata.json" ]]; then
+                    if [[ "$provider_first" == "true" ]]; then
+                        provider_first=false
+                    else
+                        echo "," >> "$summary_file"
+                    fi
+                    
+                    local provider_name
+                    provider_name=$(jq -r '.provider_name' "$provider_dir/metadata.json")
+                    
+                    local provider_type
+                    provider_type=$(jq -r '.provider_type' "$provider_dir/metadata.json")
+                    
+                    local vm_count
+                    vm_count=$(jq '.items | length' "$provider_dir/vms.json" 2>/dev/null || echo "0")
+                    
+                    local network_count
+                    network_count=$(jq '.items | length' "$provider_dir/networks.json" 2>/dev/null || echo "0")
+                    
+                    local storage_count
+                    storage_count=$(jq '.items | length' "$provider_dir/storage.json" 2>/dev/null || echo "0")
+                    
+                    cat >> "$summary_file" <<EOF
+                {
+                    "name": "$provider_name",
+                    "type": "$provider_type",
+                    "resources": {
+                        "vms": $vm_count,
+                        "networks": $network_count,
+                        "storage": $storage_count
+                    }
+                }
+EOF
+                fi
+            done
+            
+            cat >> "$summary_file" <<EOF
+            ]
         }
 EOF
         fi
-    done
+    done <<< "$namespaces"
     
+    # Update the dump_info with total provider count
     cat >> "$summary_file" <<EOF
-    ]
+    ],
+    "totals": {
+        "total_providers": $total_provider_count
+    }
 }
 EOF
 }
@@ -249,36 +281,54 @@ main() {
     mkdir -p "$OUTPUT_DIR"
     log_info "Output directory: $OUTPUT_DIR"
     
-    # Find test namespace
-    local namespace
-    namespace=$(find_latest_test_namespace)
-    log_success "Using namespace: $namespace"
+    # Find all test namespaces
+    local namespaces
+    namespaces=$(find_all_test_namespaces)
+    log_success "Found namespaces: $(echo "$namespaces" | tr '\n' ' ')"
     
-    # Find providers
-    local providers
-    providers=$(find_providers "$namespace")
+    # Process each namespace
+    local total_providers=0
+    while IFS= read -r namespace; do
+        if [[ -n "$namespace" ]]; then
+            log_info "Processing namespace: $namespace"
+            
+            # Find providers in this namespace
+            local providers
+            providers=$(find_providers "$namespace")
+            
+            if [[ -z "$providers" ]]; then
+                log_warning "No providers found in namespace $namespace"
+                continue
+            fi
+            
+            local provider_count
+            provider_count=$(echo "$providers" | wc -l)
+            total_providers=$((total_providers + provider_count))
+            
+            log_success "Found $provider_count providers in $namespace: $(echo "$providers" | tr '\n' ' ')"
+            
+            # Dump inventory for each provider in this namespace
+            while IFS= read -r provider; do
+                if [[ -n "$provider" ]]; then
+                    local provider_type
+                    provider_type=$(get_provider_type "$provider" "$namespace")
+                    log_info "Dumping inventory for provider: $provider (type: $provider_type) in namespace: $namespace"
+                    dump_provider_inventory "$provider" "$provider_type" "$namespace"
+                fi
+            done <<< "$providers"
+        fi
+    done <<< "$namespaces"
     
-    if [[ -z "$providers" ]]; then
-        log_error "No providers found in namespace $namespace"
+    if [[ $total_providers -eq 0 ]]; then
+        log_error "No providers found in any namespace"
         exit 1
     fi
     
-    log_success "Found providers: $(echo "$providers" | tr '\n' ' ')"
-    
-    # Dump inventory for each provider
-    while IFS= read -r provider; do
-        if [[ -n "$provider" ]]; then
-            local provider_type
-            provider_type=$(get_provider_type "$provider" "$namespace")
-            log_info "Dumping inventory for provider: $provider (type: $provider_type)"
-            dump_provider_inventory "$provider" "$provider_type" "$namespace"
-        fi
-    done <<< "$providers"
-    
     # Create summary
-    create_summary "$namespace"
+    create_summary "$namespaces"
     
     log_success "Inventory dump completed successfully!"
+    log_info "Processed $(echo "$namespaces" | wc -l) namespaces with $total_providers total providers"
     log_info "Results saved to: $OUTPUT_DIR"
     log_info "View summary: cat $OUTPUT_DIR/summary.json | jq"
 }
