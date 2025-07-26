@@ -264,6 +264,33 @@ func Create(opts CreatePlanOptions) error {
 		}
 	}
 
+	// MTV UseCompatibilityMode sets the UseCompatibilityMode field to true, if opts.PlanSpec.UseCompatibilityMode is false
+	// we need to patch the plan to re-set the UseCompatibilityMode field to false.
+	if !opts.PlanSpec.UseCompatibilityMode {
+		patch := map[string]interface{}{
+			"spec": map[string]interface{}{
+				"useCompatibilityMode": false,
+			},
+		}
+		patchBytes, err := json.Marshal(patch)
+		if err != nil {
+			// Ignore error here, we will still create the plan
+			fmt.Printf("Warning: failed to marshal patch for UseCompatibilityMode: %v\n", err)
+		} else {
+			_, err = c.Resource(client.PlansGVR).Namespace(opts.Namespace).Patch(
+				context.TODO(),
+				createdPlan.GetName(),
+				types.MergePatchType,
+				patchBytes,
+				metav1.PatchOptions{},
+			)
+			if err != nil {
+				// Ignore error here, we will still create the plan
+				fmt.Printf("Warning: failed to patch plan for UseCompatibilityMode: %v\n", err)
+			}
+		}
+	}
+
 	// Set ownership of maps if we created them
 	if createdNetworkMap {
 		err = setMapOwnership(opts.ConfigFlags, createdPlan, client.NetworkMapGVR, opts.NetworkMapping, opts.Namespace)
