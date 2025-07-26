@@ -1,4 +1,4 @@
-package cmd
+package cancel
 
 import (
 	"encoding/json"
@@ -7,24 +7,15 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/plan"
-	"gopkg.in/yaml.v3"
 )
 
-func newCancelCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:          "cancel",
-		Short:        "Cancel resources",
-		Long:         `Cancel various MTV resources`,
-		SilenceUsage: true,
-	}
-
-	cmd.AddCommand(newCancelVMsCmd())
-	return cmd
-}
-
-func newCancelVMsCmd() *cobra.Command {
+// NewPlanCmd creates the plan cancellation command
+func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var vmNamesOrFile string
 
 	cmd := &cobra.Command{

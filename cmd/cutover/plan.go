@@ -1,27 +1,18 @@
-package cmd
+package cutover
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/plan"
 )
 
-func newCutoverCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:          "cutover",
-		Short:        "Set cutover time for resources",
-		Long:         `Set cutover time for various MTV resources`,
-		SilenceUsage: true,
-	}
-
-	cmd.AddCommand(newCutoverPlanCmd())
-	return cmd
-}
-
-func newCutoverPlanCmd() *cobra.Command {
+// NewPlanCmd creates the plan cutover command
+func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var cutoverTimeStr string
 
 	cmd := &cobra.Command{

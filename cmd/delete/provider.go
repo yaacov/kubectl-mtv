@@ -1,0 +1,34 @@
+package delete
+
+import (
+	"github.com/spf13/cobra"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+
+	"github.com/yaacov/kubectl-mtv/pkg/client"
+	"github.com/yaacov/kubectl-mtv/pkg/provider"
+)
+
+// NewProviderCmd creates the provider deletion command
+func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          "provider NAME [NAME...]",
+		Short:        "Delete one or more providers",
+		Args:         cobra.MinimumNArgs(1),
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Resolve the appropriate namespace based on context and flags
+			namespace := client.ResolveNamespace(kubeConfigFlags)
+
+			// Loop over each provider name and delete it
+			for _, name := range args {
+				err := provider.Delete(kubeConfigFlags, name, namespace)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	}
+
+	return cmd
+}

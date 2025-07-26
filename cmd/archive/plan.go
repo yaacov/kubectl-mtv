@@ -1,24 +1,15 @@
-package cmd
+package archive
 
 import (
 	"github.com/spf13/cobra"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/plan"
 )
 
-func newArchiveCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:          "archive",
-		Short:        "Archive resources",
-		Long:         `Archive various MTV resources`,
-		SilenceUsage: true,
-	}
-
-	cmd.AddCommand(newArchivePlanCmd())
-	return cmd
-}
-
-func newArchivePlanCmd() *cobra.Command {
+// NewPlanCmd creates the plan archiving command
+func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "plan NAME [NAME...]",
 		Short:        "Archive one or more migration plans",

@@ -1,27 +1,18 @@
-package cmd
+package start
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/plan"
 )
 
-func newStartCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:          "start",
-		Short:        "Start resources",
-		Long:         `Start various MTV resources`,
-		SilenceUsage: true,
-	}
-
-	cmd.AddCommand(newStartPlanCmd())
-	return cmd
-}
-
-func newStartPlanCmd() *cobra.Command {
+// NewPlanCmd creates the plan start command
+func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var cutoverTimeStr string
 
 	cmd := &cobra.Command{
