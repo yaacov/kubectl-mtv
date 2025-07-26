@@ -105,9 +105,27 @@ func (f *OpenShiftStorageFetcher) FetchSourceStorages(configFlags *genericcliopt
 						storageClassName, err := query.GetValueByPathString(dvtMap, "spec.storageClassName")
 						if err == nil && storageClassName != nil {
 							if scName, ok := storageClassName.(string); ok {
-								klog.V(4).Infof("Found storageClassName: %s", scName)
+								klog.V(4).Infof("Found explicit storageClassName: %s", scName)
 								if storageID, exists := storageNameToID[scName]; exists {
 									storageIDSet[storageID] = true
+								}
+							}
+						} else {
+							// No explicit storageClassName - check if this dataVolumeTemplate has storage requirements
+							// This indicates it uses the default storage class
+							storage, err := query.GetValueByPathString(dvtMap, "spec.storage")
+							if err == nil && storage != nil {
+								klog.V(4).Infof("Found dataVolumeTemplate with storage but no explicit storageClassName - using default storage class")
+								// Find the default storage class
+								for storageID, storageItem := range storageIDToStorage {
+									isDefaultValue, err := query.GetValueByPathString(storageItem, "object.metadata.annotations.storageclass.kubernetes.io/is-default-class")
+									if err == nil && isDefaultValue != nil {
+										if isDefault, ok := isDefaultValue.(string); ok && isDefault == "true" {
+											klog.V(4).Infof("Using default StorageClass for VM %s: %s", vmName, storageID)
+											storageIDSet[storageID] = true
+											break
+										}
+									}
 								}
 							}
 						}
@@ -121,26 +139,15 @@ func (f *OpenShiftStorageFetcher) FetchSourceStorages(configFlags *genericcliopt
 			if volumesArray, ok := volumes.([]interface{}); ok {
 				klog.V(4).Infof("VM %s has %d volumes", vmName, len(volumesArray))
 				for _, volumeItem := range volumesArray {
-					if _, ok := volumeItem.(map[string]interface{}); ok {
-						// For now, we'll use a default storage class approach
-						// since extracting the actual StorageClass from DataVolume references
-						// requires additional API calls
-						klog.V(4).Infof("Found volume in VM %s", vmName)
-					}
-				}
-			}
-		}
-
-		// If no specific StorageClass was found, we'll add a default one
-		// This ensures VMs with storage get some storage mapping
-		if len(storageIDSet) == 0 {
-			for storageID, storageItem := range storageIDToStorage {
-				isDefaultValue, err := query.GetValueByPathString(storageItem, "object.metadata.annotations.storageclass.kubernetes.io/is-default-class")
-				if err == nil && isDefaultValue != nil {
-					if isDefault, ok := isDefaultValue.(string); ok && isDefault == "true" {
-						klog.V(4).Infof("Using default StorageClass: %s", storageID)
-						storageIDSet[storageID] = true
-						break
+					if volumeMap, ok := volumeItem.(map[string]interface{}); ok {
+						// Check if this volume references a DataVolume (which may have storage class info)
+						dataVolume, err := query.GetValueByPathString(volumeMap, "dataVolume")
+						if err == nil && dataVolume != nil {
+							klog.V(4).Infof("Found volume with dataVolume reference in VM %s", vmName)
+							// The actual storage class info is in the dataVolumeTemplates we already processed
+						} else {
+							klog.V(4).Infof("Found volume in VM %s", vmName)
+						}
 					}
 				}
 			}
@@ -149,7 +156,23 @@ func (f *OpenShiftStorageFetcher) FetchSourceStorages(configFlags *genericcliopt
 
 	klog.V(4).Infof("Final storageIDSet: %v", storageIDSet)
 
-	// If no storages found from VMs, return empty list
+	// If no storages found from VMs, still try to find a default storage class
+	// This handles cases where VMs exist but don't have explicit storage references
+	if len(storageIDSet) == 0 {
+		klog.V(4).Infof("No explicit storage found from VMs, looking for default storage class")
+		for storageID, storageItem := range storageIDToStorage {
+			isDefaultValue, err := query.GetValueByPathString(storageItem, "object.metadata.annotations.storageclass.kubernetes.io/is-default-class")
+			if err == nil && isDefaultValue != nil {
+				if isDefault, ok := isDefaultValue.(string); ok && isDefault == "true" {
+					klog.V(4).Infof("Found and using default StorageClass: %s", storageID)
+					storageIDSet[storageID] = true
+					break
+				}
+			}
+		}
+	}
+
+	// If still no storages found, return empty list
 	if len(storageIDSet) == 0 {
 		klog.V(4).Infof("No storages found from VMs")
 		return []ref.Ref{}, nil

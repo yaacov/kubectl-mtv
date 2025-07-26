@@ -82,5 +82,55 @@ def wait_for_provider_ready(test_namespace, provider_name: str, timeout: int = 3
         )
 
 
+def wait_for_plan_ready(
+    test_namespace, plan_name: str, timeout: int = 600
+) -> bool:
+    """Wait for a migration plan to have Ready condition = True using kubectl wait."""
+    logging.info(f"Waiting for plan {plan_name} to be ready...")
+
+    # Use kubectl wait to wait for the Ready condition
+    wait_cmd = (
+        f"wait --for=condition=Ready plan/{plan_name} --timeout={timeout}s"
+    )
+
+    try:
+        test_namespace.run_kubectl_command(wait_cmd, check=True)
+        logging.info(f"Plan {plan_name} is ready!")
+        return True
+    except Exception as e:
+        # If kubectl wait fails, get the plan status for better error reporting
+        try:
+            status_result = test_namespace.run_mtv_command(
+                f"get plan {plan_name} -o json", check=False
+            )
+            if status_result.returncode == 0:
+                plan_list = json.loads(status_result.stdout)
+                if len(plan_list) >= 1:
+                    plan_data = plan_list[0]
+                    status = plan_data.get("status", {})
+                    conditions = status.get("conditions", [])
+
+                    # Find Ready condition for detailed error info
+                    for condition in conditions:
+                        if condition.get("type") == "Ready":
+                            condition_status = condition.get("status", "")
+                            condition_reason = condition.get("reason", "")
+                            condition_message = condition.get("message", "")
+
+                            if condition_status == "False":
+                                pytest.fail(
+                                    f"Plan {plan_name} failed to become ready. "
+                                    f"Reason: {condition_reason}, Message: {condition_message}"
+                                )
+                            break
+        except Exception:
+            pass  # Fall back to original error
+
+        # If we couldn't get detailed status, fail with the original kubectl wait error
+        pytest.fail(
+            f"Plan {plan_name} did not become ready within {timeout} seconds: {e}"
+        )
+
+
 # Load .env file when module is imported
 load_env_file()
