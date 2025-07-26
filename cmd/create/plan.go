@@ -14,6 +14,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
+	"github.com/yaacov/kubectl-mtv/pkg/flags"
 	"github.com/yaacov/kubectl-mtv/pkg/plan"
 )
 
@@ -29,7 +30,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var planSpec forkliftv1beta1.PlanSpec
 	var transferNetwork string
 	var installLegacyDrivers string // "true", "false", or "" for nil
-	var migrationType string
+	migrationTypeFlag := flags.NewMigrationTypeFlag()
 
 	cmd := &cobra.Command{
 		Use:          "plan NAME",
@@ -109,8 +110,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 			}
 
 			// Handle migration type flag
-			if migrationType != "" {
-				planSpec.Type = migrationType
+			if migrationTypeFlag.GetValue() != "" {
+				planSpec.Type = migrationTypeFlag.GetValue()
 			}
 
 			// Set VMs in the PlanSpec
@@ -157,13 +158,13 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().BoolVar(&planSpec.DeleteGuestConversionPod, "delete-guest-conversion-pod", false, "Delete guest conversion pod after successful migration")
 	cmd.Flags().BoolVar(&planSpec.SkipGuestConversion, "skip-guest-conversion", false, "Skip the guest conversion process")
 	cmd.Flags().StringVar(&installLegacyDrivers, "install-legacy-drivers", "", "Install legacy Windows drivers (true/false, leave empty for auto-detection)")
-	cmd.Flags().StringVar(&migrationType, "migration-type", "", "Migration type: cold, warm, or live (supersedes --warm flag)")
+	cmd.Flags().VarP(migrationTypeFlag, "migration-type", "m", "Migration type: cold, warm, or live")
 	cmd.Flags().StringVarP(&defaultTargetNetwork, "default-target-network", "N", "", "Default target network for network mapping. Use 'pod' for pod networking, or specify a NetworkAttachmentDefinition name")
 	cmd.Flags().StringVar(&defaultTargetStorageClass, "default-target-storage-class", "", "Default target storage class for storage mapping")
 
 	// Add completion for migration type flag
 	if err := cmd.RegisterFlagCompletionFunc("migration-type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"cold", "warm", "live"}, cobra.ShellCompDirectiveNoFileComp
+		return migrationTypeFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
 		panic(err)
 	}

@@ -20,7 +20,8 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	// Add Provider credential flags
 	var url, username, password, cacert, token string
 	var insecureSkipTLS bool
-	var vddkInitImage, sdkEndpoint string
+	var vddkInitImage string
+	sdkEndpointType := flags.NewSdkEndpointTypeFlag()
 
 	// OpenStack specific flags
 	var domainName, projectName, regionName string
@@ -53,12 +54,12 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 			}
 
 			return provider.Create(kubeConfigFlags, providerType.GetValue(), name, namespace, secret,
-				url, username, password, cacert, insecureSkipTLS, vddkInitImage, sdkEndpoint, token,
+				url, username, password, cacert, insecureSkipTLS, vddkInitImage, sdkEndpointType.GetValue(), token,
 				domainName, projectName, regionName)
 		},
 	}
 
-	cmd.Flags().Var(providerType, "type", "Provider type (openshift, vsphere, ovirt, openstack, ova)")
+	cmd.Flags().VarP(providerType, "type", "t", "Provider type (openshift, vsphere, ovirt, openstack, ova)")
 	cmd.Flags().StringVar(&secret, "secret", "", "Secret containing provider credentials")
 
 	// Provider credential flags
@@ -73,7 +74,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 
 	// VSphere specific flags
 	cmd.Flags().StringVar(&vddkInitImage, "vddk-init-image", vddkInitImage, "Virtual Disk Development Kit (VDDK) container init image path")
-	cmd.Flags().StringVar(&sdkEndpoint, "sdk-endpoint", "", "SDK endpoint type for vSphere provider (vcenter or esxi)")
+	cmd.Flags().Var(sdkEndpointType, "sdk-endpoint", "SDK endpoint type for vSphere provider (vcenter or esxi)")
 
 	// OpenStack specific flags
 	cmd.Flags().StringVar(&domainName, "provider-domain-name", "", "OpenStack domain name")
@@ -89,7 +90,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 
 	// Add completion for sdk-endpoint flag
 	if err := cmd.RegisterFlagCompletionFunc("sdk-endpoint", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"vcenter", "esxi"}, cobra.ShellCompDirectiveNoFileComp
+		return sdkEndpointType.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
 		panic(err)
 	}

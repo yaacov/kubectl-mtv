@@ -7,12 +7,13 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
+	"github.com/yaacov/kubectl-mtv/pkg/flags"
 	"github.com/yaacov/kubectl-mtv/pkg/provider"
 )
 
 // NewProviderCmd creates the get provider command
 func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
-	var outputFormat string
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var inventoryURL string
 
 	cmd := &cobra.Command{
@@ -42,15 +43,21 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalCon
 			} else {
 				logNamespaceOperation("Getting providers", namespace, config.GetAllNamespaces())
 			}
-			logOutputFormat(outputFormat)
+			logOutputFormat(outputFormatFlag.GetValue())
 
-			return provider.List(config.GetKubeConfigFlags(), namespace, inventoryURL, outputFormat, providerName)
+			return provider.List(config.GetKubeConfigFlags(), namespace, inventoryURL, outputFormatFlag.GetValue(), providerName)
 		},
 	}
 
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
-	addOutputFormatCompletion(cmd, "output")
+
+	// Add completion for output format flag
+	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

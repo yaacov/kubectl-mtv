@@ -13,20 +13,6 @@ type GlobalConfigGetter interface {
 	GetKubeConfigFlags() *genericclioptions.ConfigFlags
 }
 
-// getOutputFormatCompletions returns valid output format options for completion
-func getOutputFormatCompletions() []string {
-	return []string{"table", "json", "yaml"}
-}
-
-// addOutputFormatCompletion adds completion for output format flags
-func addOutputFormatCompletion(cmd *cobra.Command, flagName string) {
-	if err := cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return getOutputFormatCompletions(), cobra.ShellCompDirectiveNoFileComp
-	}); err != nil {
-		panic(err)
-	}
-}
-
 // logInfof logs formatted informational messages at verbosity level 1
 func logInfof(format string, args ...interface{}) {
 	klog.V(1).Infof(format, args...)

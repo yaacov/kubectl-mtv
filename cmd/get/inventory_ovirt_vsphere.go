@@ -5,13 +5,14 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
+	"github.com/yaacov/kubectl-mtv/pkg/flags"
 	"github.com/yaacov/kubectl-mtv/pkg/inventory"
 )
 
 // NewInventoryHostCmd creates the get inventory host command
 func NewInventoryHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
 	var inventoryURL string
-	var outputFormat string
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
 
@@ -27,21 +28,27 @@ func NewInventoryHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlob
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
 
 			logNamespaceOperation("Getting hosts from provider", namespace, config.GetAllNamespaces())
-			logOutputFormat(outputFormat)
+			logOutputFormat(outputFormatFlag.GetValue())
 
 			if inventoryURL == "" {
 				inventoryURL = client.DiscoverInventoryURL(config.GetKubeConfigFlags(), namespace)
 			}
 
-			return inventory.ListHosts(config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormat, query, watch)
+			return inventory.ListHosts(config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch)
 		},
 	}
 
 	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Inventory service URL")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
-	addOutputFormatCompletion(cmd, "output")
+
+	// Add completion for output format flag
+	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }
@@ -49,7 +56,7 @@ func NewInventoryHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlob
 // NewInventoryDataCenterCmd creates the get inventory datacenter command
 func NewInventoryDataCenterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
 	var inventoryURL string
-	var outputFormat string
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
 
@@ -65,21 +72,27 @@ func NewInventoryDataCenterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
 
 			logNamespaceOperation("Getting datacenters from provider", namespace, config.GetAllNamespaces())
-			logOutputFormat(outputFormat)
+			logOutputFormat(outputFormatFlag.GetValue())
 
 			if inventoryURL == "" {
 				inventoryURL = client.DiscoverInventoryURL(config.GetKubeConfigFlags(), namespace)
 			}
 
-			return inventory.ListDataCenters(config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormat, query, watch)
+			return inventory.ListDataCenters(config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch)
 		},
 	}
 
 	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Inventory service URL")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
-	addOutputFormatCompletion(cmd, "output")
+
+	// Add completion for output format flag
+	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }
@@ -87,7 +100,7 @@ func NewInventoryDataCenterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 // NewInventoryClusterCmd creates the get inventory cluster command
 func NewInventoryClusterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
 	var inventoryURL string
-	var outputFormat string
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
 
@@ -103,21 +116,27 @@ func NewInventoryClusterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getG
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
 
 			logNamespaceOperation("Getting clusters from provider", namespace, config.GetAllNamespaces())
-			logOutputFormat(outputFormat)
+			logOutputFormat(outputFormatFlag.GetValue())
 
 			if inventoryURL == "" {
 				inventoryURL = client.DiscoverInventoryURL(config.GetKubeConfigFlags(), namespace)
 			}
 
-			return inventory.ListClusters(config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormat, query, watch)
+			return inventory.ListClusters(config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch)
 		},
 	}
 
 	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Inventory service URL")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
-	addOutputFormatCompletion(cmd, "output")
+
+	// Add completion for output format flag
+	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }
@@ -125,7 +144,7 @@ func NewInventoryClusterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getG
 // NewInventoryDiskCmd creates the get inventory disk command
 func NewInventoryDiskCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
 	var inventoryURL string
-	var outputFormat string
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
 
@@ -141,21 +160,27 @@ func NewInventoryDiskCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlob
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
 
 			logNamespaceOperation("Getting disks from provider", namespace, config.GetAllNamespaces())
-			logOutputFormat(outputFormat)
+			logOutputFormat(outputFormatFlag.GetValue())
 
 			if inventoryURL == "" {
 				inventoryURL = client.DiscoverInventoryURL(config.GetKubeConfigFlags(), namespace)
 			}
 
-			return inventory.ListDisks(config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormat, query, watch)
+			return inventory.ListDisks(config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch)
 		},
 	}
 
 	cmd.Flags().StringVar(&inventoryURL, "inventory-url", "", "Inventory service URL")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
-	addOutputFormatCompletion(cmd, "output")
+
+	// Add completion for output format flag
+	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

@@ -5,12 +5,13 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
+	"github.com/yaacov/kubectl-mtv/pkg/flags"
 	"github.com/yaacov/kubectl-mtv/pkg/plan"
 )
 
 // NewPlanCmd creates the get plan command
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
-	var outputFormat string
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
 
 	cmd := &cobra.Command{
@@ -35,22 +36,28 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 			} else {
 				logNamespaceOperation("Getting plans", namespace, config.GetAllNamespaces())
 			}
-			logOutputFormat(outputFormat)
+			logOutputFormat(outputFormatFlag.GetValue())
 
-			return plan.List(config.GetKubeConfigFlags(), namespace, watch, outputFormat, planName)
+			return plan.List(config.GetKubeConfigFlags(), namespace, watch, outputFormatFlag.GetValue(), planName)
 		},
 	}
 
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
-	addOutputFormatCompletion(cmd, "output")
+
+	// Add completion for output format flag
+	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }
 
 // NewPlanVMsCmd creates the get plan-vms command
 func NewPlanVMsCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
-	var outputFormat string
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
 
 	cmd := &cobra.Command{
@@ -66,15 +73,21 @@ func NewPlanVMsCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConf
 
 			// Log the operation being performed
 			logNamespaceOperation("Getting plan VMs", namespace, config.GetAllNamespaces())
-			logOutputFormat(outputFormat)
+			logOutputFormat(outputFormatFlag.GetValue())
 
 			return plan.ListVMs(config.GetKubeConfigFlags(), name, namespace, watch)
 		},
 	}
 
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
-	addOutputFormatCompletion(cmd, "output")
+
+	// Add completion for output format flag
+	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }
