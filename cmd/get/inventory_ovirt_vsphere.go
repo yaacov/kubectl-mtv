@@ -4,9 +4,9 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/yaacov/kubectl-mtv/pkg/client"
-	"github.com/yaacov/kubectl-mtv/pkg/flags"
-	"github.com/yaacov/kubectl-mtv/pkg/inventory"
+	"github.com/yaacov/kubectl-mtv/pkg/commands/inventory"
+	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewInventoryHostCmd creates the get inventory host command

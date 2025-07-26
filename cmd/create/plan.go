@@ -13,9 +13,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/yaacov/kubectl-mtv/pkg/client"
-	"github.com/yaacov/kubectl-mtv/pkg/flags"
-	"github.com/yaacov/kubectl-mtv/pkg/plan"
+	"github.com/yaacov/kubectl-mtv/pkg/commands/plan"
+	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewPlanCmd creates the plan creation command

@@ -4,9 +4,9 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/yaacov/kubectl-mtv/pkg/client"
-	"github.com/yaacov/kubectl-mtv/pkg/flags"
-	"github.com/yaacov/kubectl-mtv/pkg/plan"
+	"github.com/yaacov/kubectl-mtv/pkg/commands/plan"
+	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewPlanCmd creates the get plan command

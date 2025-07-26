@@ -4,8 +4,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/yaacov/kubectl-mtv/pkg/client"
-	"github.com/yaacov/kubectl-mtv/pkg/mapping"
+	"github.com/yaacov/kubectl-mtv/pkg/commands/mapping"
+	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 
 // NewMappingCmd creates the mapping deletion command

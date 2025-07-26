@@ -10,8 +10,8 @@ import (
 	"gopkg.in/yaml.v3"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/yaacov/kubectl-mtv/pkg/client"
-	"github.com/yaacov/kubectl-mtv/pkg/plan"
+	"github.com/yaacov/kubectl-mtv/pkg/commands/plan"
+	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 
 // NewPlanCmd creates the plan cancellation command
