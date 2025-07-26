@@ -15,7 +15,6 @@ import (
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/provider"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
-	"github.com/yaacov/kubectl-mtv/pkg/util/mapping"
 )
 
 // parseStoragePairs parses storage pairs in format "source1:target-storage-class,source2:target-storage-class"
@@ -86,7 +85,7 @@ func createStorageMapping(configFlags *genericclioptions.ConfigFlags, name, name
 	}
 
 	if fromFile != "" {
-		return mapping.CreateMappingFromFile(dynamicClient, fromFile, namespace)
+		return CreateMappingFromFile(dynamicClient, fromFile, namespace)
 	}
 
 	// Parse storage pairs if provided

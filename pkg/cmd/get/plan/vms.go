@@ -12,7 +12,6 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/plan/status"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/output"
-	planutil "github.com/yaacov/kubectl-mtv/pkg/util/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/watch"
 )
 
@@ -71,7 +70,7 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 				rows = append(rows, []string{output.Yellow(vmName), output.Cyan(vmID)})
 			}
 
-			planutil.PrintTable(headers, rows, colWidths)
+			PrintTable(headers, rows, colWidths)
 		}
 
 		return nil
@@ -169,7 +168,7 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 				})
 			}
 
-			planutil.PrintTable(headers, rows, colWidths)
+			PrintTable(headers, rows, colWidths)
 		}
 	}
 
