@@ -9,10 +9,10 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/dynamic"
 
+	planutil "github.com/yaacov/kubectl-mtv/pkg/cmd/get/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/plan/status"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/output"
-	planutil "github.com/yaacov/kubectl-mtv/pkg/util/plan"
 )
 
 // Describe describes a migration plan

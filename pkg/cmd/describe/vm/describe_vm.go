@@ -9,10 +9,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	planutil "github.com/yaacov/kubectl-mtv/pkg/cmd/get/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/plan/status"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/output"
-	planutil "github.com/yaacov/kubectl-mtv/pkg/util/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/watch"
 )
 
@@ -170,9 +170,10 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 			message, _, _ := unstructured.NestedString(condition, "message")
 
 			// Apply color to status
-			if status == "True" {
+			switch status {
+			case "True":
 				status = output.Green(status)
-			} else if status == "False" {
+			case "False":
 				status = output.Red(status)
 			}
 

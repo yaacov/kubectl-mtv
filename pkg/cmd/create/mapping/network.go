@@ -14,7 +14,6 @@ import (
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/provider"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
-	"github.com/yaacov/kubectl-mtv/pkg/util/mapping"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -100,7 +99,7 @@ func createNetworkMapping(configFlags *genericclioptions.ConfigFlags, name, name
 	}
 
 	if fromFile != "" {
-		return mapping.CreateMappingFromFile(dynamicClient, fromFile, namespace)
+		return CreateMappingFromFile(dynamicClient, fromFile, namespace)
 	}
 
 	// Parse network pairs if provided
