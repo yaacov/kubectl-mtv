@@ -15,8 +15,6 @@ from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
 # Hardcoded VM names from OVA inventory data
 OVA_TEST_VMS = [
     "centos44",
-    "test-vm-1", 
-    "test-vm-2"
 ]
 
 
