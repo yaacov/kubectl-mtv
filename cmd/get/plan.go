@@ -6,6 +6,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
@@ -15,11 +16,12 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "plan [NAME]",
-		Short:        "Get migration plans",
-		Long:         `Get migration plans`,
-		Args:         cobra.MaximumNArgs(1),
-		SilenceUsage: true,
+		Use:               "plan [NAME]",
+		Short:             "Get migration plans",
+		Long:              `Get migration plans`,
+		Args:              cobra.MaximumNArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := getGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
@@ -61,11 +63,12 @@ func NewPlanVMsCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConf
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "plan-vms NAME",
-		Short:        "Get VMs status in a migration plan",
-		Long:         `Get VMs status in a migration plan`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "plan-vms NAME",
+		Short:             "Get VMs status in a migration plan",
+		Long:              `Get VMs status in a migration plan`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 			config := getGlobalConfig()

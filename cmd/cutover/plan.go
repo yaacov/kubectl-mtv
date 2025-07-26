@@ -9,6 +9,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/cutover/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 )
 
 // NewPlanCmd creates the plan cutover command
@@ -16,10 +17,11 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var cutoverTimeStr string
 
 	cmd := &cobra.Command{
-		Use:          "plan NAME [NAME...]",
-		Short:        "Set the cutover time for one or more warm migration plans",
-		Args:         cobra.MinimumNArgs(1),
-		SilenceUsage: true,
+		Use:               "plan NAME [NAME...]",
+		Short:             "Set the cutover time for one or more warm migration plans",
+		Args:              cobra.MinimumNArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)

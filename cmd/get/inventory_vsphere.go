@@ -6,6 +6,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
@@ -17,11 +18,12 @@ func NewInventoryDatastoreCmd(kubeConfigFlags *genericclioptions.ConfigFlags, ge
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "datastore PROVIDER",
-		Short:        "Get datastores from a provider (vsphere)",
-		Long:         `Get datastores from a provider (vsphere)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "datastore PROVIDER",
+		Short:             "Get datastores from a provider (vsphere)",
+		Long:              `Get datastores from a provider (vsphere)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -61,11 +63,12 @@ func NewInventoryResourcePoolCmd(kubeConfigFlags *genericclioptions.ConfigFlags,
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "resource-pool PROVIDER",
-		Short:        "Get resource pools from a provider (vsphere)",
-		Long:         `Get resource pools from a provider (vsphere)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "resource-pool PROVIDER",
+		Short:             "Get resource pools from a provider (vsphere)",
+		Long:              `Get resource pools from a provider (vsphere)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -105,11 +108,12 @@ func NewInventoryFolderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGl
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "folder PROVIDER",
-		Short:        "Get folders from a provider (vsphere)",
-		Long:         `Get folders from a provider (vsphere)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "folder PROVIDER",
+		Short:             "Get folders from a provider (vsphere)",
+		Long:              `Get folders from a provider (vsphere)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()

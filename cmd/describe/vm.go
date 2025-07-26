@@ -8,6 +8,7 @@ import (
 
 	plan "github.com/yaacov/kubectl-mtv/pkg/cmd/describe/vm"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 )
 
 // NewVMCmd creates the VM description command
@@ -16,10 +17,11 @@ func NewVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var vmName string
 
 	cmd := &cobra.Command{
-		Use:          "plan-vm NAME",
-		Short:        "Describe VM status in a migration plan",
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "plan-vm NAME",
+		Short:             "Describe VM status in a migration plan",
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get plan name from positional argument
 			name := args[0]

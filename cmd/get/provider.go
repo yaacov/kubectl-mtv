@@ -8,6 +8,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/provider"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
@@ -17,11 +18,12 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalCon
 	var inventoryURL string
 
 	cmd := &cobra.Command{
-		Use:          "provider [NAME]",
-		Short:        "Get providers",
-		Long:         `Get providers`,
-		Args:         cobra.MaximumNArgs(1),
-		SilenceUsage: true,
+		Use:               "provider [NAME]",
+		Short:             "Get providers",
+		Long:              `Get providers`,
+		Args:              cobra.MaximumNArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := getGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())

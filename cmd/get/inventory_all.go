@@ -6,6 +6,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
@@ -17,11 +18,12 @@ func NewInventoryNetworkCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getG
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "network PROVIDER",
-		Short:        "Get networks from a provider (ovirt, vsphere, openstack, ova, openshift)",
-		Long:         `Get networks from a provider (ovirt, vsphere, openstack, ova, openshift)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "network PROVIDER",
+		Short:             "Get networks from a provider (ovirt, vsphere, openstack, ova, openshift)",
+		Long:              `Get networks from a provider (ovirt, vsphere, openstack, ova, openshift)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -61,11 +63,12 @@ func NewInventoryStorageCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getG
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "storage PROVIDER",
-		Short:        "Get storage from a provider (ovirt, vsphere, openstack, ova, openshift)",
-		Long:         `Get storage from a provider (ovirt, vsphere, openstack, ova, openshift)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "storage PROVIDER",
+		Short:             "Get storage from a provider (ovirt, vsphere, openstack, ova, openshift)",
+		Long:              `Get storage from a provider (ovirt, vsphere, openstack, ova, openshift)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -106,11 +109,12 @@ func NewInventoryVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobal
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "vm PROVIDER",
-		Short:        "Get VMs from a provider (ovirt, vsphere, openstack, ova, openshift)",
-		Long:         `Get VMs from a provider (ovirt, vsphere, openstack, ova, openshift)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "vm PROVIDER",
+		Short:             "Get VMs from a provider (ovirt, vsphere, openstack, ova, openshift)",
+		Long:              `Get VMs from a provider (ovirt, vsphere, openstack, ova, openshift)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()

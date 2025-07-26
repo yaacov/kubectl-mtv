@@ -6,15 +6,17 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/describe/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 )
 
 // NewPlanCmd creates the plan description command
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "plan NAME",
-		Short:        "Describe a migration plan",
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "plan NAME",
+		Short:             "Describe a migration plan",
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get name from positional argument
 			name := args[0]

@@ -6,15 +6,17 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/delete/provider"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 )
 
 // NewProviderCmd creates the provider deletion command
 func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "provider NAME [NAME...]",
-		Short:        "Delete one or more providers",
-		Args:         cobra.MinimumNArgs(1),
-		SilenceUsage: true,
+		Use:               "provider NAME [NAME...]",
+		Short:             "Delete one or more providers",
+		Args:              cobra.MinimumNArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
