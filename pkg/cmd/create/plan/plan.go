@@ -80,11 +80,10 @@ func Create(opts CreatePlanOptions) error {
 		planVMNames = append(planVMNames, planVM.Name)
 	}
 
-	// If network map is not provided, create a default one
+	// If network map is not provided, create a default network map
 	if opts.NetworkMapping == "" {
-		networkMapPrefix := opts.Name
-		networkMapName, err := network.CreateDefaultNetworkMap(network.CreateDefaultNetworkMapOptions{
-			Name:                 networkMapPrefix,
+		networkMapName, err := network.CreateNetworkMap(network.NetworkMapperOptions{
+			Name:                 opts.Name,
 			Namespace:            opts.Namespace,
 			SourceProvider:       opts.SourceProvider,
 			TargetProvider:       opts.TargetProvider,
@@ -100,11 +99,10 @@ func Create(opts CreatePlanOptions) error {
 		createdNetworkMap = true
 	}
 
-	// If storage map is not provided, create a default one
+	// If storage map is not provided, create a default storage map
 	if opts.StorageMapping == "" {
-		storageMapPrefix := opts.Name
-		storageMapName, err := storage.CreateDefaultStorageMap(storage.CreateDefaultStorageMapOptions{
-			Name:                      storageMapPrefix,
+		storageMapName, err := storage.CreateStorageMap(storage.StorageMapperOptions{
+			Name:                      opts.Name,
 			Namespace:                 opts.Namespace,
 			SourceProvider:            opts.SourceProvider,
 			TargetProvider:            opts.TargetProvider,
