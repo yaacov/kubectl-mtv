@@ -1,0 +1,85 @@
+package get
+
+import (
+	"github.com/spf13/cobra"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/klog/v2"
+)
+
+// GlobalConfigGetter defines the interface for getting global configuration
+type GlobalConfigGetter interface {
+	GetVerbosity() int
+	GetAllNamespaces() bool
+	GetKubeConfigFlags() *genericclioptions.ConfigFlags
+}
+
+// getOutputFormatCompletions returns valid output format options for completion
+func getOutputFormatCompletions() []string {
+	return []string{"table", "json", "yaml"}
+}
+
+// addOutputFormatCompletion adds completion for output format flags
+func addOutputFormatCompletion(cmd *cobra.Command, flagName string) {
+	if err := cmd.RegisterFlagCompletionFunc(flagName, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return getOutputFormatCompletions(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+}
+
+// logInfof logs formatted informational messages at verbosity level 1
+func logInfof(format string, args ...interface{}) {
+	klog.V(1).Infof(format, args...)
+}
+
+// logDebugf logs formatted debug messages at verbosity level 2
+func logDebugf(format string, args ...interface{}) {
+	klog.V(2).Infof(format, args...)
+}
+
+// logNamespaceOperation logs namespace-specific operations with consistent formatting
+func logNamespaceOperation(operation string, namespace string, allNamespaces bool) {
+	if allNamespaces {
+		logInfof("%s from all namespaces", operation)
+	} else {
+		logInfof("%s from namespace: %s", operation, namespace)
+	}
+}
+
+// logOutputFormat logs the output format being used
+func logOutputFormat(format string) {
+	logDebugf("Output format: %s", format)
+}
+
+// NewGetCmd creates the get command with all its subcommands
+func NewGetCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          "get",
+		Short:        "Get resources",
+		Long:         `Get various MTV resources including plans, providers, mappings, and inventory`,
+		SilenceUsage: true,
+	}
+
+	// Add plan subcommand with plural alias
+	planCmd := NewPlanCmd(kubeConfigFlags, getGlobalConfig)
+	planCmd.Aliases = []string{"plans"}
+	cmd.AddCommand(planCmd)
+
+	// Add plan-vms subcommand
+	cmd.AddCommand(NewPlanVMsCmd(kubeConfigFlags, getGlobalConfig))
+
+	// Add provider subcommand with plural alias
+	providerCmd := NewProviderCmd(kubeConfigFlags, getGlobalConfig)
+	providerCmd.Aliases = []string{"providers"}
+	cmd.AddCommand(providerCmd)
+
+	// Add mapping subcommand with plural alias
+	mappingCmd := NewMappingCmd(kubeConfigFlags, getGlobalConfig)
+	mappingCmd.Aliases = []string{"mappings"}
+	cmd.AddCommand(mappingCmd)
+
+	// Add inventory subcommand
+	cmd.AddCommand(NewInventoryCmd(kubeConfigFlags, getGlobalConfig))
+
+	return cmd
+}

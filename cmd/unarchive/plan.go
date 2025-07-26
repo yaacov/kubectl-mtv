@@ -1,24 +1,15 @@
-package cmd
+package unarchive
 
 import (
 	"github.com/spf13/cobra"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+
 	"github.com/yaacov/kubectl-mtv/pkg/client"
 	"github.com/yaacov/kubectl-mtv/pkg/plan"
 )
 
-func newUnArchiveCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:          "unarchive",
-		Short:        "Un-archive resources",
-		Long:         `Un-archive various MTV resources`,
-		SilenceUsage: true,
-	}
-
-	cmd.AddCommand(newUnArchivePlanCmd())
-	return cmd
-}
-
-func newUnArchivePlanCmd() *cobra.Command {
+// NewPlanCmd creates the plan unarchive command
+func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "plan NAME [NAME...]",
 		Short:        "Un-archive one or more migration plans",
