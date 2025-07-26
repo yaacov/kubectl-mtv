@@ -9,6 +9,7 @@ import (
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	planv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan"
 	"github.com/spf13/cobra"
+	"github.com/yaacov/karl-interpreter/pkg/karl"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -17,6 +18,31 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
+
+// parseKeyValuePairs parses a slice of strings containing comma-separated key=value pairs
+// and returns a map[string]string with trimmed keys and values
+func parseKeyValuePairs(pairs []string, fieldName string) (map[string]string, error) {
+	result := make(map[string]string)
+	for _, pairGroup := range pairs {
+		// Split by comma to handle multiple pairs in one flag value
+		keyValuePairs := strings.Split(pairGroup, ",")
+		for _, pair := range keyValuePairs {
+			pair = strings.TrimSpace(pair)
+			if pair == "" {
+				continue
+			}
+			parts := strings.SplitN(pair, "=", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				value := strings.TrimSpace(parts[1])
+				result[key] = value
+			} else {
+				return nil, fmt.Errorf("invalid %s: %s", fieldName, pair)
+			}
+		}
+	}
+	return result, nil
+}
 
 // NewPlanCmd creates the plan creation command
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
@@ -31,6 +57,10 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var transferNetwork string
 	var installLegacyDrivers string // "true", "false", or "" for nil
 	migrationTypeFlag := flags.NewMigrationTypeFlag()
+	var targetLabels []string
+	var targetNodeSelector []string
+	var useCompatibilityMode bool
+	var targetAffinity string
 
 	cmd := &cobra.Command{
 		Use:          "plan NAME",
@@ -114,6 +144,51 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				planSpec.Type = migrationTypeFlag.GetValue()
 			}
 
+			// Handle target labels (convert from key=value slice to map)
+			if len(targetLabels) > 0 {
+				labels, err := parseKeyValuePairs(targetLabels, "target label")
+				if err != nil {
+					return err
+				}
+				planSpec.TargetLabels = labels
+			}
+
+			// Handle target node selector (convert from key=value slice to map)
+			if len(targetNodeSelector) > 0 {
+				nodeSelector, err := parseKeyValuePairs(targetNodeSelector, "target node selector")
+				if err != nil {
+					return err
+				}
+				planSpec.TargetNodeSelector = nodeSelector
+			}
+
+			// Handle target affinity (parse KARL rule)
+			if targetAffinity != "" {
+				interpreter := karl.NewKARLInterpreter()
+				err := interpreter.Parse(targetAffinity)
+				if err != nil {
+					return fmt.Errorf("failed to parse target affinity KARL rule: %v", err)
+				}
+
+				affinity, err := interpreter.ToAffinity()
+				if err != nil {
+					return fmt.Errorf("failed to convert KARL rule to affinity: %v", err)
+				}
+				planSpec.TargetAffinity = affinity
+			}
+
+			// Handle migration type
+			if migrationTypeFlag.GetValue() == "" {
+				if planSpec.Warm {
+					return fmt.Errorf("setting --warm flag is not supported when migration type is specified")
+				}
+
+				planSpec.Type = migrationTypeFlag.GetValue()
+			}
+
+			// Handle use compatibility mode
+			planSpec.UseCompatibilityMode = useCompatibilityMode
+
 			// Set VMs in the PlanSpec
 			planSpec.VMs = vmList
 
@@ -158,9 +233,14 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().BoolVar(&planSpec.DeleteGuestConversionPod, "delete-guest-conversion-pod", false, "Delete guest conversion pod after successful migration")
 	cmd.Flags().BoolVar(&planSpec.SkipGuestConversion, "skip-guest-conversion", false, "Skip the guest conversion process")
 	cmd.Flags().StringVar(&installLegacyDrivers, "install-legacy-drivers", "", "Install legacy Windows drivers (true/false, leave empty for auto-detection)")
-	cmd.Flags().VarP(migrationTypeFlag, "migration-type", "m", "Migration type: cold, warm, or live")
+	cmd.Flags().VarP(migrationTypeFlag, "migration-type", "m", "Migration type: cold, warm, or live (supersedes --warm flag)")
 	cmd.Flags().StringVarP(&defaultTargetNetwork, "default-target-network", "N", "", "Default target network for network mapping. Use 'pod' for pod networking, or specify a NetworkAttachmentDefinition name")
 	cmd.Flags().StringVar(&defaultTargetStorageClass, "default-target-storage-class", "", "Default target storage class for storage mapping")
+	cmd.Flags().BoolVar(&useCompatibilityMode, "use-compatibility-mode", true, "Use compatibility devices (SATA bus, E1000E NIC) when skipGuestConversion is true to ensure bootability")
+	cmd.Flags().StringSliceVarP(&targetLabels, "target-labels", "L", nil, "Target labels to be added to the VM (e.g., key1=value1,key2=value2)")
+	cmd.Flags().StringSliceVar(&targetNodeSelector, "target-node-selector", nil, "Target node selector to constrain VM scheduling (e.g., key1=value1,key2=value2)")
+	cmd.Flags().BoolVar(&planSpec.Warm, "warm", false, "Enable warm migration (can also be set with --migration-type=warm)")
+	cmd.Flags().StringVar(&targetAffinity, "target-affinity", "", "Target affinity to constrain VM scheduling using KARL syntax (e.g. 'REQUIRE pods(app=database) on node')")
 
 	// Add completion for migration type flag
 	if err := cmd.RegisterFlagCompletionFunc("migration-type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
