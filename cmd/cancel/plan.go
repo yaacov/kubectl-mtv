@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/yaacov/kubectl-mtv/pkg/commands/plan"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/cancel/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 

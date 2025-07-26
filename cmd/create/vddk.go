@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/yaacov/kubectl-mtv/pkg/commands/vddk"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/vddk"
 )
 
 // NewVddkCmd creates the VDDK image creation command
