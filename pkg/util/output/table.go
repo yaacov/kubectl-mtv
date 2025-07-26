@@ -17,7 +17,18 @@ func PrintTableWithQuery(data interface{}, defaultHeaders []Header, queryOpts *q
 	items, ok := data.([]map[string]interface{})
 	if !ok {
 		if item, ok := data.(map[string]interface{}); ok {
+			// Handle single item map
 			items = []map[string]interface{}{item}
+		} else if slice, ok := data.([]interface{}); ok {
+			// Handle []interface{} from JSON unmarshaling
+			items = make([]map[string]interface{}, len(slice))
+			for i, item := range slice {
+				if mapItem, ok := item.(map[string]interface{}); ok {
+					items[i] = mapItem
+				} else {
+					return fmt.Errorf("unsupported data type for table output: slice contains non-map elements")
+				}
+			}
 		} else {
 			return fmt.Errorf("unsupported data type for table output")
 		}
