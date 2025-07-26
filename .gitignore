@@ -188,3 +188,4 @@ cython_debug/
 tests/e2e/.env
 tests/e2e/venv/
 tests/e2e/reports/
+inventory_json_dump
