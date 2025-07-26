@@ -48,11 +48,10 @@ func (f *OpenShiftNetworkFetcher) FetchSourceNetworks(configFlags *genericcliopt
 	networkIDToNetwork := make(map[string]map[string]interface{})
 	for _, item := range networksArray {
 		if network, ok := item.(map[string]interface{}); ok {
-			// For NADs, we use name as both name and ID since they don't have separate IDs
-			if networkName, ok := network["name"].(string); ok {
-				if networkNamespace, ok := network["namespace"].(string); ok {
-					// Use namespace/name format as unique identifier
-					networkID := fmt.Sprintf("%s/%s", networkNamespace, networkName)
+			// Use the actual UUID as the ID
+			if networkID, ok := network["id"].(string); ok {
+				if networkName, ok := network["name"].(string); ok {
+					// Map network name to the actual UUID
 					networkNameToID[networkName] = networkID
 					networkIDToNetwork[networkID] = network
 				}

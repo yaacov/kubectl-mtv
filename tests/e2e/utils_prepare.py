@@ -1,11 +1,27 @@
 import tempfile
 import os
 import yaml
+from .utils import wait_for_provider_ready
 
 def prepare_namespace_for_testing(context):
     """
     Prepare the namespace for testing by creating test artifacts.
     """
+
+    # Create OpenShift target provider for plan tests
+    target_provider_name = "test-openshift-target"
+    
+    # Create a simple OpenShift provider using current cluster context
+    create_cmd = f"create provider {target_provider_name} --type openshift"
+    
+    # Create provider
+    result = context.run_mtv_command(create_cmd)
+    if result.returncode == 0:
+        # Track for cleanup
+        context.track_resource("provider", target_provider_name)
+        
+        # Wait for provider to be ready
+        wait_for_provider_ready(context, target_provider_name)
 
     # Create two NetworkAttachmentDefinitions in the test namespace
     nad_names = ["test-nad-1", "test-nad-2"]

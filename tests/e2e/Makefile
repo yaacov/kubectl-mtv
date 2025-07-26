@@ -29,7 +29,8 @@ help:
 	@echo ""
 	@echo "Core Test Types:"
 	@echo "  test-create-providers - Run provider creation tests"
-	@echo "  test-get-inventory - Run inventory retrieval tests"
+	@echo "  test-create-plans     - Run plan creation tests"
+	@echo "  test-get-inventory    - Run inventory retrieval tests"
 	@echo ""
 	@echo "Provider-Specific Tests:"
 	@echo "  test-openshift - Run OpenShift provider tests"
@@ -90,6 +91,12 @@ test-get: setup check-binary
 test-create-providers: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
 	$(PYTEST) -v -m "create and providers"
+
+# Run plan creation tests
+.PHONY: test-create-plans
+test-create-plans: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) create/plan/ -v -m "create and plan"
 
 # Run inventory retrieval tests
 .PHONY: test-get-inventory
