@@ -8,12 +8,13 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
+	"github.com/yaacov/kubectl-mtv/pkg/flags"
 	"github.com/yaacov/kubectl-mtv/pkg/mapping"
 )
 
 // NewMappingCmd creates the mapping creation command
 func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
-	var mappingType string
+	mappingTypeFlag := flags.NewMappingTypeFlag()
 	var sourceProvider, targetProvider string
 	var fromFile string
 	var networkPairs string
@@ -39,20 +40,20 @@ func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comman
 			}
 
 			var err error
-			switch mappingType {
+			switch mappingTypeFlag.GetValue() {
 			case "network":
 				err = mapping.CreateNetwork(kubeConfigFlags, name, namespace, sourceProvider, targetProvider, fromFile, networkPairs, inventoryURL)
 			case "storage":
 				err = mapping.CreateStorage(kubeConfigFlags, name, namespace, sourceProvider, targetProvider, fromFile, storagePairs, inventoryURL)
 			default:
-				err = fmt.Errorf("unsupported mapping type: %s. Use 'network' or 'storage'", mappingType)
+				err = fmt.Errorf("unsupported mapping type: %s. Use 'network' or 'storage'", mappingTypeFlag.GetValue())
 			}
 
 			return err
 		},
 	}
 
-	cmd.Flags().StringVarP(&mappingType, "type", "t", "", "Mapping type (network, storage)")
+	cmd.Flags().VarP(mappingTypeFlag, "type", "t", "Mapping type (network, storage)")
 	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
 	cmd.Flags().StringVarP(&targetProvider, "target", "T", "", "Target provider name")
 	cmd.Flags().StringVarP(&fromFile, "from-file", "f", "", "Create mapping from YAML/JSON file")
@@ -62,7 +63,7 @@ func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comman
 
 	// Add completion for mapping type flag
 	if err := cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"network", "storage"}, cobra.ShellCompDirectiveNoFileComp
+		return mappingTypeFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
 		panic(err)
 	}

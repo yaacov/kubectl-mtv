@@ -5,13 +5,14 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/client"
+	"github.com/yaacov/kubectl-mtv/pkg/flags"
 	"github.com/yaacov/kubectl-mtv/pkg/mapping"
 )
 
 // NewMappingCmd creates the get mapping command
 func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
-	var mappingType string
-	var outputFormat string
+	mappingTypeFlag := flags.NewMappingTypeFlag()
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 
 	cmd := &cobra.Command{
 		Use:          "mapping [NAME]",
@@ -35,19 +36,25 @@ func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConf
 			} else {
 				logNamespaceOperation("Getting mappings", namespace, config.GetAllNamespaces())
 			}
-			logOutputFormat(outputFormat)
+			logOutputFormat(outputFormatFlag.GetValue())
 
-			return mapping.List(config.GetKubeConfigFlags(), mappingType, namespace, outputFormat, mappingName)
+			return mapping.List(config.GetKubeConfigFlags(), mappingTypeFlag.GetValue(), namespace, outputFormatFlag.GetValue(), mappingName)
 		},
 	}
 
-	cmd.Flags().StringVarP(&mappingType, "type", "t", "network", "Mapping type (network, storage)")
-	cmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format (table, json, yaml)")
-	addOutputFormatCompletion(cmd, "output")
+	cmd.Flags().VarP(mappingTypeFlag, "type", "t", "Mapping type (network, storage)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 
 	// Add completion for mapping type flag
 	if err := cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"network", "storage"}, cobra.ShellCompDirectiveNoFileComp
+		return mappingTypeFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	// Add completion for output format flag
+	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
 		panic(err)
 	}
