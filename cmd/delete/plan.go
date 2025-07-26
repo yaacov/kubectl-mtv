@@ -6,15 +6,17 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/delete/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 )
 
 // NewPlanCmd creates the plan deletion command
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "plan NAME [NAME...]",
-		Short:        "Delete one or more migration plans",
-		Args:         cobra.MinimumNArgs(1),
-		SilenceUsage: true,
+		Use:               "plan NAME [NAME...]",
+		Short:             "Delete one or more migration plans",
+		Args:              cobra.MinimumNArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)

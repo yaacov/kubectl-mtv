@@ -6,6 +6,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/mapping"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
@@ -20,6 +21,11 @@ func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConf
 		Long:         `Get network and storage mappings`,
 		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			// Get the mapping type from the flag
+			mappingType := mappingTypeFlag.GetValue()
+			return completion.MappingNameCompletion(kubeConfigFlags, mappingType)(cmd, args, toComplete)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config := getGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())

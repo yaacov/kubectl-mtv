@@ -12,6 +12,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/cancel/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 )
 
 // NewPlanCmd creates the plan cancellation command
@@ -19,10 +20,11 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var vmNamesOrFile string
 
 	cmd := &cobra.Command{
-		Use:          "plan NAME",
-		Short:        "Cancel specific VMs in a running migration plan",
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "plan NAME",
+		Short:             "Cancel specific VMs in a running migration plan",
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get plan name from positional argument
 			planName := args[0]

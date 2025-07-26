@@ -6,6 +6,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
@@ -17,11 +18,12 @@ func NewInventoryHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlob
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "host PROVIDER",
-		Short:        "Get hosts from a provider (ovirt, vsphere)",
-		Long:         `Get hosts from a provider (ovirt, vsphere)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "host PROVIDER",
+		Short:             "Get hosts from a provider (ovirt, vsphere)",
+		Long:              `Get hosts from a provider (ovirt, vsphere)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -61,11 +63,12 @@ func NewInventoryDataCenterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "datacenter PROVIDER",
-		Short:        "Get datacenters from a provider (ovirt, vsphere)",
-		Long:         `Get datacenters from a provider (ovirt, vsphere)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "datacenter PROVIDER",
+		Short:             "Get datacenters from a provider (ovirt, vsphere)",
+		Long:              `Get datacenters from a provider (ovirt, vsphere)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -105,11 +108,12 @@ func NewInventoryClusterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getG
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "cluster PROVIDER",
-		Short:        "Get clusters from a provider (ovirt, vsphere)",
-		Long:         `Get clusters from a provider (ovirt, vsphere)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "cluster PROVIDER",
+		Short:             "Get clusters from a provider (ovirt, vsphere)",
+		Long:              `Get clusters from a provider (ovirt, vsphere)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -149,11 +153,12 @@ func NewInventoryDiskCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlob
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "disk PROVIDER",
-		Short:        "Get disks from a provider (ovirt, vsphere)",
-		Long:         `Get disks from a provider (ovirt, vsphere)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "disk PROVIDER",
+		Short:             "Get disks from a provider (ovirt, vsphere)",
+		Long:              `Get disks from a provider (ovirt, vsphere)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()

@@ -6,6 +6,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
@@ -17,11 +18,12 @@ func NewInventoryDiskProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, 
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "disk-profile PROVIDER",
-		Short:        "Get disk profiles from a provider (ovirt)",
-		Long:         `Get disk profiles from a provider (ovirt)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "disk-profile PROVIDER",
+		Short:             "Get disk profiles from a provider (ovirt)",
+		Long:              `Get disk profiles from a provider (ovirt)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -61,11 +63,12 @@ func NewInventoryNICProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "nic-profile PROVIDER",
-		Short:        "Get NIC profiles from a provider (ovirt)",
-		Long:         `Get NIC profiles from a provider (ovirt)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "nic-profile PROVIDER",
+		Short:             "Get NIC profiles from a provider (ovirt)",
+		Long:              `Get NIC profiles from a provider (ovirt)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()

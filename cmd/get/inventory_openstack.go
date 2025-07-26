@@ -6,6 +6,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
@@ -17,11 +18,12 @@ func NewInventoryInstanceCmd(kubeConfigFlags *genericclioptions.ConfigFlags, get
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "instance PROVIDER",
-		Short:        "Get instances from a provider (openstack)",
-		Long:         `Get instances from a provider (openstack)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "instance PROVIDER",
+		Short:             "Get instances from a provider (openstack)",
+		Long:              `Get instances from a provider (openstack)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -61,11 +63,12 @@ func NewInventoryImageCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlo
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "image PROVIDER",
-		Short:        "Get images from a provider (openstack)",
-		Long:         `Get images from a provider (openstack)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "image PROVIDER",
+		Short:             "Get images from a provider (openstack)",
+		Long:              `Get images from a provider (openstack)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -105,11 +108,12 @@ func NewInventoryFlavorCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGl
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "flavor PROVIDER",
-		Short:        "Get flavors from a provider (openstack)",
-		Long:         `Get flavors from a provider (openstack)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "flavor PROVIDER",
+		Short:             "Get flavors from a provider (openstack)",
+		Long:              `Get flavors from a provider (openstack)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -149,11 +153,12 @@ func NewInventoryProjectCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getG
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "project PROVIDER",
-		Short:        "Get projects from a provider (openstack)",
-		Long:         `Get projects from a provider (openstack)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "project PROVIDER",
+		Short:             "Get projects from a provider (openstack)",
+		Long:              `Get projects from a provider (openstack)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()

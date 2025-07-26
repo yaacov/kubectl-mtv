@@ -6,6 +6,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
@@ -17,11 +18,12 @@ func NewInventoryNamespaceCmd(kubeConfigFlags *genericclioptions.ConfigFlags, ge
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "namespace PROVIDER",
-		Short:        "Get namespaces from a provider (openshift, openstack)",
-		Long:         `Get namespaces from a provider (openshift, openstack)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "namespace PROVIDER",
+		Short:             "Get namespaces from a provider (openshift)",
+		Long:              `Get namespaces from a provider (openshift)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -61,11 +63,12 @@ func NewInventoryPVCCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGloba
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "pvc PROVIDER",
-		Short:        "Get PVCs from a provider (openshift)",
-		Long:         `Get PVCs from a provider (openshift)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "pvc PROVIDER",
+		Short:             "Get PVCs from a provider (openshift)",
+		Long:              `Get PVCs from a provider (openshift)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
@@ -97,7 +100,7 @@ func NewInventoryPVCCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGloba
 	return cmd
 }
 
-// NewInventoryDataVolumeCmd creates the get inventory datavolume command
+// NewInventoryDataVolumeCmd creates the get inventory data-volume command
 func NewInventoryDataVolumeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
 	var inventoryURL string
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
@@ -105,11 +108,12 @@ func NewInventoryDataVolumeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:          "datavolume PROVIDER",
-		Short:        "Get data volumes from a provider (openshift)",
-		Long:         `Get data volumes from a provider (openshift)`,
-		Args:         cobra.ExactArgs(1),
-		SilenceUsage: true,
+		Use:               "data-volume PROVIDER",
+		Short:             "Get data volumes from a provider (openshift)",
+		Long:              `Get data volumes from a provider (openshift)`,
+		Args:              cobra.ExactArgs(1),
+		SilenceUsage:      true,
+		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			provider := args[0]
 			config := getGlobalConfig()
