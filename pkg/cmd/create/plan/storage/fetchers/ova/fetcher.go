@@ -32,7 +32,7 @@ func (f *OVAStorageFetcher) FetchSourceStorages(configFlags *genericclioptions.C
 	}
 
 	// Fetch storage inventory first to create ID-to-storage mapping
-	storageInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "storage?detail=4")
+	storageInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "storages?detail=4")
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch storage inventory: %v", err)
 	}

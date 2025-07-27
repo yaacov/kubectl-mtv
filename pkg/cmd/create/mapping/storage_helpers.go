@@ -81,6 +81,13 @@ func resolveOvirtStorageNameToID(configFlags *genericclioptions.ConfigFlags, inv
 
 // resolveOpenStackStorageNameToID resolves storage name for OpenStack provider
 func resolveOpenStackStorageNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string) (ref.Ref, error) {
+	// Handle 'cinder' as a special case - return ref with only name
+	if storageName == "cinder" {
+		return ref.Ref{
+			Name: storageName,
+		}, nil
+	}
+
 	// Fetch storage types from OpenStack
 	storageInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "volumetypes?detail=4")
 	if err != nil {
@@ -113,6 +120,40 @@ func resolveOpenStackStorageNameToID(configFlags *genericclioptions.ConfigFlags,
 	return ref.Ref{}, fmt.Errorf("storage type '%s' not found in OpenStack provider inventory", storageName)
 }
 
+// resolveOVAStorageNameToID resolves storage name for OVA provider
+func resolveOVAStorageNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string) (ref.Ref, error) {
+	// Fetch storage from OVA
+	storageInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "storages?detail=4")
+	if err != nil {
+		return ref.Ref{}, fmt.Errorf("failed to fetch storage inventory: %v", err)
+	}
+
+	storageArray, ok := storageInventory.([]interface{})
+	if !ok {
+		return ref.Ref{}, fmt.Errorf("unexpected data format: expected array for storage inventory")
+	}
+
+	// Search for the storage by name
+	for _, item := range storageArray {
+		storage, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		name, _ := storage["name"].(string)
+		id, _ := storage["id"].(string)
+
+		if name == storageName {
+			return ref.Ref{
+				Name: name,
+				ID:   id,
+			}, nil
+		}
+	}
+
+	return ref.Ref{}, fmt.Errorf("storage '%s' not found in OVA provider inventory", storageName)
+}
+
 // resolveStorageNameToID resolves a storage name to its ref.Ref by querying the provider inventory
 func resolveStorageNameToID(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL, storageName string) (ref.Ref, error) {
 	// Get source provider
@@ -141,15 +182,10 @@ func resolveStorageNameToID(configFlags *genericclioptions.ConfigFlags, provider
 	case "openstack":
 		return resolveOpenStackStorageNameToID(configFlags, inventoryURL, provider, storageName)
 	case "ova":
-		// OVA providers don't have traditional storage inventory
-		// The storage name is typically the VMDK file name
-		// Just return the storage name as-is without ID resolution
-		return ref.Ref{
-			Name: storageName,
-		}, nil
+		return resolveOVAStorageNameToID(configFlags, inventoryURL, provider, storageName)
 	default:
 		// Default to generic storage endpoint for unknown providers
-		storageInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "storage?detail=4")
+		storageInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "storages?detail=4")
 		if err != nil {
 			return ref.Ref{}, fmt.Errorf("failed to fetch storage inventory: %v", err)
 		}
