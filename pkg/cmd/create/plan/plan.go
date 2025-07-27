@@ -17,6 +17,7 @@ import (
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan"
 	"github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/provider"
+	mapping "github.com/yaacov/kubectl-mtv/pkg/cmd/create/mapping"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/defaultprovider"
@@ -37,6 +38,8 @@ type CreatePlanOptions struct {
 	DefaultTargetStorageClass string
 	PlanSpec                  forkliftv1beta1.PlanSpec
 	ConfigFlags               *genericclioptions.ConfigFlags
+	NetworkPairs              string
+	StoragePairs              string
 }
 
 // Create creates a new migration plan
@@ -82,46 +85,78 @@ func Create(opts CreatePlanOptions) error {
 
 	// If network map is not provided, create a default network map
 	if opts.NetworkMapping == "" {
-		networkMapName, err := network.CreateNetworkMap(network.NetworkMapperOptions{
-			Name:                 opts.Name,
-			Namespace:            opts.Namespace,
-			SourceProvider:       opts.SourceProvider,
-			TargetProvider:       opts.TargetProvider,
-			ConfigFlags:          opts.ConfigFlags,
-			InventoryURL:         opts.InventoryURL,
-			PlanVMNames:          planVMNames,
-			DefaultTargetNetwork: opts.DefaultTargetNetwork,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to create default network map: %v", err)
+		if opts.NetworkPairs != "" {
+			// Create network mapping from pairs
+			networkMapName := fmt.Sprintf("%s-network", opts.Name)
+			err := mapping.CreateNetwork(opts.ConfigFlags, networkMapName, opts.Namespace, opts.SourceProvider, opts.TargetProvider, opts.NetworkPairs, opts.InventoryURL)
+			if err != nil {
+				return fmt.Errorf("failed to create network map from pairs: %v", err)
+			}
+			opts.NetworkMapping = networkMapName
+			createdNetworkMap = true
+			fmt.Printf("Created network mapping '%s' from provided pairs\n", networkMapName)
+		} else {
+			// Create default network mapping using existing logic
+			networkMapName, err := network.CreateNetworkMap(network.NetworkMapperOptions{
+				Name:                 opts.Name,
+				Namespace:            opts.Namespace,
+				SourceProvider:       opts.SourceProvider,
+				TargetProvider:       opts.TargetProvider,
+				ConfigFlags:          opts.ConfigFlags,
+				InventoryURL:         opts.InventoryURL,
+				PlanVMNames:          planVMNames,
+				DefaultTargetNetwork: opts.DefaultTargetNetwork,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to create default network map: %v", err)
+			}
+			opts.NetworkMapping = networkMapName
+			createdNetworkMap = true
 		}
-		opts.NetworkMapping = networkMapName
-		createdNetworkMap = true
 	}
 
 	// If storage map is not provided, create a default storage map
 	if opts.StorageMapping == "" {
-		storageMapName, err := storage.CreateStorageMap(storage.StorageMapperOptions{
-			Name:                      opts.Name,
-			Namespace:                 opts.Namespace,
-			SourceProvider:            opts.SourceProvider,
-			TargetProvider:            opts.TargetProvider,
-			ConfigFlags:               opts.ConfigFlags,
-			InventoryURL:              opts.InventoryURL,
-			PlanVMNames:               planVMNames,
-			DefaultTargetStorageClass: opts.DefaultTargetStorageClass,
-		})
-		if err != nil {
-			// Clean up the network map if we created it
-			if createdNetworkMap {
-				if delErr := deleteMap(opts.ConfigFlags, client.NetworkMapGVR, opts.NetworkMapping, opts.Namespace); delErr != nil {
-					fmt.Printf("Warning: failed to delete network map: %v\n", delErr)
+		if opts.StoragePairs != "" {
+			// Create storage mapping from pairs
+			storageMapName := fmt.Sprintf("%s-storage", opts.Name)
+			err := mapping.CreateStorage(opts.ConfigFlags, storageMapName, opts.Namespace, opts.SourceProvider, opts.TargetProvider, opts.StoragePairs, opts.InventoryURL)
+			if err != nil {
+				// Clean up the network map if we created it
+				if createdNetworkMap {
+					if delErr := deleteMap(opts.ConfigFlags, client.NetworkMapGVR, opts.NetworkMapping, opts.Namespace); delErr != nil {
+						fmt.Printf("Warning: failed to delete network map: %v\n", delErr)
+					}
 				}
+				return fmt.Errorf("failed to create storage map from pairs: %v", err)
 			}
-			return fmt.Errorf("failed to create default storage map: %v", err)
+			opts.StorageMapping = storageMapName
+			createdStorageMap = true
+			fmt.Printf("Created storage mapping '%s' from provided pairs\n", storageMapName)
+		} else {
+			// Create default storage mapping using existing logic
+			storageMapName, err := storage.CreateStorageMap(storage.StorageMapperOptions{
+				Name:                      opts.Name,
+				Namespace:                 opts.Namespace,
+				SourceProvider:            opts.SourceProvider,
+				TargetProvider:            opts.TargetProvider,
+				ConfigFlags:               opts.ConfigFlags,
+				InventoryURL:              opts.InventoryURL,
+				PlanVMNames:               planVMNames,
+				DefaultTargetStorageClass: opts.DefaultTargetStorageClass,
+			})
+			if err != nil {
+				// Clean up the network map if we created it
+				if createdNetworkMap {
+					if delErr := deleteMap(opts.ConfigFlags, client.NetworkMapGVR, opts.NetworkMapping, opts.Namespace); delErr != nil {
+						fmt.Printf("Warning: failed to delete network map: %v\n", delErr)
+					}
+				}
+				return fmt.Errorf("failed to create default storage map: %v", err)
+			}
+			opts.StorageMapping = storageMapName
+			createdStorageMap = true
 		}
-		opts.StorageMapping = storageMapName
-		createdStorageMap = true
 	}
 
 	// If target namespace is not provided, use the plan's namespace
