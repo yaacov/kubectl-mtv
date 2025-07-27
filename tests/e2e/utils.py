@@ -4,6 +4,7 @@ Utility functions for kubectl-mtv e2e tests.
 
 import json
 import logging
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -34,198 +35,139 @@ def load_env_file(env_file: Optional[str] = None) -> None:
         logging.warning("python-dotenv not installed, skipping .env file loading")
 
 
-def wait_for_provider_ready(test_namespace, provider_name: str, timeout: int = 180):
-    """Wait for a provider to have Ready condition = True using kubectl wait."""
-    logging.info(f"Waiting for provider {provider_name} to be ready...")
-
-    # Use kubectl wait to wait for the Ready condition
-    wait_cmd = (
-        f"wait --for=condition=Ready provider/{provider_name} --timeout={timeout}s"
+def wait_for_resource_condition(
+    test_namespace, 
+    resource_type: str, 
+    resource_name: str, 
+    timeout: int = 120, 
+    poll_interval: int = 5
+) -> bool:
+    """
+    Generic helper method to wait for resource conditions.
+    
+    Looks for conditions with category 'Critical' or type 'Ready':
+    - If Ready condition is found with status=True, exits successfully
+    - If Critical condition is found, exits with error  
+    - Otherwise waits for timeout like kubectl wait does
+    
+    Args:
+        test_namespace: Test namespace context
+        resource_type: Type of resource (provider, plan, networkmap, storagemap)
+        resource_name: Name of the resource
+        timeout: Maximum time to wait in seconds
+        poll_interval: Time between checks in seconds
+        
+    Returns:
+        bool: True if resource is ready
+        
+    Raises:
+        pytest.fail: If resource fails or timeout is reached
+    """
+    logging.info(f"Waiting for {resource_type} {resource_name} to be ready...")
+    
+    start_time = time.time()
+    
+    while time.time() - start_time < timeout:
+        try:
+            # Use kubectl for all resource types - they're all Kubernetes CRDs
+            status_result = test_namespace.run_kubectl_command(
+                f"get {resource_type} {resource_name} -o json", check=False
+            )
+        
+            if status_result.returncode != 0:
+                logging.warning(f"Failed to get {resource_type} {resource_name} status, retrying...")
+                time.sleep(poll_interval)
+                continue
+                
+            # kubectl always returns single objects for specific resource names
+            resource_data = json.loads(status_result.stdout)
+            
+            # Get conditions from status
+            status = resource_data.get("status", {})
+            conditions = status.get("conditions", [])
+            
+            # Add debug logging to see actual conditions
+            logging.debug(f"Found {len(conditions)} conditions for {resource_type} {resource_name}")
+            for i, condition in enumerate(conditions):
+                logging.debug(f"Condition {i}: type={condition.get('type')}, status={condition.get('status')}, category={condition.get('category')}")
+            
+            # Look for Critical conditions first
+            for condition in conditions:
+                if condition.get("category") == "Critical":
+                    condition_status = condition.get("status", "")
+                    condition_reason = condition.get("reason", "")
+                    condition_message = condition.get("message", "")
+                    
+                    if condition_status == "True":
+                        pytest.fail(
+                            f"{resource_type.capitalize()} {resource_name} has critical condition. "
+                            f"Type: {condition.get('type', '')}, "
+                            f"Reason: {condition_reason}, Message: {condition_message}"
+                        )
+            
+            # Look for Ready condition
+            ready_found = False
+            for condition in conditions:
+                if condition.get("type") == "Ready":
+                    ready_found = True
+                    condition_status = condition.get("status", "")
+                    condition_reason = condition.get("reason", "")
+                    condition_message = condition.get("message", "")
+                    
+                    if condition_status == "True":
+                        logging.info(f"{resource_type.capitalize()} {resource_name} is ready!")
+                        return True
+                    elif condition_status == "False":
+                        logging.info(
+                            f"{resource_type.capitalize()} {resource_name} not ready yet. "
+                            f"Reason: {condition_reason}, Message: {condition_message}"
+                        )
+                        break
+            
+            # If no Ready condition found, log for debugging
+            if not ready_found:
+                logging.debug(f"No Ready condition found for {resource_type} {resource_name}")
+                logging.debug(f"Available condition types: {[c.get('type') for c in conditions]}")
+                logging.debug(f"Full status JSON: {json.dumps(status, indent=2)}")
+                        
+        except json.JSONDecodeError as e:
+            logging.warning(f"Failed to parse JSON response: {e}, retrying...")
+        except Exception as e:
+            logging.warning(f"Error checking {resource_type} {resource_name} status: {e}, retrying...")
+        
+        # Wait before next poll
+        time.sleep(poll_interval)
+    
+    # Timeout reached
+    pytest.fail(
+        f"{resource_type.capitalize()} {resource_name} did not become ready within {timeout} seconds"
     )
 
-    try:
-        test_namespace.run_kubectl_command(wait_cmd, check=True)
-        logging.info(f"Provider {provider_name} is ready!")
-        return True
-    except Exception as e:
-        # If kubectl wait fails, get the provider status for better error reporting
-        try:
-            status_result = test_namespace.run_mtv_command(
-                f"get provider {provider_name} -o json", check=False
-            )
-            if status_result.returncode == 0:
-                provider_list = json.loads(status_result.stdout)
-                if len(provider_list) == 1:
-                    provider_data = provider_list[0]
-                    status = provider_data.get("status", {})
-                    conditions = status.get("conditions", [])
 
-                    # Find Ready condition for detailed error info
-                    for condition in conditions:
-                        if condition.get("type") == "Ready":
-                            condition_status = condition.get("status", "")
-                            condition_reason = condition.get("reason", "")
-                            condition_message = condition.get("message", "")
-
-                            if condition_status == "False":
-                                pytest.fail(
-                                    f"Provider {provider_name} failed to become ready. "
-                                    f"Reason: {condition_reason}, Message: {condition_message}"
-                                )
-                            break
-        except Exception:
-            pass  # Fall back to original error
-
-        # If we couldn't get detailed status, fail with the original kubectl wait error
-        pytest.fail(
-            f"Provider {provider_name} did not become ready within {timeout} seconds: {e}"
-        )
+def wait_for_provider_ready(test_namespace, provider_name: str, timeout: int = 180):
+    """Wait for a provider to have Ready condition = True."""
+    return wait_for_resource_condition(test_namespace, "provider", provider_name, timeout)
 
 
 def wait_for_plan_ready(
     test_namespace, plan_name: str, timeout: int = 120
 ) -> bool:
-    """Wait for a migration plan to have Ready condition = True using kubectl wait."""
-    logging.info(f"Waiting for plan {plan_name} to be ready...")
-
-    # Use kubectl wait to wait for the Ready condition
-    wait_cmd = (
-        f"wait --for=condition=Ready plan/{plan_name} --timeout={timeout}s"
-    )
-
-    try:
-        test_namespace.run_kubectl_command(wait_cmd, check=True)
-        logging.info(f"Plan {plan_name} is ready!")
-        return True
-    except Exception as e:
-        # If kubectl wait fails, get the plan status for better error reporting
-        try:
-            status_result = test_namespace.run_mtv_command(
-                f"get plan {plan_name} -o json", check=False
-            )
-            if status_result.returncode == 0:
-                plan_list = json.loads(status_result.stdout)
-                if len(plan_list) >= 1:
-                    plan_data = plan_list[0]
-                    status = plan_data.get("status", {})
-                    conditions = status.get("conditions", [])
-
-                    # Find Ready condition for detailed error info
-                    for condition in conditions:
-                        if condition.get("type") == "Ready":
-                            condition_status = condition.get("status", "")
-                            condition_reason = condition.get("reason", "")
-                            condition_message = condition.get("message", "")
-
-                            if condition_status == "False":
-                                pytest.fail(
-                                    f"Plan {plan_name} failed to become ready. "
-                                    f"Reason: {condition_reason}, Message: {condition_message}"
-                                )
-                            break
-        except Exception:
-            pass  # Fall back to original error
-
-        # If we couldn't get detailed status, fail with the original kubectl wait error
-        pytest.fail(
-            f"Plan {plan_name} did not become ready within {timeout} seconds: {e}"
-        )
+    """Wait for a migration plan to have Ready condition = True."""
+    return wait_for_resource_condition(test_namespace, "plan", plan_name, timeout)
 
 
 def wait_for_network_mapping_ready(
     test_namespace, mapping_name: str, timeout: int = 120
 ) -> bool:
-    """Wait for a network mapping to have Ready condition = True using kubectl wait."""
-    logging.info(f"Waiting for network mapping {mapping_name} to be ready...")
-
-    # Use kubectl wait to wait for the Ready condition
-    wait_cmd = (
-        f"wait --for=condition=Ready networkmap/{mapping_name} --timeout={timeout}s"
-    )
-
-    try:
-        test_namespace.run_kubectl_command(wait_cmd, check=True)
-        logging.info(f"Network mapping {mapping_name} is ready!")
-        return True
-    except Exception as e:
-        # If kubectl wait fails, get the mapping status for better error reporting
-        try:
-            status_result = test_namespace.run_kubectl_command(
-                f"get networkmap {mapping_name} -o json", check=False
-            )
-            if status_result.returncode == 0:
-                mapping_data = json.loads(status_result.stdout)
-                status = mapping_data.get("status", {})
-                conditions = status.get("conditions", [])
-
-                # Find Ready condition for detailed error info
-                for condition in conditions:
-                    if condition.get("type") == "Ready":
-                        condition_status = condition.get("status", "")
-                        condition_reason = condition.get("reason", "")
-                        condition_message = condition.get("message", "")
-
-                        if condition_status == "False":
-                            pytest.fail(
-                                f"Network mapping {mapping_name} failed to become ready. "
-                                f"Reason: {condition_reason}, Message: {condition_message}"
-                            )
-                        break
-        except Exception:
-            pass  # Fall back to original error
-
-        # If we couldn't get detailed status, fail with the original kubectl wait error
-        pytest.fail(
-            f"Network mapping {mapping_name} did not become ready within {timeout} seconds: {e}"
-        )
+    """Wait for a network mapping to have Ready condition = True."""
+    return wait_for_resource_condition(test_namespace, "networkmap", mapping_name, timeout)
 
 
 def wait_for_storage_mapping_ready(
     test_namespace, mapping_name: str, timeout: int = 120
 ) -> bool:
-    """Wait for a storage mapping to have Ready condition = True using kubectl wait."""
-    logging.info(f"Waiting for storage mapping {mapping_name} to be ready...")
-
-    # Use kubectl wait to wait for the Ready condition
-    wait_cmd = (
-        f"wait --for=condition=Ready storagemap/{mapping_name} --timeout={timeout}s"
-    )
-
-    try:
-        test_namespace.run_kubectl_command(wait_cmd, check=True)
-        logging.info(f"Storage mapping {mapping_name} is ready!")
-        return True
-    except Exception as e:
-        # If kubectl wait fails, get the mapping status for better error reporting
-        try:
-            status_result = test_namespace.run_kubectl_command(
-                f"get storagemap {mapping_name} -o json", check=False
-            )
-            if status_result.returncode == 0:
-                mapping_data = json.loads(status_result.stdout)
-                status = mapping_data.get("status", {})
-                conditions = status.get("conditions", [])
-
-                # Find Ready condition for detailed error info
-                for condition in conditions:
-                    if condition.get("type") == "Ready":
-                        condition_status = condition.get("status", "")
-                        condition_reason = condition.get("reason", "")
-                        condition_message = condition.get("message", "")
-
-                        if condition_status == "False":
-                            pytest.fail(
-                                f"Storage mapping {mapping_name} failed to become ready. "
-                                f"Reason: {condition_reason}, Message: {condition_message}"
-                            )
-                        break
-        except Exception:
-            pass  # Fall back to original error
-
-        # If we couldn't get detailed status, fail with the original kubectl wait error
-        pytest.fail(
-            f"Storage mapping {mapping_name} did not become ready within {timeout} seconds: {e}"
-        )
+    """Wait for a storage mapping to have Ready condition = True."""
+    return wait_for_resource_condition(test_namespace, "storagemap", mapping_name, timeout)
 
 
 # Load .env file when module is imported
