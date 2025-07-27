@@ -31,7 +31,9 @@ VSPHERE_NETWORK_PAIRS = [
 VSPHERE_STORAGE_PAIRS = [
     {"source": "nfs-us-mtv-v8", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
     {"source": "nfs-us-virt", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "datastore1", "target": "csi-manila-ceph"}
+    {"source": "datastore1", "target": "csi-manila-ceph"},
+    {"source": "mtv-nfs-us-v8", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
+    {"source": "mtv-nfs-rhos-v8", "target": "ocs-storagecluster-ceph-rbd"}
 ]
 
 

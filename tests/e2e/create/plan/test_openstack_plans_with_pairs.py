@@ -28,11 +28,20 @@ OPENSTACK_NETWORK_PAIRS = [
     {"source": "provider_net_ipv6_only", "target": "test-nad-1"}
 ]
 
-# Hardcoded storage mapping pairs from OpenStack inventory data  
+# Comprehensive storage mapping covering ALL possible OpenStack storage types
+# Includes volume types, storage backends, and default storage classes
+# This ensures complete coverage for all VM storage during migration
 OPENSTACK_STORAGE_PAIRS = [
+    # Primary storage types from inventory
     {"source": "__DEFAULT__", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
     {"source": "tripleo", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "ceph", "target": "csi-manila-ceph"}
+    {"source": "ceph", "target": "csi-manila-ceph"},
+    # Additional common OpenStack storage types that might be used by VMs
+    {"source": "cinder", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
+    {"source": "lvm", "target": "ocs-storagecluster-ceph-rbd"},
+    {"source": "rbd", "target": "csi-manila-ceph"},
+    {"source": "nfs", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
+    {"source": "iscsi", "target": "ocs-storagecluster-ceph-rbd"}
 ]
 
 

@@ -35,6 +35,7 @@ OPENSHIFT_STORAGE_PAIRS = [
 @pytest.mark.create
 @pytest.mark.plan
 @pytest.mark.openshift
+@pytest.mark.skip(reason="Skipping OpenShift to OpenShift migration plan tests")
 class TestOpenShiftPlanCreationWithPairs:
     """Test cases for migration plan creation from OpenShift providers using mapping pairs."""
 

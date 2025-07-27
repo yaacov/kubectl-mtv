@@ -13,13 +13,13 @@ import pytest
 from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
 
 
-# Hardcoded VM names from ESXi inventory data (similar to vSphere structure)
+# Hardcoded VM names from ESXi inventory data
 ESXI_TEST_VMS = [
-    "mtv-win2019-79-ceph-rbd-4-16",
-    "mtv-func-rhel8-ameen", 
-    "mtv-rhel8-warm-sanity-nfs-4-19",
-    "mtv-rhel8-warm-2disks2nics-nfs-4-18",
-    "mtv-rhel8-warm-sanity-nfs-4-18"
+    "mtv-win2019-79-nfs-4-18",
+    "mtv-win2019-79-nfs-4-17", 
+    "mtv-win2019-79-nfs-4-16",
+    "mtv-win2019-79-ceph-rbd",
+    "mtv-rhel8-warm-sanity-nfs-4-19"
 ]
 
 # Hardcoded network mapping pairs from ESXi inventory data
@@ -32,7 +32,9 @@ ESXI_NETWORK_PAIRS = [
 ESXI_STORAGE_PAIRS = [
     {"source": "mtv-nfs-rhos-v8", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
     {"source": "nfs-us", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "mtv-nfs-us-v8", "target": "csi-manila-ceph"}
+    {"source": "mtv-nfs-us-v8", "target": "csi-manila-ceph"},
+    {"source": "nfs-us-mtv-v8", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
+    {"source": "datastore1", "target": "ocs-storagecluster-ceph-rbd"}
 ]
 
 
