@@ -131,7 +131,7 @@ func resolveNetworkNameToID(configFlags *genericclioptions.ConfigFlags, provider
 	switch providerType {
 	case "openshift":
 		return resolveOpenShiftNetworkNameToID(configFlags, inventoryURL, provider, networkName)
-	case "vsphere", "ovirt", "openstack":
+	case "vsphere", "ovirt", "openstack", "ova":
 		return resolveVirtualizationNetworkNameToID(configFlags, inventoryURL, provider, networkName)
 	default:
 		return resolveVirtualizationNetworkNameToID(configFlags, inventoryURL, provider, networkName)

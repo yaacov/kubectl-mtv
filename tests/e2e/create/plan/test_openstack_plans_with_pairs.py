@@ -12,34 +12,20 @@ import pytest
 from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
 
 
-# Hardcoded VM names from OpenStack inventory data
 OPENSTACK_TEST_VMS = [
     "infra-mtv-node-207",
-    "qemtv-01-fw8td-worker-0-k7sn5", 
-    "qemtv-01-fw8td-worker-0-7lfgf",
-    "qemtv-01-fw8td-worker-0-2c46x",
-    "qemtv-01-fw8td-master-1"
+    "infra-mtv-node-18"
 ]
 
-# Hardcoded network mapping pairs from OpenStack inventory data
 OPENSTACK_NETWORK_PAIRS = [
-    {"source": "provider_net_cci_13", "target": "test-nad-1"},
-    {"source": "provider_net_shared_2", "target": "test-nad-2"},
-    {"source": "provider_net_ipv6_only", "target": "test-nad-1"}
+    {"source": "provider_net_shared", "target": "test-nad-1"},
+    {"source": "provider_net_shared_3", "target": "test-nad-2"}
 ]
 
-# Hardcoded storage mapping pairs from OpenStack inventory data
 OPENSTACK_STORAGE_PAIRS = [
-    # Primary storage types from inventory
     {"source": "__DEFAULT__", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
     {"source": "tripleo", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "ceph", "target": "csi-manila-ceph"},
-    # Additional common OpenStack storage types that might be used by VMs
-    {"source": "cinder", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    {"source": "lvm", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "rbd", "target": "csi-manila-ceph"},
-    {"source": "nfs", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    {"source": "iscsi", "target": "ocs-storagecluster-ceph-rbd"}
+    {"source": "ceph", "target": "csi-manila-ceph"}
 ]
 
 
@@ -128,8 +114,8 @@ class TestOpenStackPlanCreationWithPairs:
 
     def test_create_multi_vm_plan_with_mapping_pairs(self, test_namespace, openstack_provider):
         """Test creating a migration plan with multiple VMs using inline mapping pairs."""
-        # Use first 3 VMs for multi-VM test
-        selected_vms = ",".join(OPENSTACK_TEST_VMS[:3])
+        # Use both available VMs for multi-VM test
+        selected_vms = ",".join(OPENSTACK_TEST_VMS)
         plan_name = f"test-multi-plan-openstack-pairs-{int(time.time())}"
         
         # Build network and storage pairs strings

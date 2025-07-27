@@ -12,13 +12,9 @@ import pytest
 from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
 
 
-# Hardcoded VM names from OpenStack inventory data
 OPENSTACK_TEST_VMS = [
     "infra-mtv-node-207",
-    "qemtv-01-fw8td-worker-0-k7sn5", 
-    "qemtv-01-fw8td-worker-0-7lfgf",
-    "qemtv-01-fw8td-worker-0-2c46x",
-    "qemtv-01-fw8td-master-1"
+    "infra-mtv-node-18"
 ]
 
 

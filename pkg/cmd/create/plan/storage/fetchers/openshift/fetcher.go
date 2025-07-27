@@ -218,26 +218,71 @@ func (f *OpenShiftStorageFetcher) FetchTargetStorages(configFlags *genericcliopt
 		return nil, fmt.Errorf("unexpected data format: expected array for target storage inventory")
 	}
 
-	// Build target storages list
-	var targetStorages []forkliftv1beta1.DestinationStorage
+	// Parse all storage classes and find the best one based on annotations
+	var virtDefaultStorage, k8sDefaultStorage, firstStorage map[string]interface{}
+
 	for _, item := range storageArray {
 		storageItem, ok := item.(map[string]interface{})
 		if !ok {
 			continue
 		}
 
-		storageName := ""
-		if name, ok := storageItem["name"].(string); ok {
-			storageName = name
+		// Set first storage if not already set
+		if firstStorage == nil {
+			firstStorage = storageItem
 		}
 
-		// For OpenShift targets, create StorageClass reference
-		klog.V(4).Infof("Creating storage class reference for: %s", storageName)
-		targetStorages = append(targetStorages, forkliftv1beta1.DestinationStorage{
-			StorageClass: storageName,
-		})
+		// Check for annotations in the object.metadata.annotations
+		if object, ok := storageItem["object"].(map[string]interface{}); ok {
+			if metadata, ok := object["metadata"].(map[string]interface{}); ok {
+				if annotations, ok := metadata["annotations"].(map[string]interface{}); ok {
+					// Check for virt default annotation
+					if virtDefault, ok := annotations["storageclass.kubevirt.io/is-default-virt-class"].(string); ok && virtDefault == "true" {
+						klog.V(4).Infof("Found virt default storage class: %v", storageItem["name"])
+						virtDefaultStorage = storageItem
+					}
+
+					// Check for k8s default annotation
+					if k8sDefault, ok := annotations["storageclass.kubernetes.io/is-default-class"].(string); ok && k8sDefault == "true" {
+						klog.V(4).Infof("Found k8s default storage class: %v", storageItem["name"])
+						k8sDefaultStorage = storageItem
+					}
+				}
+			}
+		}
 	}
 
-	klog.V(4).Infof("Available target storages count: %d", len(targetStorages))
+	// Prioritize: virt default > k8s default > first available
+	var selectedStorage map[string]interface{}
+	var selectionReason string
+
+	if virtDefaultStorage != nil {
+		selectedStorage = virtDefaultStorage
+		selectionReason = "virt default annotation"
+	} else if k8sDefaultStorage != nil {
+		selectedStorage = k8sDefaultStorage
+		selectionReason = "k8s default annotation"
+	} else if firstStorage != nil {
+		selectedStorage = firstStorage
+		selectionReason = "first available"
+	} else {
+		return nil, fmt.Errorf("no storage classes found")
+	}
+
+	storageName := ""
+	if name, ok := selectedStorage["name"].(string); ok {
+		storageName = name
+	}
+
+	klog.V(4).Infof("Selected storage class '%s' based on: %s", storageName, selectionReason)
+
+	// Return only the selected storage class
+	targetStorages := []forkliftv1beta1.DestinationStorage{
+		{
+			StorageClass: storageName,
+		},
+	}
+
+	klog.V(4).Infof("Returning single target storage: %s", storageName)
 	return targetStorages, nil
 }

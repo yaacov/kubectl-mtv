@@ -91,10 +91,10 @@ func resolveOvirtStorageNameToID(configFlags *genericclioptions.ConfigFlags, inv
 
 // resolveOpenStackStorageNameToID resolves storage name for OpenStack provider
 func resolveOpenStackStorageNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string) ([]ref.Ref, error) {
-	// Handle 'cinder' as a special case - return ref with only name
-	if storageName == "cinder" {
+	// Handle '__DEFAULT__' as a special case - return ref with type 'default'
+	if storageName == "__DEFAULT__" {
 		return []ref.Ref{{
-			Name: storageName,
+			Type: "default",
 		}}, nil
 	}
 
