@@ -14,7 +14,10 @@ from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
 
 # Hardcoded VM names from OVA inventory data
 OVA_TEST_VMS = [
-    "centos44",
+    "mtv-2disks",
+    "1nisim-rhel9-efi",
+    "mtv-func-WIN2019",
+    "SHAICTDOET005-Test_rhel9"
 ]
 
 # Hardcoded network mapping pairs from OVA inventory data

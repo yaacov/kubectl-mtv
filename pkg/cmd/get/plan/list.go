@@ -165,6 +165,7 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 			"progress": progressStatus,
 			"cutover":  cutoverInfo,
 			"archived": fmt.Sprintf("%t", archived),
+			"object":   p.Object, // Include the original object
 		}
 
 		// Add the item to the list

@@ -35,6 +35,8 @@ OVIRT_STORAGE_PAIRS = [
     {"source": "L0_Group_4_LUN1", "target": "ocs-storagecluster-ceph-rbd"},
     {"source": "L0_Group_4_LUN2", "target": "csi-manila-ceph"},
     {"source": "L0_Group_4_LUN3", "target": "csi-manila-netapp"},
+    {"source": "L1_Group", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
+    {"source": "nfs_mtv_0", "target": "ocs-storagecluster-ceph-rbd"},
     {"source": "export2", "target": "ocs-storagecluster-ceph-rbd"}
 ]
 
