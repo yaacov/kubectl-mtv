@@ -132,5 +132,101 @@ def wait_for_plan_ready(
         )
 
 
+def wait_for_network_mapping_ready(
+    test_namespace, mapping_name: str, timeout: int = 300
+) -> bool:
+    """Wait for a network mapping to have Ready condition = True using kubectl wait."""
+    logging.info(f"Waiting for network mapping {mapping_name} to be ready...")
+
+    # Use kubectl wait to wait for the Ready condition
+    wait_cmd = (
+        f"wait --for=condition=Ready networkmap/{mapping_name} --timeout={timeout}s"
+    )
+
+    try:
+        test_namespace.run_kubectl_command(wait_cmd, check=True)
+        logging.info(f"Network mapping {mapping_name} is ready!")
+        return True
+    except Exception as e:
+        # If kubectl wait fails, get the mapping status for better error reporting
+        try:
+            status_result = test_namespace.run_kubectl_command(
+                f"get networkmap {mapping_name} -o json", check=False
+            )
+            if status_result.returncode == 0:
+                mapping_data = json.loads(status_result.stdout)
+                status = mapping_data.get("status", {})
+                conditions = status.get("conditions", [])
+
+                # Find Ready condition for detailed error info
+                for condition in conditions:
+                    if condition.get("type") == "Ready":
+                        condition_status = condition.get("status", "")
+                        condition_reason = condition.get("reason", "")
+                        condition_message = condition.get("message", "")
+
+                        if condition_status == "False":
+                            pytest.fail(
+                                f"Network mapping {mapping_name} failed to become ready. "
+                                f"Reason: {condition_reason}, Message: {condition_message}"
+                            )
+                        break
+        except Exception:
+            pass  # Fall back to original error
+
+        # If we couldn't get detailed status, fail with the original kubectl wait error
+        pytest.fail(
+            f"Network mapping {mapping_name} did not become ready within {timeout} seconds: {e}"
+        )
+
+
+def wait_for_storage_mapping_ready(
+    test_namespace, mapping_name: str, timeout: int = 300
+) -> bool:
+    """Wait for a storage mapping to have Ready condition = True using kubectl wait."""
+    logging.info(f"Waiting for storage mapping {mapping_name} to be ready...")
+
+    # Use kubectl wait to wait for the Ready condition
+    wait_cmd = (
+        f"wait --for=condition=Ready storagemap/{mapping_name} --timeout={timeout}s"
+    )
+
+    try:
+        test_namespace.run_kubectl_command(wait_cmd, check=True)
+        logging.info(f"Storage mapping {mapping_name} is ready!")
+        return True
+    except Exception as e:
+        # If kubectl wait fails, get the mapping status for better error reporting
+        try:
+            status_result = test_namespace.run_kubectl_command(
+                f"get storagemap {mapping_name} -o json", check=False
+            )
+            if status_result.returncode == 0:
+                mapping_data = json.loads(status_result.stdout)
+                status = mapping_data.get("status", {})
+                conditions = status.get("conditions", [])
+
+                # Find Ready condition for detailed error info
+                for condition in conditions:
+                    if condition.get("type") == "Ready":
+                        condition_status = condition.get("status", "")
+                        condition_reason = condition.get("reason", "")
+                        condition_message = condition.get("message", "")
+
+                        if condition_status == "False":
+                            pytest.fail(
+                                f"Storage mapping {mapping_name} failed to become ready. "
+                                f"Reason: {condition_reason}, Message: {condition_message}"
+                            )
+                        break
+        except Exception:
+            pass  # Fall back to original error
+
+        # If we couldn't get detailed status, fail with the original kubectl wait error
+        pytest.fail(
+            f"Storage mapping {mapping_name} did not become ready within {timeout} seconds: {e}"
+        )
+
+
 # Load .env file when module is imported
 load_env_file()

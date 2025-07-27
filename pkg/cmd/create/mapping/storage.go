@@ -78,14 +78,10 @@ func parseStoragePairs(pairStr, defaultNamespace string, configFlags *genericcli
 }
 
 // createStorageMapping creates a new storage mapping
-func createStorageMapping(configFlags *genericclioptions.ConfigFlags, name, namespace, sourceProvider, targetProvider, fromFile, storagePairs, inventoryURL string) error {
+func createStorageMapping(configFlags *genericclioptions.ConfigFlags, name, namespace, sourceProvider, targetProvider, storagePairs, inventoryURL string) error {
 	dynamicClient, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
-	}
-
-	if fromFile != "" {
-		return CreateMappingFromFile(dynamicClient, fromFile, namespace)
 	}
 
 	// Parse storage pairs if provided

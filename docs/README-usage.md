@@ -197,36 +197,33 @@ Mappings define how source resources map to target resources.
 ### List Mappings
 
 ```bash
-# List all mappings
-kubectl mtv get mappings
-
 # List specific mapping types
-kubectl mtv get mapping --type network
-kubectl mtv get mapping --type storage
+kubectl mtv get mapping network
+kubectl mtv get mapping storage
 ```
 
 ### Create Network Mappings
 
 ```bash
 # Basic network mapping (will use default mappings)
-kubectl mtv create mapping net-map --type network \
+kubectl mtv create mapping network net-map \
   --source-provider vmware \
   --target-provider host
 
 # Network mapping with specific network pairs
-kubectl mtv create mapping production-nets --type network \
+kubectl mtv create mapping network production-nets \
   --source-provider vmware \
   --target-provider host \
   --network-pairs "VM Network:default/vm-network,DMZ:default/dmz-network"
 
 # Complex network mapping with multiple network pairs
-kubectl mtv create mapping enterprise-networks --type network \
+kubectl mtv create mapping network enterprise-networks \
   --source-provider vmware \
   --target-provider host \
   --network-pairs "Production VLAN:prod-namespace/production-net,Development VLAN:dev-namespace/dev-net,Management Network:mgmt-namespace/management-net"
 
 # Network mapping for multi-site deployment
-kubectl mtv create mapping multi-site-networks --type network \
+kubectl mtv create mapping network multi-site-networks \
   --source-provider vcenter-site1 \
   --target-provider openshift-site2 \
   --network-pairs "Site1-Production:site2-prod-namespace/production-network,Site1-DMZ:site2-dmz-namespace/dmz-network"
@@ -236,30 +233,30 @@ kubectl mtv create mapping multi-site-networks --type network \
 
 ```bash
 # Basic storage mapping (will use default mappings)
-kubectl mtv create mapping storage-map --type storage \
+kubectl mtv create mapping storage storage-map \
   --source-provider vmware \
   --target-provider host
 
 # Storage mapping with specific storage pairs
-kubectl mtv create mapping production-storage --type storage \
+kubectl mtv create mapping storage production-storage \
   --source-provider vmware \
   --target-provider host \
   --storage-pairs "datastore1:default/fast-ssd,datastore2:default/standard-hdd"
 
 # Performance-tiered storage mapping
-kubectl mtv create mapping tiered-storage --type storage \
+kubectl mtv create mapping storage tiered-storage \
   --source-provider vmware \
   --target-provider host \
   --storage-pairs "SSD-Datastore:production/premium-ssd,SATA-Datastore:production/standard-hdd,NVMe-Datastore:production/ultra-ssd"
 
 # Multi-cluster storage mapping with specific storage classes
-kubectl mtv create mapping distributed-storage --type storage \
+kubectl mtv create mapping storage distributed-storage \
   --source-provider ovirt-cluster \
   --target-provider kubernetes-cluster \
   --storage-pairs "ovirt-data:default/ceph-rbd,ovirt-fast:default/local-nvme,ovirt-backup:backup-ns/slow-storage"
 
 # Storage mapping for different workload types
-kubectl mtv create mapping workload-storage --type storage \
+kubectl mtv create mapping storage workload-storage \
   --source-provider vmware \
   --target-provider host \
   --storage-pairs "Database-Storage:db-namespace/high-iops-ssd,Application-Storage:app-namespace/balanced-ssd,Archive-Storage:archive-namespace/cold-storage"
@@ -289,10 +286,10 @@ Examples:
 
 ```bash
 # Delete network mapping
-kubectl mtv delete mapping <mapping-name> --type network
+kubectl mtv delete mapping network <mapping-name>
 
 # Delete storage mapping
-kubectl mtv delete mapping <mapping-name> --type storage
+kubectl mtv delete mapping storage <mapping-name>
 ```
 
 ## Migration Plan Management
@@ -580,13 +577,13 @@ kubectl mtv get inventory vms vmware -q "where name ~= 'prod-web-.*'"
 
 # 5. Create detailed mappings with specific pairs
 # Network mapping with production and DMZ networks
-kubectl mtv create mapping production-networks --type network \
+kubectl mtv create mapping network production-networks \
   --source-provider vmware \
   --target-provider host \
   --network-pairs "Production VLAN:production/prod-network,DMZ Network:security/dmz-network"
 
 # Storage mapping with performance tiers
-kubectl mtv create mapping production-storage --type storage \
+kubectl mtv create mapping storage production-storage \
   --source-provider vmware \
   --target-provider host \
   --storage-pairs "SSD-Datastore:production/fast-ssd,Standard-Datastore:production/standard-hdd"
