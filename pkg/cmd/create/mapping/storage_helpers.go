@@ -11,51 +11,6 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 
-// resolveOpenShiftStorageNameToID resolves storage name for OpenShift provider
-func resolveOpenShiftStorageNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string) (ref.Ref, error) {
-	// Fetch StorageClasses from OpenShift
-	storageInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "storageclasses?detail=4")
-	if err != nil {
-		return ref.Ref{}, fmt.Errorf("failed to fetch storage inventory: %v", err)
-	}
-
-	storageArray, ok := storageInventory.([]interface{})
-	if !ok {
-		return ref.Ref{}, fmt.Errorf("unexpected data format: expected array for storage inventory")
-	}
-
-	// Search for the storage by name
-	for _, item := range storageArray {
-		storage, ok := item.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		// For OpenShift StorageClasses
-		if obj, exists := storage["object"]; exists {
-			if objMap, ok := obj.(map[string]interface{}); ok {
-				if metadata, exists := objMap["metadata"]; exists {
-					if metadataMap, ok := metadata.(map[string]interface{}); ok {
-						name, _ := metadataMap["name"].(string)
-						namespace, _ := metadataMap["namespace"].(string)
-						id, _ := metadataMap["uid"].(string)
-
-						if name == storageName {
-							return ref.Ref{
-								Name:      name,
-								Namespace: namespace,
-								ID:        id,
-							}, nil
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return ref.Ref{}, fmt.Errorf("storage '%s' not found in OpenShift provider inventory", storageName)
-}
-
 // resolveVSphereStorageNameToID resolves storage name for VMware vSphere provider
 func resolveVSphereStorageNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string) (ref.Ref, error) {
 	// Fetch datastores from VMware vSphere
@@ -174,13 +129,24 @@ func resolveStorageNameToID(configFlags *genericclioptions.ConfigFlags, provider
 
 	switch providerType {
 	case "openshift":
-		return resolveOpenShiftStorageNameToID(configFlags, inventoryURL, provider, storageName)
+		// For OpenShift source providers, only include the name in the source reference
+		// Storage classes are cluster-scoped resources, so we don't need to resolve the ID
+		return ref.Ref{
+			Name: storageName,
+		}, nil
 	case "vsphere":
 		return resolveVSphereStorageNameToID(configFlags, inventoryURL, provider, storageName)
 	case "ovirt":
 		return resolveOvirtStorageNameToID(configFlags, inventoryURL, provider, storageName)
 	case "openstack":
 		return resolveOpenStackStorageNameToID(configFlags, inventoryURL, provider, storageName)
+	case "ova":
+		// OVA providers don't have traditional storage inventory
+		// The storage name is typically the VMDK file name
+		// Just return the storage name as-is without ID resolution
+		return ref.Ref{
+			Name: storageName,
+		}, nil
 	default:
 		// Default to generic storage endpoint for unknown providers
 		storageInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "storage?detail=4")

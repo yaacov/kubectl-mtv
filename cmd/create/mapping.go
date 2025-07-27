@@ -1,7 +1,6 @@
 package create
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -9,22 +8,34 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/mapping"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
-	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
-// NewMappingCmd creates the mapping creation command
+// NewMappingCmd creates the mapping creation command with subcommands
 func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
-	mappingTypeFlag := flags.NewMappingTypeFlag()
+	cmd := &cobra.Command{
+		Use:          "mapping",
+		Short:        "Create a new mapping",
+		Long:         `Create a new network or storage mapping`,
+		SilenceUsage: true,
+	}
+
+	// Add subcommands for network and storage
+	cmd.AddCommand(newNetworkMappingCmd(kubeConfigFlags))
+	cmd.AddCommand(newStorageMappingCmd(kubeConfigFlags))
+
+	return cmd
+}
+
+// newNetworkMappingCmd creates the network mapping subcommand
+func newNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var sourceProvider, targetProvider string
-	var fromFile string
 	var networkPairs string
-	var storagePairs string
 	var inventoryURL string
 
 	cmd := &cobra.Command{
-		Use:          "mapping NAME",
-		Short:        "Create a new mapping",
-		Long:         `Create a new network or storage mapping`,
+		Use:          "network NAME",
+		Short:        "Create a new network mapping",
+		Long:         `Create a new network mapping between source and target providers`,
 		Args:         cobra.ExactArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -39,38 +50,50 @@ func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comman
 				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
 			}
 
-			var err error
-			switch mappingTypeFlag.GetValue() {
-			case "network":
-				err = mapping.CreateNetwork(kubeConfigFlags, name, namespace, sourceProvider, targetProvider, fromFile, networkPairs, inventoryURL)
-			case "storage":
-				err = mapping.CreateStorage(kubeConfigFlags, name, namespace, sourceProvider, targetProvider, fromFile, storagePairs, inventoryURL)
-			default:
-				err = fmt.Errorf("unsupported mapping type: %s. Use 'network' or 'storage'", mappingTypeFlag.GetValue())
-			}
-
-			return err
+			return mapping.CreateNetwork(kubeConfigFlags, name, namespace, sourceProvider, targetProvider, networkPairs, inventoryURL)
 		},
 	}
 
-	cmd.Flags().VarP(mappingTypeFlag, "type", "t", "Mapping type (network, storage)")
 	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
 	cmd.Flags().StringVarP(&targetProvider, "target", "T", "", "Target provider name")
-	cmd.Flags().StringVarP(&fromFile, "from-file", "f", "", "Create mapping from YAML/JSON file")
 	cmd.Flags().StringVar(&networkPairs, "network-pairs", "", "Network mapping pairs in format 'source:target-namespace/target-network', 'source:target-network', 'source:pod', or 'source:ignored' (comma-separated)")
-	cmd.Flags().StringVar(&storagePairs, "storage-pairs", "", "Storage mapping pairs in format 'source:storage-class' (comma-separated). Note: storage classes are cluster-scoped")
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
 
-	// Add completion for mapping type flag
-	if err := cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return mappingTypeFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
-	}); err != nil {
-		panic(err)
+	return cmd
+}
+
+// newStorageMappingCmd creates the storage mapping subcommand
+func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+	var sourceProvider, targetProvider string
+	var storagePairs string
+	var inventoryURL string
+
+	cmd := &cobra.Command{
+		Use:          "storage NAME",
+		Short:        "Create a new storage mapping",
+		Long:         `Create a new storage mapping between source and target providers`,
+		Args:         cobra.ExactArgs(1),
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get name from positional argument
+			name := args[0]
+
+			// Resolve the appropriate namespace based on context and flags
+			namespace := client.ResolveNamespace(kubeConfigFlags)
+
+			// If inventoryURL is empty, try to discover it
+			if inventoryURL == "" {
+				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+			}
+
+			return mapping.CreateStorage(kubeConfigFlags, name, namespace, sourceProvider, targetProvider, storagePairs, inventoryURL)
+		},
 	}
 
-	if err := cmd.MarkFlagRequired("type"); err != nil {
-		panic(err)
-	}
+	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
+	cmd.Flags().StringVarP(&targetProvider, "target", "T", "", "Target provider name")
+	cmd.Flags().StringVar(&storagePairs, "storage-pairs", "", "Storage mapping pairs in format 'source:storage-class' (comma-separated). Note: storage classes are cluster-scoped")
+	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
 
 	return cmd
 }

@@ -30,6 +30,7 @@ help:
 	@echo "Core Test Types:"
 	@echo "  test-create-providers - Run provider creation tests"
 	@echo "  test-create-plans     - Run plan creation tests"
+	@echo "  test-create-mappings  - Run mapping creation tests"
 	@echo "  test-get-inventory    - Run inventory retrieval tests"
 	@echo ""
 	@echo "Provider-Specific Tests:"
@@ -97,6 +98,12 @@ test-create-providers: setup check-binary
 test-create-plans: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
 	$(PYTEST) create/plan/ -v -m "create and plan"
+
+# Run mapping creation tests
+.PHONY: test-create-mappings
+test-create-mappings: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) create/mapping/ -v -m "create and mapping"
 
 # Run inventory retrieval tests
 .PHONY: test-get-inventory
