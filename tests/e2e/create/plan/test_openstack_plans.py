@@ -22,7 +22,6 @@ OPENSTACK_TEST_VMS = [
 ]
 
 
-@pytest.mark.skip(reason="OpenStack provider is not available in the test cluster")
 @pytest.mark.create
 @pytest.mark.plan
 @pytest.mark.openstack
@@ -49,8 +48,13 @@ class TestOpenStackPlanCreation:
             f"--url '{creds['url']}'",
             f"--username '{creds['username']}'",
             f"--password '{creds['password']}'",
+            f"--provider-domain-name '{creds['domain_name']}'",
+            f"--provider-project-name '{creds['project_name']}'",
             "--provider-insecure-skip-tls",
         ]
+
+        if creds.get("region_name"):
+            cmd_parts.append(f"--provider-region-name '{creds['region_name']}'")
 
         create_cmd = " ".join(cmd_parts)
 

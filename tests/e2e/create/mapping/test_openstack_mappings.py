@@ -28,7 +28,6 @@ OPENSTACK_VOLUME_TYPES = [
 
 
 
-@pytest.mark.skip(reason="Skipping OpenStack mapping tests until we have a working OpenStack provider")
 @pytest.mark.create
 @pytest.mark.mapping
 @pytest.mark.openstack
@@ -59,6 +58,9 @@ class TestOpenStackMappingCreation:
             f"--provider-domain-name '{creds['domain_name']}'",
             "--provider-insecure-skip-tls",
         ]
+
+        if creds.get("region_name"):
+            cmd_parts.append(f"--provider-region-name '{creds['region_name']}'")
 
         create_cmd = " ".join(cmd_parts)
 
