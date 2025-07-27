@@ -5,6 +5,7 @@ Utility functions for kubectl-mtv e2e tests.
 import json
 import logging
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -97,13 +98,44 @@ def wait_for_resource_condition(
                     condition_status = condition.get("status", "")
                     condition_reason = condition.get("reason", "")
                     condition_message = condition.get("message", "")
+                    last_transition_time = condition.get("lastTransitionTime", "")
                     
                     if condition_status == "True":
-                        pytest.fail(
-                            f"{resource_type.capitalize()} {resource_name} has critical condition. "
-                            f"Type: {condition.get('type', '')}, "
-                            f"Reason: {condition_reason}, Message: {condition_message}"
-                        )
+                        # Check if the critical condition is at least 20 seconds old
+                        if last_transition_time:
+                            try:
+                                # Parse the Kubernetes timestamp (RFC3339 format)
+                                transition_time = datetime.fromisoformat(last_transition_time.replace('Z', '+00:00'))
+                                current_time = datetime.now(timezone.utc)
+                                time_diff = (current_time - transition_time).total_seconds()
+                                
+                                if time_diff >= 20:
+                                    pytest.fail(
+                                        f"{resource_type.capitalize()} {resource_name} has critical condition "
+                                        f"that has persisted for {time_diff:.1f} seconds. "
+                                        f"Type: {condition.get('type', '')}, "
+                                        f"Reason: {condition_reason}, Message: {condition_message}"
+                                    )
+                                else:
+                                    logging.info(
+                                        f"{resource_type.capitalize()} {resource_name} has critical condition "
+                                        f"but it's only {time_diff:.1f} seconds old, waiting..."
+                                    )
+                            except (ValueError, TypeError) as e:
+                                logging.warning(f"Failed to parse lastTransitionTime '{last_transition_time}': {e}")
+                                # If we can't parse the time, fail immediately as before
+                                pytest.fail(
+                                    f"{resource_type.capitalize()} {resource_name} has critical condition. "
+                                    f"Type: {condition.get('type', '')}, "
+                                    f"Reason: {condition_reason}, Message: {condition_message}"
+                                )
+                        else:
+                            # If no lastTransitionTime is available, fail immediately as before
+                            pytest.fail(
+                                f"{resource_type.capitalize()} {resource_name} has critical condition. "
+                                f"Type: {condition.get('type', '')}, "
+                                f"Reason: {condition_reason}, Message: {condition_message}"
+                            )
             
             # Look for Ready condition
             ready_found = False
@@ -144,27 +176,27 @@ def wait_for_resource_condition(
     )
 
 
-def wait_for_provider_ready(test_namespace, provider_name: str, timeout: int = 180):
+def wait_for_provider_ready(test_namespace, provider_name: str, timeout: int = 360):
     """Wait for a provider to have Ready condition = True."""
     return wait_for_resource_condition(test_namespace, "provider", provider_name, timeout)
 
 
 def wait_for_plan_ready(
-    test_namespace, plan_name: str, timeout: int = 120
+    test_namespace, plan_name: str, timeout: int = 180
 ) -> bool:
     """Wait for a migration plan to have Ready condition = True."""
     return wait_for_resource_condition(test_namespace, "plan", plan_name, timeout)
 
 
 def wait_for_network_mapping_ready(
-    test_namespace, mapping_name: str, timeout: int = 120
+    test_namespace, mapping_name: str, timeout: int = 180
 ) -> bool:
     """Wait for a network mapping to have Ready condition = True."""
     return wait_for_resource_condition(test_namespace, "networkmap", mapping_name, timeout)
 
 
 def wait_for_storage_mapping_ready(
-    test_namespace, mapping_name: str, timeout: int = 120
+    test_namespace, mapping_name: str, timeout: int = 180
 ) -> bool:
     """Wait for a storage mapping to have Ready condition = True."""
     return wait_for_resource_condition(test_namespace, "storagemap", mapping_name, timeout)

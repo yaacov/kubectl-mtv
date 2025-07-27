@@ -12,32 +12,33 @@ import (
 )
 
 // resolveOpenShiftNetworkNameToID resolves network name for OpenShift provider
-func resolveOpenShiftNetworkNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, networkName string) (ref.Ref, error) {
+func resolveOpenShiftNetworkNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, networkName string) ([]ref.Ref, error) {
 	// If networkName is empty, return an empty ref
 	if networkName == "" {
-		return ref.Ref{}, fmt.Errorf("network name cannot be empty")
+		return nil, fmt.Errorf("network name cannot be empty")
 	}
 
 	// If networkName is pod, return special pod reference
 	if networkName == "pod" {
-		return ref.Ref{
+		return []ref.Ref{{
 			Name: "pod",
 			Type: "pod",
-		}, nil
+		}}, nil
 	}
 
 	// Fetch NetworkAttachmentDefinitions from OpenShift
 	networksInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "networkattachmentdefinitions?detail=4")
 	if err != nil {
-		return ref.Ref{}, fmt.Errorf("failed to fetch networks inventory: %v", err)
+		return nil, fmt.Errorf("failed to fetch networks inventory: %v", err)
 	}
 
 	networksArray, ok := networksInventory.([]interface{})
 	if !ok {
-		return ref.Ref{}, fmt.Errorf("unexpected data format: expected array for networks inventory")
+		return nil, fmt.Errorf("unexpected data format: expected array for networks inventory")
 	}
 
-	// Search for the network by name
+	// Search for all networks matching the name
+	var matchingRefs []ref.Ref
 	for _, item := range networksArray {
 		network, ok := item.(map[string]interface{})
 		if !ok {
@@ -54,12 +55,12 @@ func resolveOpenShiftNetworkNameToID(configFlags *genericclioptions.ConfigFlags,
 						id, _ := metadataMap["uid"].(string)
 
 						if name == networkName {
-							return ref.Ref{
+							matchingRefs = append(matchingRefs, ref.Ref{
 								ID:        id,
 								Name:      name,
 								Namespace: ns,
 								Type:      "multus",
-							}, nil
+							})
 						}
 					}
 				}
@@ -67,23 +68,28 @@ func resolveOpenShiftNetworkNameToID(configFlags *genericclioptions.ConfigFlags,
 		}
 	}
 
-	return ref.Ref{}, fmt.Errorf("network '%s' not found in OpenShift provider inventory", networkName)
+	if len(matchingRefs) == 0 {
+		return nil, fmt.Errorf("network '%s' not found in OpenShift provider inventory", networkName)
+	}
+
+	return matchingRefs, nil
 }
 
 // resolveVirtualizationNetworkNameToID resolves network name for virtualization providers (VMware, oVirt, OpenStack)
-func resolveVirtualizationNetworkNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, networkName string) (ref.Ref, error) {
+func resolveVirtualizationNetworkNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, networkName string) ([]ref.Ref, error) {
 	// Fetch networks from virtualization providers
 	networksInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "networks?detail=4")
 	if err != nil {
-		return ref.Ref{}, fmt.Errorf("failed to fetch networks inventory: %v", err)
+		return nil, fmt.Errorf("failed to fetch networks inventory: %v", err)
 	}
 
 	networksArray, ok := networksInventory.([]interface{})
 	if !ok {
-		return ref.Ref{}, fmt.Errorf("unexpected data format: expected array for networks inventory")
+		return nil, fmt.Errorf("unexpected data format: expected array for networks inventory")
 	}
 
-	// Search for the network by name
+	// Search for all networks matching the name
+	var matchingRefs []ref.Ref
 	for _, item := range networksArray {
 		network, ok := item.(map[string]interface{})
 		if !ok {
@@ -95,27 +101,31 @@ func resolveVirtualizationNetworkNameToID(configFlags *genericclioptions.ConfigF
 		id, _ := network["id"].(string)
 
 		if name == networkName {
-			return ref.Ref{
+			matchingRefs = append(matchingRefs, ref.Ref{
 				ID: id,
-			}, nil
+			})
 		}
 	}
 
-	return ref.Ref{}, fmt.Errorf("network '%s' not found in virtualization provider inventory", networkName)
+	if len(matchingRefs) == 0 {
+		return nil, fmt.Errorf("network '%s' not found in virtualization provider inventory", networkName)
+	}
+
+	return matchingRefs, nil
 }
 
 // resolveNetworkNameToID resolves a network name to its ref.Ref by querying the provider inventory
-func resolveNetworkNameToID(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL, networkName string) (ref.Ref, error) {
+func resolveNetworkNameToID(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL, networkName string) ([]ref.Ref, error) {
 	// Get source provider
 	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
 	if err != nil {
-		return ref.Ref{}, fmt.Errorf("failed to get provider '%s': %v", providerName, err)
+		return nil, fmt.Errorf("failed to get provider '%s': %v", providerName, err)
 	}
 
 	// Check provider type to determine which helper to use
 	providerType, _, err := unstructured.NestedString(provider.Object, "spec", "type")
 	if err != nil {
-		return ref.Ref{}, fmt.Errorf("failed to get provider type: %v", err)
+		return nil, fmt.Errorf("failed to get provider type: %v", err)
 	}
 
 	switch providerType {

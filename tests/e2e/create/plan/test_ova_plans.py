@@ -15,6 +15,10 @@ from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
 # Hardcoded VM names from OVA inventory data
 OVA_TEST_VMS = [
     "mtv-2disks",
+    "1nisim-rhel9-efi", 
+    "mtv-func-WIN2019",
+    "SHAICTDOET005-Test_rhel9",
+    "mtv-func.RHEL8_8 _TE_ST _ _1 _2"
 ]
 
 
@@ -66,7 +70,7 @@ class TestOVAPlanCreation:
             plan_name,
             f"--source {ova_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vm}",
+            f"--vms '{selected_vm}'",
         ]
         
         create_cmd = " ".join(cmd_parts)
@@ -83,19 +87,21 @@ class TestOVAPlanCreation:
 
     def test_create_multi_vm_plan_from_ova(self, test_namespace, ova_provider):
         """Test creating a migration plan with multiple VMs from OVA provider."""
-        # Use all available VMs for multi-VM test (OVA has fewer VMs) as comma-separated string
+        # Use multiple VMs from the inventory dump data
         if len(OVA_TEST_VMS) < 2:
             pytest.skip("Need at least 2 VMs for multi-VM test")
         
-        selected_vms = ",".join(OVA_TEST_VMS[:2])
+        # Use all available VMs for comprehensive testing
+        selected_vms = ",".join(OVA_TEST_VMS)
         plan_name = f"test-multi-plan-ova-{int(time.time())}"
+        
         # Create plan command with multiple VMs
         cmd_parts = [
             "create plan",
             plan_name,
             f"--source {ova_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vms}",
+            f"--vms '{selected_vms}'",
         ]
         
         create_cmd = " ".join(cmd_parts)

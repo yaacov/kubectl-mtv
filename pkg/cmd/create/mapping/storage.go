@@ -43,7 +43,7 @@ func parseStoragePairs(pairStr, defaultNamespace string, configFlags *genericcli
 		targetPart := strings.TrimSpace(parts[1])
 
 		// Resolve source storage name to ID
-		sourceStorageRef, err := resolveStorageNameToID(configFlags, sourceProvider, defaultNamespace, inventoryURL, sourceName)
+		sourceStorageRefs, err := resolveStorageNameToID(configFlags, sourceProvider, defaultNamespace, inventoryURL, sourceName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve source storage '%s': %v", sourceName, err)
 		}
@@ -64,14 +64,17 @@ func parseStoragePairs(pairStr, defaultNamespace string, configFlags *genericcli
 			return nil, fmt.Errorf("invalid target format '%s': storage class must be specified", targetPart)
 		}
 
-		pair := forkliftv1beta1.StoragePair{
-			Source: sourceStorageRef,
-			Destination: forkliftv1beta1.DestinationStorage{
-				StorageClass: targetStorageClass,
-			},
-		}
+		// Create a pair for each matching source storage resource
+		for _, sourceStorageRef := range sourceStorageRefs {
+			pair := forkliftv1beta1.StoragePair{
+				Source: sourceStorageRef,
+				Destination: forkliftv1beta1.DestinationStorage{
+					StorageClass: targetStorageClass,
+				},
+			}
 
-		pairs = append(pairs, pair)
+			pairs = append(pairs, pair)
+		}
 	}
 
 	return pairs, nil

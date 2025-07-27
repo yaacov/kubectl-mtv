@@ -8,6 +8,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/klog/v2"
 )
 
 // FetchProviderInventory fetches inventory for a specific provider
@@ -38,6 +39,8 @@ func FetchProviderInventory(configFlags *genericclioptions.ConfigFlags, baseURL 
 	if subPath != "" {
 		path = fmt.Sprintf("%s/%s", path, strings.TrimPrefix(subPath, "/"))
 	}
+
+	klog.V(4).Infof("Fetching provider inventory from path: %s", path)
 
 	// Fetch the provider inventory
 	responseBytes, err := httpClient.Get(path)

@@ -96,7 +96,7 @@ class TestVSpherePlanCreationWithPairs:
             plan_name,
             f"--source {vsphere_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vm}",
+            f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
         ]
@@ -131,7 +131,7 @@ class TestVSpherePlanCreationWithPairs:
             plan_name,
             f"--source {vsphere_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vms}",
+            f"--vms '{selected_vms}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
         ]
@@ -166,7 +166,7 @@ class TestVSpherePlanCreationWithPairs:
             plan_name,
             f"--source {vsphere_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vm}",
+            f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
         ]
