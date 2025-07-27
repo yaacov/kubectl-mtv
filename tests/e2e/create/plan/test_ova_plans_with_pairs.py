@@ -16,32 +16,57 @@ from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
 OVA_TEST_VMS = [
     "mtv-2disks",
     "1nisim-rhel9-efi",
-    "mtv-func-WIN2019"
+    "mtv-func-WIN2019",
+    "SHAICTDOET005-Test_rhel9",
+    "mtv-func.RHEL8_8 _TE_ST _ _1 _2"
 ]
 
-# Hardcoded network mapping pairs from OVA inventory data
-OVA_NETWORK_PAIRS = [
-    {"source": "VM Network", "target": "test-nad-1"},
-    {"source": "Mgmt Network", "target": "test-nad-2"}
-]
 
-# Hardcoded storage mapping pairs from OVA inventory data - covering all VM disks
-OVA_STORAGE_PAIRS = [
-    # mtv-2disks VMs (both instances have disks with same names but different IDs)
-    {"source": "mtv-2disks-1.vmdk", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    {"source": "mtv-2disks-2.vmdk", "target": "ocs-storagecluster-ceph-rbd"},
-    # 1nisim-rhel9-efi VM (1 disk)
-    {"source": "1nisim-rhel9-efi-1.vmdk", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    # mtv-func-WIN2019 VM (1 disk)
-    {"source": "mtv-func-WIN2019-1.vmdk", "target": "ocs-storagecluster-ceph-rbd"},
-    # SHAICTDOET005-Test_rhel9 VM (3 disks)
-    {"source": "SHAICTDOET005-Test_rhel9-1.vmdk", "target": "csi-manila-ceph"},
-    {"source": "SHAICTDOET005-Test_rhel9-2.vmdk", "target": "csi-manila-ceph"},
-    {"source": "SHAICTDOET005-Test_rhel9-3.vmdk", "target": "csi-manila-ceph"},
-    # mtv-func.RHEL8_8 _TE_ST _ _1 _2 VM (2 disks)
-    {"source": "mtv-func.RHEL8_8 _TE_ST _ _1 _2-1.vmdk", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "mtv-func.RHEL8_8 _TE_ST _ _1 _2-2.vmdk", "target": "ocs-storagecluster-ceph-rbd"}
-]
+
+# VM-specific storage mappings for individual tests
+VM_STORAGE_MAPPINGS = {
+    "mtv-2disks": [
+        {"source": "mtv-2disks-1.vmdk", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
+        {"source": "mtv-2disks-2.vmdk", "target": "ocs-storagecluster-ceph-rbd"}
+    ],
+    "1nisim-rhel9-efi": [
+        {"source": "1nisim-rhel9-efi-1.vmdk", "target": "ocs-storagecluster-ceph-rbd-virtualization"}
+    ],
+    "mtv-func-WIN2019": [
+        {"source": "mtv-func-WIN2019-1.vmdk", "target": "ocs-storagecluster-ceph-rbd"}
+    ],
+    "SHAICTDOET005-Test_rhel9": [
+        {"source": "SHAICTDOET005-Test_rhel9-1.vmdk", "target": "csi-manila-ceph"},
+        {"source": "SHAICTDOET005-Test_rhel9-2.vmdk", "target": "csi-manila-ceph"},
+        {"source": "SHAICTDOET005-Test_rhel9-3.vmdk", "target": "csi-manila-ceph"}
+    ],
+    "mtv-func.RHEL8_8 _TE_ST _ _1 _2": [
+        {"source": "mtv-func.RHEL8_8 _TE_ST _ _1 _2-1.vmdk", "target": "ocs-storagecluster-ceph-rbd"},
+        {"source": "mtv-func.RHEL8_8 _TE_ST _ _1 _2-2.vmdk", "target": "ocs-storagecluster-ceph-rbd"}
+    ]
+}
+
+# VM-specific network mappings for individual tests
+VM_NETWORK_MAPPINGS = {
+    "mtv-2disks": [
+        {"source": "VM Network", "target": "test-nad-1"},
+        {"source": "Mgmt Network", "target": "test-nad-2"}
+    ],
+    "1nisim-rhel9-efi": [
+        {"source": "Mgmt Network", "target": "test-nad-2"}
+    ],
+    "mtv-func-WIN2019": [
+        {"source": "VM Network", "target": "test-nad-1"},
+        {"source": "Mgmt Network", "target": "test-nad-2"}
+    ],
+    "SHAICTDOET005-Test_rhel9": [
+        {"source": "VM Network", "target": "test-nad-1"},
+        {"source": "Mgmt Network", "target": "test-nad-2"}
+    ],
+    "mtv-func.RHEL8_8 _TE_ST _ _1 _2": [
+        {"source": "VM Network", "target": "test-nad-1"}
+    ]
+}
 
 
 @pytest.mark.create
@@ -83,11 +108,13 @@ class TestOVAPlanCreationWithPairs:
         selected_vm = OVA_TEST_VMS[0]
         plan_name = f"test-plan-ova-pairs-{int(time.time())}"
         
-        # Build network and storage pairs strings
-        network_pairs = ",".join([f"{n['source']}:{n['target']}" for n in OVA_NETWORK_PAIRS])
+        # Get VM-specific network and storage mappings
+        vm_networks = VM_NETWORK_MAPPINGS[selected_vm]
+        vm_storage = VM_STORAGE_MAPPINGS[selected_vm]
         
-        # Get storage pairs for mtv-2disks VM (first 2 pairs in the list)
-        storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in OVA_STORAGE_PAIRS[:2]])
+        # Build network and storage pairs strings
+        network_pairs = ",".join([f"{n['source']}:{n['target']}" for n in vm_networks])
+        storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in vm_storage])
         
         # Create plan command with mapping pairs
         cmd_parts = [
@@ -111,8 +138,95 @@ class TestOVAPlanCreationWithPairs:
         test_namespace.track_resource("networkmap", f"{plan_name}-network")
         test_namespace.track_resource("storagemap", f"{plan_name}-storage")
         
-        # Wait for plan to be ready
+                # Wait for plan to be ready
         wait_for_plan_ready(test_namespace, plan_name)
+
+    def test_create_plan_specific_vm_pairs(self, test_namespace, ova_provider):
+        """Test creating migration plans for each specific VM with their exact storage/network requirements."""
+        # Test each VM individually to ensure mappings are correct
+        for vm_name in OVA_TEST_VMS:
+            if vm_name == "mtv-2disks":
+                continue  # Skip since already tested above
+                
+            plan_name = f"test-plan-ova-{vm_name.replace(' ', '-').replace('_', '-').replace('.', '-')}-{int(time.time())}"
+            
+            # Get VM-specific mappings
+            vm_networks = VM_NETWORK_MAPPINGS[vm_name]
+            vm_storage = VM_STORAGE_MAPPINGS[vm_name]
+            
+            # Build pairs strings
+            network_pairs = ",".join([f"{n['source']}:{n['target']}" for n in vm_networks])
+            storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in vm_storage])
+            
+            # Create plan command
+            cmd_parts = [
+                "create plan",
+                plan_name,
+                f"--source {ova_provider}",
+                "--target test-openshift-target",
+                f"--vms {vm_name}",
+                f"--network-pairs '{network_pairs}'",
+                f"--storage-pairs '{storage_pairs}'",
+            ]
+            
+            create_cmd = " ".join(cmd_parts)
+            
+            # Create plan
+            result = test_namespace.run_mtv_command(create_cmd)
+            assert result.returncode == 0, f"Failed to create plan for VM {vm_name}"
+            
+            # Track for cleanup
+            test_namespace.track_resource("plan", plan_name)
+            test_namespace.track_resource("networkmap", f"{plan_name}-network")
+            test_namespace.track_resource("storagemap", f"{plan_name}-storage")
+            
+            # Wait for plan to be ready
+            wait_for_plan_ready(test_namespace, plan_name)
+
+    def test_create_multi_vm_plan_with_pairs(self, test_namespace, ova_provider):
+        """Test creating a migration plan with multiple VMs using complete mapping pairs."""
+        # Use all available VMs
+        selected_vms = ",".join(OVA_TEST_VMS)
+        plan_name = f"test-multi-plan-ova-pairs-{int(time.time())}"
+        
+        # Build comprehensive network and storage pairs covering all VMs
+        all_networks = set()
+        all_storage = []
+        
+        for vm_name in OVA_TEST_VMS:
+            # Collect unique networks
+            for net in VM_NETWORK_MAPPINGS[vm_name]:
+                all_networks.add((net['source'], net['target']))
+            # Collect all storage mappings
+            all_storage.extend(VM_STORAGE_MAPPINGS[vm_name])
+        
+        network_pairs = ",".join([f"{source}:{target}" for source, target in all_networks])
+        storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in all_storage])
+        
+        # Create plan command with all VMs and mapping pairs
+        cmd_parts = [
+            "create plan",
+            plan_name,
+            f"--source {ova_provider}",
+            "--target test-openshift-target",
+            f"--vms {selected_vms}",
+            f"--network-pairs '{network_pairs}'",
+            f"--storage-pairs '{storage_pairs}'",
+        ]
+        
+        create_cmd = " ".join(cmd_parts)
+        
+        # Create plan
+        result = test_namespace.run_mtv_command(create_cmd)
+        assert result.returncode == 0, "Failed to create multi-VM plan with pairs"
+        
+        # Track for cleanup
+        test_namespace.track_resource("plan", plan_name)
+        test_namespace.track_resource("networkmap", f"{plan_name}-network")
+        test_namespace.track_resource("storagemap", f"{plan_name}-storage")
+        
+        # Wait for plan to be ready (longer timeout for multi-VM plans)
+        wait_for_plan_ready(test_namespace, plan_name) 
 
     def test_create_plan_with_pod_network_pairs(self, test_namespace, ova_provider):
         """Test creating a migration plan with pod network mapping pairs."""
@@ -120,11 +234,13 @@ class TestOVAPlanCreationWithPairs:
         selected_vm = OVA_TEST_VMS[0]
         plan_name = f"test-plan-ova-pod-pairs-{int(time.time())}"
         
-        # Use pod network for all networks
-        network_pairs = ",".join([f"{n['source']}:pod" for n in OVA_NETWORK_PAIRS])
+        # Get VM-specific mappings
+        vm_networks = VM_NETWORK_MAPPINGS[selected_vm]
+        vm_storage = VM_STORAGE_MAPPINGS[selected_vm]
         
-        # Get storage pairs for mtv-2disks VM (first 2 pairs in the list)
-        storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in OVA_STORAGE_PAIRS[:2]])
+        # Use pod network for all networks
+        network_pairs = ",".join([f"{n['source']}:pod" for n in vm_networks])
+        storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in vm_storage])
         
         # Create plan command with pod network mapping
         cmd_parts = [
@@ -157,11 +273,15 @@ class TestOVAPlanCreationWithPairs:
         selected_vm = OVA_TEST_VMS[0]
         plan_name = f"test-plan-ova-minimal-pairs-{int(time.time())}"
         
-        # Use minimal network pairs but all required storage pairs for the VM
-        network_pairs = "VM Network:pod"
+        # Get VM-specific mappings
+        vm_networks = VM_NETWORK_MAPPINGS[selected_vm]
+        vm_storage = VM_STORAGE_MAPPINGS[selected_vm]
         
-        # Get storage pairs for mtv-2disks VM (first 2 pairs in the list)
-        storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in OVA_STORAGE_PAIRS[:2]])
+        # Use minimal network pairs - only the first network mapped to pod
+        network_pairs = f"{vm_networks[0]['source']}:pod"
+        
+        # All required storage pairs for the VM
+        storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in vm_storage])
         
         # Create plan command with minimal mapping pairs
         cmd_parts = [

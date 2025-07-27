@@ -17,6 +17,8 @@ OVA_TEST_VMS = [
     "mtv-2disks",
     "1nisim-rhel9-efi", 
     "mtv-func-WIN2019",
+    "SHAICTDOET005-Test_rhel9",
+    "mtv-func.RHEL8_8 _TE_ST _ _1 _2"
 ]
 
 
