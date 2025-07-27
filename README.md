@@ -1,6 +1,6 @@
 # kubectl-mtv
 
-A kubectl plugin that helps users of Forklift migrate virtualization workloads from oVirt, VMware, OpenStack, and OVA files to KubeVirt on Kubernetes.
+A kubectl plugin for migrating virtual machines to KubeVirt using Forklift.
 
 <p align="center">
   <img src="docs/hiking.svg" alt="kubectl-mtv logo" width="200">
@@ -8,109 +8,140 @@ A kubectl plugin that helps users of Forklift migrate virtualization workloads f
 
 ## Overview
 
-The Forklift project (upstream of Migration Toolkit for Virtualization) simplifies the process of migrating virtual machines from traditional virtualization platforms to Kubernetes using KubeVirt. It handles the complexities of different virtualization platforms and provides a consistent way to define, plan, and execute migrations.
-
-[Forklift GitHub Repository](https://github.com/kubev2v/forklift)
-
-> **Note**  
-> The Migration Toolkit for Virtualization (MTV) is the downstream (OpenShift) distribution of the upstream Kubernetes Forklift project.
-> Similarly, the `oc` CLI is the downstream (OpenShift) version of the upstream `kubectl` CLI.
-> This project (`kubectl-mtv`) is compatible with both upstream (Kubernetes/Forklift/kubectl) and downstream (OpenShift/MTV/oc) environments, but documentation here uses upstream naming unless otherwise noted.
+kubectl-mtv helps migrate VMs from vSphere, oVirt, OpenStack, and OVA to Kubernetes/OpenShift using KubeVirt. It's a command-line interface for the [Forklift](https://github.com/kubev2v/forklift) project.
 
 ## Installation
 
-### Krew plugin manager
-
-Using [krew](https://sigs.k8s.io/krew) plugin manager to install:
-
-``` bash
-# Available for linux-amd64
+```bash
+# Using krew
 kubectl krew install mtv
-kubectl mtv --help
+
+# Or download from releases
+# https://github.com/yaacov/kubectl-mtv/releases
 ```
 
-### Download release binaries
+See [Installation Guide](docs/README-install.md) for more options.
 
-Go to the [Releases page](https://github.com/yaacov/kubectl-mtv/releases) and download the appropriate archive for your platform.
+## Quick Start
 
-For additional installation methods and detailed setup instructions, see the [Installation Guide](docs/README-install.md).
-
-## Usage
-
-For a complete migration demo, see the [Migration Demo Tutorial](docs/README_demo.md).
-
-### Quick Start Examples
-
-#### Create a VMware provider
+### 1. Create Provider
 
 ```bash
-kubectl mtv create provider vsphere-01 --type vsphere --url https://vcenter.example.com \
+kubectl mtv create provider vsphere-01 --type vsphere \
+  --url https://vcenter.example.com \
   -u admin --password secret --cacert @ca.cert
 ```
 
-#### List VMs from a provider
+### 2. Create Mappings (Optional)
 
 ```bash
-kubectl mtv get inventory vms vsphere-01
+# Network mapping
+kubectl mtv create mapping network prod-net \
+  --source vsphere-01 --target openshift \
+  --network-pairs "VM Network:pod,Management:openshift-sdn/mgmt"
+
+# Storage mapping  
+kubectl mtv create mapping storage prod-storage \
+  --source vsphere-01 --target openshift \
+  --storage-pairs "datastore1:standard,datastore2:fast"
 ```
 
-#### Create a migration plan
+### 3. Create Migration Plan
 
 ```bash
-kubectl mtv create plan my-plan --source vsphere-01 --target openshift-target \
-  --vms "web-vm-1,db-vm-2,app-vm-3"
+# Using system defaults for best network and storage mapping
+kubectl mtv create plan migration-1 \
+  --source vsphere-01 \
+  --vms vm1,vm2,vm3
+
+# Using existing mappings
+kubectl mtv create plan migration-1 \
+  --source vsphere-01 \
+  --network-mapping prod-net \
+  --storage-mapping prod-storage \
+  --vms vm1,vm2,vm3
+
+# Or using inline mappings
+kubectl mtv create plan migration-2 \
+  --source vsphere-01 \
+  --network-pairs "VM Network:pod" \
+  --storage-pairs "datastore1:standard" \
+  --vms vm1,vm2,vm3
 ```
 
-#### Start migration
+### 4. Start Migration
 
 ```bash
-kubectl mtv start plan my-plan
+kubectl mtv start plan migration-1
 ```
 
-#### Monitor migration progress
+### 5. Monitor Progress
 
 ```bash
 kubectl mtv get plan --watch
 ```
 
-For comprehensive usage instructions and detailed command reference, see the [Usage Guide](docs/README-usage.md).
+For a complete walkthrough, see the [Migration Demo Tutorial](docs/README_demo.md).
 
-## Key Features
+## Inventory Management
 
-- **Provider Management**: Connect to VMware vSphere, OpenShift, oVirt, OpenStack, and OVA providers
-- **Inventory Exploration**: Query and filter VMs, networks, storage, and hosts with advanced search capabilities
-- **Migration Planning**: Create and manage migration plans with automatic network and storage mapping
-- **VDDK Integration**: Support for VMware Virtual Disk Development Kit for optimal disk transfer performance
-- **Live Monitoring**: Watch migration progress with real-time status updates
+Query and explore provider resources before migration:
 
-For detailed feature documentation, see:
+```bash
+# List VMs
+kubectl mtv get inventory vms vsphere-01
 
-- [Inventory Commands Tutorial](docs/README_inventory.md): Advanced querying and filtering
-- [planvms VM List Editing](docs/README_planvms.md): Customizing VM migration configurations
-- [VDDK Image Creation and Usage](docs/README_vddk.md): Setting up VMware VDDK support
+# Filter VMs by criteria
+kubectl mtv get inventory vms vsphere-01 -q "where memoryMB > 4096"
 
-## Environment Variables
+# List networks and storage
+kubectl mtv get inventory networks vsphere-01
+kubectl mtv get inventory storage vsphere-01
+```
 
-The following environment variables are used by `kubectl-mtv`:
+See [Inventory Commands Tutorial](docs/README_inventory.md) for advanced queries and filtering.
 
-- `MTV_VDDK_INIT_IMAGE`: Specifies the default Virtual Disk Development Kit (VDDK) container init image path. This value is used as the default for the `--vddk-init-image` flag when creating a provider.
-- `MTV_INVENTORY_URL`: Specifies the base URL for the inventory service. This value is used as the default for the `--inventory-url` flag in various commands, such as listing providers, VMs, networks, and storage.
+## VDDK Support
 
-## Tutorials
+For optimal VMware disk transfer performance, build a VDDK image from VMware's VDDK SDK:
 
-- [Migration Demo Tutorial](docs/README_demo.md): Step-by-step guide to performing a VM migration
-- [Inventory Commands Tutorial](docs/README_inventory.md): Comprehensive guide to using inventory commands and queries
+```bash
+# Build VDDK image
+kubectl mtv create vddk-image \
+  --tar VMware-vix-disklib-8.0.1.tar.gz \
+  --tag quay.io/myorg/vddk:8.0.1
+
+# Use it when creating a provider
+kubectl mtv create provider vsphere-01 --type vsphere \
+  --url https://vcenter.example.com \
+  --vddk-init-image quay.io/myorg/vddk:8.0.1
+```
+
+See [VDDK Setup Guide](docs/README_vddk.md) for detailed instructions.
+
+## Features
+
+- **Multi-Platform Support**: Migrate from vSphere, oVirt, OpenStack, and OVA
+- **Flexible Mapping**: Use existing mappings, inline pairs, or automatic defaults
+- **Advanced Queries**: Filter and search inventory with powerful query language
+- **VDDK Support**: Optimized VMware disk transfers
+- **Real-time Monitoring**: Track migration progress live
 
 ## Documentation
 
 - [Installation Guide](docs/README-install.md)
 - [Usage Guide](docs/README-usage.md)
+- [Migration Demo](docs/README_demo.md)
+- [Inventory Queries](docs/README_inventory.md)
+- [Mapping Configuration](docs/README_mapping_pairs.md)
+- [Creating Mappings](docs/README_create_mappings.md)
 - [Development Guide](docs/README-development.md)
 
-## Logo Attribution
+## Environment Variables
 
-The gopher logo is from [github.com/egonelbre/gophers](https://github.com/egonelbre/gophers) by Renee French.
+- `MTV_VDDK_INIT_IMAGE`: Default VDDK init image for VMware providers
+- `MTV_INVENTORY_URL`: Base URL for inventory service
 
 ## License
 
-Apache-2.0 license
+Apache-2.0

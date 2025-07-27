@@ -11,7 +11,6 @@ import pytest
 from ....utils import wait_for_provider_ready
 
 
-@pytest.mark.skip(reason="Skipping OpenStack inventory tests")
 @pytest.mark.get
 @pytest.mark.inventory
 @pytest.mark.openstack
@@ -49,7 +48,7 @@ class TestOpenStackInventory:
             f"--password '{creds['password']}'",
             f"--provider-domain-name '{creds['domain_name']}'",
             f"--provider-project-name '{creds['project_name']}'",
-            f"--provider-region-name '{creds['region_name']}'"
+            f"--provider-region-name '{creds['region_name']}'",
             "--provider-insecure-skip-tls",
         ]
 

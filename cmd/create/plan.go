@@ -51,6 +51,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var vmNamesOrFile string
 	var inventoryURL string
 	var defaultTargetNetwork, defaultTargetStorageClass string
+	var networkPairs, storagePairs string
 
 	// PlanSpec fields
 	var planSpec forkliftv1beta1.PlanSpec
@@ -77,6 +78,14 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 			// If inventoryURL is empty, try to discover it
 			if inventoryURL == "" {
 				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+			}
+
+			// Validate that existing mapping flags and mapping pair flags are not used together
+			if networkMapping != "" && networkPairs != "" {
+				return fmt.Errorf("cannot use both --network-mapping and --network-pairs flags")
+			}
+			if storageMapping != "" && storagePairs != "" {
+				return fmt.Errorf("cannot use both --storage-mapping and --storage-pairs flags")
 			}
 
 			var vmList []planv1beta1.VM
@@ -204,6 +213,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				DefaultTargetNetwork:      defaultTargetNetwork,
 				DefaultTargetStorageClass: defaultTargetStorageClass,
 				PlanSpec:                  planSpec,
+				NetworkPairs:              networkPairs,
+				StoragePairs:              storagePairs,
 			}
 
 			err := plan.Create(opts)
@@ -215,6 +226,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name")
 	cmd.Flags().StringVar(&networkMapping, "network-mapping", "", "Network mapping name")
 	cmd.Flags().StringVar(&storageMapping, "storage-mapping", "", "Storage mapping name")
+	cmd.Flags().StringVar(&networkPairs, "network-pairs", "", "Network mapping pairs in format 'source:target-namespace/target-network', 'source:target-network', 'source:pod', or 'source:ignored' (comma-separated)")
+	cmd.Flags().StringVar(&storagePairs, "storage-pairs", "", "Storage mapping pairs in format 'source:storage-class' (comma-separated). Note: storage classes are cluster-scoped")
 	cmd.Flags().StringVar(&vmNamesOrFile, "vms", "", "List of VM names (comma-separated) or path to YAML/JSON file containing a list of VM structs")
 
 	// PlanSpec flags
