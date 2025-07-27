@@ -59,7 +59,7 @@ class TestOpenShiftPlanCreation:
             plan_name,
             f"--source {openshift_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vm}",
+            f"--vms '{selected_vm}'",
             "--target-namespace default",
         ]
         
@@ -89,7 +89,7 @@ class TestOpenShiftPlanCreation:
             plan_name,
             f"--source {openshift_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vms}",
+            f"--vms '{selected_vms}'",
             "--target-namespace default",
         ]
         

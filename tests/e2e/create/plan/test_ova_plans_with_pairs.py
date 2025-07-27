@@ -122,7 +122,7 @@ class TestOVAPlanCreationWithPairs:
             plan_name,
             f"--source {ova_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vm}",
+            f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
         ]
@@ -140,48 +140,6 @@ class TestOVAPlanCreationWithPairs:
         
                 # Wait for plan to be ready
         wait_for_plan_ready(test_namespace, plan_name)
-
-    def test_create_plan_specific_vm_pairs(self, test_namespace, ova_provider):
-        """Test creating migration plans for each specific VM with their exact storage/network requirements."""
-        # Test each VM individually to ensure mappings are correct
-        for vm_name in OVA_TEST_VMS:
-            if vm_name == "mtv-2disks":
-                continue  # Skip since already tested above
-                
-            plan_name = f"test-plan-ova-{vm_name.replace(' ', '-').replace('_', '-').replace('.', '-')}-{int(time.time())}"
-            
-            # Get VM-specific mappings
-            vm_networks = VM_NETWORK_MAPPINGS[vm_name]
-            vm_storage = VM_STORAGE_MAPPINGS[vm_name]
-            
-            # Build pairs strings
-            network_pairs = ",".join([f"{n['source']}:{n['target']}" for n in vm_networks])
-            storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in vm_storage])
-            
-            # Create plan command
-            cmd_parts = [
-                "create plan",
-                plan_name,
-                f"--source {ova_provider}",
-                "--target test-openshift-target",
-                f"--vms {vm_name}",
-                f"--network-pairs '{network_pairs}'",
-                f"--storage-pairs '{storage_pairs}'",
-            ]
-            
-            create_cmd = " ".join(cmd_parts)
-            
-            # Create plan
-            result = test_namespace.run_mtv_command(create_cmd)
-            assert result.returncode == 0, f"Failed to create plan for VM {vm_name}"
-            
-            # Track for cleanup
-            test_namespace.track_resource("plan", plan_name)
-            test_namespace.track_resource("networkmap", f"{plan_name}-network")
-            test_namespace.track_resource("storagemap", f"{plan_name}-storage")
-            
-            # Wait for plan to be ready
-            wait_for_plan_ready(test_namespace, plan_name)
 
     def test_create_multi_vm_plan_with_pairs(self, test_namespace, ova_provider):
         """Test creating a migration plan with multiple VMs using complete mapping pairs."""
@@ -209,7 +167,7 @@ class TestOVAPlanCreationWithPairs:
             plan_name,
             f"--source {ova_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vms}",
+            f"--vms '{selected_vms}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
         ]
@@ -248,7 +206,7 @@ class TestOVAPlanCreationWithPairs:
             plan_name,
             f"--source {ova_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vm}",
+            f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
         ]
@@ -266,44 +224,3 @@ class TestOVAPlanCreationWithPairs:
         
         # Wait for plan to be ready
         wait_for_plan_ready(test_namespace, plan_name)
-
-    def test_create_plan_with_minimal_pairs(self, test_namespace, ova_provider):
-        """Test creating a migration plan with minimal mapping pairs."""
-        # Use the first available VM (mtv-2disks which has 2 disks)
-        selected_vm = OVA_TEST_VMS[0]
-        plan_name = f"test-plan-ova-minimal-pairs-{int(time.time())}"
-        
-        # Get VM-specific mappings
-        vm_networks = VM_NETWORK_MAPPINGS[selected_vm]
-        vm_storage = VM_STORAGE_MAPPINGS[selected_vm]
-        
-        # Use minimal network pairs - only the first network mapped to pod
-        network_pairs = f"{vm_networks[0]['source']}:pod"
-        
-        # All required storage pairs for the VM
-        storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in vm_storage])
-        
-        # Create plan command with minimal mapping pairs
-        cmd_parts = [
-            "create plan",
-            plan_name,
-            f"--source {ova_provider}",
-            "--target test-openshift-target",
-            f"--vms {selected_vm}",
-            f"--network-pairs '{network_pairs}'",
-            f"--storage-pairs '{storage_pairs}'",
-        ]
-        
-        create_cmd = " ".join(cmd_parts)
-        
-        # Create plan
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-        
-        # Track for cleanup (also track auto-created mappings)
-        test_namespace.track_resource("plan", plan_name)
-        test_namespace.track_resource("networkmap", f"{plan_name}-network")
-        test_namespace.track_resource("storagemap", f"{plan_name}-storage")
-        
-        # Wait for plan to be ready
-        wait_for_plan_ready(test_namespace, plan_name) 

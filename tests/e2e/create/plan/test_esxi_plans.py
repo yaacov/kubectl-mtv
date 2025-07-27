@@ -79,7 +79,7 @@ class TestESXiPlanCreation:
             plan_name,
             f"--source {esxi_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vm}",
+            f"--vms '{selected_vm}'",
         ]
         
         create_cmd = " ".join(cmd_parts)
@@ -105,7 +105,7 @@ class TestESXiPlanCreation:
             plan_name,
             f"--source {esxi_provider}",
             "--target test-openshift-target",
-            f"--vms {selected_vms}",
+            f"--vms '{selected_vms}'",
         ]
         
         create_cmd = " ".join(cmd_parts)

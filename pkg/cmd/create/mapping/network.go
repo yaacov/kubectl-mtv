@@ -43,7 +43,7 @@ func parseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericcli
 		targetPart := strings.TrimSpace(parts[1])
 
 		// Resolve source network name to ID
-		sourceNetworkRef, err := resolveNetworkNameToID(configFlags, sourceProvider, defaultNamespace, inventoryURL, sourceName)
+		sourceNetworkRefs, err := resolveNetworkNameToID(configFlags, sourceProvider, defaultNamespace, inventoryURL, sourceName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve source network '%s': %v", sourceName, err)
 		}
@@ -80,12 +80,15 @@ func parseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericcli
 			destinationNetwork.Namespace = targetNamespace
 		}
 
-		pair := forkliftv1beta1.NetworkPair{
-			Source:      sourceNetworkRef,
-			Destination: destinationNetwork,
-		}
+		// Create a pair for each matching source network resource
+		for _, sourceNetworkRef := range sourceNetworkRefs {
+			pair := forkliftv1beta1.NetworkPair{
+				Source:      sourceNetworkRef,
+				Destination: destinationNetwork,
+			}
 
-		pairs = append(pairs, pair)
+			pairs = append(pairs, pair)
+		}
 	}
 
 	return pairs, nil
