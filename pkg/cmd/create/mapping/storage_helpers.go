@@ -82,7 +82,7 @@ func resolveOvirtStorageNameToID(configFlags *genericclioptions.ConfigFlags, inv
 // resolveOpenStackStorageNameToID resolves storage name for OpenStack provider
 func resolveOpenStackStorageNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string) (ref.Ref, error) {
 	// Fetch storage types from OpenStack
-	storageInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "storagetypes?detail=4")
+	storageInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "volumetypes?detail=4")
 	if err != nil {
 		return ref.Ref{}, fmt.Errorf("failed to fetch storage inventory: %v", err)
 	}
