@@ -36,6 +36,7 @@ func createMappingItem(mapping unstructured.Unstructured, mappingType string) ma
 		"source":    extractProviderName(mapping, "source"),
 		"target":    extractProviderName(mapping, "destination"),
 		"created":   mapping.GetCreationTimestamp().Format("2006-01-02 15:04:05"),
+		"object":    mapping.Object, // Include the original object
 	}
 
 	// Add owner information if available

@@ -122,6 +122,7 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 				"InventoryStatus":  conditionStatuses.InventoryStatus,
 				"ReadyStatus":      conditionStatuses.ReadyStatus,
 			},
+			"object": provider.Object, // Include the original object
 		}
 
 		if baseURL != "" {

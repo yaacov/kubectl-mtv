@@ -28,9 +28,7 @@ OPENSTACK_NETWORK_PAIRS = [
     {"source": "provider_net_ipv6_only", "target": "test-nad-1"}
 ]
 
-# Comprehensive storage mapping covering ALL possible OpenStack storage types
-# Includes volume types, storage backends, and default storage classes
-# This ensures complete coverage for all VM storage during migration
+# Hardcoded storage mapping pairs from OpenStack inventory data 
 OPENSTACK_STORAGE_PAIRS = [
     # Primary storage types from inventory
     {"source": "__DEFAULT__", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
