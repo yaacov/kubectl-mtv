@@ -116,4 +116,4 @@ class TestVSpherePlanCreation:
         test_namespace.track_resource("plan", plan_name)
         
         # Wait for plan to be ready (longer timeout for multi-VM plans)
-        wait_for_plan_ready(test_namespace, plan_name, timeout=900) 
+        wait_for_plan_ready(test_namespace, plan_name) 

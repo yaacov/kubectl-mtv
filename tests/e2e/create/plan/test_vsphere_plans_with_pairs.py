@@ -146,7 +146,7 @@ class TestVSpherePlanCreationWithPairs:
         test_namespace.track_resource("storagemap", f"{plan_name}-storage")
         
         # Wait for plan to be ready (longer timeout for multi-VM plans)
-        wait_for_plan_ready(test_namespace, plan_name, timeout=900)
+        wait_for_plan_ready(test_namespace, plan_name)
 
     def test_create_plan_with_pod_network_pairs(self, test_namespace, vsphere_provider):
         """Test creating a migration plan with pod network mapping pairs."""
