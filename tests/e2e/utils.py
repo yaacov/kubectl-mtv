@@ -34,7 +34,7 @@ def load_env_file(env_file: Optional[str] = None) -> None:
         logging.warning("python-dotenv not installed, skipping .env file loading")
 
 
-def wait_for_provider_ready(test_namespace, provider_name: str, timeout: int = 300):
+def wait_for_provider_ready(test_namespace, provider_name: str, timeout: int = 180):
     """Wait for a provider to have Ready condition = True using kubectl wait."""
     logging.info(f"Waiting for provider {provider_name} to be ready...")
 
@@ -83,7 +83,7 @@ def wait_for_provider_ready(test_namespace, provider_name: str, timeout: int = 3
 
 
 def wait_for_plan_ready(
-    test_namespace, plan_name: str, timeout: int = 600
+    test_namespace, plan_name: str, timeout: int = 120
 ) -> bool:
     """Wait for a migration plan to have Ready condition = True using kubectl wait."""
     logging.info(f"Waiting for plan {plan_name} to be ready...")
@@ -133,7 +133,7 @@ def wait_for_plan_ready(
 
 
 def wait_for_network_mapping_ready(
-    test_namespace, mapping_name: str, timeout: int = 300
+    test_namespace, mapping_name: str, timeout: int = 120
 ) -> bool:
     """Wait for a network mapping to have Ready condition = True using kubectl wait."""
     logging.info(f"Waiting for network mapping {mapping_name} to be ready...")
@@ -181,7 +181,7 @@ def wait_for_network_mapping_ready(
 
 
 def wait_for_storage_mapping_ready(
-    test_namespace, mapping_name: str, timeout: int = 300
+    test_namespace, mapping_name: str, timeout: int = 120
 ) -> bool:
     """Wait for a storage mapping to have Ready condition = True using kubectl wait."""
     logging.info(f"Waiting for storage mapping {mapping_name} to be ready...")

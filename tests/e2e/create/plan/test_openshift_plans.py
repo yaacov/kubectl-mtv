@@ -59,6 +59,7 @@ class TestOpenShiftPlanCreation:
             f"--source {openshift_provider}",
             "--target test-openshift-target",
             f"--vms {selected_vm}",
+            "--target-namespace default",
         ]
         
         create_cmd = " ".join(cmd_parts)
@@ -88,6 +89,7 @@ class TestOpenShiftPlanCreation:
             f"--source {openshift_provider}",
             "--target test-openshift-target",
             f"--vms {selected_vms}",
+            "--target-namespace default",
         ]
         
         create_cmd = " ".join(cmd_parts)
@@ -100,4 +102,4 @@ class TestOpenShiftPlanCreation:
         test_namespace.track_resource("plan", plan_name)
         
         # Wait for plan to be ready (longer timeout for multi-VM plans)
-        wait_for_plan_ready(test_namespace, plan_name, timeout=900) 
+        wait_for_plan_ready(test_namespace, plan_name) 

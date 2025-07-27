@@ -148,7 +148,7 @@ class TestESXiPlanCreationWithPairs:
         test_namespace.track_resource("storagemap", f"{plan_name}-storage")
         
         # Wait for plan to be ready (longer timeout for multi-VM plans)
-        wait_for_plan_ready(test_namespace, plan_name, timeout=900)
+        wait_for_plan_ready(test_namespace, plan_name)
 
     def test_create_plan_with_pod_network_pairs(self, test_namespace, esxi_provider):
         """Test creating a migration plan with pod network mapping pairs."""
@@ -193,7 +193,8 @@ class TestESXiPlanCreationWithPairs:
         
         # Use simple mapping pairs
         network_pairs = "VM Network:pod"
-        storage_pairs = f"{ESXI_STORAGE_PAIRS[0]['source']}:{ESXI_STORAGE_PAIRS[0]['target']}"
+        # Include all ESXi datastores to ensure nothing is unmapped
+        storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in ESXI_STORAGE_PAIRS])
         
         # Create plan command with mapping pairs
         # Note: VDDK configuration would typically be done at provider level or via VDDK config
