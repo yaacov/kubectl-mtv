@@ -442,14 +442,38 @@ kubectl mtv create plan mapped-migration \
 
 | Flag | Description | Example |
 |------|-------------|---------|
-| `--source-provider` | Source provider name | `--source-provider vmware` |
+| `--source`, `-S` | Source provider name | `--source vmware` |
+| `--target`, `-t` | Target provider name | `--target openshift` |
+| `--vms` | Comma-separated list of VMs or path to a file | `--vms vm1,vm2` or `--vms @vms.json` |
+| `--network-mapping` | Network mapping name | `--network-mapping net-map` |
+| `--storage-mapping` | Storage mapping name | `--storage-mapping storage-map` |
+| `--network-pairs` | Inline network mapping pairs | `--network-pairs 'src-net:tgt-net'` |
+| `--storage-pairs` | Inline storage mapping pairs | `--storage-pairs 'src-ds:tgt-sc'` |
+| `--description` | Plan description | `--description "Migrate web servers"` |
 | `--target-namespace` | Target Kubernetes namespace | `--target-namespace production` |
-| `--vms` | Comma-separated list of VMs | `--vms vm1,vm2,vm3` |
-| `--network-map` | Network mapping name | `--network-map net-mapping` |
-| `--storage-map` | Storage mapping name | `--storage-map storage-mapping` |
-| `--warm` | Enable warm migration | `--warm` |
-| `--pvc-name-template` | PVC naming template | `--pvc-name-template "{{.VmName}}-{{.DiskIndex}}"` |
-| `--delete-guest-conversion-pod` | Auto-cleanup conversion pods | `--delete-guest-conversion-pod` |
+| `--transfer-network` | Network to use for disk transfer | `--transfer-network my-nad` |
+| `--preserve-cluster-cpu-model` | Preserve oVirt cluster CPU model | `--preserve-cluster-cpu-model` |
+| `--preserve-static-ips` | Preserve static IPs from vSphere | `--preserve-static-ips` |
+| `--pvc-name-template` | Template for PVC names | `--pvc-name-template "{{.VmName}}-{{.DiskIndex}}"` |
+| `--volume-name-template` | Template for volume names | `--volume-name-template "{{.VmName}}-vol"` |
+| `--network-name-template` | Template for network interface names | `--network-name-template "{{.VmName}}-nic"` |
+| `--migrate-shared-disks` | Migrate shared disks | `--migrate-shared-disks=false` |
+| `--inventory-url`, `-i` | Inventory service URL | `-i http://inventory.svc` |
+| `--archived` | Create the plan in an archived state | `--archived` |
+| `--pvc-name-template-use-generate-name` | Use `generateName` for PVCs | `--pvc-name-template-use-generate-name=false` |
+| `--delete-guest-conversion-pod` | Clean up conversion pods | `--delete-guest-conversion-pod` |
+| `--skip-guest-conversion` | Skip guest OS conversion | `--skip-guest-conversion` |
+| `--install-legacy-drivers` | Install legacy Windows drivers | `--install-legacy-drivers=true` |
+| `--migration-type`, `-m` | Migration type: `cold`, `warm`, or `live` | `--migration-type warm` |
+| `--warm` | Enable warm migration (deprecated) | `--warm` |
+| `--default-target-network`, `-N` | Default target network for mapping | `-N pod` |
+| `--default-target-storage-class` | Default target storage class | `--default-target-storage-class thin` |
+| `--use-compatibility-mode` | Use compatibility devices for bootability | `--use-compatibility-mode=false` |
+| `--target-labels`, `-L` | Labels to add to the migrated VM | `-L app=web,tier=frontend` |
+| `--target-node-selector` | Node selector for the migrated VM | `--target-node-selector 'disktype=ssd'` |
+| `--target-affinity` | Constrain VM scheduling using KARL syntax | `--target-affinity 'REQUIRE pods(app=db)'` |
+
+For advanced scheduling, see the [Target Affinity Guide](README_target_affinity.md).
 
 ### Describe Plans
 
