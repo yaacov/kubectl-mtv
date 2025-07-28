@@ -16,6 +16,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
@@ -52,6 +53,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var inventoryURL string
 	var defaultTargetNetwork, defaultTargetStorageClass string
 	var networkPairs, storagePairs string
+	var preHook, postHook string
 
 	// PlanSpec fields
 	var planSpec forkliftv1beta1.PlanSpec
@@ -113,6 +115,44 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 					newVM := planv1beta1.VM{}
 					newVM.Name = strings.TrimSpace(vmName)
 					vmList = append(vmList, newVM)
+				}
+			}
+
+			// Add hooks to all VMs if specified
+			if preHook != "" || postHook != "" {
+				for i := range vmList {
+					var hooks []planv1beta1.HookRef
+
+					// Add pre-hook if specified
+					if preHook != "" {
+						preHookRef := planv1beta1.HookRef{
+							Step: "PreHook",
+							Hook: corev1.ObjectReference{
+								Kind:       "Hook",
+								APIVersion: "forklift.konveyor.io/v1beta1",
+								Name:       strings.TrimSpace(preHook),
+								Namespace:  namespace,
+							},
+						}
+						hooks = append(hooks, preHookRef)
+					}
+
+					// Add post-hook if specified
+					if postHook != "" {
+						postHookRef := planv1beta1.HookRef{
+							Step: "PostHook",
+							Hook: corev1.ObjectReference{
+								Kind:       "Hook",
+								APIVersion: "forklift.konveyor.io/v1beta1",
+								Name:       strings.TrimSpace(postHook),
+								Namespace:  namespace,
+							},
+						}
+						hooks = append(hooks, postHookRef)
+					}
+
+					// Add hooks to the VM (append to existing hooks if any)
+					vmList[i].Hooks = append(vmList[i].Hooks, hooks...)
 				}
 			}
 
@@ -229,6 +269,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().StringVar(&networkPairs, "network-pairs", "", "Network mapping pairs in format 'source:target-namespace/target-network', 'source:target-network', 'source:pod', or 'source:ignored' (comma-separated)")
 	cmd.Flags().StringVar(&storagePairs, "storage-pairs", "", "Storage mapping pairs in format 'source:storage-class' (comma-separated). Note: storage classes are cluster-scoped")
 	cmd.Flags().StringVar(&vmNamesOrFile, "vms", "", "List of VM names (comma-separated) or path to YAML/JSON file containing a list of VM structs")
+	cmd.Flags().StringVar(&preHook, "pre-hook", "", "Pre-migration hook to add to all VMs in the plan")
+	cmd.Flags().StringVar(&postHook, "post-hook", "", "Post-migration hook to add to all VMs in the plan")
 
 	// PlanSpec flags
 	cmd.Flags().StringVar(&planSpec.Description, "description", "", "Plan description")
@@ -266,6 +308,16 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	if err := cmd.RegisterFlagCompletionFunc("install-legacy-drivers", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"true", "false"}, cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
+		panic(err)
+	}
+
+	// Add completion for pre-hook flag
+	if err := cmd.RegisterFlagCompletionFunc("pre-hook", completion.HookResourceNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
+
+	// Add completion for post-hook flag
+	if err := cmd.RegisterFlagCompletionFunc("post-hook", completion.HookResourceNameCompletion(kubeConfigFlags)); err != nil {
 		panic(err)
 	}
 
