@@ -23,6 +23,10 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	var vddkInitImage string
 	sdkEndpointType := flags.NewSdkEndpointTypeFlag()
 
+	// VSphere VDDK specific flags
+	var useVddkAioOptimization bool
+	var vddkBufSizeIn64K, vddkBufCount int
+
 	// OpenStack specific flags
 	var domainName, projectName, regionName string
 
@@ -55,7 +59,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 
 			return provider.Create(kubeConfigFlags, providerType.GetValue(), name, namespace, secret,
 				url, username, password, cacert, insecureSkipTLS, vddkInitImage, sdkEndpointType.GetValue(), token,
-				domainName, projectName, regionName)
+				domainName, projectName, regionName, useVddkAioOptimization, vddkBufSizeIn64K, vddkBufCount)
 		},
 	}
 
@@ -75,6 +79,9 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	// VSphere specific flags
 	cmd.Flags().StringVar(&vddkInitImage, "vddk-init-image", vddkInitImage, "Virtual Disk Development Kit (VDDK) container init image path")
 	cmd.Flags().Var(sdkEndpointType, "sdk-endpoint", "SDK endpoint type for vSphere provider (vcenter or esxi)")
+	cmd.Flags().BoolVar(&useVddkAioOptimization, "use-vddk-aio-optimization", false, "Enable VDDK AIO optimization for vSphere provider")
+	cmd.Flags().IntVar(&vddkBufSizeIn64K, "vddk-buf-size-in-64k", 0, "VDDK buffer size in 64K units (VixDiskLib.nfcAio.Session.BufSizeIn64K)")
+	cmd.Flags().IntVar(&vddkBufCount, "vddk-buf-count", 0, "VDDK buffer count (VixDiskLib.nfcAio.Session.BufCount)")
 
 	// OpenStack specific flags
 	cmd.Flags().StringVar(&domainName, "provider-domain-name", "", "OpenStack domain name")

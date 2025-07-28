@@ -3,6 +3,8 @@ package vsphere
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -115,20 +117,45 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 	provider.Spec.Type = &providerTypeValue
 	provider.Spec.URL = options.URL
 
+	// Initialize settings map if any settings are provided
+	if options.VddkInitImage != "" || options.SdkEndpoint != "" || options.UseVddkAioOptimization ||
+		options.VddkBufSizeIn64K > 0 || options.VddkBufCount > 0 {
+		provider.Spec.Settings = map[string]string{}
+	}
+
 	// Set VDDK init image if provided
 	if options.VddkInitImage != "" {
-		if provider.Spec.Settings == nil {
-			provider.Spec.Settings = map[string]string{}
-		}
 		provider.Spec.Settings["vddkInitImage"] = options.VddkInitImage
 	}
 
 	// Set SDK endpoint if provided
 	if options.SdkEndpoint != "" {
-		if provider.Spec.Settings == nil {
-			provider.Spec.Settings = map[string]string{}
-		}
 		provider.Spec.Settings["sdkEndpoint"] = options.SdkEndpoint
+	}
+
+	// Set VDDK AIO optimization if enabled
+	if options.UseVddkAioOptimization {
+		provider.Spec.Settings["useVddkAioOptimization"] = "true"
+	}
+
+	// Set VDDK configuration if buffer settings are provided
+	if options.VddkBufSizeIn64K > 0 || options.VddkBufCount > 0 {
+		var vddkConfig strings.Builder
+
+		// Start with YAML literal block scalar format
+		vddkConfig.WriteString("|")
+
+		if options.VddkBufSizeIn64K > 0 {
+			vddkConfig.WriteString("\nVixDiskLib.nfcAio.Session.BufSizeIn64K=")
+			vddkConfig.WriteString(strconv.Itoa(options.VddkBufSizeIn64K))
+		}
+
+		if options.VddkBufCount > 0 {
+			vddkConfig.WriteString("\nVixDiskLib.nfcAio.Session.BufCount=")
+			vddkConfig.WriteString(strconv.Itoa(options.VddkBufCount))
+		}
+
+		provider.Spec.Settings["vddkConfig"] = vddkConfig.String()
 	}
 
 	// Create and set the Secret
