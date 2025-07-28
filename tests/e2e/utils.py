@@ -231,6 +231,77 @@ def wait_for_host_ready(test_namespace, host_name: str, timeout: int = 360) -> b
     return wait_for_resource_condition(test_namespace, "host", host_name, timeout)
 
 
+def verify_hook_playbook(test_namespace, hook_name: str, expected_playbook_content: str = None) -> bool:
+    """
+    Verify that a hook's spec.playbook contains the expected base64 encoded content.
+    
+    Args:
+        test_namespace: Test namespace context
+        hook_name: Name of the hook resource
+        expected_playbook_content: Expected plaintext playbook content (will be base64 encoded for comparison).
+                                 If None, verifies that spec.playbook is empty.
+    
+    Returns:
+        bool: True if the playbook matches expectations
+        
+    Raises:
+        pytest.fail: If hook doesn't exist or playbook doesn't match
+    """
+    import base64
+    
+    logging.info(f"Verifying hook {hook_name} playbook content...")
+    
+    try:
+        # Get the hook resource
+        result = test_namespace.run_kubectl_command(
+            f"get hook {hook_name} -o json"
+        )
+        
+        if result.returncode != 0:
+            pytest.fail(f"Failed to get hook {hook_name}: {result.stderr}")
+        
+        hook_data = json.loads(result.stdout)
+        spec = hook_data.get("spec", {})
+        actual_playbook = spec.get("playbook", "")
+        
+        if expected_playbook_content is None:
+            # Expect empty playbook
+            if actual_playbook == "":
+                logging.info(f"Hook {hook_name} has empty playbook as expected")
+                return True
+            else:
+                pytest.fail(f"Hook {hook_name} expected empty playbook but got: {actual_playbook}")
+        else:
+            # Expect base64 encoded content
+            expected_encoded = base64.b64encode(expected_playbook_content.encode()).decode()
+            
+            if actual_playbook == expected_encoded:
+                logging.info(f"Hook {hook_name} playbook content matches expected base64 encoding")
+                return True
+            else:
+                # For debugging, try to decode the actual content
+                try:
+                    actual_decoded = base64.b64decode(actual_playbook).decode()
+                    pytest.fail(
+                        f"Hook {hook_name} playbook mismatch.\n"
+                        f"Expected (decoded): {expected_playbook_content}\n"
+                        f"Actual (decoded):   {actual_decoded}\n"
+                        f"Expected (base64):  {expected_encoded}\n"
+                        f"Actual (base64):    {actual_playbook}"
+                    )
+                except Exception:
+                    pytest.fail(
+                        f"Hook {hook_name} playbook mismatch.\n"
+                        f"Expected (base64): {expected_encoded}\n"
+                        f"Actual (base64):   {actual_playbook}"
+                    )
+        
+    except json.JSONDecodeError as e:
+        pytest.fail(f"Failed to parse hook {hook_name} JSON: {e}")
+    except Exception as e:
+        pytest.fail(f"Error verifying hook {hook_name} playbook: {e}")
+
+
 def delete_hosts_by_spec_id(test_namespace, host_id: str) -> None:
     """Delete all hosts in the namespace where spec.id matches the given host_id."""
     try:
