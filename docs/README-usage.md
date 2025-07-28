@@ -85,6 +85,13 @@ kubectl mtv create provider vmware --type vsphere \
   -p "your-password" \
   --vddk-init-image quay.io/your-org/vddk:8.0.1 \
   --provider-insecure-skip-tls
+
+# VMware with CA certificate from file
+kubectl mtv create provider vmware --type vsphere \
+  -U https://vcenter.example.com/sdk \
+  -u administrator@vsphere.local \
+  -p "your-password" \
+  --cacert @/path/to/vcenter-ca.crt
 ```
 
 #### oVirt/RHV Provider
@@ -95,7 +102,16 @@ kubectl mtv create provider ovirt --type ovirt \
   -U https://ovirt-engine.example.com/ovirt-engine/api \
   -u admin@internal \
   -p "your-password" \
-  --ca-cert /path/to/ca.crt
+  --cacert @/path/to/ca.crt
+
+# Or provide certificate content directly
+kubectl mtv create provider ovirt --type ovirt \
+  -U https://ovirt-engine.example.com/ovirt-engine/api \
+  -u admin@internal \
+  -p "your-password" \
+  --cacert "-----BEGIN CERTIFICATE-----
+MIIBkTCB+wIJANcT3I7d4I6BA...
+-----END CERTIFICATE-----"
 ```
 
 #### OpenStack Provider
@@ -117,6 +133,11 @@ kubectl mtv create provider openstack --type openstack \
 # Create OVA provider
 kubectl mtv create provider ova --type ova \
   -U nfs://nfs.example.com/ova-files
+
+# OVA provider with CA certificate (for secure NFS/HTTPS)
+kubectl mtv create provider ova --type ova \
+  -U https://fileserver.example.com/ova-files \
+  --cacert @/path/to/server-ca.crt
 ```
 
 ### Provider Configuration Options
@@ -124,10 +145,12 @@ kubectl mtv create provider ova --type ova \
 | Provider Type | Required Flags | Optional Flags |
 |---------------|----------------|----------------|
 | `openshift` | `--type` | `--name` |
-| `vsphere` | `--type`, `-U`, `-u`, `-p` | `--vddk-init-image`, `--provider-insecure-skip-tls`, `--ca-cert` |
-| `ovirt` | `--type`, `-U`, `-u`, `-p` | `--ca-cert`, `--provider-insecure-skip-tls` |
+| `vsphere` | `--type`, `-U`, `-u`, `-p` | `--vddk-init-image`, `--provider-insecure-skip-tls`, `--cacert` |
+| `ovirt` | `--type`, `-U`, `-u`, `-p` | `--cacert`, `--provider-insecure-skip-tls` |
 | `openstack` | `--type`, `-U`, `-u`, `-p` | `--provider-domain-name`, `--provider-project-name`, `--provider-region-name` |
-| `ova` | `--type`, `-U` | `--ca-cert` |
+| `ova` | `--type`, `-U` | `--cacert` |
+
+**Note**: The `--cacert` flag accepts either certificate content directly or use `@filename` to load from file.
 
 ### Delete Providers
 
