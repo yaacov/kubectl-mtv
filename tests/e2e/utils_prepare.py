@@ -3,6 +3,7 @@ import os
 import yaml
 from .utils import wait_for_provider_ready
 
+
 def prepare_namespace_for_testing(context):
     """
     Prepare the namespace for testing by creating test artifacts.
@@ -10,16 +11,16 @@ def prepare_namespace_for_testing(context):
 
     # Create OpenShift target provider for plan tests
     target_provider_name = "test-openshift-target"
-    
+
     # Create a simple OpenShift provider using current cluster context
     create_cmd = f"create provider {target_provider_name} --type openshift"
-    
+
     # Create provider
     result = context.run_mtv_command(create_cmd)
     if result.returncode == 0:
         # Track for cleanup
         context.track_resource("provider", target_provider_name)
-        
+
         # Wait for provider to be ready
         wait_for_provider_ready(context, target_provider_name)
 
@@ -29,13 +30,10 @@ def prepare_namespace_for_testing(context):
         nad_obj = {
             "apiVersion": "k8s.cni.cncf.io/v1",
             "kind": "NetworkAttachmentDefinition",
-            "metadata": {
-                "name": nad_name,
-                "namespace": context.namespace
-            },
+            "metadata": {"name": nad_name, "namespace": context.namespace},
             "spec": {
                 "config": '{"cniVersion": "0.3.1", "type": "bridge", "bridge": "br0", "ipam": {"type": "host-local", "subnet": "10.10.0.0/16"}}'
-            }
+            },
         }
         manifest_yaml = yaml.dump(nad_obj)
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
@@ -46,17 +44,14 @@ def prepare_namespace_for_testing(context):
             context.track_resource("network-attachment-definition", nad_name)
         finally:
             os.unlink(temp_path)
-    
+
     # Create two VirtualMachines in the test namespace
     vm_names = ["test-vm-1", "test-vm-2"]
     for idx, vm_name in enumerate(vm_names):
         vm_obj = {
             "apiVersion": "kubevirt.io/v1",
             "kind": "VirtualMachine",
-            "metadata": {
-                "name": vm_name,
-                "namespace": context.namespace
-            },
+            "metadata": {"name": vm_name, "namespace": context.namespace},
             "spec": {
                 "dataVolumeTemplates": [
                     {
@@ -65,27 +60,25 @@ def prepare_namespace_for_testing(context):
                             "sourceRef": {
                                 "kind": "DataSource",
                                 "name": "centos-stream9",
-                                "namespace": "openshift-virtualization-os-images"
+                                "namespace": "openshift-virtualization-os-images",
                             },
-                            "storage": {
-                                "resources": {"requests": {"storage": "30Gi"}}
-                            }
-                        }
+                            "storage": {"resources": {"requests": {"storage": "30Gi"}}},
+                        },
                     }
                 ],
                 "instancetype": {
                     "kind": "virtualmachineclusterinstancetype",
-                    "name": "u1.medium"
+                    "name": "u1.medium",
                 },
                 "preference": {
                     "kind": "virtualmachineclusterpreference",
-                    "name": "centos.stream9"
+                    "name": "centos.stream9",
                 },
                 "runStrategy": "Halted",
                 "template": {
                     "metadata": {
                         "creationTimestamp": None,
-                        "labels": {"network.kubevirt.io/headlessService": "headless"}
+                        "labels": {"network.kubevirt.io/headlessService": "headless"},
                     },
                     "spec": {
                         "architecture": "amd64",
@@ -93,44 +86,45 @@ def prepare_namespace_for_testing(context):
                             "devices": {
                                 "autoattachPodInterface": False,
                                 "interfaces": [
-                                    {
-                                        "masquerade": {},
-                                        "name": "default"
-                                    },
-                                    {
-                                        "name": "test-nad-1",
-                                        "bridge": {}
-                                    },
-                                    {
-                                        "name": "test-nad-2",
-                                        "bridge": {}
-                                    }
-                                ]
+                                    {"masquerade": {}, "name": "default"},
+                                    {"name": "test-nad-1", "bridge": {}},
+                                    {"name": "test-nad-2", "bridge": {}},
+                                ],
                             },
                             "machine": {"type": "pc-q35-rhel9.6.0"},
-                            "resources": {}
+                            "resources": {},
                         },
                         "networks": [
                             {"name": "default", "pod": {}},
-                            {"name": "test-nad-1", "multus": {"networkName": f"{context.namespace}/test-nad-1"}},
-                            {"name": "test-nad-2", "multus": {"networkName": f"{context.namespace}/test-nad-2"}}
+                            {
+                                "name": "test-nad-1",
+                                "multus": {
+                                    "networkName": f"{context.namespace}/test-nad-1"
+                                },
+                            },
+                            {
+                                "name": "test-nad-2",
+                                "multus": {
+                                    "networkName": f"{context.namespace}/test-nad-2"
+                                },
+                            },
                         ],
                         "subdomain": "headless",
                         "volumes": [
                             {
                                 "dataVolume": {"name": f"{vm_name}-volume"},
-                                "name": "rootdisk"
+                                "name": "rootdisk",
                             },
                             {
                                 "cloudInitNoCloud": {
                                     "userData": """#cloud-config\nchpasswd:\n  expire: false\n  password: i90d-diu0-m9ci\n  user: centos\n"""
                                 },
-                                "name": "cloudinitdisk"
-                            }
-                        ]
-                    }
-                }
-            }
+                                "name": "cloudinitdisk",
+                            },
+                        ],
+                    },
+                },
+            },
         }
         vm_manifest_yaml = yaml.dump(vm_obj)
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:

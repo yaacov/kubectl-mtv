@@ -9,23 +9,26 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_network_mapping_ready, wait_for_storage_mapping_ready
+from e2e.utils import (
+    wait_for_provider_ready,
+    wait_for_network_mapping_ready,
+    wait_for_storage_mapping_ready,
+)
 
 
 # Hardcoded network names from OpenStack inventory data
 OPENSTACK_NETWORKS = [
     {"source": "provider_net_cci_13", "target": "test-nad-1"},
     {"source": "provider_net_shared_2", "target": "test-nad-2"},
-    {"source": "provider_net_ipv6_only", "target": "test-nad-1"}
+    {"source": "provider_net_ipv6_only", "target": "test-nad-1"},
 ]
 
-# Hardcoded storage names from OpenStack inventory data  
+# Hardcoded storage names from OpenStack inventory data
 OPENSTACK_VOLUME_TYPES = [
     {"source": "__DEFAULT__", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
     {"source": "tripleo", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "ceph", "target": "csi-manila-ceph"}
+    {"source": "ceph", "target": "csi-manila-ceph"},
 ]
-
 
 
 @pytest.mark.create
@@ -41,7 +44,15 @@ class TestOpenStackMappingCreation:
         creds = provider_credentials["openstack"]
 
         # Skip if credentials are not available
-        if not all([creds.get("url"), creds.get("username"), creds.get("password"), creds.get("project_name"), creds.get("domain_name")]):
+        if not all(
+            [
+                creds.get("url"),
+                creds.get("username"),
+                creds.get("password"),
+                creds.get("project_name"),
+                creds.get("domain_name"),
+            ]
+        ):
             pytest.skip("OpenStack credentials not available in environment")
 
         provider_name = "test-openstack-map-skip-verify"
@@ -76,13 +87,17 @@ class TestOpenStackMappingCreation:
 
         return provider_name
 
-    def test_create_network_mapping_from_openstack(self, test_namespace, openstack_provider):
+    def test_create_network_mapping_from_openstack(
+        self, test_namespace, openstack_provider
+    ):
         """Test creating a network mapping from OpenStack provider."""
         mapping_name = f"test-network-map-openstack-{int(time.time())}"
-        
+
         # Build network pairs string
-        network_pairs = ",".join([f"{n['source']}:{n['target']}" for n in OPENSTACK_NETWORKS])
-        
+        network_pairs = ",".join(
+            [f"{n['source']}:{n['target']}" for n in OPENSTACK_NETWORKS]
+        )
+
         # Create network mapping command
         cmd_parts = [
             "create mapping network",
@@ -91,26 +106,30 @@ class TestOpenStackMappingCreation:
             "--target test-openshift-target",
             f"--network-pairs '{network_pairs}'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create network mapping
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("networkmap", mapping_name)
-        
+
         # Wait for network mapping to be ready
         wait_for_network_mapping_ready(test_namespace, mapping_name)
 
-    def test_create_storage_mapping_from_openstack(self, test_namespace, openstack_provider):
+    def test_create_storage_mapping_from_openstack(
+        self, test_namespace, openstack_provider
+    ):
         """Test creating a storage mapping from OpenStack provider."""
         mapping_name = f"test-storage-map-openstack-{int(time.time())}"
-        
+
         # Build storage pairs string
-        storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in OPENSTACK_VOLUME_TYPES])
-        
+        storage_pairs = ",".join(
+            [f"{s['source']}:{s['target']}" for s in OPENSTACK_VOLUME_TYPES]
+        )
+
         # Create storage mapping command
         cmd_parts = [
             "create mapping storage",
@@ -119,45 +138,47 @@ class TestOpenStackMappingCreation:
             "--target test-openshift-target",
             f"--storage-pairs '{storage_pairs}'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create storage mapping
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("storagemap", mapping_name)
-        
+
         # Wait for storage mapping to be ready
         wait_for_storage_mapping_ready(test_namespace, mapping_name)
 
     def test_create_mapping_with_pod_network(self, test_namespace, openstack_provider):
         """Test creating a network mapping with pod network destination."""
         mapping_name = f"test-pod-network-map-openstack-{int(time.time())}"
-        
+
         # Create network mapping with pod network
         cmd_parts = [
             "create mapping network",
             mapping_name,
             f"--source {openstack_provider}",
             "--target test-openshift-target",
-            f"--network-pairs 'provider_net_shared:pod'",
+            "--network-pairs 'provider_net_shared:pod'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create network mapping
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("networkmap", mapping_name)
-        
+
         # Wait for network mapping to be ready
         wait_for_network_mapping_ready(test_namespace, mapping_name)
-        
+
         # Verify pod network is in the mapping
-        result = test_namespace.run_kubectl_command(f"get networkmap {mapping_name} -o yaml")
+        result = test_namespace.run_kubectl_command(
+            f"get networkmap {mapping_name} -o yaml"
+        )
         assert result.returncode == 0
-        assert "pod" in result.stdout 
+        assert "pod" in result.stdout

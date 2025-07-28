@@ -149,6 +149,6 @@ func createNetworkMapping(configFlags *genericclioptions.ConfigFlags, name, name
 		return fmt.Errorf("failed to create network mapping: %v", err)
 	}
 
-	fmt.Printf("Network mapping '%s' created in namespace '%s'\n", name, namespace)
+	fmt.Printf("networkmap/%s created\n", name)
 	return nil
 }

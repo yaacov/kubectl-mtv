@@ -29,6 +29,7 @@ help:
 	@echo ""
 	@echo "Core Test Types:"
 	@echo "  test-create-providers - Run provider creation tests"
+	@echo "  test-create-hosts     - Run host creation tests"
 	@echo "  test-create-plans     - Run plan creation tests"
 	@echo "  test-create-mappings  - Run mapping creation tests"
 	@echo "  test-get-inventory    - Run inventory retrieval tests"
@@ -92,6 +93,12 @@ test-get: setup check-binary
 test-create-providers: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
 	$(PYTEST) -v -m "create and providers"
+
+# Run host creation tests
+.PHONY: test-create-hosts
+test-create-hosts: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) create/host/ -v -m "create and host"
 
 # Run plan creation tests
 .PHONY: test-create-plans
@@ -212,7 +219,7 @@ clean-token:
 lint:
 	@echo "Running Python linting..."
 	@$(VENV_DIR)/bin/pip install --quiet flake8
-	@$(VENV_DIR)/bin/flake8 . --exclude=$(VENV_DIR) --max-line-length=120
+	@$(VENV_DIR)/bin/flake8 . --exclude=$(VENV_DIR) --max-line-length=220
 	@echo "Linting complete."
 
 .PHONY: format

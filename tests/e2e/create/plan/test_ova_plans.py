@@ -15,10 +15,10 @@ from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
 # Hardcoded VM names from OVA inventory data
 OVA_TEST_VMS = [
     "mtv-2disks",
-    "1nisim-rhel9-efi", 
+    "1nisim-rhel9-efi",
     "mtv-func-WIN2019",
     "SHAICTDOET005-Test_rhel9",
-    "mtv-func.RHEL8_8 _TE_ST _ _1 _2"
+    "mtv-func.RHEL8_8 _TE_ST _ _1 _2",
 ]
 
 
@@ -63,7 +63,7 @@ class TestOVAPlanCreation:
         # Use the first available VM as comma-separated string
         selected_vm = OVA_TEST_VMS[0]
         plan_name = f"test-plan-ova-{int(time.time())}"
-        
+
         # Create plan command
         cmd_parts = [
             "create plan",
@@ -72,16 +72,16 @@ class TestOVAPlanCreation:
             "--target test-openshift-target",
             f"--vms '{selected_vm}'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create plan
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("plan", plan_name)
-        
+
         # Wait for plan to be ready
         wait_for_plan_ready(test_namespace, plan_name)
 
@@ -90,11 +90,11 @@ class TestOVAPlanCreation:
         # Use multiple VMs from the inventory dump data
         if len(OVA_TEST_VMS) < 2:
             pytest.skip("Need at least 2 VMs for multi-VM test")
-        
+
         # Use all available VMs for comprehensive testing
         selected_vms = ",".join(OVA_TEST_VMS)
         plan_name = f"test-multi-plan-ova-{int(time.time())}"
-        
+
         # Create plan command with multiple VMs
         cmd_parts = [
             "create plan",
@@ -103,15 +103,15 @@ class TestOVAPlanCreation:
             "--target test-openshift-target",
             f"--vms '{selected_vms}'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create plan
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("plan", plan_name)
-        
+
         # Wait for plan to be ready (longer timeout for multi-VM plans)
-        wait_for_plan_ready(test_namespace, plan_name) 
+        wait_for_plan_ready(test_namespace, plan_name)

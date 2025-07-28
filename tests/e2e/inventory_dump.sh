@@ -125,6 +125,7 @@ dump_provider_inventory() {
             $KUBECTL_MTV get inventory datastore "$provider" -n "$namespace" -o json > "$provider_dir/datastores.json" 2>/dev/null || echo '{"items": []}' > "$provider_dir/datastores.json"
             $KUBECTL_MTV get inventory resource-pool "$provider" -n "$namespace" -o json > "$provider_dir/resource_pools.json" 2>/dev/null || echo '{"items": []}' > "$provider_dir/resource_pools.json"
             $KUBECTL_MTV get inventory folder "$provider" -n "$namespace" -o json > "$provider_dir/folders.json" 2>/dev/null || echo '{"items": []}' > "$provider_dir/folders.json"
+            $KUBECTL_MTV get inventory hosts "$provider" -n "$namespace" -o json > "$provider_dir/hosts.json" 2>/dev/null || echo '{"items": []}' > "$provider_dir/hosts.json"
             ;;
         "ovirt")
             $KUBECTL_MTV get inventory disk-profile "$provider" -n "$namespace" -o json > "$provider_dir/disk_profiles.json" 2>/dev/null || echo '{"items": []}' > "$provider_dir/disk_profiles.json"
