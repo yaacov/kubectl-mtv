@@ -15,10 +15,10 @@ from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
 # Hardcoded VM names from oVirt inventory data
 OVIRT_TEST_VMS = [
     "1111ab",
-    "1111-win2019", 
+    "1111-win2019",
     "3disks",
     "arik-win",
-    "auto-rhv-red-iscsi-migration-50gb-70usage-vm-1"
+    "auto-rhv-red-iscsi-migration-50gb-70usage-vm-1",
 ]
 
 
@@ -70,7 +70,7 @@ class TestOvirtPlanCreation:
         # Use the first available VM as comma-separated string
         selected_vm = OVIRT_TEST_VMS[0]
         plan_name = f"test-plan-ovirt-{int(time.time())}"
-        
+
         # Create plan command
         cmd_parts = [
             "create plan",
@@ -79,16 +79,16 @@ class TestOvirtPlanCreation:
             "--target test-openshift-target",
             f"--vms '{selected_vm}'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create plan
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("plan", plan_name)
-        
+
         # Wait for plan to be ready
         wait_for_plan_ready(test_namespace, plan_name)
 
@@ -105,15 +105,15 @@ class TestOvirtPlanCreation:
             "--target test-openshift-target",
             f"--vms '{selected_vms}'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create plan
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("plan", plan_name)
-        
+
         # Wait for plan to be ready (longer timeout for multi-VM plans)
-        wait_for_plan_ready(test_namespace, plan_name) 
+        wait_for_plan_ready(test_namespace, plan_name)

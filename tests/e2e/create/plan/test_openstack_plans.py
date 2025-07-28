@@ -12,10 +12,7 @@ import pytest
 from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
 
 
-OPENSTACK_TEST_VMS = [
-    "infra-mtv-node-207",
-    "infra-mtv-node-18"
-]
+OPENSTACK_TEST_VMS = ["infra-mtv-node-207", "infra-mtv-node-18"]
 
 
 @pytest.mark.create
@@ -71,7 +68,7 @@ class TestOpenStackPlanCreation:
         # Use the first available VM as comma-separated string
         selected_vm = OPENSTACK_TEST_VMS[0]
         plan_name = f"test-plan-openstack-{int(time.time())}"
-        
+
         # Create plan command
         cmd_parts = [
             "create plan",
@@ -80,20 +77,22 @@ class TestOpenStackPlanCreation:
             "--target test-openshift-target",
             f"--vms '{selected_vm}'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create plan
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("plan", plan_name)
-        
+
         # Wait for plan to be ready
         wait_for_plan_ready(test_namespace, plan_name)
 
-    def test_create_multi_vm_plan_from_openstack(self, test_namespace, openstack_provider):
+    def test_create_multi_vm_plan_from_openstack(
+        self, test_namespace, openstack_provider
+    ):
         """Test creating a migration plan with multiple VMs from OpenStack provider."""
         # Use first 3 VMs for multi-VM test as comma-separated string
         selected_vms = ",".join(OPENSTACK_TEST_VMS[:3])
@@ -106,15 +105,15 @@ class TestOpenStackPlanCreation:
             "--target test-openshift-target",
             f"--vms '{selected_vms}'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create plan
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("plan", plan_name)
-        
+
         # Wait for plan to be ready (longer timeout for multi-VM plans)
-        wait_for_plan_ready(test_namespace, plan_name) 
+        wait_for_plan_ready(test_namespace, plan_name)

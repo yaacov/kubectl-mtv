@@ -8,20 +8,27 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_network_mapping_ready, wait_for_storage_mapping_ready
+from e2e.utils import (
+    wait_for_provider_ready,
+    wait_for_network_mapping_ready,
+    wait_for_storage_mapping_ready,
+)
 
 
 # Hardcoded network names for OpenShift to OpenShift mappings
 OPENSHIFT_NETWORKS = [
     {"source": "test-nad-1", "target": "test-nad-2"},
-    {"source": "test-nad-2", "target": "test-nad-1"}
+    {"source": "test-nad-2", "target": "test-nad-1"},
 ]
 
-# Hardcoded storage names for OpenShift to OpenShift mappings  
+# Hardcoded storage names for OpenShift to OpenShift mappings
 # Using storage classes that should exist in the cluster
 OPENSHIFT_STORAGE_CLASSES = [
-    {"source": "ocs-storagecluster-ceph-rbd-virtualization", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    {"source": "ocs-storagecluster-ceph-rbd", "target": "ocs-storagecluster-ceph-rbd"}
+    {
+        "source": "ocs-storagecluster-ceph-rbd-virtualization",
+        "target": "ocs-storagecluster-ceph-rbd-virtualization",
+    },
+    {"source": "ocs-storagecluster-ceph-rbd", "target": "ocs-storagecluster-ceph-rbd"},
 ]
 
 
@@ -57,13 +64,17 @@ class TestOpenShiftMappingCreation:
 
         return provider_name
 
-    def test_create_network_mapping_openshift_to_openshift(self, test_namespace, openshift_source_provider):
+    def test_create_network_mapping_openshift_to_openshift(
+        self, test_namespace, openshift_source_provider
+    ):
         """Test creating a network mapping for OpenShift-to-OpenShift migration."""
         mapping_name = f"test-network-map-openshift-{int(time.time())}"
-        
+
         # Build network pairs string
-        network_pairs = ",".join([f"{n['source']}:{n['target']}" for n in OPENSHIFT_NETWORKS])
-        
+        network_pairs = ",".join(
+            [f"{n['source']}:{n['target']}" for n in OPENSHIFT_NETWORKS]
+        )
+
         # Create network mapping command
         cmd_parts = [
             "create mapping network",
@@ -72,26 +83,30 @@ class TestOpenShiftMappingCreation:
             "--target test-openshift-target",
             f"--network-pairs '{network_pairs}'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create network mapping
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("networkmap", mapping_name)
-        
+
         # Wait for network mapping to be ready
         wait_for_network_mapping_ready(test_namespace, mapping_name)
 
-    def test_create_storage_mapping_openshift_to_openshift(self, test_namespace, openshift_source_provider):
+    def test_create_storage_mapping_openshift_to_openshift(
+        self, test_namespace, openshift_source_provider
+    ):
         """Test creating a storage mapping for OpenShift-to-OpenShift migration."""
         mapping_name = f"test-storage-map-openshift-{int(time.time())}"
-        
+
         # Build storage pairs string
-        storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in OPENSHIFT_STORAGE_CLASSES])
-        
+        storage_pairs = ",".join(
+            [f"{s['source']}:{s['target']}" for s in OPENSHIFT_STORAGE_CLASSES]
+        )
+
         # Create storage mapping command
         cmd_parts = [
             "create mapping storage",
@@ -100,27 +115,29 @@ class TestOpenShiftMappingCreation:
             "--target test-openshift-target",
             f"--storage-pairs '{storage_pairs}'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create storage mapping
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("storagemap", mapping_name)
-        
+
         # Wait for storage mapping to be ready
         wait_for_storage_mapping_ready(test_namespace, mapping_name)
 
-    def test_create_mapping_with_namespace_qualifier(self, test_namespace, openshift_source_provider):
+    def test_create_mapping_with_namespace_qualifier(
+        self, test_namespace, openshift_source_provider
+    ):
         """Test creating a network mapping with namespace-qualified NADs."""
         mapping_name = f"test-ns-qualified-network-map-{int(time.time())}"
-        
+
         # Create network mapping with namespace-qualified target NAD only
         # Source NADs in OpenShift don't use namespace qualification in inventory
         network_pairs = f"test-nad-1:{test_namespace.namespace}/test-nad-2"
-        
+
         cmd_parts = [
             "create mapping network",
             mapping_name,
@@ -128,20 +145,22 @@ class TestOpenShiftMappingCreation:
             "--target test-openshift-target",
             f"--network-pairs '{network_pairs}'",
         ]
-        
+
         create_cmd = " ".join(cmd_parts)
-        
+
         # Create network mapping
         result = test_namespace.run_mtv_command(create_cmd)
         assert result.returncode == 0
-        
+
         # Track for cleanup
         test_namespace.track_resource("networkmap", mapping_name)
-        
+
         # Wait for network mapping to be ready
         wait_for_network_mapping_ready(test_namespace, mapping_name)
-        
+
         # Verify namespace is in the mapping
-        result = test_namespace.run_kubectl_command(f"get networkmap {mapping_name} -o yaml")
+        result = test_namespace.run_kubectl_command(
+            f"get networkmap {mapping_name} -o yaml"
+        )
         assert result.returncode == 0
-        assert test_namespace.namespace in result.stdout 
+        assert test_namespace.namespace in result.stdout

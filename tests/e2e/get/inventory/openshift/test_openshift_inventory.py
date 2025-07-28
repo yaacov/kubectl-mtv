@@ -21,8 +21,6 @@ class TestOpenShiftInventory:
     @pytest.fixture(scope="class")
     def openshift_provider(self, test_namespace, provider_credentials):
         """Create an OpenShift provider for inventory testing."""
-        creds = provider_credentials["openshift"]
-
         provider_name = "test-openshift-inventory-skip-verify"
 
         # Use current cluster context with skip verify

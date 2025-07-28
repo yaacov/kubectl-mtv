@@ -135,6 +135,6 @@ func createStorageMapping(configFlags *genericclioptions.ConfigFlags, name, name
 		return fmt.Errorf("failed to create storage mapping: %v", err)
 	}
 
-	fmt.Printf("Storage mapping '%s' created in namespace '%s'\n", name, namespace)
+	fmt.Printf("storagemap/%s created\n", name)
 	return nil
 }

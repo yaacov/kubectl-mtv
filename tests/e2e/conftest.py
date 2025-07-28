@@ -221,7 +221,7 @@ def test_namespace(
 
         # Prepare the namespace for testing (create NADs)
         prepare_namespace_for_testing(context)
-        
+
         request.session._shared_test_context = context
         request.session._shared_namespace_name = namespace_name
 

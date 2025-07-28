@@ -65,7 +65,7 @@ func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, name
 	}
 
 	// Display the creation results to the user
-	fmt.Printf("Created provider '%s' in namespace '%s'\n", providerResource.Name, providerResource.Namespace)
+	fmt.Printf("provider/%s created\n", providerResource.Name)
 
 	if secretResource != nil {
 		fmt.Printf("Created secret '%s' for provider authentication\n", secretResource.Name)

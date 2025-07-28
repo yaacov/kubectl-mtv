@@ -339,7 +339,7 @@ func Create(opts CreatePlanOptions) error {
 		}
 	}
 
-	fmt.Printf("Plan '%s' created in namespace '%s'\n", opts.Name, opts.Namespace)
+	fmt.Printf("plan/%s created\n", opts.Name)
 	return nil
 }
 

@@ -121,6 +121,9 @@ func Create(opts CreateHostOptions) error {
 			}
 		}
 
+		// Inform user about the created resource
+		fmt.Printf("host/%s created\n", hostObj.Name)
+
 		klog.V(2).Infof("Created host '%s' in namespace '%s'", hostID, opts.Namespace)
 	}
 
