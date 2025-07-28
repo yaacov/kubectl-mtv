@@ -17,6 +17,7 @@ func NewDeleteCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	cmd.AddCommand(NewMappingCmd(kubeConfigFlags))
 	cmd.AddCommand(NewPlanCmd(kubeConfigFlags))
 	cmd.AddCommand(NewProviderCmd(kubeConfigFlags))
+	cmd.AddCommand(NewHostCmd(kubeConfigFlags))
 
 	return cmd
 }

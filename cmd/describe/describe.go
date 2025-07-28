@@ -16,6 +16,7 @@ func NewDescribeCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 
 	cmd.AddCommand(NewPlanCmd(kubeConfigFlags))
 	cmd.AddCommand(NewVMCmd(kubeConfigFlags))
+	cmd.AddCommand(NewHostCmd(kubeConfigFlags))
 
 	return cmd
 }
