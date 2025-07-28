@@ -311,3 +311,143 @@ func min(a, b int) int {
 	}
 	return b
 }
+
+// MappingEntryFormatter is a function type for formatting mapping entries
+type MappingEntryFormatter func(entryMap map[string]interface{}, entryType string) string
+
+// PrintMappingTable prints mapping entries in a custom table format
+func PrintMappingTable(mapEntries []interface{}, formatter MappingEntryFormatter) error {
+	if len(mapEntries) == 0 {
+		return nil
+	}
+
+	// Calculate the maximum width for both source and destination columns based on content
+	maxSourceWidth := len("SOURCE")    // minimum width (header width)
+	maxDestWidth := len("DESTINATION") // minimum width (header width)
+
+	for _, entry := range mapEntries {
+		if entryMap, ok := entry.(map[string]interface{}); ok {
+			// Calculate source width
+			sourceText := formatter(entryMap, "source")
+			sourceLines := strings.Split(sourceText, "\n")
+			for _, line := range sourceLines {
+				if len(line) > maxSourceWidth {
+					maxSourceWidth = len(line)
+				}
+			}
+
+			// Calculate destination width
+			destText := formatter(entryMap, "destination")
+			destLines := strings.Split(destText, "\n")
+			for _, line := range destLines {
+				if len(line) > maxDestWidth {
+					maxDestWidth = len(line)
+				}
+			}
+		}
+	}
+
+	// Cap the widths to prevent overly wide tables
+	if maxSourceWidth > 50 {
+		maxSourceWidth = 50
+	}
+	if maxDestWidth > 50 {
+		maxDestWidth = 50
+	}
+
+	// Define column spacing
+	columnSpacing := "  " // 2 spaces
+
+	// Print table header
+	headerFormat := fmt.Sprintf("%%-%ds%s%%s\n", maxSourceWidth+8, columnSpacing)
+	fmt.Printf(headerFormat, Bold("SOURCE"), Bold("DESTINATION"))
+
+	// Print separator line using calculated widths
+	separatorLine := strings.Repeat("─", maxSourceWidth) + columnSpacing + strings.Repeat("─", maxDestWidth)
+	fmt.Println(separatorLine)
+
+	// Process each mapping entry
+	for i, entry := range mapEntries {
+		if entryMap, ok := entry.(map[string]interface{}); ok {
+			sourceText := formatter(entryMap, "source")
+			destText := formatter(entryMap, "destination")
+
+			printMappingTableRow(sourceText, destText, maxSourceWidth, maxDestWidth, columnSpacing)
+
+			// Add separator between entries (except for the last one)
+			if i < len(mapEntries)-1 {
+				entrySeperatorLine := strings.Repeat("─", maxSourceWidth) + columnSpacing + strings.Repeat("─", maxDestWidth)
+				fmt.Println(entrySeperatorLine)
+			}
+		}
+	}
+
+	return nil
+}
+
+// printMappingTableRow prints a single mapping row with proper alignment for multi-line content
+func printMappingTableRow(source, dest string, sourceWidth, destWidth int, columnSpacing string) {
+	sourceLines := strings.Split(source, "\n")
+	destLines := strings.Split(dest, "\n")
+
+	// Determine the maximum number of lines
+	maxLines := len(sourceLines)
+	if len(destLines) > maxLines {
+		maxLines = len(destLines)
+	}
+
+	// Print each line
+	for i := 0; i < maxLines; i++ {
+		var sourceLine, destLine string
+
+		if i < len(sourceLines) {
+			sourceLine = sourceLines[i]
+		}
+		if i < len(destLines) {
+			destLine = destLines[i]
+		}
+
+		// Truncate lines if they're too long
+		if len(sourceLine) > sourceWidth {
+			sourceLine = sourceLine[:sourceWidth-3] + "..."
+		}
+		if len(destLine) > destWidth {
+			destLine = destLine[:destWidth-3] + "..."
+		}
+
+		// Format and print the line with proper column widths
+		rowFormat := fmt.Sprintf("%%-%ds%s%%-%ds\n", sourceWidth, columnSpacing, destWidth)
+		fmt.Printf(rowFormat, sourceLine, destLine)
+	}
+}
+
+// PrintConditions prints conditions information in a consistent format
+func PrintConditions(conditions []interface{}) {
+	if len(conditions) == 0 {
+		return
+	}
+
+	fmt.Printf("%s\n", Bold("Conditions:"))
+	for _, condition := range conditions {
+		if condMap, ok := condition.(map[string]interface{}); ok {
+			condType, _ := condMap["type"].(string)
+			condStatus, _ := condMap["status"].(string)
+			reason, _ := condMap["reason"].(string)
+			message, _ := condMap["message"].(string)
+			lastTransitionTime, _ := condMap["lastTransitionTime"].(string)
+
+			fmt.Printf("  %s: %s", Bold(condType), ColorizeStatus(condStatus))
+			if reason != "" {
+				fmt.Printf(" (%s)", reason)
+			}
+			fmt.Println()
+
+			if message != "" {
+				fmt.Printf("    %s\n", message)
+			}
+			if lastTransitionTime != "" {
+				fmt.Printf("    Last Transition: %s\n", lastTransitionTime)
+			}
+		}
+	}
+}
