@@ -122,6 +122,7 @@ See [VDDK Setup Guide](docs/README_vddk.md) for detailed instructions.
 ## Features
 
 - **Multi-Platform Support**: Migrate from vSphere, oVirt, OpenStack, and OVA
+
 - **Flexible Mapping**: Use existing mappings, inline pairs, or automatic defaults
 - **Advanced Queries**: Filter and search inventory with powerful query language
 - **VDDK Support**: Optimized VMware disk transfers
@@ -132,6 +133,7 @@ See [VDDK Setup Guide](docs/README_vddk.md) for detailed instructions.
 - [Installation Guide](docs/README-install.md)
 - [Usage Guide](docs/README-usage.md)
 - [Migration Demo](docs/README_demo.md)
+- [Migration Hooks](docs/README_hooks.md)
 - [Inventory Queries](docs/README_inventory.md)
 - [Mapping Configuration](docs/README_mapping_pairs.md)
 - [Creating Mappings](docs/README_create_mappings.md)
