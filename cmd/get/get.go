@@ -69,6 +69,11 @@ func NewGetCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig f
 	hostCmd.Aliases = []string{"hosts"}
 	cmd.AddCommand(hostCmd)
 
+	// Add hook subcommand with plural alias
+	hookCmd := NewHookCmd(kubeConfigFlags, getGlobalConfig)
+	hookCmd.Aliases = []string{"hooks"}
+	cmd.AddCommand(hookCmd)
+
 	// Add inventory subcommand
 	cmd.AddCommand(NewInventoryCmd(kubeConfigFlags, getGlobalConfig))
 

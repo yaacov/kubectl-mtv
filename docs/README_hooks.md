@@ -11,7 +11,7 @@ Migration hooks are powerful tools that allow you to run custom automation at va
 - **Integration Points**: Connect with external systems and tools
 - **Ansible Playbook Execution**: Run Ansible automation for complex workflows
 
-Hooks use container images to execute custom logic, with optional Ansible playbook support for automation tasks.
+Hooks use container images to execute custom logic. The hook container can be any image that performs the desired automation - from simple shell scripts to complex Ansible runners, Python applications, or specialized tools.
 
 ## Basic Syntax
 
@@ -25,15 +25,53 @@ kubectl-mtv create hook <hook-name> \
 
 **Required**: Only the `--image` parameter is required. All other parameters are optional.
 
+## Hook Runtime Environment
+
+When hook containers execute during migration, they have access to contextual information through mounted files:
+
+- **`plan.yml`**: Contains migration plan details, source/target provider information, and migration context
+- **`workload.yml`**: Contains VM-specific information including VM properties, networks, and current migration state
+
+These files are automatically mounted into the hook container and can be used by:
+- **Ansible runners**: Reference as `vars_files` in playbooks
+- **Shell scripts**: Parse YAML content using tools like `yq`
+- **Python/other applications**: Load and process the YAML data programmatically
+
+The hook container image can be any executable container - Ansible runners, shell script images, Python applications, Go binaries, or any specialized automation tool that can process the migration context.
+
+### Creating Custom Hook Containers
+
+To create a custom hook container, build a container image that:
+1. Includes your automation tool/runtime (bash, python, ansible, etc.)
+2. Has an entrypoint that executes your hook logic
+3. Can read YAML files from `/plan.yml` and `/workload.yml`
+4. Handles the specific automation tasks needed for your migration
+
+Example Dockerfile for a shell-based hook:
+```dockerfile
+FROM alpine:latest
+RUN apk add --no-cache bash curl yq openssh-client
+COPY hook-script.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/hook-script.sh
+ENTRYPOINT ["/usr/local/bin/hook-script.sh"]
+```
+
 ## Parameters
 
 ### Required Parameters
 
 #### --image (required)
-Specifies the container image that will execute the hook logic.
+Specifies the container image that will execute the hook logic. This can be any container image - Ansible runners, shell script containers, Python applications, Go binaries, or specialized automation tools.
 
 ```bash
-kubectl-mtv create hook my-hook --image nginx:latest
+# Ansible runner image
+kubectl-mtv create hook ansible-hook --image quay.io/ansible/creator-ee:latest
+
+# Custom shell script image
+kubectl-mtv create hook shell-hook --image my-registry/migration-scripts:v1.0
+
+# Python automation image
+kubectl-mtv create hook python-hook --image my-registry/python-automation:latest
 ```
 
 ### Optional Parameters
@@ -252,6 +290,148 @@ kubectl-mtv create hook comprehensive-automation \
         mode: put
 ```
 
+### Production Migration Hook Example (Ansible)
+
+This example demonstrates a realistic Ansible-based migration hook that uses the mounted context files and connects to VMs via SSH:
+
+```yaml
+---
+- name: Main
+  hosts: localhost
+  vars_files:
+    - plan.yml      # Mounted file with migration plan context
+    - workload.yml  # Mounted file with VM-specific information
+  tasks:
+    - k8s_info:
+        api_version: v1
+        kind: Secret
+        name: privkey
+        namespace: openshift-mtv
+      register: ssh_credentials
+
+    - name: Ensure SSH directory exists
+      file:
+        path: ~/.ssh
+        state: directory
+        mode: 0750
+
+    - name: Create SSH key
+      copy:
+        dest: ~/.ssh/id_rsa
+        content: "{{ ssh_credentials.resources[0].data.key | b64decode }}"
+        mode: 0600
+
+    - add_host:
+        name: "{{ vm.ipaddress }}"  # ALT "{{ vm.guestnetworks[2].ip }}"
+        ansible_user: root
+        groups: vms
+
+- hosts: vms
+  vars_files:
+    - plan.yml
+    - workload.yml
+  tasks:
+    - name: Stop MariaDB service
+      service:
+        name: mariadb
+        state: stopped
+
+    - name: Create migration status file
+      copy:
+        dest: /premigration.txt
+        content: |
+          Migration from {{ provider.source.name }}
+          of {{ vm.vm1.vm0.id }} has finished
+        mode: 0644
+
+    - name: Create application backup
+      archive:
+        path: /var/lib/application
+        dest: /tmp/app-backup.tar.gz
+                 format: gz
+```
+
+### Shell Script Hook Example
+
+This example shows a simple shell script hook that processes the migration context:
+
+```bash
+#!/bin/bash
+# Hook container that uses shell scripting with yq to parse context files
+
+# Read VM information from mounted workload.yml
+VM_ID=$(yq eval '.vm.id' /workload.yml)
+VM_NAME=$(yq eval '.vm.name' /workload.yml)
+VM_IP=$(yq eval '.vm.ipaddress' /workload.yml)
+
+# Read plan information
+SOURCE_PROVIDER=$(yq eval '.provider.source.name' /plan.yml)
+TARGET_PROVIDER=$(yq eval '.provider.target.name' /plan.yml)
+
+echo "Processing migration for VM: $VM_NAME ($VM_ID)"
+echo "Source: $SOURCE_PROVIDER -> Target: $TARGET_PROVIDER"
+
+# Example: Create backup before migration
+ssh root@$VM_IP "systemctl stop application && tar -czf /tmp/app-backup.tar.gz /opt/application"
+
+# Example: Update migration tracking system
+curl -X POST "https://tracking.example.com/api/migrations" \
+  -H "Content-Type: application/json" \
+  -d "{\"vm_id\":\"$VM_ID\", \"status\":\"pre-migration-complete\", \"timestamp\":\"$(date -Iseconds)\"}"
+```
+
+### Python Hook Example
+
+This example demonstrates a Python-based hook container:
+
+```python
+#!/usr/bin/env python3
+import yaml
+import requests
+import subprocess
+from datetime import datetime
+
+# Load migration context from mounted files
+with open('/plan.yml', 'r') as f:
+    plan = yaml.safe_load(f)
+
+with open('/workload.yml', 'r') as f:
+    workload = yaml.safe_load(f)
+
+# Extract information
+vm_id = workload['vm']['id']
+vm_name = workload['vm']['name']
+source_provider = plan['provider']['source']['name']
+
+print(f"Starting pre-migration tasks for {vm_name} ({vm_id})")
+
+# Example: Database backup
+if 'database' in workload['vm'].get('services', []):
+    print("Backing up database...")
+    result = subprocess.run([
+        'ssh', f'root@{workload["vm"]["ipaddress"]}',
+        'mysqldump --all-databases > /tmp/pre-migration-backup.sql'
+    ], capture_output=True, text=True)
+    
+    if result.returncode == 0:
+        print("Database backup completed successfully")
+    else:
+        print(f"Database backup failed: {result.stderr}")
+        exit(1)
+
+# Example: Notify external system
+webhook_data = {
+    'vm_id': vm_id,
+    'vm_name': vm_name,
+    'source': source_provider,
+    'event': 'pre_migration_ready',
+    'timestamp': datetime.utcnow().isoformat()
+}
+
+response = requests.post('https://webhook.example.com/migration-events', json=webhook_data)
+print(f"Webhook notification sent: {response.status_code}")
+```
+
 ### Network Configuration Hook
 
 ```yaml
@@ -442,18 +622,66 @@ kubectl-mtv create hook validation-hook \
   --image my-registry/validation-tool:latest
 ```
 
-### 6. Test Playbooks Independently
+### 6. Leverage Mounted Context Files
 
-Test your Ansible playbooks before using them in hooks:
+Always use the provided `plan.yml` and `workload.yml` files for migration context:
 
 ```bash
-# Test playbook locally first
+# Ansible: Use vars_files
+vars_files:
+  - plan.yml
+  - workload.yml
+
+# Shell: Parse with yq
+VM_ID=$(yq eval '.vm.id' /workload.yml)
+SOURCE_PROVIDER=$(yq eval '.provider.source.name' /plan.yml)
+
+# Python: Load with PyYAML  
+import yaml
+with open('/plan.yml', 'r') as f:
+    plan = yaml.safe_load(f)
+```
+
+### 7. Consider Hook Container Type
+
+Choose the right container type for your use case:
+
+```bash
+# Simple file operations: Shell scripts
+kubectl-mtv create hook file-backup --image alpine/bash:latest
+
+# Complex orchestration: Ansible
+kubectl-mtv create hook complex-automation --image quay.io/ansible/creator-ee:latest
+
+# API integrations: Python/Go applications
+kubectl-mtv create hook api-integration --image my-registry/python-api-client:v1.0
+
+# Database operations: Specialized tools
+kubectl-mtv create hook db-migration --image my-registry/database-tools:v2.1
+```
+
+### 8. Test Hook Logic Independently
+
+Test your automation logic before using it in hooks:
+
+```bash
+# Test Ansible playbooks locally
 ansible-playbook -i localhost, validation-playbook.yaml
 
+# Test shell scripts with sample data
+echo 'vm: {id: "test-vm", name: "test"}' > /tmp/workload.yml
+./hook-script.sh
+
+# Test Python scripts with mock data
+python3 -c "
+import tempfile, yaml
+with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+    yaml.dump({'vm': {'id': 'test'}}, f)
+    print(f'Mock file: {f.name}')
+"
+
 # Then create the hook
-kubectl-mtv create hook tested-validation \
-  --image ansible-runner:latest \
-  --playbook @validation-playbook.yaml
+kubectl-mtv create hook tested-automation --image my-registry/tested-image:v1.0
 ```
 
 ## Namespace-Specific Hook Management
@@ -481,26 +709,39 @@ kubectl-mtv create hook cross-ns-hook \
 
 ## Integration with Migration Plans
 
-Hooks are typically referenced in migration plan configurations. While hook creation is independent, they become active when referenced by plans:
+Hooks are referenced in migration plan configurations on a per-VM basis. While hook creation is independent, they become active when referenced by individual VMs in plans:
 
 ```yaml
-# Example migration plan referencing hooks
+# Example migration plan referencing hooks per VM
 apiVersion: forklift.konveyor.io/v1beta1
 kind: Plan
 metadata:
   name: my-migration-plan
 spec:
   # ... other plan configuration
-  hooks:
-    - hook:
-        name: pre-migration-validation
-        namespace: default
-      step: PreHook
-    - hook:
-        name: post-migration-cleanup  
-        namespace: default
-      step: PostHook
+  vms:
+    - id: vm-001
+      hooks:
+        - hook:
+            namespace: default
+            name: pre-migration-validation
+          step: PreHook
+        - hook:
+            namespace: default
+            name: post-migration-cleanup
+          step: PostHook
+    - id: vm-002
+      hooks:
+        - hook:
+            namespace: default
+            name: database-backup
+          step: PreHook
 ```
+
+**Important Notes:**
+- Hooks are configured per VM, not at the plan level
+- For a PreHook to run on a VM, the VM must be started and available via SSH
+- Each VM can have different hooks or the same hooks with different configurations
 
 ## Troubleshooting
 

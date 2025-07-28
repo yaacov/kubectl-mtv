@@ -442,6 +442,36 @@ func MigrationNameCompletion(configFlags *genericclioptions.ConfigFlags) func(cm
 	}
 }
 
+// HookResourceNameCompletion provides completion for hook resource names
+func HookResourceNameCompletion(configFlags *genericclioptions.ConfigFlags) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		namespace := client.ResolveNamespace(configFlags)
+
+		names, err := getResourceNames(configFlags, client.HooksGVR, namespace)
+		if err != nil {
+			return []string{fmt.Sprintf("Error fetching hooks: %v", err)}, cobra.ShellCompDirectiveError
+		}
+
+		if len(names) == 0 {
+			namespaceMsg := "current namespace"
+			if namespace != "" {
+				namespaceMsg = fmt.Sprintf("namespace '%s'", namespace)
+			}
+			return []string{fmt.Sprintf("No hook resources found in %s", namespaceMsg)}, cobra.ShellCompDirectiveError
+		}
+
+		// Filter results based on what's already typed
+		var filtered []string
+		for _, name := range names {
+			if strings.HasPrefix(name, toComplete) {
+				filtered = append(filtered, name)
+			}
+		}
+
+		return filtered, cobra.ShellCompDirectiveNoFileComp
+	}
+}
+
 // HostResourceNameCompletion provides completion for host resource names
 func HostResourceNameCompletion(configFlags *genericclioptions.ConfigFlags) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
