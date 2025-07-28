@@ -54,6 +54,11 @@ Examples:
 				return fmt.Errorf("image is required")
 			}
 
+			// Validate deadline is positive
+			if deadline < 0 {
+				return fmt.Errorf("deadline must be a positive number")
+			}
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
