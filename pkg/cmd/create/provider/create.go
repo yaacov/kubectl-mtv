@@ -19,23 +19,26 @@ import (
 // Create creates a new provider
 func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, namespace, secret string,
 	url, username, password, cacert string, insecureSkipTLS bool, vddkInitImage, sdkEndpoint string, token string,
-	domainName, projectName, regionName string) error {
+	domainName, projectName, regionName string, useVddkAioOptimization bool, vddkBufSizeIn64K, vddkBufCount int) error {
 	// Create provider options
 	options := providerutil.ProviderOptions{
-		Name:            name,
-		Namespace:       namespace,
-		Secret:          secret,
-		URL:             url,
-		Username:        username,
-		Password:        password,
-		CACert:          cacert,
-		InsecureSkipTLS: insecureSkipTLS,
-		VddkInitImage:   vddkInitImage,
-		SdkEndpoint:     sdkEndpoint,
-		Token:           token,
-		DomainName:      domainName,
-		ProjectName:     projectName,
-		RegionName:      regionName,
+		Name:                   name,
+		Namespace:              namespace,
+		Secret:                 secret,
+		URL:                    url,
+		Username:               username,
+		Password:               password,
+		CACert:                 cacert,
+		InsecureSkipTLS:        insecureSkipTLS,
+		VddkInitImage:          vddkInitImage,
+		SdkEndpoint:            sdkEndpoint,
+		Token:                  token,
+		DomainName:             domainName,
+		ProjectName:            projectName,
+		RegionName:             regionName,
+		UseVddkAioOptimization: useVddkAioOptimization,
+		VddkBufSizeIn64K:       vddkBufSizeIn64K,
+		VddkBufCount:           vddkBufCount,
 	}
 
 	var providerResource *forkliftv1beta1.Provider
