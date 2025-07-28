@@ -17,6 +17,7 @@ func NewCreateCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	cmd.AddCommand(NewProviderCmd(kubeConfigFlags))
 	cmd.AddCommand(NewPlanCmd(kubeConfigFlags))
 	cmd.AddCommand(NewMappingCmd(kubeConfigFlags))
+	cmd.AddCommand(NewHostCmd(kubeConfigFlags))
 	cmd.AddCommand(NewVddkCmd())
 
 	return cmd

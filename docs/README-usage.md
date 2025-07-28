@@ -6,6 +6,7 @@ This comprehensive guide covers all kubectl-mtv commands and usage patterns for 
 
 - [Global Flags](#global-flags)
 - [Provider Management](#provider-management)
+- [Host Management](#host-management)
 - [Inventory Management](#inventory-management)
 - [Mapping Management](#mapping-management)
 - [Migration Plan Management](#migration-plan-management)
@@ -136,6 +137,60 @@ kubectl mtv delete provider <provider-name>
 
 # Delete with confirmation
 kubectl mtv delete provider vmware-prod
+```
+
+## Host Management
+
+Manage host resources for migration providers.
+
+### List Hosts
+
+```bash
+# List all host resources
+kubectl mtv get host
+
+# Get details for a specific host
+kubectl mtv get host my-esxi-host
+
+# Get host details in yaml format
+kubectl mtv get host my-esxi-host -o yaml
+```
+
+### Create Hosts
+
+```bash
+# Create a single host
+kubectl mtv create host esxi-host-01 \
+  --provider vsphere-datacenter \
+  --ip-address 192.168.1.100 \
+  --username root --password secret
+
+# Create multiple hosts
+kubectl mtv create host esxi-host-01 esxi-host-02 \
+  --provider vsphere-datacenter \
+  --network-adapter "Management Network" \
+  --username root --password secret
+```
+
+### Describe Hosts
+
+```bash
+# Get detailed host information
+kubectl mtv describe host esxi-host-01
+```
+
+### Delete Hosts
+
+```bash
+# Delete a specific host
+kubectl mtv delete host <host-name>
+
+# Delete multiple hosts  
+kubectl mtv delete host host1 host2 host3
+
+# Examples
+kubectl mtv delete host esxi-host-01
+kubectl mtv delete host esxi-host-01 esxi-host-02 esxi-host-03
 ```
 
 ## Inventory Management
