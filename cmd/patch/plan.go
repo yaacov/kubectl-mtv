@@ -21,6 +21,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var useCompatibilityMode bool
 	var targetAffinity string
 	var targetNamespace string
+	var targetPowerState string
 
 	// Missing flags from create plan
 	var description string
@@ -48,33 +49,33 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var warmChanged bool
 
 	cmd := &cobra.Command{
-		Use:               "plan NAME",
-		Short:             "Patch an existing migration plan",
-		Long:              `Patch an existing migration plan by updating editable fields. Provider references, mappings, and VMs cannot be changed.`,
+		Use:               "plan PLAN_NAME",
+		Short:             "Patch a migration plan",
+		Long:              `Patch various fields of an existing migration plan without modifying its VMs.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get name from positional argument
-			name := args[0]
+			// Get plan name from positional argument
+			planName := args[0]
 
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
-			// Track flag changes
-			useCompatibilityModeChanged = cmd.Flag("use-compatibility-mode").Changed
-			preserveClusterCPUModelChanged = cmd.Flag("preserve-cluster-cpu-model").Changed
-			preserveStaticIPsChanged = cmd.Flag("preserve-static-ips").Changed
-			migrateSharedDisksChanged = cmd.Flag("migrate-shared-disks").Changed
-			archivedChanged = cmd.Flag("archived").Changed
-			pvcNameTemplateUseGenerateNameChanged = cmd.Flag("pvc-name-template-use-generate-name").Changed
-			deleteGuestConversionPodChanged = cmd.Flag("delete-guest-conversion-pod").Changed
-			skipGuestConversionChanged = cmd.Flag("skip-guest-conversion").Changed
-			warmChanged = cmd.Flag("warm").Changed
+			// Check if boolean flags have been explicitly set (changed from default)
+			useCompatibilityModeChanged = cmd.Flags().Changed("use-compatibility-mode")
+			preserveClusterCPUModelChanged = cmd.Flags().Changed("preserve-cluster-cpu-model")
+			preserveStaticIPsChanged = cmd.Flags().Changed("preserve-static-ips")
+			migrateSharedDisksChanged = cmd.Flags().Changed("migrate-shared-disks")
+			archivedChanged = cmd.Flags().Changed("archived")
+			pvcNameTemplateUseGenerateNameChanged = cmd.Flags().Changed("pvc-name-template-use-generate-name")
+			deleteGuestConversionPodChanged = cmd.Flags().Changed("delete-guest-conversion-pod")
+			skipGuestConversionChanged = cmd.Flags().Changed("skip-guest-conversion")
+			warmChanged = cmd.Flags().Changed("warm")
 
 			return plan.PatchPlan(plan.PatchPlanOptions{
 				ConfigFlags: kubeConfigFlags,
-				Name:        name,
+				Name:        planName,
 				Namespace:   namespace,
 
 				// Core plan fields
@@ -86,6 +87,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				UseCompatibilityMode: useCompatibilityMode,
 				TargetAffinity:       targetAffinity,
 				TargetNamespace:      targetNamespace,
+				TargetPowerState:     targetPowerState,
 
 				// Additional plan fields
 				Description:                    description,
@@ -115,7 +117,6 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 		},
 	}
 
-	// Core editable plan flags
 	cmd.Flags().StringVar(&transferNetwork, "transfer-network", "", "Network to use for transferring VM data")
 	cmd.Flags().StringVar(&installLegacyDrivers, "install-legacy-drivers", "", "Install legacy drivers (true/false)")
 	cmd.Flags().Var(migrationTypeFlag, "migration-type", "Migration type (cold, warm)")
@@ -124,6 +125,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().BoolVar(&useCompatibilityMode, "use-compatibility-mode", false, "Use compatibility mode for migration")
 	cmd.Flags().StringVar(&targetAffinity, "target-affinity", "", "Target affinity using KARL syntax (e.g. 'REQUIRE pods(app=database) on node')")
 	cmd.Flags().StringVar(&targetNamespace, "target-namespace", "", "Target namespace for migrated VMs")
+	cmd.Flags().StringVar(&targetPowerState, "target-power-state", "", "Target power state for VMs after migration: 'on', 'off', or 'auto' (default: match source VM power state)")
 
 	// Plan metadata and configuration flags
 	cmd.Flags().StringVar(&description, "description", "", "Plan description")
@@ -153,6 +155,13 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 		panic(err)
 	}
 
+	// Add completion for target power state flag
+	if err := cmd.RegisterFlagCompletionFunc("target-power-state", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"on", "off", "auto"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
 	return cmd
 }
 
@@ -166,6 +175,7 @@ func NewPlanVmsCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comman
 	var volumeNameTemplate string
 	var networkNameTemplate string
 	var luksSecret string
+	var targetPowerState string
 
 	// Hook-related flags
 	var addPreHook string
@@ -189,7 +199,7 @@ func NewPlanVmsCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comman
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
 			return plan.PatchPlanVM(kubeConfigFlags, planName, vmName, namespace,
-				targetName, rootDisk, instanceType, pvcNameTemplate, volumeNameTemplate, networkNameTemplate, luksSecret,
+				targetName, rootDisk, instanceType, pvcNameTemplate, volumeNameTemplate, networkNameTemplate, luksSecret, targetPowerState,
 				addPreHook, addPostHook, removeHook, clearHooks)
 		},
 	}
@@ -202,6 +212,7 @@ func NewPlanVmsCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comman
 	cmd.Flags().StringVar(&volumeNameTemplate, "volume-name-template", "", "Go template for naming volume interfaces")
 	cmd.Flags().StringVar(&networkNameTemplate, "network-name-template", "", "Go template for naming network interfaces")
 	cmd.Flags().StringVar(&luksSecret, "luks-secret", "", "Secret name for disk decryption keys")
+	cmd.Flags().StringVar(&targetPowerState, "target-power-state", "", "Target power state for this VM after migration: 'on', 'off', or 'auto' (default: match source VM power state)")
 
 	// Hook-related flags
 	cmd.Flags().StringVar(&addPreHook, "add-pre-hook", "", "Add a pre-migration hook to this VM")
@@ -219,6 +230,13 @@ func NewPlanVmsCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comman
 	}
 
 	if err := cmd.RegisterFlagCompletionFunc("remove-hook", completion.HookResourceNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
+
+	// Add completion for target power state flag
+	if err := cmd.RegisterFlagCompletionFunc("target-power-state", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"on", "off", "auto"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
 		panic(err)
 	}
 

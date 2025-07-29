@@ -312,6 +312,7 @@ func displayPlanVMs(plan *unstructured.Unstructured) error {
 		targetName, _, _ := unstructured.NestedString(vm, "targetName")
 		instanceType, _, _ := unstructured.NestedString(vm, "instanceType")
 		rootDisk, _, _ := unstructured.NestedString(vm, "rootDisk")
+		targetPowerState, _, _ := unstructured.NestedString(vm, "targetPowerState")
 		pvcNameTemplate, _, _ := unstructured.NestedString(vm, "pvcNameTemplate")
 		volumeNameTemplate, _, _ := unstructured.NestedString(vm, "volumeNameTemplate")
 		networkNameTemplate, _, _ := unstructured.NestedString(vm, "networkNameTemplate")
@@ -336,7 +337,7 @@ func displayPlanVMs(plan *unstructured.Unstructured) error {
 		}
 
 		// Configuration
-		hasConfig := instanceType != "" || rootDisk != ""
+		hasConfig := instanceType != "" || rootDisk != "" || targetPowerState != ""
 		if hasConfig {
 			fmt.Printf("\n%s\n", output.Bold("Configuration:"))
 			if instanceType != "" {
@@ -344,6 +345,16 @@ func displayPlanVMs(plan *unstructured.Unstructured) error {
 			}
 			if rootDisk != "" {
 				fmt.Printf("  %s %s\n", output.Bold("Root Disk:"), output.Blue(rootDisk))
+			}
+			if targetPowerState != "" {
+				powerStateColor := output.Green(targetPowerState)
+				switch targetPowerState {
+				case "off":
+					powerStateColor = output.Red(targetPowerState)
+				case "auto":
+					powerStateColor = output.Yellow(targetPowerState)
+				}
+				fmt.Printf("  %s %s\n", output.Bold("Target Power State:"), powerStateColor)
 			}
 		}
 
