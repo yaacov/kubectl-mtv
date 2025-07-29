@@ -15,6 +15,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/cmd/delete"
 	"github.com/yaacov/kubectl-mtv/cmd/describe"
 	"github.com/yaacov/kubectl-mtv/cmd/get"
+	"github.com/yaacov/kubectl-mtv/cmd/patch"
 	"github.com/yaacov/kubectl-mtv/cmd/start"
 	"github.com/yaacov/kubectl-mtv/cmd/unarchive"
 	"github.com/yaacov/kubectl-mtv/cmd/version"
@@ -107,6 +108,7 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 	rootCmd.AddCommand(delete.NewDeleteCmd(kubeConfigFlags))
 	rootCmd.AddCommand(create.NewCreateCmd(kubeConfigFlags))
 	rootCmd.AddCommand(describe.NewDescribeCmd(kubeConfigFlags))
+	rootCmd.AddCommand(patch.NewPatchCmd(kubeConfigFlags))
 
 	// Plan commands - directly using package functions
 	rootCmd.AddCommand(start.NewStartCmd(kubeConfigFlags))

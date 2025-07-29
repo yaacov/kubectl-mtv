@@ -360,6 +360,56 @@ Examples:
 - `"tier1-storage:production/premium-ssd"` - Maps to specific namespace and storage class
 - `"shared-nfs:shared/nfs-storage"` - Maps shared storage to NFS storage class
 
+### Patch Mappings
+
+Modify existing mappings by adding, updating, or removing pairs.
+
+#### Patch Network Mappings
+
+```bash
+# Add new network pairs to existing mapping
+kubectl mtv patch mapping network production-networks \
+  --add-pairs "VM Network:openshift-sdn/production,Management:pod"
+
+# Update existing network pairs
+kubectl mtv patch mapping network production-networks \
+  --update-pairs "VM Network:openshift-sdn/staging,DMZ:security/dmz-network"
+
+# Remove network pairs by source name
+kubectl mtv patch mapping network production-networks \
+  --remove-pairs "Old-Network,Unused-VLAN"
+
+# Combined operations
+kubectl mtv patch mapping network production-networks \
+  --add-pairs "New-Network:production/new-net" \
+  --update-pairs "VM Network:production/updated-net" \
+  --remove-pairs "Deprecated-Network"
+```
+
+#### Patch Storage Mappings
+
+```bash
+# Add new storage pairs to existing mapping
+kubectl mtv patch mapping storage production-storage \
+  --add-pairs "VMFS-Datastore-1:standard,VMFS-Fast-Storage:fast-ssd"
+
+# Update existing storage pairs
+kubectl mtv patch mapping storage production-storage \
+  --update-pairs "VMFS-Datastore-1:premium-ssd,Archive-Storage:slow-archive"
+
+# Remove storage pairs by source name
+kubectl mtv patch mapping storage production-storage \
+  --remove-pairs "Old-Datastore,Decommissioned-Storage"
+
+# Combined operations
+kubectl mtv patch mapping storage production-storage \
+  --add-pairs "New-Datastore:standard" \
+  --update-pairs "VMFS-Fast-Storage:premium-nvme" \
+  --remove-pairs "Legacy-Storage"
+```
+
+**Note**: The patch command automatically prevents duplicate sources when adding pairs and provides warnings for any conflicts. See [Patch Mappings Guide](README_patch_mappings.md) for detailed usage.
+
 ### Delete Mappings
 
 ```bash
