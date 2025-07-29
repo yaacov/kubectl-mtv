@@ -81,7 +81,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				// Core plan fields
 				TransferNetwork:      transferNetwork,
 				InstallLegacyDrivers: installLegacyDrivers,
-				MigrationType:        migrationTypeFlag.GetValue(),
+				MigrationType:        string(migrationTypeFlag.GetValue()),
 				TargetLabels:         targetLabels,
 				TargetNodeSelector:   targetNodeSelector,
 				UseCompatibilityMode: useCompatibilityMode,

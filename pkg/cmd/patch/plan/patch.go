@@ -13,6 +13,7 @@ import (
 	"k8s.io/klog/v2"
 
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
+	planv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan"
 	"github.com/yaacov/karl-interpreter/pkg/karl"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
@@ -129,7 +130,7 @@ func PatchPlan(opts PatchPlanOptions) error {
 
 	// Update migration type if provided
 	if opts.MigrationType != "" {
-		plan.Spec.Type = opts.MigrationType
+		plan.Spec.Type = forkliftv1beta1.MigrationType(opts.MigrationType)
 		klog.V(2).Infof("Updated migration type to '%s'", opts.MigrationType)
 		planUpdated = true
 	}
@@ -189,7 +190,7 @@ func PatchPlan(opts PatchPlanOptions) error {
 
 	// Update target power state if provided
 	if opts.TargetPowerState != "" {
-		plan.Spec.TargetPowerState = opts.TargetPowerState
+		plan.Spec.TargetPowerState = planv1beta1.TargetPowerState(opts.TargetPowerState)
 		klog.V(2).Infof("Updated target power state to '%s'", opts.TargetPowerState)
 		planUpdated = true
 	}

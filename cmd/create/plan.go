@@ -191,6 +191,10 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 
 			// Handle migration type flag
 			if migrationTypeFlag.GetValue() != "" {
+				if planSpec.Warm {
+					return fmt.Errorf("setting --warm flag is not supported when migration type is specified")
+				}
+
 				planSpec.Type = migrationTypeFlag.GetValue()
 			}
 
@@ -229,16 +233,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 
 			// Handle target power state
 			if targetPowerState != "" {
-				planSpec.TargetPowerState = targetPowerState
-			}
-
-			// Handle migration type
-			if migrationTypeFlag.GetValue() == "" {
-				if planSpec.Warm {
-					return fmt.Errorf("setting --warm flag is not supported when migration type is specified")
-				}
-
-				planSpec.Type = migrationTypeFlag.GetValue()
+				planSpec.TargetPowerState = planv1beta1.TargetPowerState(targetPowerState)
 			}
 
 			// Handle use compatibility mode
