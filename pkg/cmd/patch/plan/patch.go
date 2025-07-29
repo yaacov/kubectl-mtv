@@ -13,7 +13,6 @@ import (
 	"k8s.io/klog/v2"
 
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
-	planv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan"
 	"github.com/yaacov/karl-interpreter/pkg/karl"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
@@ -303,17 +302,24 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 		return fmt.Errorf("failed to get plan '%s': %v", planName, err)
 	}
 
-	// Convert to typed plan
-	var plan forkliftv1beta1.Plan
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(existingPlan.Object, &plan)
+	// Get the VMs slice from spec.vms
+	specVMs, exists, err := unstructured.NestedSlice(existingPlan.Object, "spec", "vms")
 	if err != nil {
-		return fmt.Errorf("failed to convert plan: %v", err)
+		return fmt.Errorf("failed to get VMs from plan spec: %v", err)
+	}
+	if !exists {
+		return fmt.Errorf("no VMs found in plan '%s'", planName)
 	}
 
 	// Find the VM in the plan's VMs list
 	vmIndex := -1
-	for i, vm := range plan.Spec.VMs {
-		if vm.Name == vmName {
+	for i, v := range specVMs {
+		vm, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		currentVMName, _, _ := unstructured.NestedString(vm, "name")
+		if currentVMName == vmName {
 			vmIndex = i
 			break
 		}
@@ -323,64 +329,92 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 		return fmt.Errorf("VM '%s' not found in plan '%s'", vmName, planName)
 	}
 
+	// Get the VM object to modify
+	vm, ok := specVMs[vmIndex].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid VM data structure for VM '%s'", vmName)
+	}
+
 	// Track if updates were made
 	vmUpdated := false
 
 	// Update target name if provided
 	if targetName != "" {
-		plan.Spec.VMs[vmIndex].TargetName = targetName
+		err = unstructured.SetNestedField(vm, targetName, "targetName")
+		if err != nil {
+			return fmt.Errorf("failed to set target name: %v", err)
+		}
 		klog.V(2).Infof("Updated VM target name to '%s'", targetName)
 		vmUpdated = true
 	}
 
 	// Update root disk if provided
 	if rootDisk != "" {
-		plan.Spec.VMs[vmIndex].RootDisk = rootDisk
+		err = unstructured.SetNestedField(vm, rootDisk, "rootDisk")
+		if err != nil {
+			return fmt.Errorf("failed to set root disk: %v", err)
+		}
 		klog.V(2).Infof("Updated VM root disk to '%s'", rootDisk)
 		vmUpdated = true
 	}
 
 	// Update instance type if provided
 	if instanceType != "" {
-		plan.Spec.VMs[vmIndex].InstanceType = instanceType
+		err = unstructured.SetNestedField(vm, instanceType, "instanceType")
+		if err != nil {
+			return fmt.Errorf("failed to set instance type: %v", err)
+		}
 		klog.V(2).Infof("Updated VM instance type to '%s'", instanceType)
 		vmUpdated = true
 	}
 
 	// Update PVC name template if provided
 	if pvcNameTemplate != "" {
-		plan.Spec.VMs[vmIndex].PVCNameTemplate = pvcNameTemplate
+		err = unstructured.SetNestedField(vm, pvcNameTemplate, "pvcNameTemplate")
+		if err != nil {
+			return fmt.Errorf("failed to set PVC name template: %v", err)
+		}
 		klog.V(2).Infof("Updated VM PVC name template to '%s'", pvcNameTemplate)
 		vmUpdated = true
 	}
 
 	// Update volume name template if provided
 	if volumeNameTemplate != "" {
-		plan.Spec.VMs[vmIndex].VolumeNameTemplate = volumeNameTemplate
+		err = unstructured.SetNestedField(vm, volumeNameTemplate, "volumeNameTemplate")
+		if err != nil {
+			return fmt.Errorf("failed to set volume name template: %v", err)
+		}
 		klog.V(2).Infof("Updated VM volume name template to '%s'", volumeNameTemplate)
 		vmUpdated = true
 	}
 
 	// Update network name template if provided
 	if networkNameTemplate != "" {
-		plan.Spec.VMs[vmIndex].NetworkNameTemplate = networkNameTemplate
+		err = unstructured.SetNestedField(vm, networkNameTemplate, "networkNameTemplate")
+		if err != nil {
+			return fmt.Errorf("failed to set network name template: %v", err)
+		}
 		klog.V(2).Infof("Updated VM network name template to '%s'", networkNameTemplate)
 		vmUpdated = true
 	}
 
 	// Update LUKS secret if provided
 	if luksSecret != "" {
-		plan.Spec.VMs[vmIndex].LUKS = corev1.ObjectReference{
-			Kind:      "Secret",
-			Name:      luksSecret,
-			Namespace: namespace,
+		luksRef := map[string]interface{}{
+			"kind":      "Secret",
+			"name":      luksSecret,
+			"namespace": namespace,
+		}
+		err = unstructured.SetNestedMap(vm, luksRef, "luks")
+		if err != nil {
+			return fmt.Errorf("failed to set LUKS secret: %v", err)
 		}
 		klog.V(2).Infof("Updated VM LUKS secret to '%s'", luksSecret)
 		vmUpdated = true
 	}
 
 	// Handle hook operations
-	hooksUpdated, err := updateVMHooks(&plan.Spec.VMs[vmIndex], namespace, addPreHook, addPostHook, removeHook, clearHooks)
+	hooksUpdated, err := updateVMHooksUnstructured(vm, namespace, addPreHook, addPostHook, removeHook, clearHooks)
 	if err != nil {
 		return fmt.Errorf("failed to update VM hooks: %v", err)
 	}
@@ -390,7 +424,14 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 
 	// Update the plan if any changes were made
 	if vmUpdated {
-		err = updatePlan(configFlags, &plan)
+		// Set the modified VMs slice back to the plan
+		err = unstructured.SetNestedSlice(existingPlan.Object, specVMs, "spec", "vms")
+		if err != nil {
+			return fmt.Errorf("failed to update VMs in plan: %v", err)
+		}
+
+		// Update the plan directly
+		_, err = dynamicClient.Resource(client.PlansGVR).Namespace(namespace).Update(context.TODO(), existingPlan, metav1.UpdateOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to update plan: %v", err)
 		}
@@ -450,14 +491,23 @@ func parseKeyValuePairs(pairs []string, fieldName string) (map[string]string, er
 	return result, nil
 }
 
-// updateVMHooks handles hook operations for a VM
-func updateVMHooks(vm *planv1beta1.VM, namespace, addPreHook, addPostHook, removeHook string, clearHooks bool) (bool, error) {
+// updateVMHooksUnstructured handles hook operations for a VM
+func updateVMHooksUnstructured(vm map[string]interface{}, namespace, addPreHook, addPostHook, removeHook string, clearHooks bool) (bool, error) {
 	updated := false
+
+	// Get existing hooks or create empty slice
+	hooks, _, _ := unstructured.NestedSlice(vm, "hooks")
+	if hooks == nil {
+		hooks = []interface{}{}
+	}
 
 	// Clear all hooks if requested
 	if clearHooks {
-		if len(vm.Hooks) > 0 {
-			vm.Hooks = []planv1beta1.HookRef{}
+		if len(hooks) > 0 {
+			err := unstructured.SetNestedSlice(vm, []interface{}{}, "hooks")
+			if err != nil {
+				return false, fmt.Errorf("failed to clear hooks: %v", err)
+			}
 			klog.V(2).Infof("Cleared all hooks from VM")
 			updated = true
 		}
@@ -466,17 +516,27 @@ func updateVMHooks(vm *planv1beta1.VM, namespace, addPreHook, addPostHook, remov
 
 	// Remove specific hook if requested
 	if removeHook != "" {
-		originalLen := len(vm.Hooks)
-		var filteredHooks []planv1beta1.HookRef
-		for _, hook := range vm.Hooks {
-			if hook.Hook.Name != strings.TrimSpace(removeHook) {
-				filteredHooks = append(filteredHooks, hook)
+		originalLen := len(hooks)
+		var filteredHooks []interface{}
+		for _, h := range hooks {
+			hook, ok := h.(map[string]interface{})
+			if !ok {
+				filteredHooks = append(filteredHooks, h)
+				continue
+			}
+			hookName, _, _ := unstructured.NestedString(hook, "hook", "name")
+			if hookName != strings.TrimSpace(removeHook) {
+				filteredHooks = append(filteredHooks, h)
 			}
 		}
 		if len(filteredHooks) < originalLen {
-			vm.Hooks = filteredHooks
+			err := unstructured.SetNestedSlice(vm, filteredHooks, "hooks")
+			if err != nil {
+				return false, fmt.Errorf("failed to remove hook: %v", err)
+			}
 			klog.V(2).Infof("Removed hook '%s' from VM", removeHook)
 			updated = true
+			hooks = filteredHooks
 		}
 	}
 
@@ -486,24 +546,34 @@ func updateVMHooks(vm *planv1beta1.VM, namespace, addPreHook, addPostHook, remov
 
 		// Check if this pre-hook already exists
 		hookExists := false
-		for _, hook := range vm.Hooks {
-			if hook.Hook.Name == hookName && hook.Step == "PreHook" {
+		for _, h := range hooks {
+			hook, ok := h.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			existingHookName, _, _ := unstructured.NestedString(hook, "hook", "name")
+			step, _, _ := unstructured.NestedString(hook, "step")
+			if existingHookName == hookName && step == "PreHook" {
 				hookExists = true
 				break
 			}
 		}
 
 		if !hookExists {
-			preHookRef := planv1beta1.HookRef{
-				Step: "PreHook",
-				Hook: corev1.ObjectReference{
-					Kind:       "Hook",
-					APIVersion: "forklift.konveyor.io/v1beta1",
-					Name:       hookName,
-					Namespace:  namespace,
+			preHookRef := map[string]interface{}{
+				"step": "PreHook",
+				"hook": map[string]interface{}{
+					"kind":       "Hook",
+					"apiVersion": "forklift.konveyor.io/v1beta1",
+					"name":       hookName,
+					"namespace":  namespace,
 				},
 			}
-			vm.Hooks = append(vm.Hooks, preHookRef)
+			hooks = append(hooks, preHookRef)
+			err := unstructured.SetNestedSlice(vm, hooks, "hooks")
+			if err != nil {
+				return false, fmt.Errorf("failed to add pre-hook: %v", err)
+			}
 			klog.V(2).Infof("Added pre-hook '%s' to VM", hookName)
 			updated = true
 		} else {
@@ -517,24 +587,34 @@ func updateVMHooks(vm *planv1beta1.VM, namespace, addPreHook, addPostHook, remov
 
 		// Check if this post-hook already exists
 		hookExists := false
-		for _, hook := range vm.Hooks {
-			if hook.Hook.Name == hookName && hook.Step == "PostHook" {
+		for _, h := range hooks {
+			hook, ok := h.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			existingHookName, _, _ := unstructured.NestedString(hook, "hook", "name")
+			step, _, _ := unstructured.NestedString(hook, "step")
+			if existingHookName == hookName && step == "PostHook" {
 				hookExists = true
 				break
 			}
 		}
 
 		if !hookExists {
-			postHookRef := planv1beta1.HookRef{
-				Step: "PostHook",
-				Hook: corev1.ObjectReference{
-					Kind:       "Hook",
-					APIVersion: "forklift.konveyor.io/v1beta1",
-					Name:       hookName,
-					Namespace:  namespace,
+			postHookRef := map[string]interface{}{
+				"step": "PostHook",
+				"hook": map[string]interface{}{
+					"kind":       "Hook",
+					"apiVersion": "forklift.konveyor.io/v1beta1",
+					"name":       hookName,
+					"namespace":  namespace,
 				},
 			}
-			vm.Hooks = append(vm.Hooks, postHookRef)
+			hooks = append(hooks, postHookRef)
+			err := unstructured.SetNestedSlice(vm, hooks, "hooks")
+			if err != nil {
+				return false, fmt.Errorf("failed to add post-hook: %v", err)
+			}
 			klog.V(2).Infof("Added post-hook '%s' to VM", hookName)
 			updated = true
 		} else {

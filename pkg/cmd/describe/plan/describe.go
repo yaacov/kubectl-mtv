@@ -16,7 +16,7 @@ import (
 )
 
 // Describe describes a migration plan
-func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string) error {
+func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string, withVMs bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -108,6 +108,13 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 	conditions, exists, _ := unstructured.NestedSlice(plan.Object, "status", "conditions")
 	if exists {
 		displayConditions(conditions)
+	}
+
+	// Display VMs if --with-vms flag is set
+	if withVMs {
+		if err := displayPlanVMs(plan); err != nil {
+			fmt.Printf("Failed to display VMs: %v\n", err)
+		}
 	}
 
 	return nil
@@ -275,4 +282,136 @@ func formatPlanMappingEntry(entryMap map[string]interface{}, entryType string) s
 
 	// Join all parts with newlines for multi-line cell display
 	return strings.Join(parts, "\n")
+}
+
+// displayPlanVMs displays the VMs from the plan specification with detailed information
+func displayPlanVMs(plan *unstructured.Unstructured) error {
+	specVMs, exists, err := unstructured.NestedSlice(plan.Object, "spec", "vms")
+	if err != nil {
+		return fmt.Errorf("failed to get VMs from plan spec: %v", err)
+	}
+	if !exists || len(specVMs) == 0 {
+		fmt.Printf("\n%s\n", output.Cyan("VIRTUAL MACHINES"))
+		fmt.Printf("%s\n", output.Red("No VMs specified in the plan"))
+		return nil
+	}
+
+	fmt.Printf("\n%s\n", output.Cyan("VIRTUAL MACHINES"))
+	fmt.Printf("%s %s\n", output.Bold("VM Count:"), output.Blue(fmt.Sprintf("%d", len(specVMs))))
+
+	// Display each VM with detailed information
+	for i, v := range specVMs {
+		vm, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		// Extract VM fields
+		vmName, _, _ := unstructured.NestedString(vm, "name")
+		vmID, _, _ := unstructured.NestedString(vm, "id")
+		targetName, _, _ := unstructured.NestedString(vm, "targetName")
+		instanceType, _, _ := unstructured.NestedString(vm, "instanceType")
+		rootDisk, _, _ := unstructured.NestedString(vm, "rootDisk")
+		pvcNameTemplate, _, _ := unstructured.NestedString(vm, "pvcNameTemplate")
+		volumeNameTemplate, _, _ := unstructured.NestedString(vm, "volumeNameTemplate")
+		networkNameTemplate, _, _ := unstructured.NestedString(vm, "networkNameTemplate")
+
+		// Get hooks array
+		hooks, _, _ := unstructured.NestedSlice(vm, "hooks")
+
+		// Get LUKS object reference
+		luks, _, _ := unstructured.NestedMap(vm, "luks")
+
+		// Print VM header with separator
+		fmt.Printf("\n%s", output.ColorizedSeparator(80, output.BlueColor))
+		fmt.Printf("\n%s #%d\n", output.Bold(output.Cyan("VM")), i+1)
+
+		// Basic Information
+		fmt.Printf("%s\n", output.Bold("Basic Information:"))
+		fmt.Printf("  %s %s\n", output.Bold("Name:"), output.Yellow(getStringOrDefault(vmName, "-")))
+		fmt.Printf("  %s %s\n", output.Bold("ID:"), output.Cyan(getStringOrDefault(vmID, "-")))
+
+		if targetName != "" {
+			fmt.Printf("  %s %s\n", output.Bold("Target Name:"), output.Green(targetName))
+		}
+
+		// Configuration
+		hasConfig := instanceType != "" || rootDisk != ""
+		if hasConfig {
+			fmt.Printf("\n%s\n", output.Bold("Configuration:"))
+			if instanceType != "" {
+				fmt.Printf("  %s %s\n", output.Bold("Instance Type:"), output.Yellow(instanceType))
+			}
+			if rootDisk != "" {
+				fmt.Printf("  %s %s\n", output.Bold("Root Disk:"), output.Blue(rootDisk))
+			}
+		}
+
+		// Name Templates
+		hasTemplates := pvcNameTemplate != "" || volumeNameTemplate != "" || networkNameTemplate != ""
+		if hasTemplates {
+			fmt.Printf("\n%s\n", output.Bold("Name Templates:"))
+			if pvcNameTemplate != "" {
+				fmt.Printf("  %s %s\n", output.Bold("PVC Template:"), output.Cyan(pvcNameTemplate))
+			}
+			if volumeNameTemplate != "" {
+				fmt.Printf("  %s %s\n", output.Bold("Volume Template:"), output.Cyan(volumeNameTemplate))
+			}
+			if networkNameTemplate != "" {
+				fmt.Printf("  %s %s\n", output.Bold("Network Template:"), output.Cyan(networkNameTemplate))
+			}
+		}
+
+		// Hooks
+		if len(hooks) > 0 {
+			fmt.Printf("\n%s\n", output.Bold("Hooks:"))
+			for j, h := range hooks {
+				hook, ok := h.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				hookName, _, _ := unstructured.NestedString(hook, "name")
+				hookKind, _, _ := unstructured.NestedString(hook, "kind")
+				hookNamespace, _, _ := unstructured.NestedString(hook, "namespace")
+
+				fmt.Printf("  %s %d: %s", output.Bold("Hook"), j+1, output.Green(getStringOrDefault(hookName, "-")))
+				if hookKind != "" || hookNamespace != "" {
+					fmt.Printf(" (%s/%s)", getStringOrDefault(hookNamespace, "default"), getStringOrDefault(hookKind, "Hook"))
+				}
+				fmt.Println()
+			}
+		} else {
+			fmt.Printf("\n%s %s\n", output.Bold("Hooks:"), "None")
+		}
+
+		// LUKS Configuration
+		if len(luks) > 0 {
+			fmt.Printf("\n%s\n", output.Bold("Disk Encryption (LUKS):"))
+			luksName, _, _ := unstructured.NestedString(luks, "name")
+			luksNamespace, _, _ := unstructured.NestedString(luks, "namespace")
+			luksKind, _, _ := unstructured.NestedString(luks, "kind")
+
+			if luksName != "" {
+				fmt.Printf("  %s %s\n", output.Bold("Secret:"), output.Yellow(luksName))
+				if luksNamespace != "" {
+					fmt.Printf("  %s %s\n", output.Bold("Namespace:"), output.Blue(luksNamespace))
+				}
+				if luksKind != "" {
+					fmt.Printf("  %s %s\n", output.Bold("Kind:"), output.Cyan(luksKind))
+				}
+			}
+		} else {
+			fmt.Printf("\n%s %s\n", output.Bold("Disk Encryption:"), "None")
+		}
+	}
+
+	return nil
+}
+
+// getStringOrDefault returns the string value or a default if empty
+func getStringOrDefault(value, defaultValue string) string {
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
