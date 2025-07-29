@@ -192,6 +192,83 @@ kubectl mtv patch provider vsphere-provider \
 
 **Note**: See [Patch Providers Guide](README_patch_providers.md) for detailed usage and security considerations.
 
+### Patch Plans
+
+Modify existing migration plans by updating plan-level settings or individual VM configurations.
+
+#### Patch Plan Settings
+
+Update migration plan configuration without changing providers, mappings, or VMs.
+
+```bash
+# Update migration type and target settings
+kubectl mtv patch plan my-migration-plan \
+  --migration-type warm \
+  --target-namespace production \
+  --use-compatibility-mode=true
+
+# Configure transfer network
+kubectl mtv patch plan my-plan \
+  --transfer-network openshift-sriov-network/fast-network
+
+# Set target VM labels and node selector
+kubectl mtv patch plan production-migration \
+  --target-labels "env=production,tier=web" \
+  --target-node-selector "node-type=compute,disk=ssd"
+
+# Configure advanced affinity with KARL syntax
+kubectl mtv patch plan my-plan \
+  --target-affinity 'REQUIRE pods(app=database) on node'
+
+# Set plan templates and description
+kubectl mtv patch plan production-plan \
+  --description "Production migration batch 1" \
+  --pvc-name-template "prod-{{.Name}}-{{.DiskName}}" \
+  --preserve-static-ips=true
+```
+
+#### Patch Individual VMs
+
+Modify specific VM configurations within a plan's VM list.
+
+```bash
+# Update VM target name and instance type
+kubectl mtv patch plan-vms production-plan web-server-vm \
+  --target-name production-web-01 \
+  --instance-type m5.xlarge
+
+# Configure naming templates
+kubectl mtv patch plan-vms my-plan app-server \
+  --pvc-name-template "{{.Name}}-storage-{{.DiskName}}" \
+  --volume-name-template "{{.Name}}-vol-{{.Index}}"
+
+# Set encryption configuration
+kubectl mtv patch plan-vms secure-plan encrypted-vm \
+  --luks-secret disk-encryption-keys \
+  --root-disk "hard-disk-1"
+
+# Combined VM updates
+kubectl mtv patch plan-vms enterprise-migration critical-app \
+  --target-name prod-critical-app-01 \
+  --instance-type c5.2xlarge \
+  --pvc-name-template "prod-{{.Name}}-{{.DiskName}}" \
+  --luks-secret app-encryption-keys
+
+# Manage VM hooks
+kubectl mtv patch plan-vms production-plan database-vm \
+  --add-pre-hook backup-database-hook \
+  --add-post-hook verify-migration-hook
+
+# Remove hooks from VM
+kubectl mtv patch plan-vms test-plan test-vm \
+  --remove-hook old-hook \
+  --clear-hooks
+```
+
+**Protected Fields**: Source/target providers, network/storage mappings, and the VM list itself cannot be changed through patch plan. Individual VM modifications use patch plan-vms.
+
+**Note**: See [Patch Plans Guide](README_patch_plans.md) for comprehensive usage examples, template variables, and best practices.
+
 ### Delete Providers
 
 ```bash

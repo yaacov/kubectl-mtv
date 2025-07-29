@@ -137,6 +137,9 @@ See [VDDK Setup Guide](docs/README_vddk.md) for detailed instructions.
 - [Inventory Queries](docs/README_inventory.md)
 - [Mapping Configuration](docs/README_mapping_pairs.md)
 - [Creating Mappings](docs/README_create_mappings.md)
+- [Patching Mappings](docs/README_patch_mappings.md)
+- [Patching Providers](docs/README_patch_providers.md)
+- [Patching Plans](docs/README_patch_plans.md)
 - [Creating Migration Hosts](docs/README_host_creation.md)
 - [Development Guide](docs/README-development.md)
 
