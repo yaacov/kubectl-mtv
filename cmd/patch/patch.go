@@ -20,6 +20,7 @@ func NewPatchCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command 
 
 	// Add subcommands
 	cmd.AddCommand(NewMappingCmd(kubeConfigFlags))
+	cmd.AddCommand(NewProviderCmd(kubeConfigFlags))
 
 	return cmd
 }
