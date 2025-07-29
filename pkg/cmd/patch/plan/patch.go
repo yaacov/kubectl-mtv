@@ -13,6 +13,7 @@ import (
 	"k8s.io/klog/v2"
 
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
+	planv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan"
 	"github.com/yaacov/karl-interpreter/pkg/karl"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
@@ -32,6 +33,7 @@ type PatchPlanOptions struct {
 	UseCompatibilityMode bool
 	TargetAffinity       string
 	TargetNamespace      string
+	TargetPowerState     string
 
 	// Additional plan fields
 	Description                    string
@@ -128,7 +130,7 @@ func PatchPlan(opts PatchPlanOptions) error {
 
 	// Update migration type if provided
 	if opts.MigrationType != "" {
-		plan.Spec.Type = opts.MigrationType
+		plan.Spec.Type = forkliftv1beta1.MigrationType(opts.MigrationType)
 		klog.V(2).Infof("Updated migration type to '%s'", opts.MigrationType)
 		planUpdated = true
 	}
@@ -183,6 +185,13 @@ func PatchPlan(opts PatchPlanOptions) error {
 	if opts.TargetNamespace != "" {
 		plan.Spec.TargetNamespace = opts.TargetNamespace
 		klog.V(2).Infof("Updated target namespace to '%s'", opts.TargetNamespace)
+		planUpdated = true
+	}
+
+	// Update target power state if provided
+	if opts.TargetPowerState != "" {
+		plan.Spec.TargetPowerState = planv1beta1.TargetPowerState(opts.TargetPowerState)
+		klog.V(2).Infof("Updated target power state to '%s'", opts.TargetPowerState)
 		planUpdated = true
 	}
 
@@ -286,7 +295,7 @@ func PatchPlan(opts PatchPlanOptions) error {
 
 // PatchPlanVM patches a specific VM within a plan's VM list
 func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, namespace string,
-	targetName, rootDisk, instanceType, pvcNameTemplate, volumeNameTemplate, networkNameTemplate, luksSecret string,
+	targetName, rootDisk, instanceType, pvcNameTemplate, volumeNameTemplate, networkNameTemplate, luksSecret, targetPowerState string,
 	addPreHook, addPostHook, removeHook string, clearHooks bool) error {
 
 	klog.V(2).Infof("Patching VM '%s' in plan '%s'", vmName, planName)
@@ -410,6 +419,16 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 			return fmt.Errorf("failed to set LUKS secret: %v", err)
 		}
 		klog.V(2).Infof("Updated VM LUKS secret to '%s'", luksSecret)
+		vmUpdated = true
+	}
+
+	// Update target power state if provided
+	if targetPowerState != "" {
+		err = unstructured.SetNestedField(vm, targetPowerState, "targetPowerState")
+		if err != nil {
+			return fmt.Errorf("failed to set target power state: %v", err)
+		}
+		klog.V(2).Infof("Updated VM target power state to '%s'", targetPowerState)
 		vmUpdated = true
 	}
 

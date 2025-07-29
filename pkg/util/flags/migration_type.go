@@ -2,23 +2,25 @@ package flags
 
 import (
 	"fmt"
+
+	"github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 )
 
 // MigrationTypeFlag implements pflag.Value interface for migration type validation
 type MigrationTypeFlag struct {
-	value string
+	value v1beta1.MigrationType
 }
 
 func (m *MigrationTypeFlag) String() string {
-	return m.value
+	return string(m.value)
 }
 
 func (m *MigrationTypeFlag) Set(value string) error {
-	validTypes := []string{"cold", "warm", "live"}
+	validTypes := []v1beta1.MigrationType{v1beta1.MigrationCold, v1beta1.MigrationWarm, v1beta1.MigrationLive}
 
 	isValid := false
 	for _, validType := range validTypes {
-		if value == validType {
+		if v1beta1.MigrationType(value) == validType {
 			isValid = true
 			break
 		}
@@ -28,7 +30,7 @@ func (m *MigrationTypeFlag) Set(value string) error {
 		return fmt.Errorf("invalid migration type: %s. Valid types are: cold, warm, live", value)
 	}
 
-	m.value = value
+	m.value = v1beta1.MigrationType(value)
 	return nil
 }
 
@@ -37,7 +39,7 @@ func (m *MigrationTypeFlag) Type() string {
 }
 
 // GetValue returns the migration type value
-func (m *MigrationTypeFlag) GetValue() string {
+func (m *MigrationTypeFlag) GetValue() v1beta1.MigrationType {
 	return m.value
 }
 

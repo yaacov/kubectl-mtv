@@ -64,6 +64,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var targetNodeSelector []string
 	var useCompatibilityMode bool
 	var targetAffinity string
+	var targetPowerState string
 
 	cmd := &cobra.Command{
 		Use:          "plan NAME",
@@ -190,6 +191,10 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 
 			// Handle migration type flag
 			if migrationTypeFlag.GetValue() != "" {
+				if planSpec.Warm {
+					return fmt.Errorf("setting --warm flag is not supported when migration type is specified")
+				}
+
 				planSpec.Type = migrationTypeFlag.GetValue()
 			}
 
@@ -226,13 +231,9 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				planSpec.TargetAffinity = affinity
 			}
 
-			// Handle migration type
-			if migrationTypeFlag.GetValue() == "" {
-				if planSpec.Warm {
-					return fmt.Errorf("setting --warm flag is not supported when migration type is specified")
-				}
-
-				planSpec.Type = migrationTypeFlag.GetValue()
+			// Handle target power state
+			if targetPowerState != "" {
+				planSpec.TargetPowerState = planv1beta1.TargetPowerState(targetPowerState)
 			}
 
 			// Handle use compatibility mode
@@ -296,6 +297,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().StringSliceVar(&targetNodeSelector, "target-node-selector", nil, "Target node selector to constrain VM scheduling (e.g., key1=value1,key2=value2)")
 	cmd.Flags().BoolVar(&planSpec.Warm, "warm", false, "Enable warm migration (can also be set with --migration-type=warm)")
 	cmd.Flags().StringVar(&targetAffinity, "target-affinity", "", "Target affinity to constrain VM scheduling using KARL syntax (e.g. 'REQUIRE pods(app=database) on node')")
+	cmd.Flags().StringVar(&targetPowerState, "target-power-state", "", "Target power state for VMs after migration: 'on', 'off', or 'auto' (default: match source VM power state)")
 
 	// Add completion for migration type flag
 	if err := cmd.RegisterFlagCompletionFunc("migration-type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -307,6 +309,13 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	// Add completion for install legacy drivers flag
 	if err := cmd.RegisterFlagCompletionFunc("install-legacy-drivers", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"true", "false"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	// Add completion for target power state flag
+	if err := cmd.RegisterFlagCompletionFunc("target-power-state", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"on", "off", "auto"}, cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
 		panic(err)
 	}
