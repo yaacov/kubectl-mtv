@@ -11,6 +11,8 @@ import (
 
 // NewPlanCmd creates the plan description command
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+	var withVMs bool
+
 	cmd := &cobra.Command{
 		Use:               "plan NAME",
 		Short:             "Describe a migration plan",
@@ -23,9 +25,11 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
-			return plan.Describe(kubeConfigFlags, name, namespace)
+			return plan.Describe(kubeConfigFlags, name, namespace, withVMs)
 		},
 	}
+
+	cmd.Flags().BoolVar(&withVMs, "with-vms", false, "Include list of VMs in the plan specification")
 
 	return cmd
 }
