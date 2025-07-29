@@ -152,6 +152,46 @@ kubectl mtv create provider ova --type ova \
 
 **Note**: The `--cacert` flag accepts either certificate content directly or use `@filename` to load from file.
 
+### Patch Providers
+
+Modify existing providers by updating URL, credentials, or VDDK settings.
+
+```bash
+# Update provider URL
+kubectl mtv patch provider vsphere-provider \
+  --url https://new-vcenter.example.com
+
+# Update credentials (only if secret is owned by provider)
+kubectl mtv patch provider vsphere-provider \
+  --username administrator@vsphere.local \
+  --password newpassword
+
+# Update OpenShift token
+kubectl mtv patch provider openshift-provider \
+  --token sha256~new-token-here
+
+# Update VDDK settings for vSphere
+kubectl mtv patch provider vsphere-provider \
+  --vddk-init-image registry.example.com/vddk:v8.0.2 \
+  --use-vddk-aio-optimization=true
+
+# Update OpenStack credentials
+kubectl mtv patch provider openstack-provider \
+  --username newuser \
+  --provider-domain-name new-domain \
+  --provider-project-name new-project
+
+# Combined updates
+kubectl mtv patch provider vsphere-provider \
+  --url https://new-vcenter.example.com \
+  --username newadmin@vsphere.local \
+  --vddk-init-image registry.example.com/vddk:latest
+```
+
+**Important**: Provider type and SDK endpoint cannot be changed after creation. Credential updates are only allowed if the provider owns its secret (created automatically with the provider).
+
+**Note**: See [Patch Providers Guide](README_patch_providers.md) for detailed usage and security considerations.
+
 ### Delete Providers
 
 ```bash
