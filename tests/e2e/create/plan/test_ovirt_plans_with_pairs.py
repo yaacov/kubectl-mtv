@@ -175,7 +175,7 @@ class TestOvirtPlanCreationWithPairs:
 
         # Use pod network for all networks
         network_pairs = ",".join(
-            [f"{n['source']}:pod" for n in OVIRT_NETWORK_PAIRS[:2]]
+            [f"{n['source']}:default" for n in OVIRT_NETWORK_PAIRS[:2]]
         )
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in OVIRT_STORAGE_PAIRS[:3]]
