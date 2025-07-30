@@ -5,7 +5,7 @@ go 1.24.0
 // Add your other dependencies here
 
 require (
-	github.com/kubev2v/forklift v0.0.0-20250729141453-35a945d23665
+	github.com/kubev2v/forklift v0.0.0-20250729185103-67f55e324a7e
 	github.com/spf13/cobra v1.9.1
 	github.com/yaacov/karl-interpreter v0.0.1
 	github.com/yaacov/tree-search-language/v6 v6.0.7
