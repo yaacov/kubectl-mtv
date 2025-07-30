@@ -210,7 +210,7 @@ class TestOVAPlanCreationWithPairs:
         vm_storage = VM_STORAGE_MAPPINGS[selected_vm]
 
         # Use pod network for all networks
-        network_pairs = ",".join([f"{n['source']}:pod" for n in vm_networks])
+        network_pairs = ",".join([f"{n['source']}:default" for n in vm_networks])
         storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in vm_storage])
 
         # Create plan command with pod network mapping

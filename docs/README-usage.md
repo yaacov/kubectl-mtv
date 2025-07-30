@@ -463,7 +463,7 @@ Network pairs use the format: `"source-network:target-namespace/target-network"`
 
 Examples:
 
-- `"VM Network:default/pod-network"` - Maps VMware "VM Network" to "pod-network" in default namespace
+- `"VM Network:default/vm-network"` - Maps VMware "VM Network" to "vm-network" in default namespace
 - `"Production VLAN:prod/production-net"` - Maps to specific namespace and network
 - `"DMZ-100:security/dmz-network"` - Maps VLAN to security namespace
 
@@ -486,7 +486,7 @@ Modify existing mappings by adding, updating, or removing pairs.
 ```bash
 # Add new network pairs to existing mapping
 kubectl mtv patch mapping network production-networks \
-  --add-pairs "VM Network:openshift-sdn/production,Management:pod"
+  --add-pairs "VM Network:openshift-sdn/production,Management:default"
 
 # Update existing network pairs
 kubectl mtv patch mapping network production-networks \
@@ -633,7 +633,7 @@ kubectl mtv create plan mapped-migration \
 | `--install-legacy-drivers` | Install legacy Windows drivers | `--install-legacy-drivers=true` |
 | `--migration-type`, `-m` | Migration type: `cold`, `warm`, or `live` | `--migration-type warm` |
 | `--warm` | Enable warm migration (deprecated) | `--warm` |
-| `--default-target-network`, `-N` | Default target network for mapping | `-N pod` |
+| `--default-target-network`, `-N` | Default target network for mapping | `-N default` |
 | `--default-target-storage-class` | Default target storage class | `--default-target-storage-class thin` |
 | `--use-compatibility-mode` | Use compatibility devices for bootability | `--use-compatibility-mode=false` |
 | `--target-labels`, `-L` | Labels to add to the migrated VM | `-L app=web,tier=frontend` |

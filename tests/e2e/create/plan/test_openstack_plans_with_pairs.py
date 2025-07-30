@@ -172,7 +172,7 @@ class TestOpenStackPlanCreationWithPairs:
 
         # Use pod network for all networks
         network_pairs = ",".join(
-            [f"{n['source']}:pod" for n in OPENSTACK_NETWORK_PAIRS]
+            [f"{n['source']}:default" for n in OPENSTACK_NETWORK_PAIRS]
         )
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in OPENSTACK_STORAGE_PAIRS]

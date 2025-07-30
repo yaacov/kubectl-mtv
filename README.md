@@ -38,7 +38,7 @@ kubectl mtv create provider vsphere-01 --type vsphere \
 # Network mapping
 kubectl mtv create mapping network prod-net \
   --source vsphere-01 --target openshift \
-  --network-pairs "VM Network:pod,Management:openshift-sdn/mgmt"
+  --network-pairs "VM Network:default,Management:openshift-sdn/mgmt"
 
 # Storage mapping  
 kubectl mtv create mapping storage prod-storage \
@@ -64,7 +64,7 @@ kubectl mtv create plan migration-1 \
 # Or using inline mappings
 kubectl mtv create plan migration-2 \
   --source vsphere-01 \
-  --network-pairs "VM Network:pod" \
+  --network-pairs "VM Network:default" \
   --storage-pairs "datastore1:standard" \
   --vms vm1,vm2,vm3
 ```

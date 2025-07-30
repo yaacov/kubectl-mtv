@@ -167,7 +167,7 @@ class TestVSpherePlanCreationWithPairs:
         plan_name = f"test-plan-vsphere-pod-pairs-{int(time.time())}"
 
         # Use pod network for all networks
-        network_pairs = ",".join([f"{n['source']}:pod" for n in VSPHERE_NETWORK_PAIRS])
+        network_pairs = ",".join([f"{n['source']}:default" for n in VSPHERE_NETWORK_PAIRS])
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in VSPHERE_STORAGE_PAIRS]
         )

@@ -30,7 +30,7 @@ Network pairs use the same format as the create command: `source-network:target-
 #### Target Specifications
 
 1. **Multus Network**: `namespace/network-name`
-2. **Pod Network**: `pod`
+2. **Pod Network**: `default`
 3. **Ignored Network**: `ignored`
 4. **Default Namespace**: `network-name` (uses mapping's namespace)
 
@@ -41,7 +41,7 @@ Network pairs use the same format as the create command: `source-network:target-
 ```bash
 # Add new network mappings
 kubectl-mtv patch mapping network production-networks \
-  --add-pairs "VM Network:openshift-sdn/production,Management:pod"
+  --add-pairs "VM Network:openshift-sdn/production,Management:default"
 ```
 
 #### Updating Network Pairs

@@ -30,9 +30,9 @@ Each network pair follows the format: `source-network:target-specification`
    --network-pairs "VM Network:production/prod-net"
    ```
 
-2. **Pod Network**: `pod`
+2. **Default Network (pod)**: `default`
    ```bash
-   --network-pairs "Management Network:pod"
+   --network-pairs "Management Network:default"
    ```
 
 3. **Ignored Network**: `ignored`
@@ -52,7 +52,7 @@ Each network pair follows the format: `source-network:target-specification`
 kubectl-mtv create mapping network basic-networks \
   --source vsphere-provider \
   --target openshift \
-  --network-pairs "VM Network:pod"
+  --network-pairs "VM Network:default"
 ```
 
 #### Multi-Network Mapping
@@ -60,7 +60,7 @@ kubectl-mtv create mapping network basic-networks \
 kubectl-mtv create mapping network complex-networks \
   --source vsphere-provider \
   --target openshift \
-  --network-pairs "Production VLAN:prod/production-net,Development VLAN:dev/development-net,Management Network:pod,DMZ Network:security/dmz-net"
+  --network-pairs "Production VLAN:prod/production-net,Development VLAN:dev/development-net,Management Network:default,DMZ Network:security/dmz-net"
 ```
 
 #### Network Mapping with Special Cases
@@ -68,7 +68,7 @@ kubectl-mtv create mapping network complex-networks \
 kubectl-mtv create mapping network advanced-networks \
   --source vsphere-datacenter \
   --target kubernetes-cluster \
-  --network-pairs "Frontend Network:frontend/web-net,Backend Network:backend/app-net,Database Network:database/db-net,Backup Network:ignored,Management:pod"
+  --network-pairs "Frontend Network:frontend/web-net,Backend Network:backend/app-net,Database Network:database/db-net,Backup Network:ignored,Management:default"
 ```
 
 ## Storage Mappings
@@ -124,7 +124,7 @@ kubectl-mtv create mapping storage enterprise-storage \
 kubectl-mtv create mapping network vsphere-to-ocp-networks \
   --source vsphere-vcenter \
   --target openshift \
-  --network-pairs "VM Network:openshift-sdn/vm-network,vMotion:ignored,Management Network:pod,DMZ VLAN 100:dmz/dmz-network"
+  --network-pairs "VM Network:openshift-sdn/vm-network,vMotion:ignored,Management Network:default,DMZ VLAN 100:dmz/dmz-network"
 
 # Storage mapping for vSphere
 kubectl-mtv create mapping storage vsphere-to-ocp-storage \
@@ -140,7 +140,7 @@ kubectl-mtv create mapping storage vsphere-to-ocp-storage \
 kubectl-mtv create mapping network ovirt-to-ocp-networks \
   --source ovirt-engine \
   --target openshift \
-  --network-pairs "ovirtmgmt:pod,vm_network:vms/vm-network,display:ignored"
+  --network-pairs "ovirtmgmt:default,vm_network:vms/vm-network,display:ignored"
 
 # Storage mapping for oVirt
 kubectl-mtv create mapping storage ovirt-to-ocp-storage \
@@ -156,7 +156,7 @@ kubectl-mtv create mapping storage ovirt-to-ocp-storage \
 kubectl-mtv create mapping network openstack-to-ocp-networks \
   --source openstack-controller \
   --target openshift \
-  --network-pairs "public:openshift-sdn/public-net,private:openshift-sdn/private-net,management:pod"
+  --network-pairs "public:openshift-sdn/public-net,private:openshift-sdn/private-net,management:default"
 
 # Storage mapping for OpenStack
 kubectl-mtv create mapping storage openstack-to-ocp-storage \
@@ -246,7 +246,7 @@ kubectl-mtv delete mapping storage obsolete-storage-map
    kubectl-mtv create mapping network test-networks \
      --source vsphere-dev \
      --target ocp-dev \
-     --network-pairs "Test-Network:pod"
+     --network-pairs "Test-Network:default"
    ```
 
 4. **Group Related Resources**: Create consistent mapping sets
@@ -309,5 +309,5 @@ Before creating mappings:
    kubectl-mtv create mapping network test \
      --source vsphere \
      --target openshift \
-     --network-pairs "VM Network:pod"
+     --network-pairs "VM Network:default"
    ``` 

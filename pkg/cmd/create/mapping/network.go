@@ -19,7 +19,7 @@ import (
 
 // parseNetworkPairs parses network pairs in format "source1:namespace/target1,source2:namespace/target2"
 // If namespace is omitted, the provided defaultNamespace will be used
-// Special target values: "pod" for pod networking, "ignored" to ignore the source network
+// Special target values: "default" for pod networking, "ignored" to ignore the source network
 func parseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericclioptions.ConfigFlags, sourceProvider, inventoryURL string) ([]forkliftv1beta1.NetworkPair, error) {
 	if pairStr == "" {
 		return nil, nil
@@ -36,7 +36,7 @@ func parseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericcli
 
 		parts := strings.SplitN(pairStr, ":", 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid network pair format '%s': expected 'source:target-namespace/target-network', 'source:target-network', 'source:pod', or 'source:ignored'", pairStr)
+			return nil, fmt.Errorf("invalid network pair format '%s': expected 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored'", pairStr)
 		}
 
 		sourceName := strings.TrimSpace(parts[0])
@@ -56,9 +56,9 @@ func parseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericcli
 			targetName = strings.TrimSpace(targetParts[1])
 			targetType = "multus"
 		} else {
-			// Special handling for 'pod' and 'ignored' types
+			// Special handling for 'default' and 'ignored' types
 			switch targetPart {
-			case "pod":
+			case "default":
 				targetType = "pod"
 			case "ignored":
 				targetType = "ignored"

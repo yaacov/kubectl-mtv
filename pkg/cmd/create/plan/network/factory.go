@@ -156,7 +156,7 @@ func CreateNetworkMap(opts NetworkMapperOptions) (string, error) {
 
 	// Fetch target networks
 	var targetNetworks []forkliftv1beta1.DestinationNetwork
-	if opts.DefaultTargetNetwork == "" || (opts.DefaultTargetNetwork != "pod" && opts.DefaultTargetNetwork != "") {
+	if opts.DefaultTargetNetwork == "" || (opts.DefaultTargetNetwork != "default" && opts.DefaultTargetNetwork != "") {
 		klog.V(4).Infof("DEBUG: Fetching target networks from target provider: %s", opts.TargetProvider)
 		targetNetworks, err = targetFetcher.FetchTargetNetworks(opts.ConfigFlags, opts.TargetProvider, opts.Namespace, opts.InventoryURL)
 		if err != nil {
