@@ -34,6 +34,11 @@ func (pc *ProviderClient) GetResource(resourcePath string) (interface{}, error) 
 	providerType, _ := pc.GetProviderType()
 	providerUID, _ := pc.GetProviderUID()
 
+	// Check if provider has a ready condition
+	if err := pc.checkProviderReady(); err != nil {
+		return nil, err
+	}
+
 	// Log the inventory fetch request
 	klog.V(2).Infof("Fetching inventory from provider %s/%s (type=%s, uid=%s) - path: %s, baseURL: %s",
 		providerNamespace, providerName, providerType, providerUID, resourcePath, pc.inventoryURL)
@@ -349,4 +354,42 @@ func (pc *ProviderClient) GetProviderName() string {
 
 func (pc *ProviderClient) GetProviderNamespace() string {
 	return pc.provider.GetNamespace()
+}
+
+// checkProviderReady checks if the provider has a ready condition in its status
+func (pc *ProviderClient) checkProviderReady() error {
+	// Get the status conditions from the provider
+	conditions, found, err := unstructured.NestedSlice(pc.provider.Object, "status", "conditions")
+	if err != nil {
+		return fmt.Errorf("error retrieving provider status conditions: %v", err)
+	}
+
+	if !found || len(conditions) == 0 {
+		return fmt.Errorf("provider %s/%s does not have ready condition", pc.GetProviderNamespace(), pc.GetProviderName())
+	}
+
+	// Look for a "Ready" condition
+	for _, conditionInterface := range conditions {
+		condition, ok := conditionInterface.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		conditionType, typeOk := condition["type"].(string)
+		conditionStatus, statusOk := condition["status"].(string)
+
+		if typeOk && statusOk && conditionType == "Ready" {
+			if conditionStatus == "True" {
+				return nil // Provider is ready
+			}
+			// Ready condition exists but is not True
+			reason, _ := condition["reason"].(string)
+			message, _ := condition["message"].(string)
+			return fmt.Errorf("provider %s/%s is not ready (status: %s, reason: %s, message: %s)",
+				pc.GetProviderNamespace(), pc.GetProviderName(), conditionStatus, reason, message)
+		}
+	}
+
+	// Ready condition not found
+	return fmt.Errorf("provider %s/%s does not have ready condition", pc.GetProviderNamespace(), pc.GetProviderName())
 }

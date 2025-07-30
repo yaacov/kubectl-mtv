@@ -11,6 +11,33 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// FetchProviders fetches lists of providers from the inventory server
+func FetchProviders(configFlags *genericclioptions.ConfigFlags, baseURL string) (interface{}, error) {
+	httpClient, err := GetAuthenticatedHTTPClient(configFlags, baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create authenticated HTTP client: %v", err)
+	}
+
+	// Construct the path for provider inventory: /providers/<spec.type>/<metadata.uid>
+	path := "/providers"
+
+	klog.V(4).Infof("Fetching provider inventory from path: %s", path)
+
+	// Fetch the provider inventory
+	responseBytes, err := httpClient.Get(path)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse the response as JSON
+	var result interface{}
+	if err := json.Unmarshal(responseBytes, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse provider inventory response: %v", err)
+	}
+
+	return result, nil
+}
+
 // FetchProviderInventory fetches inventory for a specific provider
 func FetchProviderInventory(configFlags *genericclioptions.ConfigFlags, baseURL string, provider *unstructured.Unstructured, subPath string) (interface{}, error) {
 	if provider == nil {
