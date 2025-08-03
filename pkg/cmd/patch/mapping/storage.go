@@ -33,12 +33,16 @@ func patchStorageMapping(configFlags *genericclioptions.ConfigFlags, name, names
 	}
 
 	// Extract source provider for pair resolution
-	sourceProvider, err := getSourceProviderFromMapping(existingMapping)
+	sourceProviderName, sourceProviderNamespace, err := getSourceProviderFromMapping(existingMapping)
 	if err != nil {
 		return fmt.Errorf("failed to get source provider from mapping: %v", err)
 	}
 
-	klog.V(2).Infof("Using source provider '%s' for storage pair resolution", sourceProvider)
+	if sourceProviderNamespace != "" {
+		klog.V(2).Infof("Using source provider '%s/%s' for storage pair resolution", sourceProviderNamespace, sourceProviderName)
+	} else {
+		klog.V(2).Infof("Using source provider '%s' for storage pair resolution", sourceProviderName)
+	}
 
 	// Convert existing mapping to typed format
 	var existingStorageMap forkliftv1beta1.StorageMap
@@ -62,7 +66,7 @@ func patchStorageMapping(configFlags *genericclioptions.ConfigFlags, name, names
 	// Process additions
 	if addPairs != "" {
 		klog.V(2).Infof("Adding storage pairs to mapping: %s", addPairs)
-		newPairs, err := mapping.ParseStoragePairs(addPairs, namespace, configFlags, sourceProvider, inventoryURL)
+		newPairs, err := mapping.ParseStoragePairs(addPairs, sourceProviderNamespace, configFlags, sourceProviderName, inventoryURL)
 		if err != nil {
 			return fmt.Errorf("failed to parse add-pairs: %v", err)
 		}
@@ -86,7 +90,7 @@ func patchStorageMapping(configFlags *genericclioptions.ConfigFlags, name, names
 	// Process updates
 	if updatePairs != "" {
 		klog.V(2).Infof("Updating storage pairs in mapping: %s", updatePairs)
-		updatePairsList, err := mapping.ParseStoragePairs(updatePairs, namespace, configFlags, sourceProvider, inventoryURL)
+		updatePairsList, err := mapping.ParseStoragePairs(updatePairs, sourceProviderNamespace, configFlags, sourceProviderName, inventoryURL)
 		if err != nil {
 			return fmt.Errorf("failed to parse update-pairs: %v", err)
 		}
@@ -119,4 +123,113 @@ func patchStorageMapping(configFlags *genericclioptions.ConfigFlags, name, names
 
 	fmt.Printf("storagemap/%s patched\n", name)
 	return nil
+}
+
+// checkStorageSourceDuplicates checks if any of the new pairs have sources that already exist in current pairs
+func checkStorageSourceDuplicates(currentPairs []forkliftv1beta1.StoragePair, newPairs []forkliftv1beta1.StoragePair) []string {
+	var duplicates []string
+
+	// Create a map of existing sources for quick lookup
+	existingSourceMap := make(map[string]bool)
+	for _, pair := range currentPairs {
+		if pair.Source.Name != "" {
+			existingSourceMap[pair.Source.Name] = true
+		}
+		if pair.Source.ID != "" {
+			existingSourceMap[pair.Source.ID] = true
+		}
+	}
+
+	// Check new pairs against existing sources
+	for _, newPair := range newPairs {
+		sourceName := newPair.Source.Name
+		sourceID := newPair.Source.ID
+
+		if sourceName != "" && existingSourceMap[sourceName] {
+			duplicates = append(duplicates, sourceName)
+		} else if sourceID != "" && existingSourceMap[sourceID] {
+			duplicates = append(duplicates, sourceID)
+		}
+	}
+
+	return duplicates
+}
+
+// filterOutDuplicateStoragePairs removes pairs that have duplicate sources, keeping only unique ones
+func filterOutDuplicateStoragePairs(currentPairs []forkliftv1beta1.StoragePair, newPairs []forkliftv1beta1.StoragePair) []forkliftv1beta1.StoragePair {
+	// Create a map of existing sources for quick lookup
+	existingSourceMap := make(map[string]bool)
+	for _, pair := range currentPairs {
+		if pair.Source.Name != "" {
+			existingSourceMap[pair.Source.Name] = true
+		}
+		if pair.Source.ID != "" {
+			existingSourceMap[pair.Source.ID] = true
+		}
+	}
+
+	// Filter new pairs to exclude duplicates
+	var filteredPairs []forkliftv1beta1.StoragePair
+	for _, newPair := range newPairs {
+		sourceName := newPair.Source.Name
+		sourceID := newPair.Source.ID
+
+		isDuplicate := false
+		if sourceName != "" && existingSourceMap[sourceName] {
+			isDuplicate = true
+		} else if sourceID != "" && existingSourceMap[sourceID] {
+			isDuplicate = true
+		}
+
+		if !isDuplicate {
+			filteredPairs = append(filteredPairs, newPair)
+		}
+	}
+
+	return filteredPairs
+}
+
+// removeSourceFromStoragePairs removes pairs with matching source names/IDs from a list
+func removeSourceFromStoragePairs(pairs []forkliftv1beta1.StoragePair, sourcesToRemove []string) []forkliftv1beta1.StoragePair {
+	var filteredPairs []forkliftv1beta1.StoragePair
+
+	for _, pair := range pairs {
+		shouldRemove := false
+		for _, sourceToRemove := range sourcesToRemove {
+			if pair.Source.Name == sourceToRemove || pair.Source.ID == sourceToRemove {
+				shouldRemove = true
+				break
+			}
+		}
+		if !shouldRemove {
+			filteredPairs = append(filteredPairs, pair)
+		}
+	}
+
+	return filteredPairs
+}
+
+// updateStoragePairsBySource updates or adds pairs based on source name/ID matching
+func updateStoragePairsBySource(existingPairs []forkliftv1beta1.StoragePair, newPairs []forkliftv1beta1.StoragePair) []forkliftv1beta1.StoragePair {
+	updatedPairs := make([]forkliftv1beta1.StoragePair, len(existingPairs))
+	copy(updatedPairs, existingPairs)
+
+	for _, newPair := range newPairs {
+		found := false
+		for i, existingPair := range updatedPairs {
+			if (existingPair.Source.Name != "" && existingPair.Source.Name == newPair.Source.Name) ||
+				(existingPair.Source.ID != "" && existingPair.Source.ID == newPair.Source.ID) {
+				// Update existing pair
+				updatedPairs[i] = newPair
+				found = true
+				break
+			}
+		}
+		if !found {
+			// Add new pair
+			updatedPairs = append(updatedPairs, newPair)
+		}
+	}
+
+	return updatedPairs
 }
