@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 
@@ -51,15 +51,17 @@ func patchStorageMapping(configFlags *genericclioptions.ConfigFlags, name, names
 		return fmt.Errorf("failed to convert existing mapping: %v", err)
 	}
 
-	// Get current pairs
-	currentPairs := existingStorageMap.Spec.Map
-	klog.V(3).Infof("Current mapping has %d storage pairs", len(currentPairs))
+	// Make a copy of the current pairs to work with
+	originalPairs := existingStorageMap.Spec.Map
+	workingPairs := make([]forkliftv1beta1.StoragePair, len(originalPairs))
+	copy(workingPairs, originalPairs)
+	klog.V(3).Infof("Current mapping has %d storage pairs", len(workingPairs))
 
 	// Process removals first
 	if removePairs != "" {
 		sourcesToRemove := parseSourcesToRemove(removePairs)
 		klog.V(2).Infof("Removing %d storage pairs from mapping", len(sourcesToRemove))
-		currentPairs = removeSourceFromStoragePairs(currentPairs, sourcesToRemove)
+		workingPairs = removeSourceFromStoragePairs(workingPairs, sourcesToRemove)
 		klog.V(2).Infof("Successfully removed storage pairs from mapping '%s'", name)
 	}
 
@@ -72,15 +74,15 @@ func patchStorageMapping(configFlags *genericclioptions.ConfigFlags, name, names
 		}
 
 		// Check for duplicate sources
-		duplicates := checkStorageSourceDuplicates(currentPairs, newPairs)
+		duplicates := checkStorageSourceDuplicates(workingPairs, newPairs)
 		if len(duplicates) > 0 {
 			klog.V(1).Infof("Warning: Found duplicate sources in add-pairs, skipping: %v", duplicates)
 			fmt.Printf("Warning: Skipping duplicate sources: %s\n", strings.Join(duplicates, ", "))
-			newPairs = filterOutDuplicateStoragePairs(currentPairs, newPairs)
+			newPairs = filterOutDuplicateStoragePairs(workingPairs, newPairs)
 		}
 
 		if len(newPairs) > 0 {
-			currentPairs = append(currentPairs, newPairs...)
+			workingPairs = append(workingPairs, newPairs...)
 			klog.V(2).Infof("Added %d storage pairs to mapping '%s'", len(newPairs), name)
 		} else {
 			klog.V(2).Infof("No new storage pairs to add after filtering duplicates")
@@ -94,31 +96,34 @@ func patchStorageMapping(configFlags *genericclioptions.ConfigFlags, name, names
 		if err != nil {
 			return fmt.Errorf("failed to parse update-pairs: %v", err)
 		}
-		currentPairs = updateStoragePairsBySource(currentPairs, updatePairsList)
+		workingPairs = updateStoragePairsBySource(workingPairs, updatePairsList)
 		klog.V(2).Infof("Updated %d storage pairs in mapping '%s'", len(updatePairsList), name)
 	}
 
-	// Update the mapping
-	existingStorageMap.Spec.Map = currentPairs
-	klog.V(3).Infof("Final mapping has %d storage pairs", len(currentPairs))
+	klog.V(3).Infof("Final working pairs count: %d", len(workingPairs))
 
-	// Convert back to unstructured
-	unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&existingStorageMap)
-	if err != nil {
-		return fmt.Errorf("failed to convert to unstructured: %v", err)
+	// Patch the spec.map field
+	patchData := map[string]interface{}{
+		"spec": map[string]interface{}{
+			"map": workingPairs,
+		},
 	}
 
-	patchedMapping := &unstructured.Unstructured{Object: unstructuredObj}
-	patchedMapping.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   client.Group,
-		Version: client.Version,
-		Kind:    "StorageMap",
-	})
-
-	// Update the resource
-	_, err = dynamicClient.Resource(client.StorageMapGVR).Namespace(namespace).Update(context.TODO(), patchedMapping, metav1.UpdateOptions{})
+	patchBytes, err := runtime.Encode(unstructured.UnstructuredJSONScheme, &unstructured.Unstructured{Object: patchData})
 	if err != nil {
-		return fmt.Errorf("failed to update storage mapping: %v", err)
+		return fmt.Errorf("failed to encode patch data: %v", err)
+	}
+
+	// Apply the patch
+	_, err = dynamicClient.Resource(client.StorageMapGVR).Namespace(namespace).Patch(
+		context.TODO(),
+		name,
+		types.StrategicMergePatchType,
+		patchBytes,
+		metav1.PatchOptions{},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to patch storage mapping: %v", err)
 	}
 
 	fmt.Printf("storagemap/%s patched\n", name)

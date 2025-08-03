@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"strings"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
-	planv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan"
 	"github.com/yaacov/karl-interpreter/pkg/karl"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
@@ -76,14 +75,15 @@ func PatchPlan(opts PatchPlanOptions) error {
 		return fmt.Errorf("failed to get plan '%s': %v", opts.Name, err)
 	}
 
-	// Convert to typed plan
+	// Convert to typed plan for easier manipulation
 	var plan forkliftv1beta1.Plan
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(existingPlan.Object, &plan)
 	if err != nil {
 		return fmt.Errorf("failed to convert plan: %v", err)
 	}
 
-	// Track if updates were made
+	// Create a working copy of the spec to build the patch
+	patchSpec := make(map[string]interface{})
 	planUpdated := false
 
 	// Update transfer network if provided
@@ -101,11 +101,11 @@ func PatchPlan(opts PatchPlanOptions) error {
 			networkNamespace = opts.Namespace // Use plan namespace as default
 		}
 
-		plan.Spec.TransferNetwork = &corev1.ObjectReference{
-			Kind:       "NetworkAttachmentDefinition",
-			APIVersion: "k8s.cni.cncf.io/v1",
-			Name:       networkName,
-			Namespace:  networkNamespace,
+		patchSpec["transferNetwork"] = map[string]interface{}{
+			"kind":       "NetworkAttachmentDefinition",
+			"apiVersion": "k8s.cni.cncf.io/v1",
+			"name":       networkName,
+			"namespace":  networkNamespace,
 		}
 		planUpdated = true
 	}
@@ -114,13 +114,11 @@ func PatchPlan(opts PatchPlanOptions) error {
 	if opts.InstallLegacyDrivers != "" {
 		switch strings.ToLower(opts.InstallLegacyDrivers) {
 		case "true":
-			legacyDrivers := true
-			plan.Spec.InstallLegacyDrivers = &legacyDrivers
+			patchSpec["installLegacyDrivers"] = true
 			klog.V(2).Infof("Updated install legacy drivers to true")
 			planUpdated = true
 		case "false":
-			legacyDrivers := false
-			plan.Spec.InstallLegacyDrivers = &legacyDrivers
+			patchSpec["installLegacyDrivers"] = false
 			klog.V(2).Infof("Updated install legacy drivers to false")
 			planUpdated = true
 		default:
@@ -130,7 +128,7 @@ func PatchPlan(opts PatchPlanOptions) error {
 
 	// Update migration type if provided
 	if opts.MigrationType != "" {
-		plan.Spec.Type = forkliftv1beta1.MigrationType(opts.MigrationType)
+		patchSpec["type"] = opts.MigrationType
 		klog.V(2).Infof("Updated migration type to '%s'", opts.MigrationType)
 		planUpdated = true
 	}
@@ -141,7 +139,7 @@ func PatchPlan(opts PatchPlanOptions) error {
 		if err != nil {
 			return fmt.Errorf("failed to parse target labels: %v", err)
 		}
-		plan.Spec.TargetLabels = labelMap
+		patchSpec["targetLabels"] = labelMap
 		klog.V(2).Infof("Updated target labels: %v", labelMap)
 		planUpdated = true
 	}
@@ -152,14 +150,14 @@ func PatchPlan(opts PatchPlanOptions) error {
 		if err != nil {
 			return fmt.Errorf("failed to parse target node selector: %v", err)
 		}
-		plan.Spec.TargetNodeSelector = nodeSelectorMap
+		patchSpec["targetNodeSelector"] = nodeSelectorMap
 		klog.V(2).Infof("Updated target node selector: %v", nodeSelectorMap)
 		planUpdated = true
 	}
 
 	// Update use compatibility mode if flag was changed
 	if opts.UseCompatibilityModeChanged {
-		plan.Spec.UseCompatibilityMode = opts.UseCompatibilityMode
+		patchSpec["useCompatibilityMode"] = opts.UseCompatibilityMode
 		klog.V(2).Infof("Updated use compatibility mode to %t", opts.UseCompatibilityMode)
 		planUpdated = true
 	}
@@ -176,114 +174,137 @@ func PatchPlan(opts PatchPlanOptions) error {
 		if err != nil {
 			return fmt.Errorf("failed to convert KARL rule to affinity: %v", err)
 		}
-		plan.Spec.TargetAffinity = affinity
+
+		// Convert affinity to unstructured format for patch
+		affinityObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(affinity)
+		if err != nil {
+			return fmt.Errorf("failed to convert affinity to unstructured: %v", err)
+		}
+		patchSpec["targetAffinity"] = affinityObj
 		klog.V(2).Infof("Updated target affinity configuration")
 		planUpdated = true
 	}
 
 	// Update target namespace if provided
 	if opts.TargetNamespace != "" {
-		plan.Spec.TargetNamespace = opts.TargetNamespace
+		patchSpec["targetNamespace"] = opts.TargetNamespace
 		klog.V(2).Infof("Updated target namespace to '%s'", opts.TargetNamespace)
 		planUpdated = true
 	}
 
 	// Update target power state if provided
 	if opts.TargetPowerState != "" {
-		plan.Spec.TargetPowerState = planv1beta1.TargetPowerState(opts.TargetPowerState)
+		patchSpec["targetPowerState"] = opts.TargetPowerState
 		klog.V(2).Infof("Updated target power state to '%s'", opts.TargetPowerState)
 		planUpdated = true
 	}
 
 	// Update description if provided
 	if opts.Description != "" {
-		plan.Spec.Description = opts.Description
+		patchSpec["description"] = opts.Description
 		klog.V(2).Infof("Updated description to '%s'", opts.Description)
 		planUpdated = true
 	}
 
 	// Update preserve cluster CPU model if flag was changed
 	if opts.PreserveClusterCPUModelChanged {
-		plan.Spec.PreserveClusterCPUModel = opts.PreserveClusterCPUModel
+		patchSpec["preserveClusterCPUModel"] = opts.PreserveClusterCPUModel
 		klog.V(2).Infof("Updated preserve cluster CPU model to %t", opts.PreserveClusterCPUModel)
 		planUpdated = true
 	}
 
 	// Update preserve static IPs if flag was changed
 	if opts.PreserveStaticIPsChanged {
-		plan.Spec.PreserveStaticIPs = opts.PreserveStaticIPs
+		patchSpec["preserveStaticIPs"] = opts.PreserveStaticIPs
 		klog.V(2).Infof("Updated preserve static IPs to %t", opts.PreserveStaticIPs)
 		planUpdated = true
 	}
 
 	// Update PVC name template if provided
 	if opts.PVCNameTemplate != "" {
-		plan.Spec.PVCNameTemplate = opts.PVCNameTemplate
+		patchSpec["pvcNameTemplate"] = opts.PVCNameTemplate
 		klog.V(2).Infof("Updated PVC name template to '%s'", opts.PVCNameTemplate)
 		planUpdated = true
 	}
 
 	// Update volume name template if provided
 	if opts.VolumeNameTemplate != "" {
-		plan.Spec.VolumeNameTemplate = opts.VolumeNameTemplate
+		patchSpec["volumeNameTemplate"] = opts.VolumeNameTemplate
 		klog.V(2).Infof("Updated volume name template to '%s'", opts.VolumeNameTemplate)
 		planUpdated = true
 	}
 
 	// Update network name template if provided
 	if opts.NetworkNameTemplate != "" {
-		plan.Spec.NetworkNameTemplate = opts.NetworkNameTemplate
+		patchSpec["networkNameTemplate"] = opts.NetworkNameTemplate
 		klog.V(2).Infof("Updated network name template to '%s'", opts.NetworkNameTemplate)
 		planUpdated = true
 	}
 
 	// Update migrate shared disks if flag was changed
 	if opts.MigrateSharedDisksChanged {
-		plan.Spec.MigrateSharedDisks = opts.MigrateSharedDisks
+		patchSpec["migrateSharedDisks"] = opts.MigrateSharedDisks
 		klog.V(2).Infof("Updated migrate shared disks to %t", opts.MigrateSharedDisks)
 		planUpdated = true
 	}
 
 	// Update archived if flag was changed
 	if opts.ArchivedChanged {
-		plan.Spec.Archived = opts.Archived
+		patchSpec["archived"] = opts.Archived
 		klog.V(2).Infof("Updated archived to %t", opts.Archived)
 		planUpdated = true
 	}
 
 	// Update PVC name template use generate name if flag was changed
 	if opts.PVCNameTemplateUseGenerateNameChanged {
-		plan.Spec.PVCNameTemplateUseGenerateName = opts.PVCNameTemplateUseGenerateName
+		patchSpec["pvcNameTemplateUseGenerateName"] = opts.PVCNameTemplateUseGenerateName
 		klog.V(2).Infof("Updated PVC name template use generate name to %t", opts.PVCNameTemplateUseGenerateName)
 		planUpdated = true
 	}
 
 	// Update delete guest conversion pod if flag was changed
 	if opts.DeleteGuestConversionPodChanged {
-		plan.Spec.DeleteGuestConversionPod = opts.DeleteGuestConversionPod
+		patchSpec["deleteGuestConversionPod"] = opts.DeleteGuestConversionPod
 		klog.V(2).Infof("Updated delete guest conversion pod to %t", opts.DeleteGuestConversionPod)
 		planUpdated = true
 	}
 
 	// Update skip guest conversion if flag was changed
 	if opts.SkipGuestConversionChanged {
-		plan.Spec.SkipGuestConversion = opts.SkipGuestConversion
+		patchSpec["skipGuestConversion"] = opts.SkipGuestConversion
 		klog.V(2).Infof("Updated skip guest conversion to %t", opts.SkipGuestConversion)
 		planUpdated = true
 	}
 
 	// Update warm migration if flag was changed
 	if opts.WarmChanged {
-		plan.Spec.Warm = opts.Warm
+		patchSpec["warm"] = opts.Warm
 		klog.V(2).Infof("Updated warm migration to %t", opts.Warm)
 		planUpdated = true
 	}
 
-	// Update the plan if any changes were made
+	// Apply the patch if any changes were made
 	if planUpdated {
-		err = updatePlan(opts.ConfigFlags, &plan)
+		// Patch the changed spec fields
+		patchData := map[string]interface{}{
+			"spec": patchSpec,
+		}
+
+		patchBytes, err := runtime.Encode(unstructured.UnstructuredJSONScheme, &unstructured.Unstructured{Object: patchData})
 		if err != nil {
-			return fmt.Errorf("failed to update plan: %v", err)
+			return fmt.Errorf("failed to encode patch data: %v", err)
+		}
+
+		// Apply the patch
+		_, err = dynamicClient.Resource(client.PlansGVR).Namespace(opts.Namespace).Patch(
+			context.TODO(),
+			opts.Name,
+			types.StrategicMergePatchType,
+			patchBytes,
+			metav1.PatchOptions{},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to patch plan: %v", err)
 		}
 		fmt.Printf("plan/%s patched\n", opts.Name)
 	} else {
@@ -320,9 +341,13 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 		return fmt.Errorf("no VMs found in plan '%s'", planName)
 	}
 
+	// Make a copy of the VMs slice to work with
+	workingVMs := make([]interface{}, len(specVMs))
+	copy(workingVMs, specVMs)
+
 	// Find the VM in the plan's VMs list
 	vmIndex := -1
-	for i, v := range specVMs {
+	for i, v := range workingVMs {
 		vm, ok := v.(map[string]interface{})
 		if !ok {
 			continue
@@ -339,9 +364,15 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 	}
 
 	// Get the VM object to modify
-	vm, ok := specVMs[vmIndex].(map[string]interface{})
+	vm, ok := workingVMs[vmIndex].(map[string]interface{})
 	if !ok {
 		return fmt.Errorf("invalid VM data structure for VM '%s'", vmName)
+	}
+
+	// Create a copy of the VM to work with
+	vmCopy := make(map[string]interface{})
+	for k, v := range vm {
+		vmCopy[k] = v
 	}
 
 	// Track if updates were made
@@ -349,7 +380,7 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 
 	// Update target name if provided
 	if targetName != "" {
-		err = unstructured.SetNestedField(vm, targetName, "targetName")
+		err = unstructured.SetNestedField(vmCopy, targetName, "targetName")
 		if err != nil {
 			return fmt.Errorf("failed to set target name: %v", err)
 		}
@@ -359,7 +390,7 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 
 	// Update root disk if provided
 	if rootDisk != "" {
-		err = unstructured.SetNestedField(vm, rootDisk, "rootDisk")
+		err = unstructured.SetNestedField(vmCopy, rootDisk, "rootDisk")
 		if err != nil {
 			return fmt.Errorf("failed to set root disk: %v", err)
 		}
@@ -369,7 +400,7 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 
 	// Update instance type if provided
 	if instanceType != "" {
-		err = unstructured.SetNestedField(vm, instanceType, "instanceType")
+		err = unstructured.SetNestedField(vmCopy, instanceType, "instanceType")
 		if err != nil {
 			return fmt.Errorf("failed to set instance type: %v", err)
 		}
@@ -379,7 +410,7 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 
 	// Update PVC name template if provided
 	if pvcNameTemplate != "" {
-		err = unstructured.SetNestedField(vm, pvcNameTemplate, "pvcNameTemplate")
+		err = unstructured.SetNestedField(vmCopy, pvcNameTemplate, "pvcNameTemplate")
 		if err != nil {
 			return fmt.Errorf("failed to set PVC name template: %v", err)
 		}
@@ -389,7 +420,7 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 
 	// Update volume name template if provided
 	if volumeNameTemplate != "" {
-		err = unstructured.SetNestedField(vm, volumeNameTemplate, "volumeNameTemplate")
+		err = unstructured.SetNestedField(vmCopy, volumeNameTemplate, "volumeNameTemplate")
 		if err != nil {
 			return fmt.Errorf("failed to set volume name template: %v", err)
 		}
@@ -399,7 +430,7 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 
 	// Update network name template if provided
 	if networkNameTemplate != "" {
-		err = unstructured.SetNestedField(vm, networkNameTemplate, "networkNameTemplate")
+		err = unstructured.SetNestedField(vmCopy, networkNameTemplate, "networkNameTemplate")
 		if err != nil {
 			return fmt.Errorf("failed to set network name template: %v", err)
 		}
@@ -414,7 +445,7 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 			"name":      luksSecret,
 			"namespace": namespace,
 		}
-		err = unstructured.SetNestedMap(vm, luksRef, "luks")
+		err = unstructured.SetNestedMap(vmCopy, luksRef, "luks")
 		if err != nil {
 			return fmt.Errorf("failed to set LUKS secret: %v", err)
 		}
@@ -424,7 +455,7 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 
 	// Update target power state if provided
 	if targetPowerState != "" {
-		err = unstructured.SetNestedField(vm, targetPowerState, "targetPowerState")
+		err = unstructured.SetNestedField(vmCopy, targetPowerState, "targetPowerState")
 		if err != nil {
 			return fmt.Errorf("failed to set target power state: %v", err)
 		}
@@ -433,7 +464,7 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 	}
 
 	// Handle hook operations
-	hooksUpdated, err := updateVMHooksUnstructured(vm, namespace, addPreHook, addPostHook, removeHook, clearHooks)
+	hooksUpdated, err := updateVMHooksUnstructured(vmCopy, namespace, addPreHook, addPostHook, removeHook, clearHooks)
 	if err != nil {
 		return fmt.Errorf("failed to update VM hooks: %v", err)
 	}
@@ -441,46 +472,37 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 		vmUpdated = true
 	}
 
-	// Update the plan if any changes were made
+	// Apply the patch if any changes were made
 	if vmUpdated {
-		// Set the modified VMs slice back to the plan
-		err = unstructured.SetNestedSlice(existingPlan.Object, specVMs, "spec", "vms")
-		if err != nil {
-			return fmt.Errorf("failed to update VMs in plan: %v", err)
+		// Update the working copy with the modified VM
+		workingVMs[vmIndex] = vmCopy
+
+		// Patch the VMs array
+		patchData := map[string]interface{}{
+			"spec": map[string]interface{}{
+				"vms": workingVMs,
+			},
 		}
 
-		// Update the plan directly
-		_, err = dynamicClient.Resource(client.PlansGVR).Namespace(namespace).Update(context.TODO(), existingPlan, metav1.UpdateOptions{})
+		patchBytes, err := runtime.Encode(unstructured.UnstructuredJSONScheme, &unstructured.Unstructured{Object: patchData})
 		if err != nil {
-			return fmt.Errorf("failed to update plan: %v", err)
+			return fmt.Errorf("failed to encode patch data: %v", err)
+		}
+
+		// Apply the patch
+		_, err = dynamicClient.Resource(client.PlansGVR).Namespace(namespace).Patch(
+			context.TODO(),
+			planName,
+			types.StrategicMergePatchType,
+			patchBytes,
+			metav1.PatchOptions{},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to patch plan: %v", err)
 		}
 		fmt.Printf("plan/%s vm/%s patched\n", planName, vmName)
 	} else {
 		fmt.Printf("plan/%s vm/%s unchanged (no updates specified)\n", planName, vmName)
-	}
-
-	return nil
-}
-
-// updatePlan updates the plan resource
-func updatePlan(configFlags *genericclioptions.ConfigFlags, plan *forkliftv1beta1.Plan) error {
-	dynamicClient, err := client.GetDynamicClient(configFlags)
-	if err != nil {
-		return fmt.Errorf("failed to get client: %v", err)
-	}
-
-	// Convert to unstructured
-	unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(plan)
-	if err != nil {
-		return fmt.Errorf("failed to convert to unstructured: %v", err)
-	}
-
-	unstructuredPlan := &unstructured.Unstructured{Object: unstructuredObj}
-
-	// Update the plan
-	_, err = dynamicClient.Resource(client.PlansGVR).Namespace(plan.Namespace).Update(context.TODO(), unstructuredPlan, metav1.UpdateOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to update plan: %v", err)
 	}
 
 	return nil
