@@ -157,7 +157,7 @@ class TestOpenShiftPlanCreationWithPairs:
 
         # Use pod network for all networks
         network_pairs = ",".join(
-            [f"{n['source']}:pod" for n in OPENSHIFT_NETWORK_PAIRS]
+            [f"{n['source']}:default" for n in OPENSHIFT_NETWORK_PAIRS]
         )
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in OPENSHIFT_STORAGE_PAIRS]

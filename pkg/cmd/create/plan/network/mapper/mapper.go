@@ -64,7 +64,7 @@ func CreateNetworkPairs(sourceNetworks []ref.Ref, targetNetworks []forkliftv1bet
 
 // parseDefaultNetwork parses a default network specification
 func parseDefaultNetwork(defaultTargetNetwork, namespace string) forkliftv1beta1.DestinationNetwork {
-	if defaultTargetNetwork == "pod" {
+	if defaultTargetNetwork == "default" {
 		return forkliftv1beta1.DestinationNetwork{Type: "pod"}
 	}
 
@@ -111,7 +111,7 @@ func findBestTargetNetwork(sourceNetwork ref.Ref, targetNetworks []forkliftv1bet
 		return target
 	}
 
-	// Strategy 4: Fall back to pod networking only if no targets available
-	klog.V(4).Infof("DEBUG: No target networks available for %s, falling back to pod networking", sourceNetwork.Name)
+	// Strategy 4: Fall back to default networking only if no targets available
+	klog.V(4).Infof("DEBUG: No target networks available for %s, falling back to default networking", sourceNetwork.Name)
 	return forkliftv1beta1.DestinationNetwork{Type: "pod"}
 }

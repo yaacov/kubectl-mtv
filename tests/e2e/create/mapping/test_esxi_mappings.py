@@ -147,7 +147,7 @@ class TestESXiMappingCreation:
             network_map_name,
             f"--source {esxi_provider}",
             "--target test-openshift-target",
-            "--network-pairs 'VM Network:pod'",
+            "--network-pairs 'VM Network:default'",
         ]
 
         create_cmd = " ".join(cmd_parts)

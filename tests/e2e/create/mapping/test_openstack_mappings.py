@@ -161,7 +161,7 @@ class TestOpenStackMappingCreation:
             mapping_name,
             f"--source {openstack_provider}",
             "--target test-openshift-target",
-            "--network-pairs 'provider_net_shared:pod'",
+            "--network-pairs 'provider_net_shared:default'",
         ]
 
         create_cmd = " ".join(cmd_parts)

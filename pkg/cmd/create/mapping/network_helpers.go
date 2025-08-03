@@ -18,10 +18,9 @@ func resolveOpenShiftNetworkNameToID(configFlags *genericclioptions.ConfigFlags,
 		return nil, fmt.Errorf("network name cannot be empty")
 	}
 
-	// If networkName is pod, return special pod reference
-	if networkName == "pod" {
+	// If networkName is default, return special pod reference
+	if networkName == "default" {
 		return []ref.Ref{{
-			Name: "pod",
 			Type: "pod",
 		}}, nil
 	}

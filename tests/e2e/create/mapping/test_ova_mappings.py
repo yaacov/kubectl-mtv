@@ -108,7 +108,7 @@ class TestOVAMappingCreation:
             mapping_name,
             f"--source {ova_provider}",
             "--target test-openshift-target",
-            "--network-pairs 'VM Network:pod'",
+            "--network-pairs 'VM Network:default'",
         ]
 
         create_cmd = " ".join(cmd_parts)

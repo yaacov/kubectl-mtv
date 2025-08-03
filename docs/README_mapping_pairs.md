@@ -21,7 +21,7 @@ You can create reusable network and storage mappings that can be referenced by m
 kubectl-mtv create mapping network production-networks \
   --source vsphere-provider \
   --target openshift-provider \
-  --network-pairs "VM Network:openshift-sdn/production,Management:pod,DMZ:security/dmz-network"
+  --network-pairs "VM Network:openshift-sdn/production,Management:default,DMZ:security/dmz-network"
 ```
 
 Network pair format: `source-network:target`
@@ -29,7 +29,7 @@ Network pair format: `source-network:target`
 - `target`: Can be:
   - `namespace/network-name`: Specific NetworkAttachmentDefinition
   - `network-name`: Uses the mapping's namespace
-  - `pod`: Use pod networking
+  - `default`: Use pod networking
   - `ignored`: Ignore this network
 
 ### Storage Mappings
@@ -79,7 +79,7 @@ Define mappings directly in the plan creation command:
 kubectl-mtv create plan myplan \
   --source vsphere-provider \
   --target openshift-provider \
-  --network-pairs "VM Network:pod,Management:openshift-sdn/mgmt-net" \
+  --network-pairs "VM Network:default,Management:openshift-sdn/mgmt-net" \
   --storage-pairs "datastore1:standard,datastore2:fast-ssd" \
   --vms vm1,vm2,vm3
 ```
@@ -99,7 +99,7 @@ Let kubectl-mtv automatically create mappings based on defaults:
 kubectl-mtv create plan myplan \
   --source vsphere-provider \
   --target openshift-provider \
-  --default-target-network pod \
+  --default-target-network default \
   --default-target-storage-class standard \
   --vms vm1,vm2,vm3
 ```
@@ -119,7 +119,7 @@ You cannot mix different mapping approaches in the same command:
 # INVALID - Cannot use both existing mapping and pairs
 kubectl-mtv create plan myplan \
   --network-mapping existing-map \
-  --network-pairs "VM Network:pod" \
+  --network-pairs "VM Network:default" \
   --vms vm1
 
 # INVALID - Cannot use both existing mapping and defaults
@@ -146,7 +146,7 @@ kubectl-mtv create plan myplan \
 kubectl-mtv create plan myplan \
   --source vsphere-provider \
   --target openshift-provider \
-  --network-pairs "VM Network:pod" \
+  --network-pairs "VM Network:default" \
   --storage-mapping existing-storage-map \
   --vms vm1,vm2
 ```
@@ -191,7 +191,7 @@ kubectl-mtv create plan database-migration \
 kubectl-mtv create plan dev-migration \
   --source vsphere-dev \
   --target openshift-dev \
-  --network-pairs "Dev Network:pod" \
+  --network-pairs "Dev Network:default" \
   --storage-pairs "dev-datastore:gp2" \
   --vms dev-app-01,dev-db-01 \
   --target-namespace development
@@ -204,7 +204,7 @@ kubectl-mtv create plan dev-migration \
 kubectl-mtv create plan test-migration \
   --source vsphere-test \
   --target openshift-test \
-  --default-target-network pod \
+  --default-target-network default \
   --default-target-storage-class standard \
   --vms test-vm-01
 ```

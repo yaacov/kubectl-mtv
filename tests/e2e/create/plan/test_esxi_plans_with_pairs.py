@@ -172,7 +172,7 @@ class TestESXiPlanCreationWithPairs:
         plan_name = f"test-plan-esxi-pod-pairs-{int(time.time())}"
 
         # Use pod network for all networks
-        network_pairs = ",".join([f"{n['source']}:pod" for n in ESXI_NETWORK_PAIRS])
+        network_pairs = ",".join([f"{n['source']}:default" for n in ESXI_NETWORK_PAIRS])
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in ESXI_STORAGE_PAIRS]
         )
@@ -209,7 +209,7 @@ class TestESXiPlanCreationWithPairs:
         plan_name = f"test-plan-esxi-vddk-pairs-{int(time.time())}"
 
         # Use simple mapping pairs
-        network_pairs = "VM Network:pod"
+        network_pairs = "VM Network:default"
         # Include all ESXi datastores to ensure nothing is unmapped
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in ESXI_STORAGE_PAIRS]
