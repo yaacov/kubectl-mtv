@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 
@@ -36,7 +37,7 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 		return fmt.Errorf("failed to get provider '%s': %v", name, err)
 	}
 
-	// Convert to typed provider
+	// Convert to typed provider for easier manipulation and validation
 	var provider forkliftv1beta1.Provider
 	err = runtime.DefaultUnstructuredConverter.FromUnstructured(existingProvider.Object, &provider)
 	if err != nil {
@@ -58,22 +59,28 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 		}
 	}
 
-	// Update provider fields
+	// Create a working copy of the spec to build the patch
+	patchSpec := make(map[string]interface{})
 	providerUpdated := false
 
 	// Update URL if provided
 	if url != "" {
 		klog.V(2).Infof("Updating provider URL from '%s' to '%s'", provider.Spec.URL, url)
-		provider.Spec.URL = url
+		patchSpec["url"] = url
 		providerUpdated = true
+	}
+
+	// Get current settings or create empty map for patch
+	currentSettings := make(map[string]string)
+	if provider.Spec.Settings != nil {
+		for k, v := range provider.Spec.Settings {
+			currentSettings[k] = v
+		}
 	}
 
 	// Update insecureSkipTLS setting
 	if insecureSkipTLSChanged {
-		if provider.Spec.Settings == nil {
-			provider.Spec.Settings = make(map[string]string)
-		}
-		provider.Spec.Settings["insecureSkipVerify"] = fmt.Sprintf("%t", insecureSkipTLS)
+		currentSettings["insecureSkipVerify"] = fmt.Sprintf("%t", insecureSkipTLS)
 		klog.V(2).Infof("Updated insecureSkipTLS setting to %t", insecureSkipTLS)
 		providerUpdated = true
 	}
@@ -81,37 +88,32 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 	// Update VDDK settings for vSphere providers
 	if *provider.Spec.Type == "vsphere" {
 		if vddkInitImage != "" {
-			if provider.Spec.Settings == nil {
-				provider.Spec.Settings = make(map[string]string)
-			}
 			klog.V(2).Infof("Updating VDDK init image to '%s'", vddkInitImage)
-			provider.Spec.Settings["vddkInitImage"] = vddkInitImage
+			currentSettings["vddkInitImage"] = vddkInitImage
 			providerUpdated = true
 		}
 
 		if useVddkAioOptimizationChanged {
-			if provider.Spec.Settings == nil {
-				provider.Spec.Settings = make(map[string]string)
-			}
-			provider.Spec.Settings["useVddkAioOptimization"] = fmt.Sprintf("%t", useVddkAioOptimization)
+			currentSettings["useVddkAioOptimization"] = fmt.Sprintf("%t", useVddkAioOptimization)
 			klog.V(2).Infof("Updated VDDK AIO optimization to %t", useVddkAioOptimization)
 			providerUpdated = true
 		}
 
 		// Update VDDK configuration if buffer settings are provided
 		if vddkBufSizeIn64K > 0 || vddkBufCount > 0 {
-			if provider.Spec.Settings == nil {
-				provider.Spec.Settings = make(map[string]string)
-			}
-
 			// Get existing vddkConfig or create new one
-			existingConfig := provider.Spec.Settings["vddkConfig"]
+			existingConfig := currentSettings["vddkConfig"]
 			updatedConfig := updateVddkConfig(existingConfig, vddkBufSizeIn64K, vddkBufCount)
 
-			provider.Spec.Settings["vddkConfig"] = updatedConfig
+			currentSettings["vddkConfig"] = updatedConfig
 			klog.V(2).Infof("Updated VDDK configuration: %s", updatedConfig)
 			providerUpdated = true
 		}
+	}
+
+	// Add settings to patch if any were modified
+	if providerUpdated && len(currentSettings) > 0 {
+		patchSpec["settings"] = currentSettings
 	}
 
 	// Update credentials if provided and secret is owned by provider
@@ -124,11 +126,28 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 		}
 	}
 
-	// Update provider if any changes were made
+	// Apply the patch if any changes were made
 	if providerUpdated {
-		err = updateProvider(configFlags, &provider)
+		// Patch the changed spec fields
+		patchData := map[string]interface{}{
+			"spec": patchSpec,
+		}
+
+		patchBytes, err := runtime.Encode(unstructured.UnstructuredJSONScheme, &unstructured.Unstructured{Object: patchData})
 		if err != nil {
-			return fmt.Errorf("failed to update provider: %v", err)
+			return fmt.Errorf("failed to encode patch data: %v", err)
+		}
+
+		// Apply the patch
+		_, err = dynamicClient.Resource(client.ProvidersGVR).Namespace(namespace).Patch(
+			context.TODO(),
+			name,
+			types.StrategicMergePatchType,
+			patchBytes,
+			metav1.PatchOptions{},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to patch provider: %v", err)
 		}
 	}
 
@@ -265,30 +284,6 @@ func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret 
 	}
 
 	return updated, nil
-}
-
-// updateProvider updates the provider resource
-func updateProvider(configFlags *genericclioptions.ConfigFlags, provider *forkliftv1beta1.Provider) error {
-	dynamicClient, err := client.GetDynamicClient(configFlags)
-	if err != nil {
-		return fmt.Errorf("failed to get client: %v", err)
-	}
-
-	// Convert to unstructured
-	unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(provider)
-	if err != nil {
-		return fmt.Errorf("failed to convert to unstructured: %v", err)
-	}
-
-	unstructuredProvider := &unstructured.Unstructured{Object: unstructuredObj}
-
-	// Update the provider
-	_, err = dynamicClient.Resource(client.ProvidersGVR).Namespace(provider.Namespace).Update(context.TODO(), unstructuredProvider, metav1.UpdateOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to update provider: %v", err)
-	}
-
-	return nil
 }
 
 // updateVddkConfig updates the VDDK configuration block with new buffer settings
