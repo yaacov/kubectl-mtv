@@ -14,13 +14,7 @@ from e2e.utils import (
     generate_provider_name,
     get_or_create_provider,
 )
-
-
-# Hardcoded VM names from inventory data
-VSPHERE_TEST_VMS = [
-    "mtv-func-rhel8-ameen",
-    "mtv-win2019-79-ceph-rbd-4-16",
-]
+from e2e.test_constants import VSPHERE_TEST_VMS
 
 
 @pytest.mark.create

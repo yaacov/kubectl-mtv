@@ -26,6 +26,7 @@ help:
 	@echo "  test-version   - Run version command tests"
 	@echo "  test-create    - Run all create tests"
 	@echo "  test-get       - Run all get tests"
+	@echo "  test-patch     - Run all patch tests"
 	@echo ""
 	@echo "Core Test Types:"
 	@echo "  test-create-providers - Run provider creation tests"
@@ -33,6 +34,9 @@ help:
 	@echo "  test-create-plans     - Run plan creation tests"
 	@echo "  test-create-mappings  - Run mapping creation tests"
 	@echo "  test-create-hooks     - Run hook creation tests"
+	@echo "  test-patch-providers  - Run provider patch tests"
+	@echo "  test-patch-mappings   - Run mapping patch tests"
+	@echo "  test-patch-plans      - Run plan patch tests"
 	@echo "  test-get-inventory    - Run inventory retrieval tests"
 	@echo ""
 	@echo "Provider-Specific Tests:"
@@ -89,6 +93,12 @@ test-get: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
 	$(PYTEST) get/ -v -m get
 
+# Run all patch tests
+.PHONY: test-patch
+test-patch: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) patch/ -v -m patch
+
 # Run provider creation tests
 .PHONY: test-create-providers
 test-create-providers: setup check-binary
@@ -118,6 +128,24 @@ test-create-mappings: setup check-binary
 test-create-hooks: setup check-binary
 	@mkdir -p $(REPORTS_DIR)
 	$(PYTEST) create/hook/ -v -m "create and hook"
+
+# Run provider patch tests
+.PHONY: test-patch-providers
+test-patch-providers: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) -v -m "patch and providers"
+
+# Run mapping patch tests
+.PHONY: test-patch-mappings
+test-patch-mappings: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) patch/mapping/ -v -m "patch and mapping"
+
+# Run plan patch tests
+.PHONY: test-patch-plans
+test-patch-plans: setup check-binary
+	@mkdir -p $(REPORTS_DIR)
+	$(PYTEST) patch/plan/ -v -m "patch and plan"
 
 # Run inventory retrieval tests
 .PHONY: test-get-inventory

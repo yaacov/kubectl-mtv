@@ -1,0 +1,1 @@
+"""Patch mapping tests."""

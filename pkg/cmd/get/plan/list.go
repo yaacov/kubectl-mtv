@@ -133,9 +133,24 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 
 		// Determine cutover information
 		cutoverInfo := "cold" // Default for cold migration
-		warm, exists, _ := unstructured.NestedBool(p.Object, "spec", "warm")
-		if exists && warm {
-			cutoverInfo = "-" // Default for warm migration without running migration
+
+		// Check both the new 'type' field and legacy 'warm' boolean field
+		isWarmMigration := false
+
+		// First check the new 'type' field
+		migrationType, exists, _ := unstructured.NestedString(p.Object, "spec", "type")
+		if exists && migrationType == "warm" {
+			isWarmMigration = true
+		} else {
+			// Fall back to legacy 'warm' boolean field
+			warm, exists, _ := unstructured.NestedBool(p.Object, "spec", "warm")
+			if exists && warm {
+				isWarmMigration = true
+			}
+		}
+
+		if isWarmMigration {
+			cutoverInfo = "warm" // Default for warm migration without running migration
 			if planDetails.RunningMigration != nil {
 				// Extract cutover time from running migration
 				cutoverTimeStr, exists, _ := unstructured.NestedString(planDetails.RunningMigration.Object, "spec", "cutover")

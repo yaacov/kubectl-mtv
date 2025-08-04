@@ -15,17 +15,7 @@ from e2e.utils import (
     generate_provider_name,
     get_or_create_provider,
 )
-from e2e.test_constants import TARGET_PROVIDER_NAME
-
-
-# Hardcoded VM names from ESXi inventory data (similar to vSphere structure)
-ESXI_TEST_VMS = [
-    "mtv-win2019-79-ceph-rbd-4-16",
-    "mtv-func-rhel8-ameen",
-    "mtv-rhel8-warm-sanity-nfs-4-19",
-    "mtv-rhel8-warm-2disks2nics-nfs-4-18",
-    "mtv-rhel8-warm-sanity-nfs-4-18",
-]
+from e2e.test_constants import TARGET_PROVIDER_NAME, ESXI_TEST_VMS
 
 
 @pytest.mark.create

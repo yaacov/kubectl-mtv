@@ -14,22 +14,7 @@ from e2e.utils import (
     generate_provider_name,
     get_or_create_provider,
 )
-from e2e.test_constants import TARGET_PROVIDER_NAME
-
-
-# Hardcoded network names from OpenStack inventory data
-OPENSTACK_NETWORKS = [
-    {"source": "provider_net_cci_13", "target": "test-nad-1"},
-    {"source": "provider_net_shared_2", "target": "test-nad-2"},
-    {"source": "provider_net_ipv6_only", "target": "test-nad-1"},
-]
-
-# Hardcoded storage names from OpenStack inventory data
-OPENSTACK_VOLUME_TYPES = [
-    {"source": "__DEFAULT__", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    {"source": "tripleo", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "ceph", "target": "csi-manila-ceph"},
-]
+from e2e.test_constants import TARGET_PROVIDER_NAME, OPENSTACK_NETWORKS, OPENSTACK_DATASTORES
 
 
 @pytest.mark.create
@@ -120,7 +105,7 @@ class TestOpenStackMappingCreation:
 
         # Build storage pairs string
         storage_pairs = ",".join(
-            [f"{s['source']}:{s['target']}" for s in OPENSTACK_VOLUME_TYPES]
+            [f"{s['source']}:{s['target']}" for s in OPENSTACK_DATASTORES]
         )
 
         # Create storage mapping command

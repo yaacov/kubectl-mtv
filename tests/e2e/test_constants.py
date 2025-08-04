@@ -125,7 +125,6 @@ VSPHERE_STORAGE_PAIRS = [
         "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
     },
     {"source": "datastore1", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
-    {"source": "nfs-us-virt", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
     {"source": "mtv-nfs-us-v8", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
     {"source": "mtv-nfs-rhos-v8", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
 ]
@@ -269,10 +268,6 @@ VSPHERE_DATASTORES = [
         "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
     },
     {"source": "datastore1", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
-    {
-        "source": "nfs-us-virt",
-        "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
-    },
     {
         "source": "mtv-nfs-us-v8",
         "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],

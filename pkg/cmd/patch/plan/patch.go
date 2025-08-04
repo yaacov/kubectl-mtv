@@ -12,7 +12,6 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 
-	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/yaacov/karl-interpreter/pkg/karl"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
@@ -69,20 +68,8 @@ func PatchPlan(opts PatchPlanOptions) error {
 		return fmt.Errorf("failed to get client: %v", err)
 	}
 
-	// Get the existing plan
-	existingPlan, err := dynamicClient.Resource(client.PlansGVR).Namespace(opts.Namespace).Get(context.TODO(), opts.Name, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to get plan '%s': %v", opts.Name, err)
-	}
-
-	// Convert to typed plan for easier manipulation
-	var plan forkliftv1beta1.Plan
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(existingPlan.Object, &plan)
-	if err != nil {
-		return fmt.Errorf("failed to convert plan: %v", err)
-	}
-
 	// Create a working copy of the spec to build the patch
+	// Work with unstructured data to avoid reflection issues with Referenced field
 	patchSpec := make(map[string]interface{})
 	planUpdated := false
 
@@ -130,6 +117,14 @@ func PatchPlan(opts PatchPlanOptions) error {
 	if opts.MigrationType != "" {
 		patchSpec["type"] = opts.MigrationType
 		klog.V(2).Infof("Updated migration type to '%s'", opts.MigrationType)
+
+		// Also set the legacy warm field for backward compatibility
+		if opts.MigrationType == "warm" {
+			patchSpec["warm"] = true
+		} else {
+			patchSpec["warm"] = false
+		}
+
 		planUpdated = true
 	}
 
@@ -299,7 +294,7 @@ func PatchPlan(opts PatchPlanOptions) error {
 		_, err = dynamicClient.Resource(client.PlansGVR).Namespace(opts.Namespace).Patch(
 			context.TODO(),
 			opts.Name,
-			types.StrategicMergePatchType,
+			types.MergePatchType,
 			patchBytes,
 			metav1.PatchOptions{},
 		)
@@ -493,7 +488,7 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 		_, err = dynamicClient.Resource(client.PlansGVR).Namespace(namespace).Patch(
 			context.TODO(),
 			planName,
-			types.StrategicMergePatchType,
+			types.MergePatchType,
 			patchBytes,
 			metav1.PatchOptions{},
 		)

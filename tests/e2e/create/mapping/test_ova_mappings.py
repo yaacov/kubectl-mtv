@@ -14,24 +14,7 @@ from e2e.utils import (
     generate_provider_name,
     get_or_create_provider,
 )
-from e2e.test_constants import TARGET_PROVIDER_NAME
-
-
-# Hardcoded network names from OVA inventory data
-OVA_NETWORKS = [
-    {"source": "VM Network", "target": "test-nad-1"},
-    {"source": "Mgmt Network", "target": "test-nad-2"},
-]
-
-# Hardcoded storage names from OVA inventory data - using unique VMDK names
-OVA_STORAGE = [
-    {
-        "source": "1nisim-rhel9-efi-1.vmdk",
-        "target": "ocs-storagecluster-ceph-rbd-virtualization",
-    },
-    {"source": "mtv-func-WIN2019-1.vmdk", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "SHAICTDOET005-Test_rhel9-1.vmdk", "target": "csi-manila-ceph"},
-]
+from e2e.test_constants import TARGET_PROVIDER_NAME, OVA_NETWORKS, OVA_STORAGE
 
 
 @pytest.mark.create
