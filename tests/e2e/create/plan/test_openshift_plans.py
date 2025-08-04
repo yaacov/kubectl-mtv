@@ -9,11 +9,12 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
-
-
-# VM names that exist in the current cluster (created during namespace prep)
-OPENSHIFT_TEST_VMS = ["test-vm-1", "test-vm-2"]
+from e2e.utils import (
+    wait_for_plan_ready,
+    generate_provider_name,
+    get_or_create_provider,
+)
+from e2e.test_constants import OPENSHIFT_TEST_VMS, TARGET_PROVIDER_NAME
 
 
 @pytest.mark.create
@@ -26,23 +27,15 @@ class TestOpenShiftPlanCreation:
     @pytest.fixture(scope="class")
     def openshift_provider(self, test_namespace):
         """Create an OpenShift provider for plan testing."""
-        provider_name = "test-openshift-plan-source"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("openshift", "localhost", skip_tls=True)
 
         # For OpenShift-to-OpenShift testing, use current cluster context for source
         # This ensures the VMs we created in namespace prep are available
         create_cmd = f"create provider {provider_name} --type openshift"
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_plan_from_openshift(self, test_namespace, openshift_provider):
         """Test creating a migration plan from OpenShift provider."""
@@ -55,7 +48,7 @@ class TestOpenShiftPlanCreation:
             "create plan",
             plan_name,
             f"--source {openshift_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             "--target-namespace default",
         ]
@@ -87,7 +80,7 @@ class TestOpenShiftPlanCreation:
             "create plan",
             plan_name,
             f"--source {openshift_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vms}'",
             "--target-namespace default",
         ]

@@ -231,52 +231,58 @@ def wait_for_host_ready(test_namespace, host_name: str, timeout: int = 360) -> b
     return wait_for_resource_condition(test_namespace, "host", host_name, timeout)
 
 
-def verify_hook_playbook(test_namespace, hook_name: str, expected_playbook_content: str = None) -> bool:
+def verify_hook_playbook(
+    test_namespace, hook_name: str, expected_playbook_content: str = None
+) -> bool:
     """
     Verify that a hook's spec.playbook contains the expected base64 encoded content.
-    
+
     Args:
         test_namespace: Test namespace context
         hook_name: Name of the hook resource
         expected_playbook_content: Expected plaintext playbook content (will be base64 encoded for comparison).
                                  If None, verifies that spec.playbook is empty.
-    
+
     Returns:
         bool: True if the playbook matches expectations
-        
+
     Raises:
         pytest.fail: If hook doesn't exist or playbook doesn't match
     """
     import base64
-    
+
     logging.info(f"Verifying hook {hook_name} playbook content...")
-    
+
     try:
         # Get the hook resource
-        result = test_namespace.run_kubectl_command(
-            f"get hook {hook_name} -o json"
-        )
-        
+        result = test_namespace.run_kubectl_command(f"get hook {hook_name} -o json")
+
         if result.returncode != 0:
             pytest.fail(f"Failed to get hook {hook_name}: {result.stderr}")
-        
+
         hook_data = json.loads(result.stdout)
         spec = hook_data.get("spec", {})
         actual_playbook = spec.get("playbook", "")
-        
+
         if expected_playbook_content is None:
             # Expect empty playbook
             if actual_playbook == "":
                 logging.info(f"Hook {hook_name} has empty playbook as expected")
                 return True
             else:
-                pytest.fail(f"Hook {hook_name} expected empty playbook but got: {actual_playbook}")
+                pytest.fail(
+                    f"Hook {hook_name} expected empty playbook but got: {actual_playbook}"
+                )
         else:
             # Expect base64 encoded content
-            expected_encoded = base64.b64encode(expected_playbook_content.encode()).decode()
-            
+            expected_encoded = base64.b64encode(
+                expected_playbook_content.encode()
+            ).decode()
+
             if actual_playbook == expected_encoded:
-                logging.info(f"Hook {hook_name} playbook content matches expected base64 encoding")
+                logging.info(
+                    f"Hook {hook_name} playbook content matches expected base64 encoding"
+                )
                 return True
             else:
                 # For debugging, try to decode the actual content
@@ -295,7 +301,7 @@ def verify_hook_playbook(test_namespace, hook_name: str, expected_playbook_conte
                         f"Expected (base64): {expected_encoded}\n"
                         f"Actual (base64):   {actual_playbook}"
                     )
-        
+
     except json.JSONDecodeError as e:
         pytest.fail(f"Failed to parse hook {hook_name} JSON: {e}")
     except Exception as e:
@@ -354,6 +360,114 @@ def delete_hosts_by_spec_id(test_namespace, host_id: str) -> None:
         import traceback
 
         print(f"Traceback: {traceback.format_exc()}")
+
+
+def generate_provider_name(
+    provider_type: str, url: str, sdk_endpoint: str = None, skip_tls: bool = True
+) -> str:
+    """
+    Generate a standardized provider name based on type and configuration.
+
+    Args:
+        provider_type: Type of provider (vsphere, openstack, ova, ovirt, openshift)
+        url: Provider URL
+        sdk_endpoint: SDK endpoint (e.g., 'esxi' for ESXi providers)
+        skip_tls: Whether TLS verification is skipped
+
+    Returns:
+        str: Standardized provider name
+    """
+
+    if provider_type == "vsphere" and sdk_endpoint == "esxi":
+        base_name = "test-esxi"
+    elif provider_type == "vsphere":
+        base_name = "test-vsphere"
+    elif provider_type == "openstack":
+        base_name = "test-openstack"
+    elif provider_type == "ova":
+        base_name = "test-ova"
+    elif provider_type == "ovirt":
+        base_name = "test-ovirt"
+    elif provider_type == "openshift":
+        base_name = "test-openshift"
+    else:
+        base_name = f"test-{provider_type}"
+
+    # Add consistent suffix
+    if skip_tls:
+        base_name += "-skip-verify"
+
+    # Add URL hash to make it unique for different URLs of same type
+    return base_name
+
+
+def provider_exists(test_namespace, provider_name: str) -> bool:
+    """
+    Check if a provider already exists in the namespace.
+
+    Args:
+        test_namespace: Test namespace context
+        provider_name: Name of the provider to check
+
+    Returns:
+        bool: True if provider exists, False otherwise
+    """
+    try:
+        result = test_namespace.run_kubectl_command(
+            f"get provider {provider_name} -o json", check=False
+        )
+        if result.returncode == 0:
+            logging.info(f"Provider {provider_name} already exists")
+            return True
+        else:
+            logging.info(f"Provider {provider_name} does not exist")
+            return False
+    except Exception as e:
+        logging.warning(f"Error checking provider {provider_name} existence: {e}")
+        return False
+
+
+def get_or_create_provider(
+    test_namespace,
+    provider_name: str,
+    create_cmd: str,
+    provider_credentials: dict = None,
+    timeout: int = 360,
+) -> str:
+    """
+    Get an existing provider or create it if it doesn't exist.
+
+    Args:
+        test_namespace: Test namespace context
+        provider_name: Name of the provider
+        create_cmd: Command to create the provider if it doesn't exist
+        provider_credentials: Provider credentials (unused, for compatibility)
+        timeout: Timeout for waiting for provider to be ready
+
+    Returns:
+        str: Provider name
+    """
+    if provider_exists(test_namespace, provider_name):
+        logging.info(f"Using existing provider: {provider_name}")
+        # Verify it's ready
+        wait_for_provider_ready(test_namespace, provider_name, timeout)
+        return provider_name
+
+    logging.info(f"Creating new provider: {provider_name}")
+
+    # Create provider
+    result = test_namespace.run_mtv_command(create_cmd)
+    assert (
+        result.returncode == 0
+    ), f"Failed to create provider {provider_name}: {result.stderr}"
+
+    # Track for cleanup
+    test_namespace.track_resource("provider", provider_name)
+
+    # Wait for provider to be ready
+    wait_for_provider_ready(test_namespace, provider_name, timeout)
+
+    return provider_name
 
 
 # Load .env file when module is imported

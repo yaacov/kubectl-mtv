@@ -6,7 +6,7 @@ This test validates the creation of VMware vSphere providers.
 
 import pytest
 
-from ...utils import wait_for_provider_ready
+from ...utils import wait_for_provider_ready, generate_provider_name, provider_exists
 
 
 @pytest.mark.create
@@ -27,7 +27,11 @@ class TestVSphereProvider:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("VMware vSphere credentials not available in environment")
 
-        provider_name = "test-vsphere-skip-verify"
+        provider_name = generate_provider_name("vsphere", creds["url"], skip_tls=True)
+
+        # Skip if provider already exists
+        if provider_exists(test_namespace, provider_name):
+            pytest.skip(f"Provider {provider_name} already exists")
 
         # Create command with insecure skip TLS
         cmd_parts = [
@@ -65,7 +69,11 @@ class TestVSphereProvider:
                 "VMware vSphere credentials with CA certificate not available in environment"
             )
 
-        provider_name = "test-vsphere-cacert"
+        provider_name = generate_provider_name("vsphere", creds["url"], skip_tls=False)
+
+        # Skip if provider already exists
+        if provider_exists(test_namespace, provider_name):
+            pytest.skip(f"Provider {provider_name} already exists")
 
         # Create command with CA cert
         cmd_parts = [

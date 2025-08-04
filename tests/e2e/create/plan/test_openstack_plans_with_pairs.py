@@ -9,21 +9,17 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
-
-
-OPENSTACK_TEST_VMS = ["infra-mtv-node-207", "infra-mtv-node-18"]
-
-OPENSTACK_NETWORK_PAIRS = [
-    {"source": "provider_net_shared", "target": "test-nad-1"},
-    {"source": "provider_net_shared_3", "target": "test-nad-2"},
-]
-
-OPENSTACK_STORAGE_PAIRS = [
-    {"source": "__DEFAULT__", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    {"source": "tripleo", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "ceph", "target": "csi-manila-ceph"},
-]
+from e2e.utils import (
+    wait_for_plan_ready,
+    generate_provider_name,
+    get_or_create_provider,
+)
+from e2e.test_constants import (
+    OPENSTACK_TEST_VMS,
+    OPENSTACK_NETWORK_PAIRS,
+    OPENSTACK_STORAGE_PAIRS,
+    TARGET_PROVIDER_NAME,
+)
 
 
 @pytest.mark.create
@@ -50,7 +46,8 @@ class TestOpenStackPlanCreationWithPairs:
         ):
             pytest.skip("OpenStack credentials not available in environment")
 
-        provider_name = "test-openstack-plan-pairs-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("openstack", creds["url"], skip_tls=True)
 
         # Create command with insecure skip TLS
         cmd_parts = [
@@ -70,17 +67,8 @@ class TestOpenStackPlanCreationWithPairs:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_plan_with_mapping_pairs(self, test_namespace, openstack_provider):
         """Test creating a migration plan with inline mapping pairs."""
@@ -101,7 +89,7 @@ class TestOpenStackPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {openstack_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -142,7 +130,7 @@ class TestOpenStackPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {openstack_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vms}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -183,7 +171,7 @@ class TestOpenStackPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {openstack_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",

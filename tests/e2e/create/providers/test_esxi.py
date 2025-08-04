@@ -6,7 +6,7 @@ This test validates the creation of VMware ESXi providers using the sdk-endpoint
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready
+from e2e.utils import wait_for_provider_ready, generate_provider_name, provider_exists
 
 
 @pytest.mark.create
@@ -27,7 +27,13 @@ class TestESXiProvider:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("VMware ESXi credentials not available in environment")
 
-        provider_name = "test-esxi-skip-verify"
+        provider_name = generate_provider_name(
+            "vsphere", creds["url"], sdk_endpoint="esxi", skip_tls=True
+        )
+
+        # Skip if provider already exists
+        if provider_exists(test_namespace, provider_name):
+            pytest.skip(f"Provider {provider_name} already exists")
 
         # Create command with insecure skip TLS and sdk-endpoint esxi
         cmd_parts = [
@@ -66,7 +72,13 @@ class TestESXiProvider:
                 "VMware ESXi credentials with CA certificate not available in environment"
             )
 
-        provider_name = "test-esxi-cacert"
+        provider_name = generate_provider_name(
+            "vsphere", creds["url"], sdk_endpoint="esxi", skip_tls=False
+        )
+
+        # Skip if provider already exists
+        if provider_exists(test_namespace, provider_name):
+            pytest.skip(f"Provider {provider_name} already exists")
 
         # Create command with CA cert and sdk-endpoint esxi
         cmd_parts = [
@@ -103,7 +115,13 @@ class TestESXiProvider:
                 "VMware ESXi credentials with VDDK init image not available in environment"
             )
 
-        provider_name = "test-esxi-vddk"
+        provider_name = generate_provider_name(
+            "vsphere", creds["url"], sdk_endpoint="esxi", skip_tls=True
+        )
+
+        # Skip if provider already exists
+        if provider_exists(test_namespace, provider_name):
+            pytest.skip(f"Provider {provider_name} already exists")
 
         # Create command with VDDK init image and sdk-endpoint esxi
         cmd_parts = [

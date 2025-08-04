@@ -9,7 +9,11 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
+from e2e.utils import (
+    wait_for_plan_ready,
+    generate_provider_name,
+    get_or_create_provider,
+)
 
 
 # Hardcoded VM names from oVirt inventory data
@@ -38,7 +42,8 @@ class TestOvirtPlanCreation:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("oVirt credentials not available in environment")
 
-        provider_name = "test-ovirt-plan-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("ovirt", creds["url"], skip_tls=True)
 
         # Create command with insecure skip TLS
         cmd_parts = [
@@ -53,19 +58,24 @@ class TestOvirtPlanCreation:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
+    @pytest.fixture(scope="class")
+    def target_provider(self, test_namespace):
+        """Ensure the target OpenShift provider exists for plan testing."""
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("openshift", "localhost", skip_tls=True)
 
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
+        # Create command for OpenShift target provider
+        create_cmd = f"create provider {provider_name} --type openshift"
 
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
-    def test_create_plan_from_ovirt(self, test_namespace, ovirt_provider):
+    def test_create_plan_from_ovirt(
+        self, test_namespace, ovirt_provider, target_provider
+    ):
         """Test creating a migration plan from oVirt provider."""
         # Use the first available VM as comma-separated string
         selected_vm = OVIRT_TEST_VMS[0]
@@ -76,7 +86,7 @@ class TestOvirtPlanCreation:
             "create plan",
             plan_name,
             f"--source {ovirt_provider}",
-            "--target test-openshift-target",
+            f"--target {target_provider}",
             f"--vms '{selected_vm}'",
         ]
 
@@ -92,17 +102,24 @@ class TestOvirtPlanCreation:
         # Wait for plan to be ready
         wait_for_plan_ready(test_namespace, plan_name)
 
-    def test_create_multi_vm_plan_from_ovirt(self, test_namespace, ovirt_provider):
+    def test_create_multi_vm_plan_from_ovirt(
+        self, test_namespace, ovirt_provider, target_provider
+    ):
         """Test creating a migration plan with multiple VMs from oVirt provider."""
-        # Use first 3 VMs for multi-VM test as comma-separated string
-        selected_vms = ",".join(OVIRT_TEST_VMS[:3])
+        # Use multiple VMs from the inventory dump data
+        if len(OVIRT_TEST_VMS) < 2:
+            pytest.skip("Need at least 2 VMs for multi-VM test")
+
+        # Use all available VMs for comprehensive testing
+        selected_vms = ",".join(OVIRT_TEST_VMS)
         plan_name = f"test-multi-plan-ovirt-{int(time.time())}"
+
         # Create plan command with multiple VMs
         cmd_parts = [
             "create plan",
             plan_name,
             f"--source {ovirt_provider}",
-            "--target test-openshift-target",
+            f"--target {target_provider}",
             f"--vms '{selected_vms}'",
         ]
 

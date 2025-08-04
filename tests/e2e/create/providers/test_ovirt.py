@@ -6,7 +6,7 @@ This test validates the creation of oVirt/Red Hat Virtualization providers.
 
 import pytest
 
-from ...utils import wait_for_provider_ready
+from ...utils import wait_for_provider_ready, generate_provider_name, provider_exists
 
 
 @pytest.mark.create
@@ -27,7 +27,11 @@ class TestOVirtProvider:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("oVirt credentials not available in environment")
 
-        provider_name = "test-ovirt-skip-verify"
+        provider_name = generate_provider_name("ovirt", creds["url"], skip_tls=True)
+
+        # Skip if provider already exists
+        if provider_exists(test_namespace, provider_name):
+            pytest.skip(f"Provider {provider_name} already exists")
 
         # Create command with insecure skip TLS
         cmd_parts = [
@@ -65,7 +69,11 @@ class TestOVirtProvider:
                 "oVirt credentials with CA certificate not available in environment"
             )
 
-        provider_name = "test-ovirt-cacert"
+        provider_name = generate_provider_name("ovirt", creds["url"], skip_tls=False)
+
+        # Skip if provider already exists
+        if provider_exists(test_namespace, provider_name):
+            pytest.skip(f"Provider {provider_name} already exists")
 
         # Create command with CA cert
         cmd_parts = [

@@ -10,7 +10,12 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
+from e2e.utils import (
+    wait_for_plan_ready,
+    generate_provider_name,
+    get_or_create_provider,
+)
+from e2e.test_constants import TARGET_PROVIDER_NAME
 
 
 # Hardcoded VM names from ESXi inventory data (similar to vSphere structure)
@@ -39,7 +44,10 @@ class TestESXiPlanCreation:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("VMware ESXi credentials not available in environment")
 
-        provider_name = "test-esxi-plan-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name(
+            "vsphere", creds["url"], sdk_endpoint="esxi", skip_tls=True
+        )
 
         # Create command with insecure skip TLS and ESXi SDK endpoint
         cmd_parts = [
@@ -55,17 +63,8 @@ class TestESXiPlanCreation:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_plan_from_esxi(self, test_namespace, esxi_provider):
         """Test creating a migration plan from ESXi provider."""
@@ -78,7 +77,7 @@ class TestESXiPlanCreation:
             "create plan",
             plan_name,
             f"--source {esxi_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
         ]
 
@@ -104,7 +103,7 @@ class TestESXiPlanCreation:
             "create plan",
             plan_name,
             f"--source {esxi_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vms}'",
         ]
 

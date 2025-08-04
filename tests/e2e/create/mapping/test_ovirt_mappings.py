@@ -1,8 +1,7 @@
 """
 Test cases for kubectl-mtv network and storage mapping creation from oVirt providers.
 
-This test validates the creation of network and storage mappings using oVirt as the source provider
-and OpenShift as the target provider.
+This test validates the creation of network and storage mappings using oVirt as the source provider.
 """
 
 import time
@@ -10,10 +9,12 @@ import time
 import pytest
 
 from e2e.utils import (
-    wait_for_provider_ready,
     wait_for_network_mapping_ready,
     wait_for_storage_mapping_ready,
+    generate_provider_name,
+    get_or_create_provider,
 )
+from e2e.test_constants import TARGET_PROVIDER_NAME
 
 
 # Hardcoded network names from oVirt inventory data
@@ -53,7 +54,8 @@ class TestOvirtMappingCreation:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("oVirt credentials not available in environment")
 
-        provider_name = "test-ovirt-map-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("ovirt", creds["url"], skip_tls=True)
 
         # Create command with insecure skip TLS
         cmd_parts = [
@@ -68,17 +70,8 @@ class TestOvirtMappingCreation:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_network_mapping_from_ovirt(self, test_namespace, ovirt_provider):
         """Test creating a network mapping from oVirt provider."""
@@ -94,7 +87,7 @@ class TestOvirtMappingCreation:
             "create mapping network",
             mapping_name,
             f"--source {ovirt_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--network-pairs '{network_pairs}'",
         ]
 
@@ -124,7 +117,7 @@ class TestOvirtMappingCreation:
             "create mapping storage",
             mapping_name,
             f"--source {ovirt_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--storage-pairs '{storage_pairs}'",
         ]
 
@@ -156,7 +149,7 @@ class TestOvirtMappingCreation:
             "create mapping network",
             mapping_name,
             f"--source {ovirt_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--network-pairs '{network_pairs}'",
         ]
 

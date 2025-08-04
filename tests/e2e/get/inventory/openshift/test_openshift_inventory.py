@@ -8,7 +8,10 @@ import json
 
 import pytest
 
-from ....utils import wait_for_provider_ready
+from ....utils import (
+    generate_provider_name,
+    get_or_create_provider,
+)
 
 
 @pytest.mark.get
@@ -21,7 +24,8 @@ class TestOpenShiftInventory:
     @pytest.fixture(scope="class")
     def openshift_provider(self, test_namespace, provider_credentials):
         """Create an OpenShift provider for inventory testing."""
-        provider_name = "test-openshift-inventory-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("openshift", "localhost", skip_tls=True)
 
         # Use current cluster context with skip verify
         cmd_parts = [
@@ -33,17 +37,8 @@ class TestOpenShiftInventory:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_get_inventory_vms(self, test_namespace, openshift_provider):
         """Test getting inventory VMs from an OpenShift provider."""

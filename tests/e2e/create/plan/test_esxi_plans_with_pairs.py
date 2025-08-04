@@ -10,35 +10,17 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
-
-
-# Hardcoded VM names from ESXi inventory data
-ESXI_TEST_VMS = [
-    "mtv-win2019-79-nfs-4-18",
-    "mtv-win2019-79-nfs-4-17",
-    "mtv-win2019-79-nfs-4-16",
-    "mtv-win2019-79-ceph-rbd",
-    "mtv-rhel8-warm-sanity-nfs-4-19",
-]
-
-# Hardcoded network mapping pairs from ESXi inventory data
-ESXI_NETWORK_PAIRS = [
-    {"source": "Mgmt Network", "target": "test-nad-1"},
-    {"source": "VM Network", "target": "test-nad-2"},
-]
-
-# Hardcoded storage mapping pairs from ESXi inventory data
-ESXI_STORAGE_PAIRS = [
-    {
-        "source": "mtv-nfs-rhos-v8",
-        "target": "ocs-storagecluster-ceph-rbd-virtualization",
-    },
-    {"source": "nfs-us", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "mtv-nfs-us-v8", "target": "csi-manila-ceph"},
-    {"source": "nfs-us-mtv-v8", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    {"source": "datastore1", "target": "ocs-storagecluster-ceph-rbd"},
-]
+from e2e.utils import (
+    wait_for_plan_ready,
+    generate_provider_name,
+    get_or_create_provider,
+)
+from e2e.test_constants import (
+    ESXI_TEST_VMS,
+    ESXI_NETWORK_PAIRS,
+    ESXI_STORAGE_PAIRS,
+    TARGET_PROVIDER_NAME,
+)
 
 
 @pytest.mark.create
@@ -57,7 +39,10 @@ class TestESXiPlanCreationWithPairs:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("ESXi credentials not available in environment")
 
-        provider_name = "test-esxi-plan-pairs-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name(
+            "vsphere", creds["url"], sdk_endpoint="esxi", skip_tls=True
+        )
 
         # Create command with insecure skip TLS
         cmd_parts = [
@@ -73,17 +58,8 @@ class TestESXiPlanCreationWithPairs:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_plan_with_mapping_pairs(self, test_namespace, esxi_provider):
         """Test creating a migration plan with inline mapping pairs."""
@@ -104,7 +80,7 @@ class TestESXiPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {esxi_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -145,7 +121,7 @@ class TestESXiPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {esxi_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vms}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -182,7 +158,7 @@ class TestESXiPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {esxi_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -221,7 +197,7 @@ class TestESXiPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {esxi_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",

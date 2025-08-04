@@ -9,39 +9,17 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
-
-
-# Hardcoded VM names from oVirt inventory data
-OVIRT_TEST_VMS = [
-    "1111ab",
-    "1111-win2019",
-    "3disks",
-    "arik-win",
-    "auto-rhv-red-iscsi-migration-50gb-70usage-vm-1",
-]
-
-# Hardcoded network mapping pairs from oVirt inventory data
-OVIRT_NETWORK_PAIRS = [
-    {"source": "ovirtmgmt", "target": "test-nad-1"},
-    {"source": "vm", "target": "test-nad-2"},
-    {"source": "internal", "target": "test-nad-1"},
-    {"source": "vlan10", "target": "test-nad-2"},
-]
-
-# Hardcoded storage mapping pairs from oVirt inventory data
-OVIRT_STORAGE_PAIRS = [
-    {
-        "source": "hosted_storage",
-        "target": "ocs-storagecluster-ceph-rbd-virtualization",
-    },
-    {"source": "L0_Group_4_LUN1", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "L0_Group_4_LUN2", "target": "csi-manila-ceph"},
-    {"source": "L0_Group_4_LUN3", "target": "csi-manila-netapp"},
-    {"source": "L1_Group", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    {"source": "nfs_mtv_0", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "export2", "target": "ocs-storagecluster-ceph-rbd"},
-]
+from e2e.utils import (
+    wait_for_plan_ready,
+    generate_provider_name,
+    get_or_create_provider,
+)
+from e2e.test_constants import (
+    OVIRT_TEST_VMS,
+    OVIRT_NETWORK_PAIRS,
+    OVIRT_STORAGE_PAIRS,
+    TARGET_PROVIDER_NAME,
+)
 
 
 @pytest.mark.create
@@ -60,7 +38,8 @@ class TestOvirtPlanCreationWithPairs:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("oVirt credentials not available in environment")
 
-        provider_name = "test-ovirt-plan-pairs-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("ovirt", creds["url"], skip_tls=True)
 
         # Create command with insecure skip TLS
         cmd_parts = [
@@ -75,17 +54,8 @@ class TestOvirtPlanCreationWithPairs:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_plan_with_mapping_pairs(self, test_namespace, ovirt_provider):
         """Test creating a migration plan with inline mapping pairs."""
@@ -106,7 +76,7 @@ class TestOvirtPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {ovirt_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -147,7 +117,7 @@ class TestOvirtPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {ovirt_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vms}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -186,7 +156,7 @@ class TestOvirtPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {ovirt_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",

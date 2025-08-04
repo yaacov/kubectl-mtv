@@ -6,7 +6,11 @@ This test validates the creation of OpenShift target providers.
 
 import pytest
 
-from ...utils import wait_for_provider_ready
+from ...utils import (
+    wait_for_provider_ready,
+    generate_provider_name,
+    provider_exists,
+)
 
 
 @pytest.mark.create
@@ -18,7 +22,11 @@ class TestOpenShiftProvider:
 
     def test_create_openshift_provider_localhost(self, test_namespace):
         """Test creating a namespaced localhost OpenShift provider using current cluster context."""
-        provider_name = "test-openshift-localhost"
+        provider_name = generate_provider_name("openshift", "localhost", skip_tls=True)
+
+        # Skip if provider already exists
+        if provider_exists(test_namespace, provider_name):
+            pytest.skip(f"Provider {provider_name} already exists")
 
         # Create a simple OpenShift provider without URL or token (uses current cluster)
         create_cmd = f"create provider {provider_name} --type openshift"
@@ -36,21 +44,30 @@ class TestOpenShiftProvider:
     def test_create_openshift_provider_skip_verify(
         self, test_namespace, provider_credentials
     ):
-        """Test creating an OpenShift provider with TLS verification skipped."""
+        """Test creating an OpenShift provider with external URL and TLS verification skipped."""
         creds = provider_credentials["openshift"]
-        provider_name = "test-openshift-skip-verify"
 
-        # For OpenShift provider, we can often use the current cluster
-        if creds.get("url") and creds.get("token"):
-            # Use explicit credentials with skip verify
-            create_cmd = (
-                f"create provider {provider_name} --type openshift "
-                f"--url '{creds['url']}' --token '{creds['token']}' "
-                "--provider-insecure-skip-tls"
-            )
-        else:
-            # Use current cluster context with skip verify (this may not apply the flag effectively)
-            create_cmd = f"create provider {provider_name} --type openshift --provider-insecure-skip-tls"
+        # Skip if credentials are not available
+        if not all([creds.get("url"), creds.get("token")]):
+            pytest.skip("OpenShift credentials not available in environment")
+
+        provider_name = generate_provider_name("openshift", creds["url"], skip_tls=True)
+
+        # Skip if provider already exists
+        if provider_exists(test_namespace, provider_name):
+            pytest.skip(f"Provider {provider_name} already exists")
+
+        # Create command with insecure skip TLS
+        cmd_parts = [
+            "create provider",
+            provider_name,
+            "--type openshift",
+            f"--url '{creds['url']}'",
+            f"--token '{creds['token']}'",
+            "--provider-insecure-skip-tls",
+        ]
+
+        create_cmd = " ".join(cmd_parts)
 
         # Create provider
         result = test_namespace.run_mtv_command(create_cmd)
@@ -68,22 +85,32 @@ class TestOpenShiftProvider:
         """Test creating an OpenShift provider with CA certificate."""
         creds = provider_credentials["openshift"]
 
-        # Skip if CA cert is not available
-        if not creds.get("cacert"):
-            pytest.skip("OpenShift CA certificate not available in environment")
-
-        provider_name = "test-openshift-cacert"
-
-        if creds.get("url") and creds.get("token"):
-            # Use explicit credentials with CA cert
-            create_cmd = (
-                f"create provider {provider_name} --type openshift "
-                f"--url '{creds['url']}' --token '{creds['token']}' "
-                f"--cacert '{creds['cacert']}'"
+        # Skip if credentials or CA cert are not available
+        required_fields = ["url", "token", "cacert"]
+        if not all([creds.get(field) for field in required_fields]):
+            pytest.skip(
+                "OpenShift credentials with CA certificate not available in environment"
             )
-        else:
-            # Use current cluster context with CA cert (may not be applicable)
-            create_cmd = f"create provider {provider_name} --type openshift --cacert '{creds['cacert']}'"
+
+        provider_name = generate_provider_name(
+            "openshift", creds["url"], skip_tls=False
+        )
+
+        # Skip if provider already exists
+        if provider_exists(test_namespace, provider_name):
+            pytest.skip(f"Provider {provider_name} already exists")
+
+        # Create command with CA cert
+        cmd_parts = [
+            "create provider",
+            provider_name,
+            "--type openshift",
+            f"--url '{creds['url']}'",
+            f"--token '{creds['token']}'",
+            f"--cacert '{creds['cacert']}'",
+        ]
+
+        create_cmd = " ".join(cmd_parts)
 
         # Create provider
         result = test_namespace.run_mtv_command(create_cmd)

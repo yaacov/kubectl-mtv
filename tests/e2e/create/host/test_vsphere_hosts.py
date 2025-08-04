@@ -8,9 +8,10 @@ Hosts represent ESXi servers in the vSphere infrastructure.
 import pytest
 
 from ...utils import (
-    wait_for_provider_ready,
     wait_for_host_ready,
     delete_hosts_by_spec_id,
+    generate_provider_name,
+    get_or_create_provider,
 )
 
 
@@ -38,7 +39,8 @@ class TestVSphereHosts:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("VMware vSphere credentials not available in environment")
 
-        provider_name = "test-vsphere-host-provider"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("vsphere", creds["url"], skip_tls=True)
 
         cmd_parts = [
             "create provider",
@@ -51,16 +53,11 @@ class TestVSphereHosts:
         ]
 
         create_provider_cmd = " ".join(cmd_parts)
-        result = test_namespace.run_mtv_command(create_provider_cmd)
-        assert result.returncode == 0
 
-        # Track provider for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(
+            test_namespace, provider_name, create_provider_cmd
+        )
 
     def test_create_host_with_ip_address(
         self, test_namespace, vsphere_provider, provider_credentials

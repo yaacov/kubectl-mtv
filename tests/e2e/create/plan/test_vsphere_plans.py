@@ -9,16 +9,17 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
+from e2e.utils import (
+    wait_for_plan_ready,
+    generate_provider_name,
+    get_or_create_provider,
+)
 
 
-# Hardcoded VM names from vSphere inventory data
+# Hardcoded VM names from inventory data
 VSPHERE_TEST_VMS = [
-    "mtv-win2019-79-ceph-rbd-4-16",
     "mtv-func-rhel8-ameen",
-    "mtv-rhel8-warm-sanity-nfs-4-19",
-    "mtv-rhel8-warm-2disks2nics-nfs-4-18",
-    "mtv-rhel8-warm-sanity-nfs-4-18",
+    "mtv-win2019-79-ceph-rbd-4-16",
 ]
 
 
@@ -36,11 +37,14 @@ class TestVSpherePlanCreation:
 
         # Skip if credentials are not available
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
-            pytest.skip("VMware vSphere credentials not available in environment")
+            pytest.skip("vSphere credentials not available in environment")
 
-        provider_name = "test-vsphere-plan-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name(
+            "vsphere", creds["url"], skip_tls=creds.get("insecure", False)
+        )
 
-        # Create command with insecure skip TLS
+        # Create command
         cmd_parts = [
             "create provider",
             provider_name,
@@ -48,24 +52,32 @@ class TestVSpherePlanCreation:
             f"--url '{creds['url']}'",
             f"--username '{creds['username']}'",
             f"--password '{creds['password']}'",
-            "--provider-insecure-skip-tls",
         ]
+
+        # Add insecure skip TLS if specified
+        if creds.get("insecure"):
+            cmd_parts.append("--provider-insecure-skip-tls")
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
+    @pytest.fixture(scope="class")
+    def target_provider(self, test_namespace):
+        """Ensure the target OpenShift provider exists for plan testing."""
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("openshift", "localhost", skip_tls=True)
 
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
+        # Create command for OpenShift target provider
+        create_cmd = f"create provider {provider_name} --type openshift"
 
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
-    def test_create_plan_from_vsphere(self, test_namespace, vsphere_provider):
+    def test_create_plan_from_vsphere(
+        self, test_namespace, vsphere_provider, target_provider
+    ):
         """Test creating a migration plan from vSphere provider."""
         # Use the first available VM as comma-separated string
         selected_vm = VSPHERE_TEST_VMS[0]
@@ -76,7 +88,7 @@ class TestVSpherePlanCreation:
             "create plan",
             plan_name,
             f"--source {vsphere_provider}",
-            "--target test-openshift-target",
+            f"--target {target_provider}",
             f"--vms '{selected_vm}'",
         ]
 
@@ -92,17 +104,24 @@ class TestVSpherePlanCreation:
         # Wait for plan to be ready
         wait_for_plan_ready(test_namespace, plan_name)
 
-    def test_create_multi_vm_plan_from_vsphere(self, test_namespace, vsphere_provider):
+    def test_create_multi_vm_plan_from_vsphere(
+        self, test_namespace, vsphere_provider, target_provider
+    ):
         """Test creating a migration plan with multiple VMs from vSphere provider."""
-        # Use first 3 VMs for multi-VM test as comma-separated string
-        selected_vms = ",".join(VSPHERE_TEST_VMS[:3])
+        # Use multiple VMs from the inventory dump data
+        if len(VSPHERE_TEST_VMS) < 2:
+            pytest.skip("Need at least 2 VMs for multi-VM test")
+
+        # Use all available VMs for comprehensive testing
+        selected_vms = ",".join(VSPHERE_TEST_VMS)
         plan_name = f"test-multi-plan-vsphere-{int(time.time())}"
+
         # Create plan command with multiple VMs
         cmd_parts = [
             "create plan",
             plan_name,
             f"--source {vsphere_provider}",
-            "--target test-openshift-target",
+            f"--target {target_provider}",
             f"--vms '{selected_vms}'",
         ]
 
