@@ -14,21 +14,7 @@ from e2e.utils import (
     generate_provider_name,
     get_or_create_provider,
 )
-from e2e.test_constants import TARGET_PROVIDER_NAME
-
-
-# Hardcoded network names from vSphere inventory data
-VSPHERE_NETWORKS = [
-    {"source": "Mgmt Network", "target": "test-nad-1"},
-    {"source": "VM Network", "target": "test-nad-2"},
-]
-
-# Hardcoded storage names from vSphere inventory data
-VSPHERE_DATASTORES = [
-    {"source": "nfs-us-mtv-v8", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    {"source": "nfs-us-virt", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "datastore1", "target": "csi-manila-ceph"},
-]
+from e2e.test_constants import TARGET_PROVIDER_NAME, VSPHERE_NETWORKS, VSPHERE_DATASTORES
 
 
 @pytest.mark.create

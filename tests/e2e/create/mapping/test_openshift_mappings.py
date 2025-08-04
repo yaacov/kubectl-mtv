@@ -14,24 +14,7 @@ from e2e.utils import (
     generate_provider_name,
     get_or_create_provider,
 )
-from e2e.test_constants import TARGET_PROVIDER_NAME
-
-
-# Hardcoded network names for OpenShift to OpenShift mappings
-OPENSHIFT_NETWORKS = [
-    {"source": "test-nad-1", "target": "test-nad-2"},
-    {"source": "test-nad-2", "target": "test-nad-1"},
-]
-
-# Hardcoded storage names for OpenShift to OpenShift mappings
-# Using storage classes that should exist in the cluster
-OPENSHIFT_STORAGE_CLASSES = [
-    {
-        "source": "ocs-storagecluster-ceph-rbd-virtualization",
-        "target": "ocs-storagecluster-ceph-rbd-virtualization",
-    },
-    {"source": "ocs-storagecluster-ceph-rbd", "target": "ocs-storagecluster-ceph-rbd"},
-]
+from e2e.test_constants import TARGET_PROVIDER_NAME, OPENSHIFT_NETWORKS, OPENSHIFT_DATASTORES
 
 
 @pytest.mark.create
@@ -98,7 +81,7 @@ class TestOpenShiftMappingCreation:
 
         # Build storage pairs string
         storage_pairs = ",".join(
-            [f"{s['source']}:{s['target']}" for s in OPENSHIFT_STORAGE_CLASSES]
+            [f"{s['source']}:{s['target']}" for s in OPENSHIFT_DATASTORES]
         )
 
         # Create storage mapping command
@@ -130,7 +113,8 @@ class TestOpenShiftMappingCreation:
 
         # Create network mapping with namespace-qualified target NAD only
         # Source NADs in OpenShift don't use namespace qualification in inventory
-        network_pairs = f"test-nad-1:{test_namespace.namespace}/test-nad-2"
+        from e2e.test_constants import NETWORK_ATTACHMENT_DEFINITIONS
+        network_pairs = f"{NETWORK_ATTACHMENT_DEFINITIONS[0]}:{test_namespace.namespace}/{NETWORK_ATTACHMENT_DEFINITIONS[1]}"
 
         cmd_parts = [
             "create mapping network",

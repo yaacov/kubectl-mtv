@@ -14,28 +14,7 @@ from e2e.utils import (
     generate_provider_name,
     get_or_create_provider,
 )
-from e2e.test_constants import TARGET_PROVIDER_NAME
-
-
-# Hardcoded network names from oVirt inventory data
-OVIRT_NETWORKS = [
-    {"source": "ovirtmgmt", "target": "test-nad-1"},
-    {"source": "vm", "target": "test-nad-2"},
-    {"source": "internal", "target": "test-nad-1"},
-    {"source": "vlan10", "target": "test-nad-2"},
-]
-
-# Hardcoded storage names from oVirt inventory data
-OVIRT_STORAGE_DOMAINS = [
-    {
-        "source": "hosted_storage",
-        "target": "ocs-storagecluster-ceph-rbd-virtualization",
-    },
-    {"source": "L0_Group_4_LUN1", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "L0_Group_4_LUN2", "target": "csi-manila-ceph"},
-    {"source": "L0_Group_4_LUN3", "target": "csi-manila-netapp"},
-    {"source": "export2", "target": "ocs-storagecluster-ceph-rbd"},
-]
+from e2e.test_constants import TARGET_PROVIDER_NAME, OVIRT_NETWORKS, OVIRT_DATASTORES
 
 
 @pytest.mark.create
@@ -109,7 +88,7 @@ class TestOvirtMappingCreation:
 
         # Use first three storage domains for basic test
         storage_pairs = ",".join(
-            [f"{s['source']}:{s['target']}" for s in OVIRT_STORAGE_DOMAINS[:3]]
+            [f"{s['source']}:{s['target']}" for s in OVIRT_DATASTORES[:3]]
         )
 
         # Create storage mapping command

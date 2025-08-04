@@ -19,6 +19,7 @@ from e2e.test_constants import (
     OPENSHIFT_NETWORK_PAIRS,
     OPENSHIFT_STORAGE_PAIRS,
     TARGET_PROVIDER_NAME,
+    NETWORK_ATTACHMENT_DEFINITIONS,
 )
 
 
@@ -180,7 +181,7 @@ class TestOpenShiftPlanCreationWithPairs:
         plan_name = f"test-plan-openshift-ns-pairs-{int(time.time())}"
 
         # Use namespace-qualified network targets
-        network_pairs = f"test-nad-1:{test_namespace.namespace}/test-nad-2,test-nad-2:{test_namespace.namespace}/test-nad-1"
+        network_pairs = f"{NETWORK_ATTACHMENT_DEFINITIONS[0]}:{test_namespace.namespace}/{NETWORK_ATTACHMENT_DEFINITIONS[1]},{NETWORK_ATTACHMENT_DEFINITIONS[1]}:{test_namespace.namespace}/{NETWORK_ATTACHMENT_DEFINITIONS[0]}"
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in OPENSHIFT_STORAGE_PAIRS]
         )
