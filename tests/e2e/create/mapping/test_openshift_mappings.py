@@ -9,10 +9,12 @@ import time
 import pytest
 
 from e2e.utils import (
-    wait_for_provider_ready,
     wait_for_network_mapping_ready,
     wait_for_storage_mapping_ready,
+    generate_provider_name,
+    get_or_create_provider,
 )
+from e2e.test_constants import TARGET_PROVIDER_NAME
 
 
 # Hardcoded network names for OpenShift to OpenShift mappings
@@ -41,7 +43,8 @@ class TestOpenShiftMappingCreation:
     @pytest.fixture(scope="class")
     def openshift_source_provider(self, test_namespace):
         """Create an OpenShift source provider for mapping testing."""
-        provider_name = "test-openshift-source-map"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("openshift", "localhost", skip_tls=True)
 
         # Create command for OpenShift provider
         cmd_parts = [
@@ -52,17 +55,8 @@ class TestOpenShiftMappingCreation:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_network_mapping_openshift_to_openshift(
         self, test_namespace, openshift_source_provider
@@ -80,7 +74,7 @@ class TestOpenShiftMappingCreation:
             "create mapping network",
             mapping_name,
             f"--source {openshift_source_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--network-pairs '{network_pairs}'",
         ]
 
@@ -112,7 +106,7 @@ class TestOpenShiftMappingCreation:
             "create mapping storage",
             mapping_name,
             f"--source {openshift_source_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--storage-pairs '{storage_pairs}'",
         ]
 
@@ -142,7 +136,7 @@ class TestOpenShiftMappingCreation:
             "create mapping network",
             mapping_name,
             f"--source {openshift_source_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--network-pairs '{network_pairs}'",
         ]
 

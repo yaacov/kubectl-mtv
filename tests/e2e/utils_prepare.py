@@ -1,7 +1,14 @@
 import tempfile
 import os
 import yaml
-from .utils import wait_for_provider_ready
+from .utils import (
+    generate_provider_name,
+    get_or_create_provider,
+)
+from .test_constants import (
+    NETWORK_ATTACHMENT_DEFINITIONS,
+    OPENSHIFT_TEST_VMS,
+)
 
 
 def prepare_namespace_for_testing(context):
@@ -10,23 +17,16 @@ def prepare_namespace_for_testing(context):
     """
 
     # Create OpenShift target provider for plan tests
-    target_provider_name = "test-openshift-target"
-
-    # Create a simple OpenShift provider using current cluster context
+    target_provider_name = generate_provider_name(
+        "openshift", "localhost", skip_tls=True
+    )
     create_cmd = f"create provider {target_provider_name} --type openshift"
 
-    # Create provider
-    result = context.run_mtv_command(create_cmd)
-    if result.returncode == 0:
-        # Track for cleanup
-        context.track_resource("provider", target_provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(context, target_provider_name)
+    # Create provider if it doesn't already exist
+    get_or_create_provider(context, target_provider_name, create_cmd)
 
     # Create two NetworkAttachmentDefinitions in the test namespace
-    nad_names = ["test-nad-1", "test-nad-2"]
-    for nad_name in nad_names:
+    for nad_name in NETWORK_ATTACHMENT_DEFINITIONS:
         nad_obj = {
             "apiVersion": "k8s.cni.cncf.io/v1",
             "kind": "NetworkAttachmentDefinition",
@@ -46,8 +46,7 @@ def prepare_namespace_for_testing(context):
             os.unlink(temp_path)
 
     # Create two VirtualMachines in the test namespace
-    vm_names = ["test-vm-1", "test-vm-2"]
-    for idx, vm_name in enumerate(vm_names):
+    for idx, vm_name in enumerate(OPENSHIFT_TEST_VMS):
         vm_obj = {
             "apiVersion": "kubevirt.io/v1",
             "kind": "VirtualMachine",
@@ -87,8 +86,14 @@ def prepare_namespace_for_testing(context):
                                 "autoattachPodInterface": False,
                                 "interfaces": [
                                     {"masquerade": {}, "name": "default"},
-                                    {"name": "test-nad-1", "bridge": {}},
-                                    {"name": "test-nad-2", "bridge": {}},
+                                    {
+                                        "name": NETWORK_ATTACHMENT_DEFINITIONS[0],
+                                        "bridge": {},
+                                    },
+                                    {
+                                        "name": NETWORK_ATTACHMENT_DEFINITIONS[1],
+                                        "bridge": {},
+                                    },
                                 ],
                             },
                             "machine": {"type": "pc-q35-rhel9.6.0"},
@@ -97,15 +102,15 @@ def prepare_namespace_for_testing(context):
                         "networks": [
                             {"name": "default", "pod": {}},
                             {
-                                "name": "test-nad-1",
+                                "name": NETWORK_ATTACHMENT_DEFINITIONS[0],
                                 "multus": {
-                                    "networkName": f"{context.namespace}/test-nad-1"
+                                    "networkName": f"{context.namespace}/{NETWORK_ATTACHMENT_DEFINITIONS[0]}"
                                 },
                             },
                             {
-                                "name": "test-nad-2",
+                                "name": NETWORK_ATTACHMENT_DEFINITIONS[1],
                                 "multus": {
-                                    "networkName": f"{context.namespace}/test-nad-2"
+                                    "networkName": f"{context.namespace}/{NETWORK_ATTACHMENT_DEFINITIONS[1]}"
                                 },
                             },
                         ],

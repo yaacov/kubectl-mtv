@@ -9,27 +9,17 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
-
-
-# VM names that exist in the current cluster (created during namespace prep)
-OPENSHIFT_TEST_VMS = ["test-vm-1", "test-vm-2"]
-
-# Hardcoded network mapping pairs for OpenShift to OpenShift mappings
-OPENSHIFT_NETWORK_PAIRS = [
-    {"source": "test-nad-1", "target": "test-nad-2"},
-    {"source": "test-nad-2", "target": "test-nad-1"},
-]
-
-# Hardcoded storage mapping pairs for OpenShift to OpenShift mappings
-# Using storage classes that should exist in the cluster
-OPENSHIFT_STORAGE_PAIRS = [
-    {
-        "source": "ocs-storagecluster-ceph-rbd-virtualization",
-        "target": "ocs-storagecluster-ceph-rbd-virtualization",
-    },
-    {"source": "ocs-storagecluster-ceph-rbd", "target": "ocs-storagecluster-ceph-rbd"},
-]
+from e2e.utils import (
+    wait_for_plan_ready,
+    generate_provider_name,
+    get_or_create_provider,
+)
+from e2e.test_constants import (
+    OPENSHIFT_TEST_VMS,
+    OPENSHIFT_NETWORK_PAIRS,
+    OPENSHIFT_STORAGE_PAIRS,
+    TARGET_PROVIDER_NAME,
+)
 
 
 @pytest.mark.create
@@ -42,7 +32,8 @@ class TestOpenShiftPlanCreationWithPairs:
     @pytest.fixture(scope="class")
     def openshift_provider(self, test_namespace):
         """Create an OpenShift provider for plan testing."""
-        provider_name = "test-openshift-plan-pairs"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("openshift", "localhost", skip_tls=True)
 
         # Create command for OpenShift provider
         cmd_parts = [
@@ -53,17 +44,8 @@ class TestOpenShiftPlanCreationWithPairs:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_plan_with_mapping_pairs(self, test_namespace, openshift_provider):
         """Test creating a migration plan with inline mapping pairs."""
@@ -84,7 +66,7 @@ class TestOpenShiftPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {openshift_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -126,7 +108,7 @@ class TestOpenShiftPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {openshift_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vms}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -168,7 +150,7 @@ class TestOpenShiftPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {openshift_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -208,7 +190,7 @@ class TestOpenShiftPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {openshift_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",

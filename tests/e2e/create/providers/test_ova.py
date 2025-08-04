@@ -6,7 +6,7 @@ This test validates the creation of OVA (Open Virtualization Archive) providers.
 
 import pytest
 
-from ...utils import wait_for_provider_ready
+from ...utils import wait_for_provider_ready, generate_provider_name, provider_exists
 
 
 @pytest.mark.create
@@ -25,7 +25,11 @@ class TestOVAProvider:
         if not creds.get("url"):
             pytest.skip("OVA URL not available in environment")
 
-        provider_name = "test-ova-skip-verify"
+        provider_name = generate_provider_name("ova", creds["url"], skip_tls=True)
+
+        # Skip if provider already exists
+        if provider_exists(test_namespace, provider_name):
+            pytest.skip(f"Provider {provider_name} already exists")
 
         # Create command
         cmd_parts = [

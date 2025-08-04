@@ -6,7 +6,11 @@ This test validates error handling and validation in host creation commands.
 
 import pytest
 
-from ...utils import wait_for_provider_ready, delete_hosts_by_spec_id
+from ...utils import (
+    delete_hosts_by_spec_id,
+    generate_provider_name,
+    get_or_create_provider,
+)
 
 
 # Hardcoded host IDs for error testing (from hosts.json file)
@@ -61,19 +65,14 @@ class TestHostErrors:
         if not ova_creds.get("url"):
             pytest.skip("OVA URL not available in environment")
 
-        # First create an OVA provider
-        provider_name = "test-ova-provider-for-host-error"
-
-        result = test_namespace.run_mtv_command(
+        # Create an OVA provider
+        provider_name = generate_provider_name("ova", ova_creds["url"], skip_tls=True)
+        create_cmd = (
             f"create provider {provider_name} --type ova --url '{ova_creds['url']}'"
         )
-        assert result.returncode == 0
 
-        # Track provider for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
+        # Create provider if it doesn't already exist
+        get_or_create_provider(test_namespace, provider_name, create_cmd)
 
         # Try to create a host with OVA provider (should fail)
         host_id = ERROR_TEST_HOSTS[0]
@@ -139,7 +138,8 @@ class TestHostErrors:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("VMware vSphere credentials not available in environment")
 
-        provider_name = "test-vsphere-error-provider"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("vsphere", creds["url"], skip_tls=True)
 
         cmd_parts = [
             "create provider",
@@ -153,16 +153,11 @@ class TestHostErrors:
         ]
 
         create_provider_cmd = " ".join(cmd_parts)
-        result = test_namespace.run_mtv_command(create_provider_cmd)
-        assert result.returncode == 0
 
-        # Track provider for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(
+            test_namespace, provider_name, create_provider_cmd
+        )
 
     def test_create_host_missing_auth_for_vcenter_provider(
         self, test_namespace, vsphere_provider

@@ -1,8 +1,7 @@
 """
 Test cases for kubectl-mtv network and storage mapping creation from OVA providers.
 
-This test validates the creation of network and storage mappings using OVA as the source provider
-and OpenShift as the target provider.
+This test validates the creation of network and storage mappings using OVA as the source provider.
 """
 
 import time
@@ -10,10 +9,12 @@ import time
 import pytest
 
 from e2e.utils import (
-    wait_for_provider_ready,
     wait_for_network_mapping_ready,
     wait_for_storage_mapping_ready,
+    generate_provider_name,
+    get_or_create_provider,
 )
+from e2e.test_constants import TARGET_PROVIDER_NAME
 
 
 # Hardcoded network names from OVA inventory data
@@ -49,24 +50,16 @@ class TestOVAMappingCreation:
         if not creds.get("url"):
             pytest.skip("OVA URL not available in environment")
 
-        provider_name = "test-ova-map-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("ova", creds["url"], skip_tls=True)
 
         # Create command for OVA provider with URL
         create_cmd = (
             f"create provider {provider_name} --type ova --url '{creds['url']}'"
         )
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_network_mapping_from_ova(self, test_namespace, ova_provider):
         """Test creating a network mapping from OVA provider."""
@@ -80,7 +73,7 @@ class TestOVAMappingCreation:
             "create mapping network",
             mapping_name,
             f"--source {ova_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--network-pairs '{network_pairs}'",
         ]
 
@@ -107,7 +100,7 @@ class TestOVAMappingCreation:
             "create mapping network",
             mapping_name,
             f"--source {ova_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             "--network-pairs 'VM Network:default'",
         ]
 
@@ -142,7 +135,7 @@ class TestOVAMappingCreation:
             "create mapping storage",
             mapping_name,
             f"--source {ova_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--storage-pairs '{storage_pairs}'",
         ]
 

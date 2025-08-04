@@ -9,73 +9,17 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
-
-
-# Hardcoded VM names from OVA inventory data
-OVA_TEST_VMS = [
-    "mtv-2disks",
-    "1nisim-rhel9-efi",
-    "mtv-func-WIN2019",
-    "SHAICTDOET005-Test_rhel9",
-    "mtv-func.RHEL8_8 _TE_ST _ _1 _2",
-]
-
-
-# VM-specific storage mappings for individual tests
-VM_STORAGE_MAPPINGS = {
-    "mtv-2disks": [
-        {
-            "source": "mtv-2disks-1.vmdk",
-            "target": "ocs-storagecluster-ceph-rbd-virtualization",
-        },
-        {"source": "mtv-2disks-2.vmdk", "target": "ocs-storagecluster-ceph-rbd"},
-    ],
-    "1nisim-rhel9-efi": [
-        {
-            "source": "1nisim-rhel9-efi-1.vmdk",
-            "target": "ocs-storagecluster-ceph-rbd-virtualization",
-        }
-    ],
-    "mtv-func-WIN2019": [
-        {"source": "mtv-func-WIN2019-1.vmdk", "target": "ocs-storagecluster-ceph-rbd"}
-    ],
-    "SHAICTDOET005-Test_rhel9": [
-        {"source": "SHAICTDOET005-Test_rhel9-1.vmdk", "target": "csi-manila-ceph"},
-        {"source": "SHAICTDOET005-Test_rhel9-2.vmdk", "target": "csi-manila-ceph"},
-        {"source": "SHAICTDOET005-Test_rhel9-3.vmdk", "target": "csi-manila-ceph"},
-    ],
-    "mtv-func.RHEL8_8 _TE_ST _ _1 _2": [
-        {
-            "source": "mtv-func.RHEL8_8 _TE_ST _ _1 _2-1.vmdk",
-            "target": "ocs-storagecluster-ceph-rbd",
-        },
-        {
-            "source": "mtv-func.RHEL8_8 _TE_ST _ _1 _2-2.vmdk",
-            "target": "ocs-storagecluster-ceph-rbd",
-        },
-    ],
-}
-
-# VM-specific network mappings for individual tests
-VM_NETWORK_MAPPINGS = {
-    "mtv-2disks": [
-        {"source": "VM Network", "target": "test-nad-1"},
-        {"source": "Mgmt Network", "target": "test-nad-2"},
-    ],
-    "1nisim-rhel9-efi": [{"source": "Mgmt Network", "target": "test-nad-2"}],
-    "mtv-func-WIN2019": [
-        {"source": "VM Network", "target": "test-nad-1"},
-        {"source": "Mgmt Network", "target": "test-nad-2"},
-    ],
-    "SHAICTDOET005-Test_rhel9": [
-        {"source": "VM Network", "target": "test-nad-1"},
-        {"source": "Mgmt Network", "target": "test-nad-2"},
-    ],
-    "mtv-func.RHEL8_8 _TE_ST _ _1 _2": [
-        {"source": "VM Network", "target": "test-nad-1"}
-    ],
-}
+from e2e.utils import (
+    wait_for_plan_ready,
+    generate_provider_name,
+    get_or_create_provider,
+)
+from e2e.test_constants import (
+    OVA_TEST_VMS,
+    OVA_VM_STORAGE_MAPPINGS,
+    OVA_VM_NETWORK_MAPPINGS,
+    TARGET_PROVIDER_NAME,
+)
 
 
 @pytest.mark.create
@@ -94,24 +38,16 @@ class TestOVAPlanCreationWithPairs:
         if not creds.get("url"):
             pytest.skip("OVA URL not available in environment")
 
-        provider_name = "test-ova-plan-pairs-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("ova", creds["url"], skip_tls=True)
 
         # Create command for OVA provider with URL
         create_cmd = (
             f"create provider {provider_name} --type ova --url '{creds['url']}'"
         )
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_plan_with_mapping_pairs(self, test_namespace, ova_provider):
         """Test creating a migration plan with inline mapping pairs."""
@@ -120,8 +56,8 @@ class TestOVAPlanCreationWithPairs:
         plan_name = f"test-plan-ova-pairs-{int(time.time())}"
 
         # Get VM-specific network and storage mappings
-        vm_networks = VM_NETWORK_MAPPINGS[selected_vm]
-        vm_storage = VM_STORAGE_MAPPINGS[selected_vm]
+        vm_networks = OVA_VM_NETWORK_MAPPINGS[selected_vm]
+        vm_storage = OVA_VM_STORAGE_MAPPINGS[selected_vm]
 
         # Build network and storage pairs strings
         network_pairs = ",".join([f"{n['source']}:{n['target']}" for n in vm_networks])
@@ -132,7 +68,7 @@ class TestOVAPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {ova_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -164,10 +100,10 @@ class TestOVAPlanCreationWithPairs:
 
         for vm_name in OVA_TEST_VMS:
             # Collect unique networks
-            for net in VM_NETWORK_MAPPINGS[vm_name]:
+            for net in OVA_VM_NETWORK_MAPPINGS[vm_name]:
                 all_networks.add((net["source"], net["target"]))
             # Collect all storage mappings
-            all_storage.extend(VM_STORAGE_MAPPINGS[vm_name])
+            all_storage.extend(OVA_VM_STORAGE_MAPPINGS[vm_name])
 
         network_pairs = ",".join(
             [f"{source}:{target}" for source, target in all_networks]
@@ -179,7 +115,7 @@ class TestOVAPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {ova_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vms}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -206,8 +142,8 @@ class TestOVAPlanCreationWithPairs:
         plan_name = f"test-plan-ova-pod-pairs-{int(time.time())}"
 
         # Get VM-specific mappings
-        vm_networks = VM_NETWORK_MAPPINGS[selected_vm]
-        vm_storage = VM_STORAGE_MAPPINGS[selected_vm]
+        vm_networks = OVA_VM_NETWORK_MAPPINGS[selected_vm]
+        vm_storage = OVA_VM_STORAGE_MAPPINGS[selected_vm]
 
         # Use pod network for all networks
         network_pairs = ",".join([f"{n['source']}:default" for n in vm_networks])
@@ -218,7 +154,7 @@ class TestOVAPlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {ova_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",

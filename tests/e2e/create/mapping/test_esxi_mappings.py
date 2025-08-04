@@ -1,8 +1,7 @@
 """
 Test cases for kubectl-mtv network and storage mapping creation from ESXi providers.
 
-This test validates the creation of network and storage mappings using ESXi as the source provider
-and OpenShift as the target provider.
+This test validates the creation of network and storage mappings using ESXi as the source provider.
 """
 
 import time
@@ -10,10 +9,12 @@ import time
 import pytest
 
 from e2e.utils import (
-    wait_for_provider_ready,
     wait_for_network_mapping_ready,
     wait_for_storage_mapping_ready,
+    generate_provider_name,
+    get_or_create_provider,
 )
+from e2e.test_constants import TARGET_PROVIDER_NAME
 
 
 # Hardcoded network names from ESXi inventory data
@@ -49,7 +50,8 @@ class TestESXiMappingCreation:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("ESXi credentials not available in environment")
 
-        provider_name = "test-esxi-map-skip-verify"
+        # Generate provider name based on type and configuration (ESXi uses vsphere type without sdk-endpoint flag in mapping tests)
+        provider_name = generate_provider_name("vsphere", creds["url"], skip_tls=True)
 
         # Create command with insecure skip TLS
         cmd_parts = [
@@ -64,17 +66,8 @@ class TestESXiMappingCreation:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_network_mapping_from_esxi(self, test_namespace, esxi_provider):
         """Test creating a network mapping from ESXi provider."""
@@ -90,7 +83,7 @@ class TestESXiMappingCreation:
             "create mapping network",
             mapping_name,
             f"--source {esxi_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--network-pairs '{network_pairs}'",
         ]
 
@@ -120,7 +113,7 @@ class TestESXiMappingCreation:
             "create mapping storage",
             mapping_name,
             f"--source {esxi_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--storage-pairs '{storage_pairs}'",
         ]
 
@@ -146,7 +139,7 @@ class TestESXiMappingCreation:
             "create mapping network",
             network_map_name,
             f"--source {esxi_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             "--network-pairs 'VM Network:default'",
         ]
 
@@ -166,7 +159,7 @@ class TestESXiMappingCreation:
             "create mapping storage",
             storage_map_name,
             f"--source {esxi_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             "--storage-pairs 'mtv-nfs-rhos-v8:ocs-storagecluster-ceph-rbd-virtualization'",
         ]
 

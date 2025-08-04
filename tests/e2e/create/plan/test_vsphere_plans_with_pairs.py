@@ -9,32 +9,17 @@ import time
 
 import pytest
 
-from e2e.utils import wait_for_provider_ready, wait_for_plan_ready
-
-
-# Hardcoded VM names from vSphere inventory data
-VSPHERE_TEST_VMS = [
-    "mtv-win2019-79-ceph-rbd-4-16",
-    "mtv-func-rhel8-ameen",
-    "mtv-rhel8-warm-sanity-nfs-4-19",
-    "mtv-rhel8-warm-2disks2nics-nfs-4-18",
-    "mtv-rhel8-warm-sanity-nfs-4-18",
-]
-
-# Hardcoded network mapping pairs from vSphere inventory data
-VSPHERE_NETWORK_PAIRS = [
-    {"source": "Mgmt Network", "target": "test-nad-1"},
-    {"source": "VM Network", "target": "test-nad-2"},
-]
-
-# Hardcoded storage mapping pairs from vSphere inventory data
-VSPHERE_STORAGE_PAIRS = [
-    {"source": "nfs-us-mtv-v8", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    {"source": "nfs-us-virt", "target": "ocs-storagecluster-ceph-rbd"},
-    {"source": "datastore1", "target": "csi-manila-ceph"},
-    {"source": "mtv-nfs-us-v8", "target": "ocs-storagecluster-ceph-rbd-virtualization"},
-    {"source": "mtv-nfs-rhos-v8", "target": "ocs-storagecluster-ceph-rbd"},
-]
+from e2e.utils import (
+    wait_for_plan_ready,
+    generate_provider_name,
+    get_or_create_provider,
+)
+from e2e.test_constants import (
+    VSPHERE_TEST_VMS,
+    VSPHERE_NETWORK_PAIRS,
+    VSPHERE_STORAGE_PAIRS,
+    TARGET_PROVIDER_NAME,
+)
 
 
 @pytest.mark.create
@@ -53,7 +38,8 @@ class TestVSpherePlanCreationWithPairs:
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("VMware vSphere credentials not available in environment")
 
-        provider_name = "test-vsphere-plan-pairs-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("vsphere", creds["url"], skip_tls=True)
 
         # Create command with insecure skip TLS
         cmd_parts = [
@@ -68,17 +54,8 @@ class TestVSpherePlanCreationWithPairs:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_plan_with_mapping_pairs(self, test_namespace, vsphere_provider):
         """Test creating a migration plan with inline mapping pairs."""
@@ -99,7 +76,7 @@ class TestVSpherePlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {vsphere_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -140,7 +117,7 @@ class TestVSpherePlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {vsphere_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vms}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",
@@ -167,7 +144,9 @@ class TestVSpherePlanCreationWithPairs:
         plan_name = f"test-plan-vsphere-pod-pairs-{int(time.time())}"
 
         # Use pod network for all networks
-        network_pairs = ",".join([f"{n['source']}:default" for n in VSPHERE_NETWORK_PAIRS])
+        network_pairs = ",".join(
+            [f"{n['source']}:default" for n in VSPHERE_NETWORK_PAIRS]
+        )
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in VSPHERE_STORAGE_PAIRS]
         )
@@ -177,7 +156,7 @@ class TestVSpherePlanCreationWithPairs:
             "create plan",
             plan_name,
             f"--source {vsphere_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
             f"--network-pairs '{network_pairs}'",
             f"--storage-pairs '{storage_pairs}'",

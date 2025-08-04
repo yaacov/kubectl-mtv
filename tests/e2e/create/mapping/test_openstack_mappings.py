@@ -1,8 +1,7 @@
 """
 Test cases for kubectl-mtv network and storage mapping creation from OpenStack providers.
 
-This test validates the creation of network and storage mappings using OpenStack as the source provider
-and OpenShift as the target provider.
+This test validates the creation of network and storage mappings using OpenStack as the source provider.
 """
 
 import time
@@ -10,10 +9,12 @@ import time
 import pytest
 
 from e2e.utils import (
-    wait_for_provider_ready,
     wait_for_network_mapping_ready,
     wait_for_storage_mapping_ready,
+    generate_provider_name,
+    get_or_create_provider,
 )
+from e2e.test_constants import TARGET_PROVIDER_NAME
 
 
 # Hardcoded network names from OpenStack inventory data
@@ -55,7 +56,8 @@ class TestOpenStackMappingCreation:
         ):
             pytest.skip("OpenStack credentials not available in environment")
 
-        provider_name = "test-openstack-map-skip-verify"
+        # Generate provider name based on type and configuration
+        provider_name = generate_provider_name("openstack", creds["url"], skip_tls=True)
 
         # Create command with insecure skip TLS
         cmd_parts = [
@@ -75,17 +77,8 @@ class TestOpenStackMappingCreation:
 
         create_cmd = " ".join(cmd_parts)
 
-        # Create provider
-        result = test_namespace.run_mtv_command(create_cmd)
-        assert result.returncode == 0
-
-        # Track for cleanup
-        test_namespace.track_resource("provider", provider_name)
-
-        # Wait for provider to be ready
-        wait_for_provider_ready(test_namespace, provider_name)
-
-        return provider_name
+        # Create provider if it doesn't already exist
+        return get_or_create_provider(test_namespace, provider_name, create_cmd)
 
     def test_create_network_mapping_from_openstack(
         self, test_namespace, openstack_provider
@@ -103,7 +96,7 @@ class TestOpenStackMappingCreation:
             "create mapping network",
             mapping_name,
             f"--source {openstack_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--network-pairs '{network_pairs}'",
         ]
 
@@ -135,7 +128,7 @@ class TestOpenStackMappingCreation:
             "create mapping storage",
             mapping_name,
             f"--source {openstack_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             f"--storage-pairs '{storage_pairs}'",
         ]
 
@@ -160,7 +153,7 @@ class TestOpenStackMappingCreation:
             "create mapping network",
             mapping_name,
             f"--source {openstack_provider}",
-            "--target test-openshift-target",
+            f"--target {TARGET_PROVIDER_NAME}",
             "--network-pairs 'provider_net_shared:default'",
         ]
 
