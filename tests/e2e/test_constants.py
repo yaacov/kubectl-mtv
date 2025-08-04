@@ -32,19 +32,19 @@ OPENSHIFT_TEST_VMS = ["test-vm-1", "test-vm-2"]
 # VMware vSphere VM names
 VSPHERE_TEST_VMS = [
     "mtv-win2019-79-ceph-rbd-4-16",  # Windows VM
-    "mtv-func-rhel8-ameen",  # Linux VM
+    "mtv-rhel8-ameen",  # Linux VM (found in inventory - different from mtv-func-rhel8-ameen)
 ]
 
 # VMware ESXi VM names (same as vSphere)
 ESXI_TEST_VMS = [
     "mtv-win2019-79-ceph-rbd-4-16",  # Windows VM
-    "mtv-func-rhel8-ameen",  # Linux VM
+    "mtv-rhel8-ameen",  # Linux VM (found in inventory - different from mtv-func-rhel8-ameen)
 ]
 
 # Red Hat Virtualization (oVirt) VM names
 OVIRT_TEST_VMS = [
-    "mtv-func-rhel8-ameen-2-nic",  # Linux VM with multiple NICs
-    "mtv-win2019-79-shared-disk-4-16",  # Windows VM with shared disk
+    "vCenter8-02",  # Linux VM (found in inventory)
+    "mtv-win2019-79-ceph-rbd-4-16",  # Windows VM (reusing available one)
 ]
 
 # OVA VM names
@@ -54,7 +54,7 @@ OVA_TEST_VMS = [
 ]
 
 # OpenStack VM names
-OPENSTACK_TEST_VMS = ["infra-mtv-node-207", "infra-mtv-node-18"]
+OPENSTACK_TEST_VMS = ["infra-mtv-node-225", "qemtv-05-mlfp6-worker-0-vfww8"]
 
 # =============================================================================
 # NETWORK MAPPINGS BY PROVIDER TYPE
@@ -125,6 +125,9 @@ VSPHERE_STORAGE_PAIRS = [
         "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
     },
     {"source": "datastore1", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
+    {"source": "nfs-us-virt", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
+    {"source": "mtv-nfs-us-v8", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
+    {"source": "mtv-nfs-rhos-v8", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
 ]
 
 # ESXi storage mappings
@@ -135,7 +138,6 @@ ESXI_STORAGE_PAIRS = [
     },
     {"source": "datastore1", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
     {"source": "mtv-nfs-rhos-v8", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
-    {"source": "nfs-us", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
     {"source": "mtv-nfs-us-v8", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
 ]
 
