@@ -142,7 +142,7 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 		_, err = dynamicClient.Resource(client.ProvidersGVR).Namespace(namespace).Patch(
 			context.TODO(),
 			name,
-			types.StrategicMergePatchType,
+			types.MergePatchType,
 			patchBytes,
 			metav1.PatchOptions{},
 		)
