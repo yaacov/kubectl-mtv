@@ -16,7 +16,7 @@ import (
 )
 
 // Describe describes a migration plan
-func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string, withVMs bool) error {
+func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string, withVMs bool, useUTC bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -35,7 +35,7 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 	// Basic Information
 	fmt.Printf("%s %s\n", output.Bold("Name:"), output.Yellow(plan.GetName()))
 	fmt.Printf("%s %s\n", output.Bold("Namespace:"), output.Yellow(plan.GetNamespace()))
-	fmt.Printf("%s %s\n", output.Bold("Created:"), output.Yellow(plan.GetCreationTimestamp().String()))
+	fmt.Printf("%s %s\n", output.Bold("Created:"), output.Yellow(output.FormatTimestamp(plan.GetCreationTimestamp().Time, useUTC)))
 
 	// Get archived status
 	archived, exists, _ := unstructured.NestedBool(plan.Object, "spec", "archived")

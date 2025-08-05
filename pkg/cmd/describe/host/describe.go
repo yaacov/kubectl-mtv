@@ -14,7 +14,7 @@ import (
 )
 
 // Describe describes a migration host
-func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string) error {
+func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string, useUTC bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -33,7 +33,7 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 	// Basic Information
 	fmt.Printf("%s %s\n", output.Bold("Name:"), output.Yellow(host.GetName()))
 	fmt.Printf("%s %s\n", output.Bold("Namespace:"), output.Yellow(host.GetNamespace()))
-	fmt.Printf("%s %s\n", output.Bold("Created:"), output.Yellow(host.GetCreationTimestamp().String()))
+	fmt.Printf("%s %s\n", output.Bold("Created:"), output.Yellow(output.FormatTimestamp(host.GetCreationTimestamp().Time, useUTC)))
 
 	// Host Spec Information
 	if hostID, found, _ := unstructured.NestedString(host.Object, "spec", "id"); found {

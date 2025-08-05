@@ -3,10 +3,12 @@ package describe
 import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+
+	"github.com/yaacov/kubectl-mtv/cmd/get"
 )
 
 // NewDescribeCmd creates the describe command with all its subcommands
-func NewDescribeCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+func NewDescribeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() get.GlobalConfigGetter) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "describe",
 		Short:        "Describe resources",
@@ -14,11 +16,11 @@ func NewDescribeCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 		SilenceUsage: true,
 	}
 
-	cmd.AddCommand(NewPlanCmd(kubeConfigFlags))
-	cmd.AddCommand(NewVMCmd(kubeConfigFlags))
-	cmd.AddCommand(NewHostCmd(kubeConfigFlags))
-	cmd.AddCommand(NewHookCmd(kubeConfigFlags))
-	cmd.AddCommand(NewMappingCmd(kubeConfigFlags))
+	cmd.AddCommand(NewPlanCmd(kubeConfigFlags, getGlobalConfig))
+	cmd.AddCommand(NewVMCmd(kubeConfigFlags, getGlobalConfig))
+	cmd.AddCommand(NewHostCmd(kubeConfigFlags, getGlobalConfig))
+	cmd.AddCommand(NewHookCmd(kubeConfigFlags, getGlobalConfig))
+	cmd.AddCommand(NewMappingCmd(kubeConfigFlags, getGlobalConfig))
 
 	return cmd
 }

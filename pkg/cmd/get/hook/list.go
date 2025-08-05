@@ -75,7 +75,7 @@ func extractHookStatus(hook unstructured.Unstructured) string {
 }
 
 // createHookItem creates a standardized hook item for output
-func createHookItem(hook unstructured.Unstructured) map[string]interface{} {
+func createHookItem(hook unstructured.Unstructured, useUTC bool) map[string]interface{} {
 	item := map[string]interface{}{
 		"name":           hook.GetName(),
 		"namespace":      hook.GetNamespace(),
@@ -84,7 +84,7 @@ func createHookItem(hook unstructured.Unstructured) map[string]interface{} {
 		"deadline":       extractHookDeadline(hook),
 		"playbook":       extractHookPlaybookStatus(hook),
 		"status":         extractHookStatus(hook),
-		"created":        hook.GetCreationTimestamp().Format("2006-01-02 15:04:05"),
+		"created":        output.FormatTimestamp(hook.GetCreationTimestamp().Time, useUTC),
 		"object":         hook.Object, // Include the original object
 	}
 
@@ -92,7 +92,7 @@ func createHookItem(hook unstructured.Unstructured) map[string]interface{} {
 }
 
 // List lists hooks
-func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat string, hookName string) error {
+func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat string, hookName string, useUTC bool) error {
 	dynamicClient, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -108,10 +108,10 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat st
 
 	// If hookName is specified, get that specific hook
 	if hookName != "" {
-		allItems, err = getSpecificHook(dynamicClient, namespace, hookName)
+		allItems, err = getSpecificHook(dynamicClient, namespace, hookName, useUTC)
 	} else {
 		// Get all hooks
-		allItems, err = getAllHooks(dynamicClient, namespace)
+		allItems, err = getAllHooks(dynamicClient, namespace, useUTC)
 	}
 
 	// Handle error if no items found
@@ -131,7 +131,7 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat st
 }
 
 // getAllHooks retrieves all hooks from the given namespace
-func getAllHooks(dynamicClient dynamic.Interface, namespace string) ([]map[string]interface{}, error) {
+func getAllHooks(dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
 	hooks, err := dynamicClient.Resource(client.HooksGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list hooks: %v", err)
@@ -139,20 +139,20 @@ func getAllHooks(dynamicClient dynamic.Interface, namespace string) ([]map[strin
 
 	allItems := make([]map[string]interface{}, 0, len(hooks.Items))
 	for _, hook := range hooks.Items {
-		allItems = append(allItems, createHookItem(hook))
+		allItems = append(allItems, createHookItem(hook, useUTC))
 	}
 
 	return allItems, nil
 }
 
 // getSpecificHook retrieves a specific hook by name
-func getSpecificHook(dynamicClient dynamic.Interface, namespace string, hookName string) ([]map[string]interface{}, error) {
+func getSpecificHook(dynamicClient dynamic.Interface, namespace string, hookName string, useUTC bool) ([]map[string]interface{}, error) {
 	hook, err := dynamicClient.Resource(client.HooksGVR).Namespace(namespace).Get(context.TODO(), hookName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get hook '%s': %v", hookName, err)
 	}
 
-	allItems := []map[string]interface{}{createHookItem(*hook)}
+	allItems := []map[string]interface{}{createHookItem(*hook, useUTC)}
 	return allItems, nil
 }
 

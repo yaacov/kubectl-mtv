@@ -122,11 +122,11 @@ See [VDDK Setup Guide](docs/README_vddk.md) for detailed instructions.
 ## Features
 
 - **Multi-Platform Support**: Migrate from vSphere, oVirt, OpenStack, and OVA
-
 - **Flexible Mapping**: Use existing mappings, inline pairs, or automatic defaults
 - **Advanced Queries**: Filter and search inventory with powerful query language
 - **VDDK Support**: Optimized VMware disk transfers
 - **Real-time Monitoring**: Track migration progress live
+- **Timezone-Aware Display**: View timestamps in local time or UTC with `--use-utc` flag
 
 ## Documentation
 

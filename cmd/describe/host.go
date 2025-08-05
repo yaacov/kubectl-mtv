@@ -4,13 +4,14 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	"github.com/yaacov/kubectl-mtv/cmd/get"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/describe/host"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 )
 
 // NewHostCmd creates the host description command
-func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() get.GlobalConfigGetter) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "host NAME",
 		Short:             "Describe a migration host",
@@ -21,9 +22,12 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 			// Get name from positional argument
 			name := args[0]
 
+			// Get the global configuration
+			config := getGlobalConfig()
+
 			// Resolve the appropriate namespace based on context and flags
-			namespace := client.ResolveNamespace(kubeConfigFlags)
-			return host.Describe(kubeConfigFlags, name, namespace)
+			namespace := client.ResolveNamespace(config.GetKubeConfigFlags())
+			return host.Describe(config.GetKubeConfigFlags(), name, namespace, config.GetUseUTC())
 		},
 	}
 

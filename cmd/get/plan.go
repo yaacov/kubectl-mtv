@@ -40,7 +40,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return plan.List(config.GetKubeConfigFlags(), namespace, watch, outputFormatFlag.GetValue(), planName)
+			return plan.List(config.GetKubeConfigFlags(), namespace, watch, outputFormatFlag.GetValue(), planName, config.GetUseUTC())
 		},
 	}
 

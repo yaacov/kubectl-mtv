@@ -40,7 +40,7 @@ func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return hook.List(config.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hookName)
+			return hook.List(config.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hookName, config.GetUseUTC())
 		},
 	}
 
