@@ -10,6 +10,7 @@ import (
 type GlobalConfigGetter interface {
 	GetVerbosity() int
 	GetAllNamespaces() bool
+	GetUseUTC() bool
 	GetKubeConfigFlags() *genericclioptions.ConfigFlags
 }
 

@@ -39,6 +39,7 @@ kubectl mtv <command> --output table|json|yaml
 | `--output` | `-o` | Output format | `-o json` |
 | `--kubeconfig` | | Path to kubeconfig file | `--kubeconfig ~/.kube/config` |
 | `--context` | | Kubernetes context to use | `--context dev-cluster` |
+| `--use-utc` | | Format timestamps in UTC instead of local timezone | `--use-utc` |
 
 ## Provider Management
 
@@ -821,6 +822,43 @@ kubectl mtv get providers -o yaml
 
 # Save configuration to file
 kubectl mtv get plan my-plan -o yaml > my-plan.yaml
+```
+
+### Timestamp Formatting
+
+kubectl-mtv displays timestamps in table format with timezone-aware formatting:
+
+```bash
+# Default: Display timestamps in local timezone
+kubectl mtv get plans
+# Output: 2024-01-15 14:30:00  (local time)
+
+# UTC: Display timestamps in UTC
+kubectl mtv get plans --use-utc
+# Output: 2024-01-15 19:30:00  (UTC time)
+```
+
+#### Timezone Behavior
+
+- **Default (no flag)**: Timestamps are converted to your local system timezone
+- **`--use-utc` flag**: Timestamps are displayed in UTC (Coordinated Universal Time)
+- **Consistency**: All timestamps (creation, cutover, completion times) use the same timezone setting
+- **Format**: All timestamps use the format `YYYY-MM-DD HH:MM:SS`
+
+#### Examples
+
+```bash
+# View migration plans with local timestamps
+kubectl mtv get plans -n migration-namespace
+
+# View plans with UTC timestamps for coordination across timezones
+kubectl mtv get plans -n migration-namespace --use-utc
+
+# Describe a plan with UTC timestamps
+kubectl mtv describe plan my-migration --use-utc
+
+# Start a plan with cutover time shown in local timezone
+kubectl mtv start plan my-migration --cutover "2024-01-15T20:00:00Z"
 ```
 
 ## Common Workflows

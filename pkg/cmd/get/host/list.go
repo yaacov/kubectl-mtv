@@ -77,7 +77,7 @@ func extractHostStatus(host unstructured.Unstructured) string {
 }
 
 // createHostItem creates a standardized host item for output
-func createHostItem(host unstructured.Unstructured) map[string]interface{} {
+func createHostItem(host unstructured.Unstructured, useUTC bool) map[string]interface{} {
 	item := map[string]interface{}{
 		"name":      host.GetName(),
 		"namespace": host.GetNamespace(),
@@ -85,7 +85,7 @@ func createHostItem(host unstructured.Unstructured) map[string]interface{} {
 		"provider":  extractProviderName(host),
 		"ipAddress": extractHostIPAddress(host),
 		"status":    extractHostStatus(host),
-		"created":   host.GetCreationTimestamp().Format("2006-01-02 15:04:05"),
+		"created":   output.FormatTimestamp(host.GetCreationTimestamp().Time, useUTC),
 		"object":    host.Object, // Include the original object
 	}
 
@@ -100,7 +100,7 @@ func createHostItem(host unstructured.Unstructured) map[string]interface{} {
 }
 
 // List lists hosts
-func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat string, hostName string) error {
+func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat string, hostName string, useUTC bool) error {
 	dynamicClient, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -116,10 +116,10 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat st
 
 	// If hostName is specified, get that specific host
 	if hostName != "" {
-		allItems, err = getSpecificHost(dynamicClient, namespace, hostName)
+		allItems, err = getSpecificHost(dynamicClient, namespace, hostName, useUTC)
 	} else {
 		// Get all hosts
-		allItems, err = getAllHosts(dynamicClient, namespace)
+		allItems, err = getAllHosts(dynamicClient, namespace, useUTC)
 	}
 
 	// Handle error if no items found
@@ -139,7 +139,7 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat st
 }
 
 // getAllHosts retrieves all hosts from the given namespace
-func getAllHosts(dynamicClient dynamic.Interface, namespace string) ([]map[string]interface{}, error) {
+func getAllHosts(dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
 	hosts, err := dynamicClient.Resource(client.HostsGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list hosts: %v", err)
@@ -147,20 +147,20 @@ func getAllHosts(dynamicClient dynamic.Interface, namespace string) ([]map[strin
 
 	allItems := make([]map[string]interface{}, 0, len(hosts.Items))
 	for _, host := range hosts.Items {
-		allItems = append(allItems, createHostItem(host))
+		allItems = append(allItems, createHostItem(host, useUTC))
 	}
 
 	return allItems, nil
 }
 
 // getSpecificHost retrieves a specific host by name
-func getSpecificHost(dynamicClient dynamic.Interface, namespace string, hostName string) ([]map[string]interface{}, error) {
+func getSpecificHost(dynamicClient dynamic.Interface, namespace string, hostName string, useUTC bool) ([]map[string]interface{}, error) {
 	host, err := dynamicClient.Resource(client.HostsGVR).Namespace(namespace).Get(context.TODO(), hostName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get host '%s': %v", hostName, err)
 	}
 
-	allItems := []map[string]interface{}{createHostItem(*host)}
+	allItems := []map[string]interface{}{createHostItem(*host, useUTC)}
 	return allItems, nil
 }
 

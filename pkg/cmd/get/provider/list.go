@@ -62,7 +62,7 @@ func getSpecificProvider(dynamicClient dynamic.Interface, namespace, providerNam
 }
 
 // List lists providers
-func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string) error {
+func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string, useUTC bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)

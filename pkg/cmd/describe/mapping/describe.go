@@ -14,7 +14,7 @@ import (
 )
 
 // Describe describes a network or storage mapping
-func Describe(configFlags *genericclioptions.ConfigFlags, mappingType, name, namespace string) error {
+func Describe(configFlags *genericclioptions.ConfigFlags, mappingType, name, namespace string, useUTC bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -41,7 +41,7 @@ func Describe(configFlags *genericclioptions.ConfigFlags, mappingType, name, nam
 	// Basic Information
 	fmt.Printf("%s %s\n", output.Bold("Name:"), output.Yellow(mapping.GetName()))
 	fmt.Printf("%s %s\n", output.Bold("Namespace:"), output.Yellow(mapping.GetNamespace()))
-	fmt.Printf("%s %s\n", output.Bold("Created:"), output.Yellow(mapping.GetCreationTimestamp().String()))
+	fmt.Printf("%s %s\n", output.Bold("Created:"), output.Yellow(output.FormatTimestamp(mapping.GetCreationTimestamp().Time, useUTC)))
 
 	// Provider Information
 	if sourceProvider, found, _ := unstructured.NestedMap(mapping.Object, "spec", "provider", "source"); found {

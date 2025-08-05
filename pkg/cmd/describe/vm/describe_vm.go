@@ -17,14 +17,14 @@ import (
 )
 
 // DescribeVM describes a specific VM in a migration plan
-func DescribeVM(configFlags *genericclioptions.ConfigFlags, name, namespace, vmName string, watchMode bool) error {
+func DescribeVM(configFlags *genericclioptions.ConfigFlags, name, namespace, vmName string, watchMode bool, useUTC bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return describeVMOnce(configFlags, name, namespace, vmName)
+			return describeVMOnce(configFlags, name, namespace, vmName, useUTC)
 		}, 20*time.Second)
 	}
 
-	return describeVMOnce(configFlags, name, namespace, vmName)
+	return describeVMOnce(configFlags, name, namespace, vmName, useUTC)
 }
 
 // Helper function to truncate strings to a maximum length
@@ -36,7 +36,7 @@ func truncateString(s string, maxLen int) string {
 	return s[:maxLen-3] + "..."
 }
 
-func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace, vmName string) error {
+func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace, vmName string, useUTC bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -142,10 +142,10 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 		fmt.Printf("%s %s\n", output.Bold("New Name:"), output.Yellow(newName))
 	}
 	if started != "" {
-		fmt.Printf("%s %s\n", output.Bold("Started:"), planutil.FormatTime(started))
+		fmt.Printf("%s %s\n", output.Bold("Started:"), planutil.FormatTime(started, useUTC))
 	}
 	if completed != "" {
-		fmt.Printf("%s %s\n", output.Bold("Completed:"), planutil.FormatTime(completed))
+		fmt.Printf("%s %s\n", output.Bold("Completed:"), planutil.FormatTime(completed, useUTC))
 	}
 
 	// Print conditions
@@ -205,9 +205,9 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 
 			fmt.Printf("\n%s\n", output.Yellow(fmt.Sprintf("[%s] %s", output.Bold(phaseName), phaseDesc)))
 			fmt.Printf("%s %s\n", output.Bold("Status:"), output.ColorizeStatus(phaseStatus))
-			fmt.Printf("%s %s\n", output.Bold("Started:"), planutil.FormatTime(phaseStarted))
+			fmt.Printf("%s %s\n", output.Bold("Started:"), planutil.FormatTime(phaseStarted, useUTC))
 			if phaseCompleted != "" {
-				fmt.Printf("%s %s\n", output.Bold("Completed:"), planutil.FormatTime(phaseCompleted))
+				fmt.Printf("%s %s\n", output.Bold("Completed:"), planutil.FormatTime(phaseCompleted, useUTC))
 			}
 
 			// Print progress
@@ -278,8 +278,8 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 						taskName,
 						output.ColorizeStatus(taskPhase),
 						progress,
-						planutil.FormatTime(taskStarted),
-						planutil.FormatTime(taskCompleted),
+						planutil.FormatTime(taskStarted, useUTC),
+						planutil.FormatTime(taskCompleted, useUTC),
 					})
 				}
 

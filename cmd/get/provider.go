@@ -47,7 +47,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalCon
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return provider.List(config.GetKubeConfigFlags(), namespace, inventoryURL, outputFormatFlag.GetValue(), providerName)
+			return provider.List(config.GetKubeConfigFlags(), namespace, inventoryURL, outputFormatFlag.GetValue(), providerName, config.GetUseUTC())
 		},
 	}
 

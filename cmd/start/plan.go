@@ -7,13 +7,14 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	"github.com/yaacov/kubectl-mtv/cmd/get"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/start/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 )
 
 // NewPlanCmd creates the plan start command
-func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() get.GlobalConfigGetter) *cobra.Command {
 	var cutoverTimeStr string
 
 	cmd := &cobra.Command{
@@ -23,8 +24,11 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Get the global configuration
+			config := getGlobalConfig()
+
 			// Resolve the appropriate namespace based on context and flags
-			namespace := client.ResolveNamespace(kubeConfigFlags)
+			namespace := client.ResolveNamespace(config.GetKubeConfigFlags())
 
 			var cutoverTime *time.Time
 			if cutoverTimeStr != "" {
@@ -38,7 +42,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 
 			// Loop over each plan name and start it
 			for _, name := range args {
-				err := plan.Start(kubeConfigFlags, name, namespace, cutoverTime)
+				err := plan.Start(config.GetKubeConfigFlags(), name, namespace, cutoverTime, config.GetUseUTC())
 				if err != nil {
 					return err
 				}

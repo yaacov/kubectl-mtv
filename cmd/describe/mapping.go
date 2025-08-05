@@ -4,13 +4,14 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	"github.com/yaacov/kubectl-mtv/cmd/get"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/describe/mapping"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 )
 
 // NewMappingCmd creates the mapping description command with subcommands
-func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() get.GlobalConfigGetter) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "mapping",
 		Short:        "Describe mappings",
@@ -23,14 +24,14 @@ func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comman
 	}
 
 	// Add subcommands for network and storage
-	cmd.AddCommand(newDescribeNetworkMappingCmd(kubeConfigFlags))
-	cmd.AddCommand(newDescribeStorageMappingCmd(kubeConfigFlags))
+	cmd.AddCommand(newDescribeNetworkMappingCmd(kubeConfigFlags, getGlobalConfig))
+	cmd.AddCommand(newDescribeStorageMappingCmd(kubeConfigFlags, getGlobalConfig))
 
 	return cmd
 }
 
 // newDescribeNetworkMappingCmd creates the describe network mapping subcommand
-func newDescribeNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+func newDescribeNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() get.GlobalConfigGetter) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "network NAME",
 		Short:             "Describe a network mapping",
@@ -41,9 +42,12 @@ func newDescribeNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags
 			// Get name from positional argument
 			name := args[0]
 
+			// Get the global configuration
+			config := getGlobalConfig()
+
 			// Resolve the appropriate namespace based on context and flags
-			namespace := client.ResolveNamespace(kubeConfigFlags)
-			return mapping.Describe(kubeConfigFlags, "network", name, namespace)
+			namespace := client.ResolveNamespace(config.GetKubeConfigFlags())
+			return mapping.Describe(config.GetKubeConfigFlags(), "network", name, namespace, config.GetUseUTC())
 		},
 	}
 
@@ -51,7 +55,7 @@ func newDescribeNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags
 }
 
 // newDescribeStorageMappingCmd creates the describe storage mapping subcommand
-func newDescribeStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+func newDescribeStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() get.GlobalConfigGetter) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "storage NAME",
 		Short:             "Describe a storage mapping",
@@ -62,9 +66,12 @@ func newDescribeStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags
 			// Get name from positional argument
 			name := args[0]
 
+			// Get the global configuration
+			config := getGlobalConfig()
+
 			// Resolve the appropriate namespace based on context and flags
-			namespace := client.ResolveNamespace(kubeConfigFlags)
-			return mapping.Describe(kubeConfigFlags, "storage", name, namespace)
+			namespace := client.ResolveNamespace(config.GetKubeConfigFlags())
+			return mapping.Describe(config.GetKubeConfigFlags(), "storage", name, namespace, config.GetUseUTC())
 		},
 	}
 

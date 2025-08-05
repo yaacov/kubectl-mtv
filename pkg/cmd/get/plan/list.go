@@ -64,7 +64,7 @@ func getSpecificPlan(dynamicClient dynamic.Interface, namespace, planName string
 }
 
 // ListPlans lists migration plans without watch functionality
-func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, outputFormat string, planName string) error {
+func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, outputFormat string, planName string, useUTC bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -158,7 +158,7 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 					// Parse the cutover time string
 					cutoverTime, err := time.Parse(time.RFC3339, cutoverTimeStr)
 					if err == nil {
-						cutoverInfo = cutoverTime.Format("2006-01-02 15:04:05")
+						cutoverInfo = output.FormatTimestamp(cutoverTime, useUTC)
 					}
 				}
 			}
@@ -172,7 +172,7 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 			},
 			"source":   source,
 			"target":   target,
-			"created":  creationTime.Format("2006-01-02 15:04:05"),
+			"created":  output.FormatTimestamp(creationTime.Time, useUTC),
 			"vms":      vmStatus,
 			"ready":    fmt.Sprintf("%t", planDetails.IsReady),
 			"running":  fmt.Sprintf("%t", planDetails.RunningMigration != nil),
@@ -250,15 +250,15 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 }
 
 // List lists migration plans with optional watch mode
-func List(configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool, outputFormat string, planName string) error {
+func List(configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool, outputFormat string, planName string, useUTC bool) error {
 	if watchMode {
 		if outputFormat != "table" {
 			return fmt.Errorf("watch mode only supports table output format")
 		}
 		return watch.Watch(func() error {
-			return ListPlans(configFlags, namespace, outputFormat, planName)
+			return ListPlans(configFlags, namespace, outputFormat, planName, useUTC)
 		}, 15*time.Second)
 	}
 
-	return ListPlans(configFlags, namespace, outputFormat, planName)
+	return ListPlans(configFlags, namespace, outputFormat, planName, useUTC)
 }

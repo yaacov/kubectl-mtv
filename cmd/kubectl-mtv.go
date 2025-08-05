@@ -25,6 +25,7 @@ import (
 type GlobalConfig struct {
 	Verbosity       int
 	AllNamespaces   bool
+	UseUTC          bool
 	KubeConfigFlags *genericclioptions.ConfigFlags
 }
 
@@ -36,6 +37,11 @@ func (g *GlobalConfig) GetVerbosity() int {
 // GetAllNamespaces returns whether to list resources across all namespaces
 func (g *GlobalConfig) GetAllNamespaces() bool {
 	return g.AllNamespaces
+}
+
+// GetUseUTC returns whether to format times in UTC
+func (g *GlobalConfig) GetUseUTC() bool {
+	return g.UseUTC
 }
 
 // GetKubeConfigFlags returns the Kubernetes configuration flags
@@ -102,16 +108,17 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 	// Add global flags
 	rootCmd.PersistentFlags().IntVarP(&globalConfig.Verbosity, "verbose", "v", 0, "verbose output level (0=silent, 1=info, 2=debug, 3=trace)")
 	rootCmd.PersistentFlags().BoolVarP(&globalConfig.AllNamespaces, "all-namespaces", "A", false, "list resources across all namespaces")
+	rootCmd.PersistentFlags().BoolVar(&globalConfig.UseUTC, "use-utc", false, "format timestamps in UTC instead of local timezone")
 
 	// Add standard commands for various resources - directly using package functions
 	rootCmd.AddCommand(get.NewGetCmd(kubeConfigFlags, getGlobalConfigGetter))
 	rootCmd.AddCommand(delete.NewDeleteCmd(kubeConfigFlags))
 	rootCmd.AddCommand(create.NewCreateCmd(kubeConfigFlags))
-	rootCmd.AddCommand(describe.NewDescribeCmd(kubeConfigFlags))
+	rootCmd.AddCommand(describe.NewDescribeCmd(kubeConfigFlags, getGlobalConfigGetter))
 	rootCmd.AddCommand(patch.NewPatchCmd(kubeConfigFlags))
 
 	// Plan commands - directly using package functions
-	rootCmd.AddCommand(start.NewStartCmd(kubeConfigFlags))
+	rootCmd.AddCommand(start.NewStartCmd(kubeConfigFlags, getGlobalConfigGetter))
 	rootCmd.AddCommand(cancel.NewCancelCmd(kubeConfigFlags))
 	rootCmd.AddCommand(cutover.NewCutoverCmd(kubeConfigFlags))
 	rootCmd.AddCommand(archive.NewArchiveCmd(kubeConfigFlags))

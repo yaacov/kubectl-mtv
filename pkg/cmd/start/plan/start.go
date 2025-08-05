@@ -15,10 +15,11 @@ import (
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/plan/status"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/output"
 )
 
 // Start starts a migration plan
-func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string, cutoverTime *time.Time) error {
+func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string, cutoverTime *time.Time, useUTC bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -71,7 +72,7 @@ func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string, c
 		// For warm migrations without specified cutover, default to now + 1 hour
 		defaultTime := time.Now().Add(1 * time.Hour)
 		cutoverTime = &defaultTime
-		fmt.Printf("Warning: No cutover time specified for warm migration. Setting default cutover time to %s (1 hour from now).\n", cutoverTime.Format(time.RFC3339))
+		fmt.Printf("Warning: No cutover time specified for warm migration. Setting default cutover time to %s (1 hour from now).\n", output.FormatTimestamp(*cutoverTime, useUTC))
 	}
 
 	// Extract the plan's UID
@@ -124,7 +125,7 @@ func Start(configFlags *genericclioptions.ConfigFlags, name, namespace string, c
 
 	fmt.Printf("Migration started for plan '%s' in namespace '%s'\n", name, namespace)
 	if warm && cutoverTime != nil {
-		fmt.Printf("Cutover scheduled for: %s\n", cutoverTime.Format(time.RFC3339))
+		fmt.Printf("Cutover scheduled for: %s\n", output.FormatTimestamp(*cutoverTime, useUTC))
 	}
 	return nil
 }

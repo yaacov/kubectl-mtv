@@ -61,7 +61,7 @@ func newGetNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, get
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return mapping.List(config.GetKubeConfigFlags(), "network", namespace, outputFormatFlag.GetValue(), mappingName)
+			return mapping.List(config.GetKubeConfigFlags(), "network", namespace, outputFormatFlag.GetValue(), mappingName, config.GetUseUTC())
 		},
 	}
 
@@ -108,7 +108,7 @@ func newGetStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, get
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return mapping.List(config.GetKubeConfigFlags(), "storage", namespace, outputFormatFlag.GetValue(), mappingName)
+			return mapping.List(config.GetKubeConfigFlags(), "storage", namespace, outputFormatFlag.GetValue(), mappingName, config.GetUseUTC())
 		},
 	}
 

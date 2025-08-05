@@ -40,7 +40,7 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return host.List(config.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hostName)
+			return host.List(config.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hostName, config.GetUseUTC())
 		},
 	}
 
