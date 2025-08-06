@@ -34,7 +34,7 @@ Each VM entry in the list has the following structure:
 - **id**: (string) The provider-specific VM identifier (required).
 - **name**: (string) The VM's name in the source provider (required).
 - **hooks**: (array) List of migration hooks to apply to this VM (optional).
-- **luks**: (object) Reference to a Secret for disk decryption keys (optional).
+- **luks**: (object) Reference to a Kubernetes Secret containing LUKS disk decryption keys (optional).
 - **rootDisk**: (string) The primary disk to boot from (optional).
 - **instanceType**: (string) Override the VM's instance type in the target (optional).
 - **pvcNameTemplate**: (string) Go template for naming PVCs for this VM's disks (optional).
@@ -42,7 +42,28 @@ Each VM entry in the list has the following structure:
 - **networkNameTemplate**: (string) Go template for naming network interfaces (optional).
 - **targetName**: (string) Custom name for the VM in the target cluster (optional).
 
-See the code comments in the source for detailed template variable documentation.
+### Template Variables
+
+Each template type supports different Go template variables:
+
+**PVC Name Template Variables:**
+- `{{.VmName}}` - VM name
+- `{{.PlanName}}` - Migration plan name
+- `{{.DiskIndex}}` - Initial volume index of the disk
+- `{{.WinDriveLetter}}` - Windows drive letter (lowercase, requires guest agent)
+- `{{.RootDiskIndex}}` - Index of the root disk
+- `{{.Shared}}` - True if volume is shared by multiple VMs
+- `{{.FileName}}` - Source file name (vSphere only, requires guest agent)
+
+**Volume Name Template Variables:**
+- `{{.PVCName}}` - Name of the PVC mounted to the VM
+- `{{.VolumeIndex}}` - Sequential index of volume interface (0-based)
+
+**Network Name Template Variables:**
+- `{{.NetworkName}}` - Multus network attachment definition name (if applicable)
+- `{{.NetworkNamespace}}` - Namespace of network attachment definition (if applicable)
+- `{{.NetworkType}}` - Network type ("Multus" or "Pod")
+- `{{.NetworkIndex}}` - Sequential index of network interface (0-based)
 
 ## Editing the List
 

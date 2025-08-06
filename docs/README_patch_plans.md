@@ -34,9 +34,9 @@ kubectl-mtv patch plan PLAN_NAME [flags]
 | `--description` | Plan description | `Production migration batch 1` |
 | `--preserve-cluster-cpu-model` | Preserve CPU model from oVirt cluster | `true`, `false` |
 | `--preserve-static-ips` | Preserve static IPs in vSphere | `true`, `false` |
-| `--pvc-name-template` | Template for PVC names | `{{.Name}}-{{.DiskName}}-pvc` |
-| `--volume-name-template` | Template for volume interface names | `{{.Name}}-vol-{{.Index}}` |
-| `--network-name-template` | Template for network interface names | `{{.Name}}-nic-{{.Index}}` |
+| `--pvc-name-template` | Template for PVC names | `{{.VmName}}-disk-{{.DiskIndex}}` |
+| `--volume-name-template` | Template for volume interface names | `{{.PVCName}}-vol{{.VolumeIndex}}` |
+| `--network-name-template` | Template for network interface names | `{{.VmName}}-net{{.NetworkIndex}}` |
 | `--migrate-shared-disks` | Migrate shared disks | `true`, `false` |
 | `--archived` | Archive the plan | `true`, `false` |
 | `--pvc-name-template-use-generate-name` | Use generateName for PVCs | `true`, `false` |
@@ -108,9 +108,9 @@ kubectl-mtv patch plan distributed-app \
 ```bash
 # Set naming templates for all VMs in the plan
 kubectl-mtv patch plan production-migration \
-  --pvc-name-template "prod-{{.Name}}-{{.DiskName}}" \
-  --volume-name-template "prod-{{.Name}}-vol-{{.Index}}" \
-  --network-name-template "prod-{{.Name}}-net-{{.Index}}"
+  --pvc-name-template "prod-{{.VmName}}-disk-{{.DiskIndex}}" \
+  --volume-name-template "vol-{{.VolumeIndex}}-{{.PVCName}}" \
+  --network-name-template "{{.VmName}}-net{{.NetworkIndex}}"
 
 # Configure vSphere-specific settings
 kubectl-mtv patch plan vsphere-migration \
@@ -135,7 +135,7 @@ kubectl-mtv patch plan legacy-app-migration \
 ```bash
 # Configure PVC generation behavior
 kubectl-mtv patch plan storage-migration \
-  --pvc-name-template "{{.Name}}-storage-{{.DiskName}}" \
+  --pvc-name-template "{{.VmName}}-storage-{{.DiskIndex}}" \
   --pvc-name-template-use-generate-name=false
 
 # Archive completed plans
@@ -159,10 +159,10 @@ kubectl-mtv patch plan-vms PLAN_NAME VM_NAME [flags]
 | `--target-name` | Custom VM name in target cluster | `production-web-server-01` |
 | `--root-disk` | Primary boot disk identifier | `disk-1`, `hard-disk-1` |
 | `--instance-type` | VM instance type override | `m5.large`, `Standard_D4s_v3` |
-| `--pvc-name-template` | PVC naming template | `{{.Name}}-{{.DiskName}}-pvc` |
-| `--volume-name-template` | Volume interface naming template | `{{.Name}}-vol-{{.Index}}` |
-| `--network-name-template` | Network interface naming template | `{{.Name}}-nic-{{.Index}}` |
-| `--luks-secret` | Secret for disk decryption | `vm-encryption-keys` |
+| `--pvc-name-template` | PVC naming template | `{{.VmName}}-disk-{{.DiskIndex}}` |
+| `--volume-name-template` | Volume interface naming template | `{{.PVCName}}-vol{{.VolumeIndex}}` |
+| `--network-name-template` | Network interface naming template | `{{.VmName}}-nic{{.NetworkIndex}}` |
+| `--luks-secret` | Kubernetes Secret name containing LUKS disk decryption keys | `vm-encryption-keys` |
 | `--add-pre-hook` | Add a pre-migration hook | `data-backup-hook` |
 | `--add-post-hook` | Add a post-migration hook | `cleanup-hook` |
 | `--remove-hook` | Remove a hook by name | `old-hook-name` |
@@ -170,12 +170,26 @@ kubectl-mtv patch plan-vms PLAN_NAME VM_NAME [flags]
 
 ### Template Variables
 
-The template fields support Go template syntax with these variables:
+The template fields support Go template syntax with different variables for each template type:
 
-- `{{.Name}}` - VM name
-- `{{.DiskName}}` - Disk name/identifier
-- `{{.Index}}` - Interface index number
-- `{{.Namespace}}` - Target namespace
+**PVC Name Template Variables:**
+- `{{.VmName}}` - VM name
+- `{{.PlanName}}` - Migration plan name
+- `{{.DiskIndex}}` - Initial volume index of the disk
+- `{{.WinDriveLetter}}` - Windows drive letter (lowercase, requires guest agent)
+- `{{.RootDiskIndex}}` - Index of the root disk
+- `{{.Shared}}` - True if volume is shared by multiple VMs
+- `{{.FileName}}` - Source file name (vSphere only, requires guest agent)
+
+**Volume Name Template Variables:**
+- `{{.PVCName}}` - Name of the PVC mounted to the VM
+- `{{.VolumeIndex}}` - Sequential index of volume interface (0-based)
+
+**Network Name Template Variables:**
+- `{{.NetworkName}}` - Multus network attachment definition name (if applicable)
+- `{{.NetworkNamespace}}` - Namespace of network attachment definition (if applicable)
+- `{{.NetworkType}}` - Network type ("Multus" or "Pod")
+- `{{.NetworkIndex}}` - Sequential index of network interface (0-based)
 
 ### Usage Examples
 
@@ -198,13 +212,13 @@ kubectl-mtv patch plan-vms my-plan database-vm \
 ```bash
 # Set PVC naming template
 kubectl-mtv patch plan-vms my-plan app-server \
-  --pvc-name-template "{{.Name}}-storage-{{.DiskName}}"
+  --pvc-name-template "{{.VmName}}-storage-{{.DiskIndex}}"
 
 # Configure all naming templates
 kubectl-mtv patch plan-vms production-plan web-vm \
-  --pvc-name-template "prod-{{.Name}}-{{.DiskName}}-pvc" \
-  --volume-name-template "prod-{{.Name}}-vol-{{.Index}}" \
-  --network-name-template "prod-{{.Name}}-net-{{.Index}}"
+  --pvc-name-template "prod-{{.VmName}}-disk-{{.DiskIndex}}" \
+  --volume-name-template "prod-vol{{.VolumeIndex}}-{{.PVCName}}" \
+  --network-name-template "prod-{{.VmName}}-net{{.NetworkIndex}}"
 ```
 
 #### Set Encryption Configuration
@@ -224,7 +238,7 @@ kubectl-mtv patch plan-vms enterprise-migration critical-app-vm \
   --target-name prod-critical-app-01 \
   --instance-type c5.2xlarge \
   --root-disk "disk-0" \
-  --pvc-name-template "{{.Name}}-{{.DiskName}}-storage" \
+  --pvc-name-template "{{.VmName}}-disk{{.DiskIndex}}-storage" \
   --luks-secret app-encryption-keys
 ```
 
@@ -284,7 +298,7 @@ VMS=("web-01" "web-02" "api-server" "database")
 for vm in "${VMS[@]}"; do
   kubectl-mtv patch plan-vms "$PLAN_NAME" "$vm" \
     --target-name "prod-${vm}" \
-    --pvc-name-template "prod-{{.Name}}-{{.DiskName}}" \
+    --pvc-name-template "prod-{{.VmName}}-disk{{.DiskIndex}}" \
     --instance-type "m5.large"
 done
 ```
@@ -323,11 +337,11 @@ kubectl-mtv patch plan production-migration \
 
 ```yaml
 # Good: Descriptive and consistent
-pvc-name-template: "{{.Name}}-storage-{{.DiskName}}"
-volume-name-template: "{{.Name}}-vol-{{.Index}}"
+pvc-name-template: "{{.VmName}}-storage-{{.DiskIndex}}"
+volume-name-template: "{{.PVCName}}-vol{{.VolumeIndex}}"
 
 # Avoid: Generic or conflicting names
-pvc-name-template: "pvc-{{.Index}}"  # Too generic
+pvc-name-template: "pvc-{{.DiskIndex}}"  # Too generic
 ```
 
 ### 3. Namespace Management
@@ -457,7 +471,7 @@ kubectl-mtv describe plan my-plan
 ```bash
 # Test template rendering (conceptual)
 kubectl-mtv patch plan-vms my-plan test-vm \
-  --pvc-name-template "test-{{.Name}}-{{.DiskName}}" \
+  --pvc-name-template "test-{{.VmName}}-disk{{.DiskIndex}}" \
   --dry-run
 ```
 
