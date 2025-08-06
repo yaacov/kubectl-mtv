@@ -92,6 +92,57 @@ For other MCP-compatible applications, use this general configuration format:
 }
 ```
 
+## HTTP Server Mode (Alternative Setup)
+
+Instead of using STDIO transport (where each client spawns its own server process), you can run the MCP server as a persistent HTTP service. This is useful for:
+
+- **Multiple clients** connecting to the same server instance
+- **Remote access** to the MCP server over the network
+- **Production deployments** where you want a long-running service
+- **Docker/container environments** where HTTP is preferred
+
+### Setting Up HTTP Server
+
+1. **Start the HTTP server**:
+   ```bash
+   # Default: localhost:8000
+   python kubectl_mtv_server.py --transport http
+   
+   # Custom host/port
+   python kubectl_mtv_server.py --transport http --host 0.0.0.0 --port 9000
+   
+   # With debug logging
+   python kubectl_mtv_server.py --transport http --log-level debug
+   ```
+
+2. **Configure your MCP client** to use HTTP transport:
+   - **Easy way**: Use `http-server-config-generated.json` (after running `python generate_config.py`)
+   - **Manual way**: Use this configuration format:
+
+   ```json
+   {
+     "mcpServers": {
+       "kubectl-mtv": {
+         "transport": "http",
+         "url": "http://127.0.0.1:8000/mcp",
+         "description": "kubectl-mtv MCP server running as HTTP service"
+       }
+     }
+   }
+   ```
+
+3. **Restart your MCP client**.
+
+### HTTP Server Options
+
+Available command-line options for HTTP mode:
+
+- `--transport http` - Enable HTTP transport
+- `--host HOST` - Host to bind to (default: 127.0.0.1)
+- `--port PORT` - Port to bind to (default: 8000)
+- `--path PATH` - Endpoint path (default: /mcp)
+- `--log-level LEVEL` - Log level (debug, info, warning, error)
+
 ## Security Considerations
 
 - The MCP server executes kubectl-mtv commands with your current Kubernetes permissions
