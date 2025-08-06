@@ -8,8 +8,17 @@ logged into a Kubernetes cluster with MTV deployed.
 
 MTV Context:
 - MTV helps migrate VMs from other KubeVirt clusters, vSphere, oVirt, OpenStack, and OVA files to KubeVirt
-- Typical workflow: Provider -> Inventory Discovery -> Mappings -> Plans -> Migration
 - These tools provide comprehensive read-only discovery, monitoring and troubleshooting capabilities
+
+Typical Workflow (using write tools):
+1. Create Providers: connect to source/target environments
+2. Inventory Discovery: explore available VMs, networks, storage
+3. Create Mappings: define network and storage mappings
+4. Create Plans: select VMs using list_inventory_vms(output_format="planvms") and configure migration settings
+
+Let the user edit the plan if needed.
+5. Start Migration: execute the migration
+6. Monitor Progress: track status and troubleshoot issues
 
 Tool Categories:
 - Provider Management: list_providers
@@ -18,6 +27,13 @@ Tool Categories:
 - Version Information: get_version for deployment details
 - Debugging: get_logs for troubleshooting MTV controller and importer pod issues
 - Storage Debugging: get_migration_pvcs, get_migration_datavolumes, get_migration_storage for tracking VM migration storage
+
+Integration with Write Tools:
+Use these read tools to discover and prepare data, then use write tools to create/modify resources:
+- list_inventory_vms(output_format="planvms") output can be used directly with create_plan(vms="@file.yaml")
+- get_plan_vms() shows migration status for troubleshooting with cancel_plan()
+- list_inventory_networks/storage() help identify mappings for create_*_mapping() tools
+- Use output_format="planvms" specifically for plan VM selection (minimal VM structures)
 """
 
 import os
@@ -367,10 +383,21 @@ async def list_inventory_vms(
         provider_name: Name of the provider to query
         namespace: Kubernetes namespace containing the provider (optional)
         query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
-        output_format: Output format (json, yaml, or table)
+        output_format: Output format (json, yaml, table, or planvms)
         
     Returns:
-        JSON/YAML formatted VM inventory or table output
+        VM inventory in the specified format:
+        - json/yaml: Full VM inventory objects with all details
+        - table: Human-readable table format
+        - planvms: Minimal VM structures (name + id only) in YAML format for plan creation
+        
+    Integration with Write Tools:
+        For create_plan() - use planvms format for direct compatibility:
+        1. Query VMs: list_inventory_vms("my-provider", output_format="planvms", query="WHERE powerState = 'poweredOn'")
+        2. Save YAML output to file: vm-list.yaml
+        3. Create plan: create_plan("my-plan", "my-provider", vms="@vm-list.yaml")
+        
+        For cancel_plan() - extract VM names from any format into a separate JSON/YAML array file
     """
     return await _list_inventory({
         "provider_name": provider_name,
@@ -668,15 +695,16 @@ async def list_inventory_generic(
     OVA: vm, network, storage
     
     QUERY SYNTAX:
-    All inventory tools support SQL-like queries with:
+    All inventory tools support SQL-like queries with Tree Search Language (TSL):
     - SELECT field1, field2 AS alias, function(field3) AS name
-    - WHERE condition (using Tree Search Language - TSL)
+    - WHERE condition (using TSL operators and functions)
     - ORDER BY field1 [ASC|DESC], field2
     - LIMIT n
     
-    OPERATORS: =, !=, <, <=, >, >=, LIKE, ILIKE, ~= (regex), IN, BETWEEN, AND, OR, NOT
-    FUNCTIONS: sum(), len(), any(), all()
-    LITERALS: strings ('text'), numbers (1024, 2.5Gi), dates ('2023-01-01'), booleans (true/false)
+    TSL OPERATORS: =, !=, <, <=, >, >=, LIKE, ILIKE, ~= (regex), IN, BETWEEN, AND, OR, NOT
+    TSL FUNCTIONS: sum(), len(), any(), all()
+    TSL LITERALS: strings ('text'), numbers (1024, 2.5Gi), dates ('2023-01-01'), booleans (true/false)
+    TSL ARRAY ACCESS: Use [*] for array elements, dot notation for nested fields (e.g., disks[*].capacity, parent.name)
     
     EXAMPLE QUERIES FOR SPECIALIZED RESOURCES:
     
@@ -1153,6 +1181,12 @@ async def get_plan_vms(
         
     Returns:
         JSON/YAML formatted VM status information or table output
+        
+    Integration with Write Tools:
+        Use this tool to monitor migration progress and troubleshoot:
+        1. Monitor progress: get_plan_vms("my-plan") 
+        2. Cancel problematic VMs: cancel_plan("my-plan", "failed-vm1,stuck-vm2")
+        3. Get detailed logs: get_logs("importer", plan_id="...", migration_id="...", vm_id="...")
     """
     args = ["get", "plan-vms", plan_name]
     

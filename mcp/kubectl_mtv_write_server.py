@@ -20,6 +20,14 @@ Tool Categories:
 - Resource Deletion: delete_provider, delete_mapping, delete_plan, delete_host, delete_hook  
 - Resource Modification: patch_provider, patch_mapping, patch_plan
 - Plan Lifecycle: start_plan, cancel_plan, cutover_plan, archive_plan, unarchive_plan
+
+Integration with Read Tools:
+Use read tools to discover and analyze data before making changes:
+- Use list_inventory_vms(output_format="planvms") to get VM structures for create_plan(vms="@file.yaml")
+- Use list_inventory_networks/storage() to identify available resources for mappings
+- Use get_plan_vms() to monitor progress and identify VMs for cancel_plan()
+- Use list_providers() to verify provider status before creating plans
+- Use get_logs() for troubleshooting failed operations
 """
 
 import os
@@ -131,6 +139,21 @@ async def cancel_plan(
     - Comma-separated list: "vm1,vm2,vm3"
     - File reference: "@filename" to load VM names from JSON/YAML file
     
+    File Format (@filename):
+    For cancel_plan, files should contain JSON/YAML arrays of VM name strings:
+    
+    JSON format: ["vm-name-1", "vm-name-2", "vm-name-3"]
+    YAML format:
+      - vm-name-1
+      - vm-name-2
+      - vm-name-3
+    
+    Integration with read tools:
+    1. Use list_inventory_vms() to get available VMs
+    2. Extract VM names from the output 
+    3. Create JSON/YAML file with name strings
+    4. Use file: "@vm-names.json" or "@vm-names.yaml"
+    
     Cancellation Effects:
     - Stops in-progress disk transfers for the specified VMs
     - Releases resources allocated for cancelled VM migrations
@@ -139,7 +162,7 @@ async def cancel_plan(
     
     Args:
         plan_name: Name of the migration plan containing VMs to cancel (required)
-        vms: VM names to cancel - comma-separated list or @filename (required)
+        vms: VM names to cancel - comma-separated list or @filename for JSON/YAML file with VM name strings (required)
         namespace: Kubernetes namespace containing the plan (optional)
         
     Returns:
@@ -149,8 +172,8 @@ async def cancel_plan(
         # Cancel specific VMs by name
         cancel_plan("production-migration", "webserver-01,database-02,cache-03")
         
-        # Cancel VMs listed in file
-        cancel_plan("production-migration", "@/path/to/vms-to-cancel.yaml")
+        # Cancel VMs listed in JSON/YAML file
+        cancel_plan("production-migration", "@vms-to-cancel.json")
         
         # Cancel single VM
         cancel_plan("production-migration", "problematic-vm")
@@ -274,8 +297,12 @@ async def create_provider(
     
     Security Notes:
     - Use cacert parameter with certificate content or prefix with @ to load from file
-    - Set insecure_skip_tls=True to skip TLS verification (not recommended for production)
+    - Set insecure_skip_tls=True to skip TLS verification (not recommended for production)  
     - For existing secrets, use the secret parameter instead of credentials
+    
+    Certificate Loading Examples:
+    - Direct content: cacert="-----BEGIN CERTIFICATE-----\n..."
+    - From file: cacert="@/path/to/ca-cert.pem"
     
     vSphere-Specific Options:
     - sdk_endpoint: Set to 'esxi' for direct ESXi connection, 'vcenter' for vCenter (default)
@@ -522,13 +549,57 @@ async def create_plan(
     Migration plans define which VMs to migrate and all the configuration for how they should be migrated.
     Plans coordinate providers, mappings, VM selection, and migration behavior.
     
+    Automatic Behaviors:
+    - Target provider: If not specified, uses first available OpenShift provider automatically
+    - Target namespace: If not specified, uses the plan's namespace
+    - Network/Storage mappings: Auto-created if not provided or specified as pairs
+    - VM validation: All VMs are validated against provider inventory before plan creation
+    - Missing VM handling: VMs not found in provider are automatically removed with warnings
+    
     VM Selection Options:
-    - vms: Comma-separated VM names or @filename for YAML/JSON file with VM list
+    - vms: Comma-separated VM names OR @filename for YAML/JSON file with VM structures
+    - Both approaches support automatic ID resolution from provider inventory
+    
+    VM Selection Examples:
+    - Comma-separated: "web-server-01,database-02,cache-03"
+    - File-based: "@vm-list.yaml" or "@vm-list.json"
+    
+    File Format (@filename):
+    Files can contain VM structures in YAML or JSON format. VM IDs are optional and will be 
+    auto-resolved from inventory if not provided:
+    
+    YAML format (minimal - names only):
+    - name: vm1
+    - name: vm2
+    - name: vm3
+    
+    YAML format (with IDs - from planvms output):
+    - name: vm1
+      id: vm-123
+    - name: vm2
+      id: vm-456
+    
+    JSON format (equivalent):
+    [
+      {"name": "vm1"},
+      {"name": "vm2", "id": "vm-456"}
+    ]
+    
+    Integration with read tools:
+    1. Use list_inventory_vms(output_format="planvms") to get complete VM structures
+    2. Save the YAML output to a file: vm-list.yaml
+    3. Edit file to select desired VMs (optional)
+    4. Use file: vms="@vm-list.yaml"
+    
+    Alternative: Create minimal files with just VM names, IDs will be auto-resolved
     
     Migration Types:
     - cold: VMs are shut down during migration (default, most reliable)
     - warm: Initial copy while VM runs, brief downtime for final sync
     - live: Minimal downtime migration (advanced, limited compatibility)
+    
+    Note: Both migration_type and warm parameters are supported. If both are specified,
+    migration_type takes precedence over the warm flag.
     
     Target Power State Options:
     - on: Start VMs after migration
@@ -536,45 +607,83 @@ async def create_plan(
     - auto: Match source VM power state (default)
     
     Template Variables:
-    Templates support Go template syntax with VM context:
-    - {{.VM.Name}} - VM name
-    - {{.VM.ID}} - VM identifier
-    - Use templates for consistent naming across migrated resources
+    Templates support Go template syntax with different variables for each template type:
+    
+    PVC Name Template Variables:
+    - {{.VmName}} - VM name
+    - {{.PlanName}} - Migration plan name
+    - {{.DiskIndex}} - Initial volume index of the disk
+    - {{.WinDriveLetter}} - Windows drive letter (lowercase, requires guest agent)
+    - {{.RootDiskIndex}} - Index of the root disk
+    - {{.Shared}} - True if volume is shared by multiple VMs
+    - {{.FileName}} - Source file name (vSphere only, requires guest agent)
+    
+    Volume Name Template Variables:
+    - {{.PVCName}} - Name of the PVC mounted to the VM
+    - {{.VolumeIndex}} - Sequential index of volume interface (0-based)
+    
+    Network Name Template Variables:
+    - {{.NetworkName}} - Multus network attachment definition name (if applicable)
+    - {{.NetworkNamespace}} - Namespace of network attachment definition (if applicable)
+    - {{.NetworkType}} - Network type ("Multus" or "Pod")
+    - {{.NetworkIndex}} - Sequential index of network interface (0-based)
+    
+    Template Examples:
+    - PVC: "{{.VmName}}-disk-{{.DiskIndex}}" → "web-server-01-disk-0"
+    - PVC: "{{if eq .DiskIndex .RootDiskIndex}}root{{else}}data{{end}}-{{.DiskIndex}}" → "root-0"
+    - PVC: "{{if .Shared}}shared-{{end}}{{.VmName}}-{{.DiskIndex}}" → "shared-web-server-01-0"
+    - Volume: "disk-{{.VolumeIndex}}" → "disk-0" 
+    - Volume: "pvc-{{.PVCName}}" → "pvc-web-server-01-disk-0"
+    - Network: "net-{{.NetworkIndex}}" → "net-0"
+    - Network: "{{if eq .NetworkType \"Pod\"}}pod{{else}}multus-{{.NetworkIndex}}{{end}}" → "pod"
     
     Args:
         plan_name: Name for the new migration plan (required)
         source_provider: Name of the source provider to migrate from (required)
         namespace: Kubernetes namespace to create the plan in (optional)
-        target_provider: Name of the target provider to migrate to (optional, defaults to destination cluster)
-        network_mapping: Name of existing network mapping to use (optional)
-        storage_mapping: Name of existing storage mapping to use (optional)
-        network_pairs: Network mapping pairs - 'source:target-namespace/target-network' format (optional)
-        storage_pairs: Storage mapping pairs - 'source:storage-class' format (optional)
-        vms: VM names (comma-separated) or @filename for VM list file (optional)
+        target_provider: Name of the target provider to migrate to (optional, auto-detects first OpenShift provider if not specified)
+        network_mapping: Name of existing network mapping to use (optional, auto-created if not provided)
+        storage_mapping: Name of existing storage mapping to use (optional, auto-created if not provided)
+        network_pairs: Network mapping pairs - 'source:target-namespace/target-network' format (optional, creates mapping if provided)
+        storage_pairs: Storage mapping pairs - 'source:storage-class' format (optional, creates mapping if provided)
+        vms: VM names (comma-separated) or @filename for YAML/JSON file with VM structures (optional)
         pre_hook: Pre-migration hook to add to all VMs (optional)
         post_hook: Post-migration hook to add to all VMs (optional)
         description: Plan description (optional)
-        target_namespace: Target namespace for migrated VMs (optional)
+        target_namespace: Target namespace for migrated VMs (optional, defaults to plan namespace)
         transfer_network: Network attachment definition for VM data transfer (optional)
         preserve_cluster_cpu_model: Preserve CPU model and flags from oVirt cluster (optional, default False)
         preserve_static_ips: Preserve static IPs of vSphere VMs (optional, default False)
         pvc_name_template: Template for generating PVC names for VM disks (optional)
         volume_name_template: Template for generating volume interface names (optional)
         network_name_template: Template for generating network interface names (optional)
-        migrate_shared_disks: Whether to migrate shared disks (optional, default True)
+        migrate_shared_disks: Whether to migrate shared disks (optional, default True, auto-patched if False)
         archived: Whether plan should be archived (optional, default False)
-        pvc_name_template_use_generate_name: Use generateName for PVC template (optional, default True)
+        pvc_name_template_use_generate_name: Use generateName for PVC template (optional, default True, auto-patched if False)
         delete_guest_conversion_pod: Delete conversion pod after migration (optional, default False)
         skip_guest_conversion: Skip guest conversion process (optional, default False)
+        use_compatibility_mode: Use compatibility devices when skipping conversion (optional, default True, auto-patched if False)
         install_legacy_drivers: Install legacy Windows drivers - 'true'/'false' (optional)
         migration_type: Migration type - 'cold', 'warm', or 'live' (optional)
         default_target_network: Default target network - 'default' for pod networking (optional)
         default_target_storage_class: Default target storage class (optional)
-        use_compatibility_mode: Use compatibility devices when skipping conversion (optional, default True)
         target_labels: Target VM labels - 'key1=value1,key2=value2' format (optional)
         target_node_selector: Target node selector - 'key1=value1,key2=value2' format (optional)
         warm: Enable warm migration - prefer migration_type parameter (optional, default False)
         target_affinity: Target affinity using KARL syntax (optional)
+            KARL (Kubernetes Affinity Rule Language) provides human-readable syntax for pod scheduling rules.
+            
+            KARL Rule Syntax: [RULE_TYPE] pods([SELECTORS]) on [TOPOLOGY]
+            - Rule Types: REQUIRE, PREFER, AVOID, REPEL
+            - Target: Only pods() supported (no node affinity)
+            - Topology: node, zone, region, rack
+            - No AND/OR logic support (single rule only)
+            
+            KARL Examples:
+            - 'REQUIRE pods(app=database) on node' - Co-locate with database pods
+            - 'PREFER pods(tier=web) on zone' - Prefer same zone as web pods
+            - 'AVOID pods(app=cache) on node' - Separate from cache pods on same node
+            - 'REPEL pods(workload=heavy) on zone weight=80' - Soft avoid in same zone
         target_power_state: Target power state - 'on', 'off', or 'auto' (optional)
         inventory_url: Base URL for inventory service (optional, auto-discovered if not provided)
         
@@ -582,11 +691,12 @@ async def create_plan(
         Command output confirming plan creation
         
     Examples:
-        # Create basic plan
+        # Create basic plan (auto-detects target provider, creates mappings)
         create_plan("my-plan", "vsphere-provider")
         
-        # Create comprehensive plan
+        # Create comprehensive plan with explicit settings
         create_plan("my-plan", "vsphere-provider", 
+                   target_provider="openshift-target",
                    target_namespace="migrated-vms",
                    vms="vm1,vm2,vm3",
                    migration_type="warm",
@@ -594,6 +704,26 @@ async def create_plan(
                    storage_pairs="fast-datastore:ocs-storagecluster-ceph-rbd",
                    target_power_state="on",
                    description="Production VM migration")
+        
+        # Plan with comma-separated VM names
+        create_plan("my-plan", "vsphere-provider",
+                   vms="vm1,vm2,vm3")  # VMs identified by name, IDs auto-resolved
+        
+        # Plan with file-based VM selection (from planvms output)
+        create_plan("my-plan", "vsphere-provider",
+                   vms="@vm-list.yaml",  # from list_inventory_vms(output_format="planvms")
+                   network_mapping="existing-net-map",
+                   storage_mapping="existing-storage-map")
+        
+        # Plan with minimal file (names only, IDs auto-resolved)
+        create_plan("my-plan", "vsphere-provider",
+                   vms="@vm-names.yaml")  # YAML with just VM names
+        
+        # Create plan with KARL affinity rules  
+        create_plan("db-plan", "vsphere-provider",
+                   vms="database-vm",
+                   target_affinity="REQUIRE pods(app=database) on node",
+                   description="Co-locate with existing database pods")
     """
     args = ["create", "plan", plan_name]
     
@@ -1266,8 +1396,9 @@ async def patch_plan(
     - False: Set to false
     
     Migration Types:
-    - cold: Traditional migration with VM shutdown
-    - warm: Warm migration with reduced downtime
+    - cold: Traditional migration with VM shutdown (most reliable)
+    - warm: Warm migration with reduced downtime (initial copy while VM runs)
+    - live: Minimal downtime migration (advanced, limited compatibility)
     
     Target Power State:
     - on: Start VMs after migration
@@ -1284,11 +1415,24 @@ async def patch_plan(
         namespace: Kubernetes namespace containing the plan (optional)
         transfer_network: Network to use for transferring VM data (optional)
         install_legacy_drivers: Install legacy drivers - 'true', 'false', or empty for auto (optional)
-        migration_type: Migration type - 'cold' or 'warm' (optional)
+        migration_type: Migration type - 'cold', 'warm', or 'live' (optional)
         target_labels: Target VM labels - 'key=value,key2=value2' format (optional)
         target_node_selector: Target node selector - 'key=value,key2=value2' format (optional)
         use_compatibility_mode: Use compatibility mode for migration (optional)
         target_affinity: Target affinity using KARL syntax (optional)
+            KARL (Kubernetes Affinity Rule Language) provides human-readable syntax for pod scheduling rules.
+            
+            KARL Rule Syntax: [RULE_TYPE] pods([SELECTORS]) on [TOPOLOGY]
+            - Rule Types: REQUIRE, PREFER, AVOID, REPEL
+            - Target: Only pods() supported (no node affinity)
+            - Topology: node, zone, region, rack
+            - No AND/OR logic support (single rule only)
+            
+            KARL Examples:
+            - 'REQUIRE pods(app=database) on node' - Co-locate with database pods
+            - 'PREFER pods(tier=web) on zone' - Prefer same zone as web pods
+            - 'AVOID pods(app=cache) on node' - Separate from cache pods on same node
+            - 'REPEL pods(workload=heavy) on zone weight=80' - Soft avoid in same zone
         target_namespace: Target namespace for migrated VMs (optional)
         target_power_state: Target power state - 'on', 'off', or 'auto' (optional)
         description: Plan description (optional)
@@ -1314,6 +1458,12 @@ async def patch_plan(
         # Enable compatibility mode and set target power state
         patch_plan("my-plan", use_compatibility_mode=True, target_power_state="on")
         
+        # Add KARL affinity rules for co-location with database
+        patch_plan("my-plan", target_affinity="REQUIRE pods(app=database) on node")
+        
+        # Pod anti-affinity to spread VMs across different nodes
+        patch_plan("distributed-app", target_affinity="AVOID pods(app=web) on node")
+                 
         # Archive plan and add description
         patch_plan("my-plan", archived=True, description="Completed production migration")
     """
@@ -1392,13 +1542,34 @@ async def patch_plan_vm(
     """Patch VM-specific fields for a VM within a migration plan's VM list.
     
     This allows you to customize individual VM settings within a plan without affecting other VMs.
-    Useful for setting VM-specific configurations like custom names, storage templates, or hooks.
+    Useful for setting VM-specific configurations like custom names, storage templates, hooks, or LUKS decryption.
     
     Template Variables:
-    Templates support Go template syntax with VM context:
-    - {{.VM.Name}} - Original VM name
-    - {{.VM.ID}} - VM identifier
-    - Use templates for consistent naming patterns
+    Templates support Go template syntax with different variables for each template type:
+    
+    PVC Name Template Variables:
+    - {{.VmName}} - VM name
+    - {{.PlanName}} - Migration plan name  
+    - {{.DiskIndex}} - Initial volume index of the disk
+    - {{.WinDriveLetter}} - Windows drive letter (lowercase, requires guest agent)
+    - {{.RootDiskIndex}} - Index of the root disk
+    - {{.Shared}} - True if volume is shared by multiple VMs
+    - {{.FileName}} - Source file name (vSphere only, requires guest agent)
+    
+    Volume Name Template Variables:
+    - {{.PVCName}} - Name of the PVC mounted to the VM
+    - {{.VolumeIndex}} - Sequential index of volume interface (0-based)
+    
+    Network Name Template Variables:
+    - {{.NetworkName}} - Multus network attachment definition name (if applicable)
+    - {{.NetworkNamespace}} - Namespace of network attachment definition (if applicable)
+    - {{.NetworkType}} - Network type ("Multus" or "Pod")
+    - {{.NetworkIndex}} - Sequential index of network interface (0-based)
+    
+    LUKS Secret Usage:
+    The luks_secret parameter should reference a Kubernetes Secret containing the actual
+    LUKS decryption keys. MTV will use this Secret to decrypt encrypted VM disks during migration.
+    The Secret must exist in the same namespace as the migration plan.
     
     Hook Management:
     - add_pre_hook: Add a pre-migration hook to this VM
@@ -1416,7 +1587,7 @@ async def patch_plan_vm(
         pvc_name_template: Go template for naming PVCs for this VM's disks (optional)
         volume_name_template: Go template for naming volume interfaces (optional)
         network_name_template: Go template for naming network interfaces (optional)
-        luks_secret: Secret name for disk decryption keys (optional)
+        luks_secret: Kubernetes Secret name containing LUKS disk decryption keys (optional)
         target_power_state: Target power state for this VM - 'on', 'off', or 'auto' (optional)
         add_pre_hook: Add a pre-migration hook to this VM (optional)
         add_post_hook: Add a post-migration hook to this VM (optional)
@@ -1434,7 +1605,7 @@ async def patch_plan_vm(
         patch_plan_vm("my-plan", "database-vm", add_pre_hook="db-backup", add_post_hook="db-validate")
         
         # Use custom PVC naming template
-        patch_plan_vm("my-plan", "storage-vm", pvc_name_template="{{.VM.Name}}-disk-{{.DiskIndex}}")
+        patch_plan_vm("my-plan", "storage-vm", pvc_name_template="{{.VmName}}-disk-{{.DiskIndex}}")
     """
     args = ["patch", "plan-vms", plan_name, vm_name]
     

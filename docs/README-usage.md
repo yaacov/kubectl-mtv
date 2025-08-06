@@ -224,7 +224,7 @@ kubectl mtv patch plan my-plan \
 # Set plan templates and description
 kubectl mtv patch plan production-plan \
   --description "Production migration batch 1" \
-  --pvc-name-template "prod-{{.Name}}-{{.DiskName}}" \
+  --pvc-name-template "prod-{{.VmName}}-disk{{.DiskIndex}}" \
   --preserve-static-ips=true
 ```
 
@@ -240,8 +240,8 @@ kubectl mtv patch plan-vms production-plan web-server-vm \
 
 # Configure naming templates
 kubectl mtv patch plan-vms my-plan app-server \
-  --pvc-name-template "{{.Name}}-storage-{{.DiskName}}" \
-  --volume-name-template "{{.Name}}-vol-{{.Index}}"
+  --pvc-name-template "{{.VmName}}-storage-{{.DiskIndex}}" \
+  --volume-name-template "{{.PVCName}}-vol{{.VolumeIndex}}"
 
 # Set encryption configuration
 kubectl mtv patch plan-vms secure-plan encrypted-vm \
@@ -252,7 +252,7 @@ kubectl mtv patch plan-vms secure-plan encrypted-vm \
 kubectl mtv patch plan-vms enterprise-migration critical-app \
   --target-name prod-critical-app-01 \
   --instance-type c5.2xlarge \
-  --pvc-name-template "prod-{{.Name}}-{{.DiskName}}" \
+  --pvc-name-template "prod-{{.VmName}}-disk{{.DiskIndex}}" \
   --luks-secret app-encryption-keys
 
 # Manage VM hooks
