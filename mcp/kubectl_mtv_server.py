@@ -382,10 +382,41 @@ async def list_inventory_vms(
     This shows all VMs available for migration from a source platform. 
     Use queries to filter by memory, CPU, power state, or name. Essential for migration planning.
     
+    QUERY EXAMPLES:
+    vSphere:
+    - Basic filtering: "WHERE powerState = 'poweredOn'"
+    - Memory filtering: "WHERE memoryMB > 4096"
+    - Complex: "WHERE powerState = 'poweredOn' AND memoryMB > 4096 ORDER BY cpuCount DESC"
+    - Field selection: "SELECT name, powerStateHuman AS state, memoryGB, cpuCount WHERE memoryMB > 2048"
+    - Find concerns: "WHERE warningConcerns > 0 OR criticalConcerns > 0"
+    - Guest OS: "WHERE guestName LIKE '%Windows%'"
+    - Shared disks: "WHERE any(disks[*].shared = true)"
+    
+    oVirt:
+    - Active VMs: "WHERE status = 'up'"
+    - Memory filtering: "WHERE memory > 4294967296"  (bytes)
+    - CPU filtering: "WHERE cpuCores > 2 AND cpuSockets >= 1"
+    - Network info: "SELECT name, nics[*].mac, nics[*].ipAddress WHERE len(nics) > 0"
+    
+    OpenStack:
+    - Active instances: "WHERE status = 'ACTIVE'"
+    - By flavor: "WHERE flavorID = 'specific-flavor-id'"
+    - Network addresses: "SELECT name, addresses WHERE len(addresses) > 0"
+    - Recent VMs: "WHERE created > '2023-01-01' ORDER BY created DESC"
+    
+    COMMON VM FIELDS (varies by provider):
+    vSphere: name, powerState, powerStateHuman, cpuCount, memoryMB, memoryGB, ipAddress, 
+             guestName, host, uuid, disks[*].capacity, disks[*].shared, networks[*], 
+             warningConcerns, criticalConcerns, concernsHuman, storageUsed, storageUsedGB
+    oVirt: name, status, memory, cpuCores, cpuSockets, cpuThreads, guestName, host, 
+           diskAttachments[*], nics[*].mac, nics[*].ipAddress, placementPolicyAffinity
+    OpenStack: name, status, flavorID, imageID, hostID, addresses, created, updated, 
+               attachedVolumes[*], securityGroups[*], metadata, keyName, tenantID
+    
     Args:
         provider_name: Name of the provider to query
         namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query (e.g., 'where memoryMB > 4096')
+        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
         output_format: Output format (json, yaml, or table)
         
     Returns:
@@ -408,10 +439,34 @@ async def list_inventory_networks(
 ) -> str:
     """List networks from a specific provider's inventory.
     
+    QUERY EXAMPLES:
+    vSphere:
+    - Name filtering: "WHERE name LIKE '%VM Network%'"
+    - Network type: "WHERE variant = 'Standard'"
+    - VLAN networks: "WHERE vlanId != ''"
+    - Field selection: "SELECT name, variant, vlanId, path WHERE variant = 'Standard'"
+    
+    oVirt:
+    - Management networks: "WHERE name LIKE '%mgmt%' OR description LIKE '%Management%'"
+    - VM networks: "WHERE 'vm' IN usages"
+    - VLAN networks: "WHERE vlan != ''"
+    - NIC profiles: "SELECT name, nicProfiles, vlan WHERE len(nicProfiles) > 0"
+    
+    OpenStack:
+    - Active networks: "WHERE status = 'ACTIVE'"
+    - Shared networks: "WHERE shared = true"
+    - By project: "WHERE projectID = 'specific-project-id'"
+    - Recent networks: "WHERE createdAt > '2023-01-01' ORDER BY createdAt DESC"
+    
+    COMMON NETWORK FIELDS (varies by provider):
+    vSphere: name, id, variant (Standard, DvSwitch), vlanId, hostCount, path, parent.id
+    oVirt: name, id, dataCenter, vlan, usages[*], nicProfiles[*], description, hostCount
+    OpenStack: name, id, status, shared, adminStateUp, projectID, tenantID, subnets[*], createdAt, updatedAt
+    
     Args:
         provider_name: Name of the provider to query
         namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query
+        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
         output_format: Output format (json, yaml, or table)
         
     Returns:
@@ -434,10 +489,35 @@ async def list_inventory_storage(
 ) -> str:
     """List storage from a specific provider's inventory.
     
+    QUERY EXAMPLES:
+    vSphere:
+    - Available space: "WHERE free > 500Gi ORDER BY free DESC"
+    - Storage type: "WHERE type = 'NFS'"
+    - Maintenance check: "WHERE maintenance != 'normal'"
+    - Utilization: "SELECT name, capacityHuman, freeHuman, type WHERE (capacity - free) / capacity > 0.7"
+    - Large datastores: "WHERE capacity > 1Ti ORDER BY capacity DESC"
+    - SAN storage: "WHERE len(backingDevicesNames) > 0"
+    
+    oVirt:
+    - Data domains: "WHERE type = 'data'"
+    - Available storage: "WHERE free > 107374182400 ORDER BY free DESC"  # >100GB
+    - Storage technology: "WHERE storage.type = 'nfs'"
+    - By datacenter: "WHERE dataCenter = 'specific-datacenter-id'"
+    - Export domains: "WHERE type = 'export'"
+    
+    OpenStack:
+    - Available storage: "WHERE free > 107374182400 ORDER BY free DESC"
+    - By type: "WHERE type = 'specific-storage-type'"
+    
+    COMMON STORAGE FIELDS (varies by provider):
+    vSphere: name, type (NFS, VMFS), capacity, capacityHuman, free, freeHuman, maintenance, path, backingDevicesNames[*]
+    oVirt: name, type (data, export, image), capacity, capacityHuman, free, freeHuman, dataCenter, storage.type (nfs, fcp, glance), path
+    OpenStack: name, type, capacity, capacityHuman, free, freeHuman
+    
     Args:
         provider_name: Name of the provider to query
         namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query
+        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
         output_format: Output format (json, yaml, or table)
         
     Returns:
@@ -460,10 +540,28 @@ async def list_inventory_hosts(
 ) -> str:
     """List hosts from a specific provider's inventory.
     
+    QUERY EXAMPLES:
+    vSphere:
+    - Active hosts: "WHERE inMaintenance = false"
+    - High-capacity hosts: "WHERE cpuCores > 16 AND cpuSockets >= 2"
+    - Network speed: "WHERE any(networkAdapters[*].linkSpeed >= 10000)"
+    - Storage connectivity: "SELECT name, cpuCores, len(datastores) AS datastoreCount WHERE len(datastores) > 5"
+    - Physical NICs: "SELECT name, networking.pNICs[*].linkSpeed WHERE len(networking.pNICs) > 4"
+    
+    oVirt:
+    - By cluster: "WHERE cluster = 'specific-cluster-id'"
+    - Resource analysis: "SELECT name, cpuCores, cpuSockets, memory WHERE cpuCores > 8"
+    - Status check: "WHERE status != 'up'"
+    
+    COMMON HOST FIELDS:
+    - name, inMaintenance, cpuCores, cpuSockets, managementServerIp, cluster
+    - networkAdapters[*].ipAddress, networkAdapters[*].linkSpeed, networkAdapters[*].mtu
+    - datastores[*].id, networking.pNICs[*].linkSpeed, hostScsiDisks[*]
+    
     Args:
         provider_name: Name of the provider to query
         namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query
+        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
         output_format: Output format (json, yaml, or table)
         
     Returns:
@@ -486,10 +584,27 @@ async def list_inventory_clusters(
 ) -> str:
     """List clusters from a specific provider's inventory (oVirt, vSphere).
     
+    QUERY EXAMPLES:
+    vSphere:
+    - High availability clusters: "WHERE haEnabled = true"
+    - DRS enabled clusters: "WHERE drsEnabled = true"
+    - Resource pools: "SELECT name, totalCpuMhz, totalMemoryMB WHERE totalCpuMhz > 50000"
+    - By datacenter: "WHERE dataCenter = 'specific-datacenter-id'"
+    
+    oVirt:
+    - Active clusters: "WHERE status = 'up'"
+    - CPU architecture: "WHERE architecture = 'x86_64'"
+    - Cluster features: "SELECT name, cpuArchitecture, version, haReservation WHERE haReservation = true"
+    - By datacenter: "WHERE dataCenter = 'specific-datacenter-id'"
+    
+    COMMON CLUSTER FIELDS (varies by provider):
+    vSphere: name, id, dataCenter, haEnabled, drsEnabled, totalCpuMhz, totalMemoryMB, numHosts
+    oVirt: name, id, dataCenter, status, architecture, version, haReservation, cpuArchitecture
+    
     Args:
         provider_name: Name of the provider to query
         namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query
+        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
         output_format: Output format (json, yaml, or table)
         
     Returns:
@@ -512,10 +627,26 @@ async def list_inventory_datacenters(
 ) -> str:
     """List datacenters from a specific provider's inventory (oVirt, vSphere).
     
+    QUERY EXAMPLES:
+    vSphere:
+    - All datacenters: "SELECT name, id, path ORDER BY name"
+    - By location: "WHERE name LIKE '%US%' OR name LIKE '%East%'"
+    - Resource summary: "SELECT name, totalClusters, totalHosts WHERE totalHosts > 10"
+    
+    oVirt:
+    - Active datacenters: "WHERE status = 'up'"
+    - By version: "WHERE version LIKE '4.%'"
+    - Storage analysis: "SELECT name, storageFormat, quotaMode WHERE quotaMode = 'enabled'"
+    - MAC pools: "SELECT name, macPoolRanges WHERE len(macPoolRanges) > 0"
+    
+    COMMON DATACENTER FIELDS (varies by provider):
+    vSphere: name, id, path, totalClusters, totalHosts, totalVMs
+    oVirt: name, id, status, version, storageFormat, quotaMode, macPoolRanges[*]
+    
     Args:
         provider_name: Name of the provider to query
         namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query
+        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
         output_format: Output format (json, yaml, or table)
         
     Returns:
@@ -539,13 +670,39 @@ async def list_inventory_generic(
 ) -> str:
     """List any inventory resource type from a provider (advanced users).
     
+    This is the most flexible inventory tool - use it to access any resource type not covered 
+    by the specific tools above. All the same query syntax applies.
+    
+    AVAILABLE RESOURCE TYPES BY PROVIDER:
+    vSphere: vm, network, storage, host, cluster, datacenter, datastore, folder, resource-pool
+    oVirt: vm, network, storage, host, cluster, datacenter, disk, disk-profile, nic-profile
+    OpenStack: vm, network, storage, flavor, image, instance, project
+    OpenShift: vm, network, storage, namespace, pvc, data-volume
+    
+    QUERY SYNTAX:
+    All inventory tools support SQL-like queries with:
+    - SELECT field1, field2 AS alias, function(field3) AS name
+    - WHERE condition (using Tree Search Language - TSL)
+    - ORDER BY field1 [ASC|DESC], field2
+    - LIMIT n
+    
+    OPERATORS: =, !=, <, <=, >, >=, LIKE, ILIKE, ~= (regex), IN, BETWEEN, AND, OR, NOT
+    FUNCTIONS: sum(), len(), any(), all()
+    LITERALS: strings ('text'), numbers (1024, 2.5Gi), dates ('2023-01-01'), booleans (true/false)
+    
+    EXAMPLE QUERIES FOR SPECIALIZED RESOURCES:
+    Folders (vSphere): "WHERE name LIKE '%VM%' AND type = 'vm'"
+    Flavors (OpenStack): "WHERE vcpus >= 4 AND ram >= 8192 ORDER BY vcpus DESC"
+    Disk Profiles (oVirt): "WHERE storageDomain = 'specific-domain-id'"
+    NIC Profiles (oVirt): "WHERE networkFilter != ''"
+    Projects (OpenStack): "WHERE enabled = true ORDER BY name"
+    Resource Pools (vSphere): "WHERE cpuAllocation.limit > 0"
+    
     Args:
-        resource_type: Type of inventory resource to list (vm, network, storage, host, cluster, 
-                      datacenter, datastore, disk, disk-profile, flavor, folder, image, 
-                      instance, namespace, nic-profile, project, pvc, resource-pool, data-volume)
+        resource_type: Type of inventory resource to list
         provider_name: Name of the provider to query
         namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query
+        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
         output_format: Output format (json, yaml, or table)
         
     Returns:
