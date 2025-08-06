@@ -26,7 +26,7 @@ Tool Categories:
 - Inventory Discovery: list_inventory_* tools for exploring source environments
 - Version Information: get_version for deployment details
 - Debugging: get_logs for troubleshooting MTV controller and importer pod issues
-- Storage Debugging: get_migration_pvcs, get_migration_datavolumes, get_migration_storage for tracking VM migration storage
+- Storage Debugging: get_migration_pvcs, get_migration_datavolumes, get_migration_storage for tracking VM migration storage with detailed diagnostics
 
 Integration with Write Tools:
 Use these read tools to discover and prepare data, then use write tools to create/modify resources:
@@ -959,20 +959,45 @@ async def get_migration_pvcs(
     """Get PersistentVolumeClaims related to VM migrations.
     
     Find PVCs that are part of VM migrations by searching for specific labels:
-    - migration: Migration UUID
-    - plan: Plan UUID  
-    - vmID: VM identifier (e.g., vm-45)
+    - migration: Migration UUID (NOT the migration name)
+    - plan: Plan UUID (NOT the plan name)  
+    - vmID: VM identifier (e.g., vm-47)
+    
+    IMPORTANT: Use UUIDs, not names! 
+    - CORRECT: migration_id="4399056b-4f08-497d-a559-3dd530de3459" (UUID from plan status)
+    - WRONG: migration_id="migrate-small-vm-mmpj4" (migration name - won't work)
+    - CORRECT: plan_id="3943f9a2-d4a4-4326-b25c-57d06ff53c21" (UUID from plan metadata)  
+    - WRONG: plan_id="migrate-small-vm" (plan name - won't work)
+    
+    How to get the correct UUIDs:
+    1. Use get_plan_vms() to get migration UUIDs from plan status
+    2. Use list_plans() with json output to get plan UUIDs from metadata.uid
+    3. Check kubectl labels: kubectl get pvc -n <namespace> --show-labels
     
     Args:
-        migration_id: Migration UUID to filter by (optional)
-        plan_id: Plan UUID to filter by (optional)
-        vm_id: VM ID to filter by (optional)
+        migration_id: Migration UUID to filter by (optional) - get from plan VM status
+        plan_id: Plan UUID to filter by (optional) - get from plan metadata.uid
+        vm_id: VM ID to filter by (optional) - e.g., vm-47, vm-73
         namespace: Kubernetes namespace to search in (optional)
         all_namespaces: Search across all namespaces
         output_format: Output format (json, yaml, or table)
         
     Returns:
         JSON/YAML formatted PVC information or table output
+        
+        Enhanced JSON Output:
+        When using JSON output format, PVCs include:
+        - "describe" field with kubectl describe output
+        - Complete diagnostic information and events
+        
+    Examples:
+        # Get PVCs for specific migration (use UUIDs from get_plan_vms output)
+        get_migration_pvcs("4399056b-4f08-497d-a559-3dd530de3459", 
+                          "3943f9a2-d4a4-4326-b25c-57d06ff53c21", 
+                          "vm-47", "demo")
+        
+        # Get all migration PVCs in namespace  
+        get_migration_pvcs(namespace="demo", output_format="table")
     """
     try:
         # Build label selector
@@ -998,7 +1023,32 @@ async def get_migration_pvcs(
         if output_format != "table":
             cmd_args.extend(["-o", output_format])
         
-        return await run_kubectl_command(cmd_args)
+        result = await run_kubectl_command(cmd_args)
+        
+        # For JSON output, enhance with describe information
+        if output_format == "json" and result:
+            try:
+                import json
+                pvc_data = json.loads(result)
+                
+                # Add describe information for each PVC
+                for pvc in pvc_data.get("items", []):
+                    pvc_name = pvc["metadata"]["name"]
+                    pvc_namespace = pvc["metadata"]["namespace"]
+                    
+                    try:
+                        describe_cmd = ["describe", "pvc", pvc_name, "-n", pvc_namespace]
+                        describe_result = await run_kubectl_command(describe_cmd)
+                        # Add describe information to the PVC object
+                        pvc["describe"] = describe_result
+                    except Exception as e:
+                        pvc["describe"] = f"Could not get describe output: {str(e)}"
+                
+                return json.dumps(pvc_data, indent=2)
+            except json.JSONDecodeError:
+                pass  # Fall back to original result if JSON parsing fails
+        
+        return result
         
     except Exception as e:
         return f"Error retrieving migration PVCs: {str(e)}"
@@ -1016,20 +1066,42 @@ async def get_migration_datavolumes(
     """Get DataVolumes related to VM migrations.
     
     Find DataVolumes that are part of VM migrations by searching for specific labels:
-    - migration: Migration UUID
-    - plan: Plan UUID  
-    - vmID: VM identifier (e.g., vm-45)
+    - migration: Migration UUID (NOT the migration name)
+    - plan: Plan UUID (NOT the plan name)  
+    - vmID: VM identifier (e.g., vm-47)
+    
+    IMPORTANT: Use UUIDs, not names! 
+    - CORRECT: migration_id="4399056b-4f08-497d-a559-3dd530de3459" (UUID from plan status)
+    - WRONG: migration_id="migrate-small-vm-mmpj4" (migration name - won't work)
+    - CORRECT: plan_id="3943f9a2-d4a4-4326-b25c-57d06ff53c21" (UUID from plan metadata)  
+    - WRONG: plan_id="migrate-small-vm" (plan name - won't work)
+    
+    How to get the correct UUIDs:
+    1. Use get_plan_vms() to get migration UUIDs from plan status
+    2. Use list_plans() with json output to get plan UUIDs from metadata.uid
+    3. Check kubectl labels: kubectl get dv -n <namespace> --show-labels
     
     Args:
-        migration_id: Migration UUID to filter by (optional)
-        plan_id: Plan UUID to filter by (optional)
-        vm_id: VM ID to filter by (optional)
+        migration_id: Migration UUID to filter by (optional) - get from plan VM status
+        plan_id: Plan UUID to filter by (optional) - get from plan metadata.uid
+        vm_id: VM ID to filter by (optional) - e.g., vm-47, vm-73
         namespace: Kubernetes namespace to search in (optional)
         all_namespaces: Search across all namespaces
         output_format: Output format (json, yaml, or table)
         
     Returns:
         JSON/YAML formatted DataVolume information or table output
+        
+        Enhanced JSON Output:
+        When using JSON output format, DataVolumes include:
+        - "describe" field with kubectl describe output
+        - Complete diagnostic information and events
+        
+    Examples:
+        # Get DataVolumes for specific migration (use UUIDs from get_plan_vms output)
+        get_migration_datavolumes("4399056b-4f08-497d-a559-3dd530de3459", 
+                                 "3943f9a2-d4a4-4326-b25c-57d06ff53c21", 
+                                 "vm-47", "demo")
     """
     try:
         # Build label selector
@@ -1055,7 +1127,32 @@ async def get_migration_datavolumes(
         if output_format != "table":
             cmd_args.extend(["-o", output_format])
         
-        return await run_kubectl_command(cmd_args)
+        result = await run_kubectl_command(cmd_args)
+        
+        # For JSON output, enhance with describe information
+        if output_format == "json" and result:
+            try:
+                import json
+                dv_data = json.loads(result)
+                
+                # Add describe information for each DataVolume
+                for dv in dv_data.get("items", []):
+                    dv_name = dv["metadata"]["name"]
+                    dv_namespace = dv["metadata"]["namespace"]
+                    
+                    try:
+                        describe_cmd = ["describe", "datavolume", dv_name, "-n", dv_namespace]
+                        describe_result = await run_kubectl_command(describe_cmd)
+                        # Add describe information to the DataVolume object
+                        dv["describe"] = describe_result
+                    except Exception as e:
+                        dv["describe"] = f"Could not get describe output: {str(e)}"
+                
+                return json.dumps(dv_data, indent=2)
+            except json.JSONDecodeError:
+                pass  # Fall back to original result if JSON parsing fails
+        
+        return result
         
     except Exception as e:
         return f"Error retrieving migration DataVolumes: {str(e)}"
@@ -1073,22 +1170,52 @@ async def get_migration_storage(
     """Get all storage resources (PVCs and DataVolumes) related to VM migrations.
     
     Find both PVCs and DataVolumes that are part of VM migrations by searching for specific labels:
-    - migration: Migration UUID
-    - plan: Plan UUID  
-    - vmID: VM identifier (e.g., vm-45)
+    - migration: Migration UUID (NOT the migration name)
+    - plan: Plan UUID (NOT the plan name)  
+    - vmID: VM identifier (e.g., vm-47)
     
     This is a convenience tool that combines results from both PVCs and DataVolumes.
     
+    IMPORTANT: Use UUIDs, not names! 
+    - CORRECT: migration_id="4399056b-4f08-497d-a559-3dd530de3459" (UUID from plan status)
+    - WRONG: migration_id="migrate-small-vm-mmpj4" (migration name - won't work)
+    - CORRECT: plan_id="3943f9a2-d4a4-4326-b25c-57d06ff53c21" (UUID from plan metadata)  
+    - WRONG: plan_id="migrate-small-vm" (plan name - won't work)
+    
+    How to get the correct UUIDs:
+    1. Use get_plan_vms() to get migration UUIDs from plan status  
+    2. Use list_plans() with json output to get plan UUIDs from metadata.uid
+    3. Check kubectl labels: kubectl get pvc,dv -n <namespace> --show-labels
+    
     Args:
-        migration_id: Migration UUID to filter by (optional)
-        plan_id: Plan UUID to filter by (optional)
-        vm_id: VM ID to filter by (optional)
+        migration_id: Migration UUID to filter by (optional) - get from plan VM status
+        plan_id: Plan UUID to filter by (optional) - get from plan metadata.uid
+        vm_id: VM ID to filter by (optional) - e.g., vm-47, vm-73
         namespace: Kubernetes namespace to search in (optional)
         all_namespaces: Search across all namespaces
         output_format: Output format (json, yaml, or table)
         
     Returns:
         Combined JSON/YAML formatted storage information or table output
+        
+        Enhanced JSON Output:
+        When using JSON output format, PVCs and DataVolumes include:
+        - "describe" field with kubectl describe output
+        - Complete diagnostic information and events
+        
+        Additional manual troubleshooting:
+        - Check events: kubectl get events -n <namespace> --sort-by=.metadata.creationTimestamp
+        - Verify storage class: kubectl get storageclass
+        - Check storage cluster health: kubectl get pods -n openshift-storage
+        
+    Examples:
+        # Get all storage for specific migration
+        get_migration_storage("4399056b-4f08-497d-a559-3dd530de3459", 
+                             "3943f9a2-d4a4-4326-b25c-57d06ff53c21", 
+                             "vm-47", "demo")
+        
+        # Get all migration storage in namespace (table format for overview)
+        get_migration_storage(namespace="demo", output_format="table")
     """
     try:
         # Get both PVCs and DataVolumes
@@ -1131,6 +1258,7 @@ async def get_migration_storage(
         
     except Exception as e:
         return f"Error retrieving migration storage resources: {str(e)}"
+
 
 
 @mcp.tool()
