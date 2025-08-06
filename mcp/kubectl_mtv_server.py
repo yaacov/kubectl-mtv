@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """
-FastMCP Server for kubectl-mtv
+FastMCP Server for kubectl-mtv (Read-Only Operations)
 
-This server provides tools to interact with Migration Toolkit for Virtualization (MTV)
+This server provides READ-ONLY tools to interact with Migration Toolkit for Virtualization (MTV)
 through kubectl-mtv commands. It assumes kubectl-mtv is installed and the user is 
 logged into a Kubernetes cluster with MTV deployed.
 
 MTV Context:
 - MTV helps migrate VMs from other KubeVirt clusters, vSphere, oVirt, OpenStack, and OVA files to KubeVirt
 - Typical workflow: Provider -> Inventory Discovery -> Mappings -> Plans -> Migration
-- These tools provide read-only discovery and monitoring capabilities
-- See MTV_CONTEXT.md for detailed guidance on tool usage patterns
+- These tools provide comprehensive read-only discovery, monitoring and troubleshooting capabilities
 
 Tool Categories:
 - Provider Management: list_providers
-- Migration Planning: list_plans, list_mappings, list_hosts, list_hooks  
+- Migration Planning: list_plans, list_mappings, list_hosts, list_hooks, get_plan_vms
 - Inventory Discovery: list_inventory_* tools for exploring source environments
-- Debugging: get_controller_logs for troubleshooting MTV controller issues
+- Version Information: get_version for deployment details
+- Debugging: get_logs for troubleshooting MTV controller and importer pod issues
 - Storage Debugging: get_migration_pvcs, get_migration_datavolumes, get_migration_storage for tracking VM migration storage
 """
 
@@ -27,9 +27,8 @@ from typing import Any, Optional
 
 from fastmcp import FastMCP
 
-# Get the directory containing this script and the docs directory
+# Get the directory containing this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DOCS_DIR = os.path.join(os.path.dirname(SCRIPT_DIR), "docs")
 
 # Initialize the FastMCP server
 mcp = FastMCP("kubectl-mtv")
@@ -170,71 +169,6 @@ async def _list_inventory_generic(arguments: dict[str, Any]) -> str:
     
     return await run_kubectl_mtv_command(args)
 
-
-# Resources for documentation
-@mcp.resource("kubectl-mtv://usage")
-async def usage_guide() -> str:
-    """Comprehensive kubectl-mtv usage documentation covering all commands, providers, plans, mappings, and workflows."""
-    try:
-        file_path = os.path.join(DOCS_DIR, "README-usage.md")
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        return "kubectl-mtv usage documentation file not found"
-    except Exception as e:
-        return f"Error reading kubectl-mtv usage documentation: {str(e)}"
-
-
-@mcp.resource("kubectl-mtv://inventory")
-async def inventory_guide() -> str:
-    """Complete guide to inventory discovery, query language, and filtering resources from providers."""
-    try:
-        file_path = os.path.join(DOCS_DIR, "README_inventory.md")
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        return "kubectl-mtv inventory documentation file not found"
-    except Exception as e:
-        return f"Error reading kubectl-mtv inventory documentation: {str(e)}"
-
-
-@mcp.resource("kubectl-mtv://hooks")
-async def hooks_guide() -> str:
-    """Guide to migration hooks for customizing and automating migration workflows."""
-    try:
-        file_path = os.path.join(DOCS_DIR, "README_hooks.md")
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        return "kubectl-mtv hooks documentation file not found"
-    except Exception as e:
-        return f"Error reading kubectl-mtv hooks documentation: {str(e)}"
-
-
-@mcp.resource("kubectl-mtv://mapping-pairs")
-async def mapping_pairs_guide() -> str:
-    """Guide to network and storage mapping configuration using pairs syntax."""
-    try:
-        file_path = os.path.join(DOCS_DIR, "README_mapping_pairs.md")
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        return "kubectl-mtv mapping pairs documentation file not found"
-    except Exception as e:
-        return f"Error reading kubectl-mtv mapping pairs documentation: {str(e)}"
-
-
-@mcp.resource("kubectl-mtv://demo")
-async def demo_guide() -> str:
-    """Step-by-step tutorial demonstrating a complete migration workflow."""
-    try:
-        file_path = os.path.join(DOCS_DIR, "README_demo.md")
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        return "kubectl-mtv demo documentation file not found"
-    except Exception as e:
-        return f"Error reading kubectl-mtv demo documentation: {str(e)}"
 
 
 # Tool functions using FastMCP
@@ -404,14 +338,30 @@ async def list_inventory_vms(
     - Network addresses: "SELECT name, addresses WHERE len(addresses) > 0"
     - Recent VMs: "WHERE created > '2023-01-01' ORDER BY created DESC"
     
+    OpenShift:
+    - Running VMs: "WHERE object.status.ready = true"
+    - By namespace: "WHERE namespace = 'specific-namespace'"
+    - VM instances: "SELECT name, namespace, object.spec.instancetype.name, diskCapacity ORDER BY name"
+    - With concerns: "WHERE criticalConcerns > 0 OR infoConcerns > 0"
+    
+    OVA:
+    - Basic VMs: "SELECT name, guestId, memoryMB, cpuCount, diskCapacity ORDER BY memoryMB DESC"
+    - By guest OS: "WHERE guestId LIKE '%linux%' OR guestId LIKE '%windows%'"
+    
     COMMON VM FIELDS (varies by provider):
     vSphere: name, powerState, powerStateHuman, cpuCount, memoryMB, memoryGB, ipAddress, 
-             guestName, host, uuid, disks[*].capacity, disks[*].shared, networks[*], 
-             warningConcerns, criticalConcerns, concernsHuman, storageUsed, storageUsedGB
+             guestName, host, id, disks[*].capacity, disks[*].shared, networks[*], 
+             concerns[*], concernsHuman, criticalConcerns, infoConcerns, warningConcerns,
+             devices[*], firmware, connectionState, isTemplate, path, parent
     oVirt: name, status, memory, cpuCores, cpuSockets, cpuThreads, guestName, host, 
-           diskAttachments[*], nics[*].mac, nics[*].ipAddress, placementPolicyAffinity
+           diskAttachments[*], nics[*].mac, nics[*].ipAddress, placementPolicyAffinity,
+           cluster, description, origin, highAvailability, stateless, deleteProtected
     OpenStack: name, status, flavorID, imageID, hostID, addresses, created, updated, 
-               attachedVolumes[*], securityGroups[*], metadata, keyName, tenantID
+               attachedVolumes[*], securityGroups[*], metadata, keyName, tenantID, 
+               flavor.name, image.name, project.name, hypervisorHostname
+    OpenShift: name, namespace, id, object.spec, object.status, concernsHuman, 
+               criticalConcerns, infoConcerns, diskCapacity, provider, uid, version
+    OVA: name, id, description, guestId, memoryMB, cpuCount, diskCapacity
     
     Args:
         provider_name: Name of the provider to query
@@ -439,6 +389,8 @@ async def list_inventory_networks(
 ) -> str:
     """List networks from a specific provider's inventory.
     
+    TIP: Also query target OpenShift providers to discover available networks for mappings.
+    
     QUERY EXAMPLES:
     vSphere:
     - Name filtering: "WHERE name LIKE '%VM Network%'"
@@ -458,10 +410,25 @@ async def list_inventory_networks(
     - By project: "WHERE projectID = 'specific-project-id'"
     - Recent networks: "WHERE createdAt > '2023-01-01' ORDER BY createdAt DESC"
     
+    OpenShift:
+    - NetworkAttachmentDefinitions: "SELECT name, namespace, object.spec.config ORDER BY namespace, name"
+    - By namespace: "WHERE namespace = 'specific-namespace'"
+    - Bridge networks: "WHERE object.spec.config LIKE '%bridge%'"
+    
+    OVA:
+    - Available networks: "SELECT name, type, description ORDER BY name"
+    - Network types: "WHERE type = 'specific-network-type'"
+    
     COMMON NETWORK FIELDS (varies by provider):
-    vSphere: name, id, variant (Standard, DvSwitch), vlanId, hostCount, path, parent.id
-    oVirt: name, id, dataCenter, vlan, usages[*], nicProfiles[*], description, hostCount
-    OpenStack: name, id, status, shared, adminStateUp, projectID, tenantID, subnets[*], createdAt, updatedAt
+    vSphere: name, id, variant (Standard, DvSwitch), vlanId, hostCount, path, parent.id, 
+             revision, accessible, summary.network
+    oVirt: name, id, dataCenter, vlan, usages[*], nicProfiles[*], description, hostCount, 
+           cluster, required, mtu, profileRequired, vnicProfilesDetails[*]
+    OpenStack: name, id, status, shared, adminStateUp, projectID, tenantID, subnets[*], 
+               createdAt, updatedAt, routerExternal, providerNetworkType, providerPhysicalNetwork
+    OpenShift: name, namespace, id, object.spec.config, object.kind, provider, uid, version, 
+               hostCount, selfLink (NetworkAttachmentDefinition resources)
+    OVA: name, id, description, type, hostCount
     
     Args:
         provider_name: Name of the provider to query
@@ -489,6 +456,8 @@ async def list_inventory_storage(
 ) -> str:
     """List storage from a specific provider's inventory.
     
+    TIP: Also query target OpenShift providers to discover available StorageClasses for mappings.
+    
     QUERY EXAMPLES:
     vSphere:
     - Available space: "WHERE free > 500Gi ORDER BY free DESC"
@@ -507,12 +476,30 @@ async def list_inventory_storage(
     
     OpenStack:
     - Available storage: "WHERE free > 107374182400 ORDER BY free DESC"
-    - By type: "WHERE type = 'specific-storage-type'"
+    - Volume types: "SELECT name, description, isPublic, extraSpecs ORDER BY name"
+    - Public volumes: "WHERE isPublic = true"
+    
+    OpenShift:
+    - StorageClasses: "SELECT name, object.provisioner, object.reclaimPolicy ORDER BY name"
+    - Default storage: "WHERE object.metadata.annotations['storageclass.kubernetes.io/is-default-class'] = 'true'"
+    - Virtualization storage: "WHERE object.metadata.annotations['storageclass.kubevirt.io/is-default-virt-class'] = 'true'"
+    - By provisioner: "WHERE object.provisioner LIKE '%ceph%' OR object.provisioner LIKE '%nfs%'"
+    
+    OVA:
+    - Available storage: "SELECT name, type, capacityHuman, freeHuman WHERE capacity > 1073741824 ORDER BY capacity DESC"
+    - Storage types: "WHERE type = 'specific-storage-type'"
     
     COMMON STORAGE FIELDS (varies by provider):
-    vSphere: name, type (NFS, VMFS), capacity, capacityHuman, free, freeHuman, maintenance, path, backingDevicesNames[*]
-    oVirt: name, type (data, export, image), capacity, capacityHuman, free, freeHuman, dataCenter, storage.type (nfs, fcp, glance), path
-    OpenStack: name, type, capacity, capacityHuman, free, freeHuman
+    vSphere: name, id, type (NFS, VMFS), capacity, capacityHuman, free, freeHuman, 
+             maintenance, path, accessible, multipleHostAccess, summary.datastore
+    oVirt: name, id, type (data, export, image), capacity, capacityHuman, free, freeHuman, 
+           dataCenter, storage.type (nfs, fcp, glance), path, status, master, diskProfileCompatibility[*]
+    OpenStack: name, id, description, isPublic, qosSpecs.id, extraSpecs, 
+               volumeBackendName (volume types for storage)
+    OpenShift: name, id, object.provisioner, object.reclaimPolicy, object.volumeBindingMode, 
+               object.allowVolumeExpansion, object.parameters, provider, uid, version,
+               object.metadata.annotations['storageclass.kubernetes.io/is-default-class']
+    OVA: name, id, description, capacity, capacityHuman, free, freeHuman, type
     
     Args:
         provider_name: Name of the provider to query
@@ -676,8 +663,9 @@ async def list_inventory_generic(
     AVAILABLE RESOURCE TYPES BY PROVIDER:
     vSphere: vm, network, storage, host, cluster, datacenter, datastore, folder, resource-pool
     oVirt: vm, network, storage, host, cluster, datacenter, disk, disk-profile, nic-profile
-    OpenStack: vm, network, storage, flavor, image, instance, project
+    OpenStack: vm, network, storage, flavor, image, instance, project, subnet, port, volumetype
     OpenShift: vm, network, storage, namespace, pvc, data-volume
+    OVA: vm, network, storage
     
     QUERY SYNTAX:
     All inventory tools support SQL-like queries with:
@@ -691,12 +679,46 @@ async def list_inventory_generic(
     LITERALS: strings ('text'), numbers (1024, 2.5Gi), dates ('2023-01-01'), booleans (true/false)
     
     EXAMPLE QUERIES FOR SPECIALIZED RESOURCES:
-    Folders (vSphere): "WHERE name LIKE '%VM%' AND type = 'vm'"
-    Flavors (OpenStack): "WHERE vcpus >= 4 AND ram >= 8192 ORDER BY vcpus DESC"
-    Disk Profiles (oVirt): "WHERE storageDomain = 'specific-domain-id'"
-    NIC Profiles (oVirt): "WHERE networkFilter != ''"
-    Projects (OpenStack): "WHERE enabled = true ORDER BY name"
-    Resource Pools (vSphere): "WHERE cpuAllocation.limit > 0"
+    
+    Folders (vSphere): 
+    - "WHERE name LIKE '%VM%' AND type = 'vm'"
+    - "SELECT name, path, parent.name, childrenCount ORDER BY name"
+    
+    Flavors (OpenStack): 
+    - "WHERE vcpus >= 4 AND ram >= 8192 ORDER BY vcpus DESC"
+    - "SELECT name, vcpus, ram, disk, isPublic WHERE isPublic = true"
+    
+    Disk Profiles (oVirt): 
+    - "WHERE storageDomain = 'specific-domain-id'"
+    - "SELECT name, description, storageDomain, qosId ORDER BY name"
+    
+    NIC Profiles (oVirt): 
+    - "WHERE networkFilter != ''"
+    - "SELECT name, description, network, portMirroring, customProperties ORDER BY name"
+    
+    Projects (OpenStack): 
+    - "WHERE enabled = true ORDER BY name"
+    - "SELECT name, description, enabled, isDomain ORDER BY name"
+    
+    Resource Pools (vSphere): 
+    - "WHERE cpuAllocation.limit > 0"
+    - "SELECT name, cpuLimit, memoryLimit, parent.name ORDER BY cpuLimit DESC"
+    
+    Subnets (OpenStack):
+    - "WHERE enableDhcp = true AND ipVersion = 4"
+    - "SELECT name, cidr, gatewayIp, networkId, enableDhcp ORDER BY name"
+    
+    Images (OpenStack):
+    - "WHERE status = 'active' AND visibility = 'public'"
+    - "SELECT name, status, visibility, diskFormat, containerFormat, size ORDER BY name"
+    
+    DataVolumes (OpenShift):
+    - "WHERE object.status.phase = 'Succeeded'"
+    - "SELECT name, namespace, object.spec.source, object.status.phase ORDER BY name"
+    
+    PVCs (OpenShift):
+    - "WHERE object.status.phase = 'Bound'"
+    - "SELECT name, namespace, object.spec.storageClassName, object.status.capacity.storage ORDER BY name"
     
     Args:
         resource_type: Type of inventory resource to list
@@ -718,45 +740,183 @@ async def list_inventory_generic(
 
 
 @mcp.tool()
-async def get_controller_logs(
-    container: str = "main",
+async def get_logs(
+    pod_type: str = "controller",
+    container: str = "main", 
     lines: int = 100,
     follow: bool = False,
-    namespace: str = ""
+    namespace: str = "",
+    plan_id: str = "",
+    migration_id: str = "",
+    vm_id: str = ""
 ) -> str:
-    """Get logs from the MTV controller pod for debugging.
+    """Get logs from MTV-related pods for debugging.
     
-    This tool automatically finds the MTV controller namespace using kubectl-mtv version,
-    locates the forklift-controller pod, and retrieves logs from the specified container.
+    This tool can retrieve logs from:
+    1. MTV controller pod (main, inventory containers) - auto-detects namespace and pod
+    2. Importer pods - finds pod using migration labels and prime PVC annotations
+    
+    Pod Types:
+    - controller: MTV forklift-controller pod (default)
+    - importer: CDI importer pod for VM disk migration
+    
+    For controller pods:
+    - Automatically finds MTV operator namespace and running controller pod
+    - Supports 'main' and 'inventory' containers
+    
+    For importer pods:
+    - Uses plan_id, migration_id, vm_id to find migration PVCs
+    - Locates prime PVC with cdi.kubevirt.io/storage.import.importPodName annotation
+    - Retrieves logs from the importer pod
     
     Args:
-        container: Container name to get logs from (main, inventory). Defaults to "main"
+        pod_type: Type of pod to get logs from ('controller' or 'importer'). Defaults to 'controller'
+        container: Container name for controller pods (main, inventory). Defaults to 'main'
         lines: Number of recent log lines to retrieve. Defaults to 100
         follow: Follow log output (stream logs). Not recommended for MCP usage
-        namespace: Override the MTV operator namespace (optional, auto-detected if not provided)
+        namespace: Override namespace (optional, auto-detected for controller)
+        plan_id: Plan UUID for finding importer pods (required for importer type)
+        migration_id: Migration UUID for finding importer pods (required for importer type) 
+        vm_id: VM ID for finding importer pods (required for importer type)
         
     Returns:
-        Controller pod logs from the specified container
+        JSON structure containing pod information and logs:
+        {
+            "pod": { ... pod JSON with status, conditions, etc ... },
+            "logs": "pod logs content"
+        }
+        
+    Examples:
+        # Get controller main container logs
+        get_logs("controller", "main", 200)
+        
+        # Get controller inventory container logs  
+        get_logs("controller", "inventory", 100)
+        
+        # Get importer pod logs for specific VM migration
+        get_logs("importer", "", 100, False, "demo", "plan-uuid", "migration-uuid", "vm-47")
     """
     try:
-        # Get the MTV operator namespace if not provided
-        if not namespace:
-            namespace = await get_mtv_operator_namespace()
-        
-        # Find the controller pod
-        pod_name = await find_controller_pod(namespace)
-        
-        # Build kubectl logs command
-        logs_args = ["logs", "-n", namespace, pod_name, "-c", container, "--tail", str(lines)]
-        
-        if follow:
-            logs_args.append("-f")
-        
-        # Get the logs
-        return await run_kubectl_command(logs_args)
-        
+        if pod_type == "controller":
+            return await _get_controller_logs(container, lines, follow, namespace)
+        elif pod_type == "importer":
+            return await _get_importer_logs(lines, follow, namespace, plan_id, migration_id, vm_id)
+        else:
+            return f"Error: Unknown pod_type '{pod_type}'. Supported types: 'controller', 'importer'"
+            
     except Exception as e:
-        return f"Error retrieving controller logs: {str(e)}"
+        return f"Error retrieving {pod_type} logs: {str(e)}"
+
+
+async def _get_controller_logs(container: str, lines: int, follow: bool, namespace: str) -> str:
+    """Get logs and pod information from the MTV controller pod."""
+    # Get the MTV operator namespace if not provided
+    if not namespace:
+        namespace = await get_mtv_operator_namespace()
+    
+    # Find the controller pod
+    pod_name = await find_controller_pod(namespace)
+    
+    # Get pod information
+    pod_info_output = await run_kubectl_command([
+        "get", "pod", "-n", namespace, pod_name, "-o", "json"
+    ])
+    pod_info = json.loads(pod_info_output)
+    
+    # Build kubectl logs command
+    logs_args = ["logs", "-n", namespace, pod_name, "-c", container, "--tail", str(lines)]
+    
+    if follow:
+        logs_args.append("-f")
+    
+    # Get the logs
+    logs = await run_kubectl_command(logs_args)
+    
+    # Return structured response
+    result = {
+        "pod": pod_info,
+        "logs": logs
+    }
+    return json.dumps(result, indent=2)
+
+
+async def _get_importer_logs(lines: int, follow: bool, namespace: str, plan_id: str, migration_id: str, vm_id: str) -> str:
+    """Get logs and pod information from importer pod by finding it via migration labels and prime PVC annotations."""
+    if not plan_id or not migration_id or not vm_id:
+        raise KubectlMTVError("plan_id, migration_id, and vm_id are required for importer pod logs")
+    
+    if not namespace:
+        raise KubectlMTVError("namespace is required for importer pod logs")
+    
+    # Step 1: Find PVCs with migration labels
+    label_selector = f"plan={plan_id},migration={migration_id},vmID={vm_id}"
+    pvcs_output = await run_kubectl_command([
+        "get", "pvc", "-n", namespace,
+        "-l", label_selector,
+        "-o", "json"
+    ])
+    
+    pvcs_data = json.loads(pvcs_output)
+    pvcs = pvcs_data.get("items", [])
+    
+    if not pvcs:
+        raise KubectlMTVError(f"No PVCs found with labels plan={plan_id}, migration={migration_id}, vmID={vm_id}")
+    
+    # Step 2: Find prime PVCs that are owned by the migration PVCs
+    migration_pvc_uid = None
+    for pvc in pvcs:
+        migration_pvc_uid = pvc.get("metadata", {}).get("uid")
+        if migration_pvc_uid:
+            break
+    
+    if not migration_pvc_uid:
+        raise KubectlMTVError("Could not find migration PVC UID")
+    
+    # Find prime PVC owned by the migration PVC
+    all_pvcs_output = await run_kubectl_command([
+        "get", "pvc", "-n", namespace,
+        "-o", "json"
+    ])
+    
+    all_pvcs_data = json.loads(all_pvcs_output)
+    importer_pod_name = None
+    
+    for pvc in all_pvcs_data.get("items", []):
+        # Check if this PVC is owned by our migration PVC
+        owner_refs = pvc.get("metadata", {}).get("ownerReferences", [])
+        for owner_ref in owner_refs:
+            if owner_ref.get("uid") == migration_pvc_uid:
+                # This is a prime PVC owned by our migration PVC
+                annotations = pvc.get("metadata", {}).get("annotations", {})
+                importer_pod_name = annotations.get("cdi.kubevirt.io/storage.import.importPodName")
+                if importer_pod_name:
+                    break
+        if importer_pod_name:
+            break
+    
+    if not importer_pod_name:
+        raise KubectlMTVError(f"Could not find importer pod name in prime PVC annotations for migration PVC UID {migration_pvc_uid}")
+    
+    # Step 3: Get pod information
+    pod_info_output = await run_kubectl_command([
+        "get", "pod", "-n", namespace, importer_pod_name, "-o", "json"
+    ])
+    pod_info = json.loads(pod_info_output)
+    
+    # Step 4: Get logs from the importer pod
+    logs_args = ["logs", "-n", namespace, importer_pod_name, "--tail", str(lines)]
+    
+    if follow:
+        logs_args.append("-f")
+    
+    logs = await run_kubectl_command(logs_args)
+    
+    # Return structured response
+    result = {
+        "pod": pod_info,
+        "logs": logs
+    }
+    return json.dumps(result, indent=2)
 
 
 @mcp.tool()
@@ -1008,124 +1168,7 @@ async def get_plan_vms(
     return await run_kubectl_mtv_command(args)
 
 
-@mcp.tool()
-async def describe_plan(
-    plan_name: str,
-    namespace: str = "",
-    with_vms: bool = False
-) -> str:
-    """Get detailed information about a migration plan.
-    
-    This provides comprehensive details about a migration plan including its configuration,
-    status, progress, and optionally the list of VMs. Essential for understanding plan
-    setup and troubleshooting migration issues.
-    
-    Args:
-        plan_name: Name of the migration plan to describe
-        namespace: Kubernetes namespace containing the plan (optional)
-        with_vms: Include list of VMs in the plan specification
-        
-    Returns:
-        Detailed text description of the migration plan
-    """
-    args = ["describe", "plan", plan_name]
-    
-    if namespace:
-        args.extend(["-n", namespace])
-        
-    if with_vms:
-        args.append("--with-vms")
-    
-    return await run_kubectl_mtv_command(args)
 
-
-@mcp.tool()
-async def describe_vm(
-    plan_name: str,
-    vm_name: str,
-    namespace: str = "",
-    watch: bool = False
-) -> str:
-    """Get detailed status of a specific VM in a migration plan.
-    
-    This provides detailed information about a VM's migration progress, including current
-    phase, errors, warnings, and migration steps. Essential for troubleshooting specific
-    VM migration issues.
-    
-    Args:
-        plan_name: Name of the migration plan containing the VM
-        vm_name: Name of the VM to describe
-        namespace: Kubernetes namespace containing the plan (optional)
-        watch: Watch VM status with live updates (not recommended for MCP usage)
-        
-    Returns:
-        Detailed text description of the VM's migration status
-    """
-    args = ["describe", "plan-vm", plan_name, "--vm", vm_name]
-    
-    if namespace:
-        args.extend(["-n", namespace])
-        
-    if watch:
-        args.extend(["--watch"])
-    
-    return await run_kubectl_mtv_command(args)
-
-
-@mcp.tool()
-async def describe_host(
-    host_name: str,
-    namespace: str = ""
-) -> str:
-    """Get detailed information about a migration host.
-    
-    This provides comprehensive details about a migration host including its configuration,
-    status, and capabilities. Useful for troubleshooting host connectivity and setup issues.
-    
-    Args:
-        host_name: Name of the migration host to describe
-        namespace: Kubernetes namespace containing the host (optional)
-        
-    Returns:
-        Detailed text description of the migration host
-    """
-    args = ["describe", "host", host_name]
-    
-    if namespace:
-        args.extend(["-n", namespace])
-    
-    return await run_kubectl_mtv_command(args)
-
-
-@mcp.tool()
-async def describe_mapping(
-    mapping_type: str,
-    mapping_name: str,
-    namespace: str = ""
-) -> str:
-    """Get detailed information about a network or storage mapping.
-    
-    This provides comprehensive details about network or storage mappings including
-    source and destination mappings, rules, and configuration. Essential for
-    troubleshooting mapping setup and connectivity issues.
-    
-    Args:
-        mapping_type: Type of mapping ('network' or 'storage')
-        mapping_name: Name of the mapping to describe
-        namespace: Kubernetes namespace containing the mapping (optional)
-        
-    Returns:
-        Detailed text description of the mapping configuration
-    """
-    if mapping_type not in ["network", "storage"]:
-        return "Error: mapping_type must be 'network' or 'storage'"
-    
-    args = ["describe", "mapping", mapping_type, mapping_name]
-    
-    if namespace:
-        args.extend(["-n", namespace])
-    
-    return await run_kubectl_mtv_command(args)
 
 
 if __name__ == "__main__":
