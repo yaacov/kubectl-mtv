@@ -190,3 +190,5 @@ tests/e2e/venv/
 tests/e2e/reports/
 inventory_json_dump
 cursor-mcp-config-generated.json
+claude-desktop-config-generated.json
+generic-mcp-config-generated.json
