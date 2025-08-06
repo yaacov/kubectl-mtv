@@ -16,11 +16,14 @@ Tool Categories:
 - Provider Management: list_providers
 - Migration Planning: list_plans, list_mappings, list_hosts, list_hooks  
 - Inventory Discovery: list_inventory_* tools for exploring source environments
+- Debugging: get_controller_logs for troubleshooting MTV controller issues
+- Storage Debugging: get_migration_pvcs, get_migration_datavolumes, get_migration_storage for tracking VM migration storage
 """
 
 import os
 import subprocess
-from typing import Any
+import json
+from typing import Any, Optional
 
 from fastmcp import FastMCP
 
@@ -53,6 +56,66 @@ async def run_kubectl_mtv_command(args: list[str]) -> str:
         raise KubectlMTVError(error_msg) from e
     except FileNotFoundError:
         raise KubectlMTVError("kubectl-mtv not found in PATH") from None
+
+
+async def run_kubectl_command(args: list[str]) -> str:
+    """Run a kubectl command and return the output."""
+    try:
+        cmd = ["kubectl"] + args
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        error_msg = f"Command failed: {' '.join(cmd)}\nError: {e.stderr}"
+        raise KubectlMTVError(error_msg) from e
+    except FileNotFoundError:
+        raise KubectlMTVError("kubectl not found in PATH") from None
+
+
+async def get_mtv_operator_namespace() -> str:
+    """Get the MTV operator namespace from kubectl-mtv version."""
+    try:
+        version_output = await run_kubectl_mtv_command(["version", "-o", "json"])
+        version_data = json.loads(version_output)
+        namespace = version_data.get("operatorNamespace")
+        if not namespace:
+            raise KubectlMTVError("operatorNamespace not found in kubectl-mtv version output")
+        return namespace
+    except json.JSONDecodeError as e:
+        raise KubectlMTVError(f"Failed to parse kubectl-mtv version JSON: {e}") from e
+
+
+async def find_controller_pod(namespace: str) -> str:
+    """Find the forklift-controller pod in the given namespace."""
+    try:
+        # Get pods in the namespace and look for forklift-controller
+        pods_output = await run_kubectl_command([
+            "get", "pods", "-n", namespace, 
+            "-o", "json"
+        ])
+        pods_data = json.loads(pods_output)
+        
+        controller_pods = []
+        for pod in pods_data.get("items", []):
+            pod_name = pod.get("metadata", {}).get("name", "")
+            if pod_name.startswith("forklift-controller-"):
+                # Check if pod is running
+                phase = pod.get("status", {}).get("phase", "")
+                if phase == "Running":
+                    controller_pods.append(pod_name)
+        
+        if not controller_pods:
+            raise KubectlMTVError(f"No running forklift-controller pods found in namespace {namespace}")
+        
+        # Return the first running controller pod
+        return controller_pods[0]
+        
+    except json.JSONDecodeError as e:
+        raise KubectlMTVError(f"Failed to parse kubectl pods JSON: {e}") from e
 
 
 async def _build_base_args(arguments: dict[str, Any]) -> list[str]:
@@ -495,6 +558,234 @@ async def list_inventory_generic(
         "query": query,
         "output_format": output_format
     })
+
+
+@mcp.tool()
+async def get_controller_logs(
+    container: str = "main",
+    lines: int = 100,
+    follow: bool = False,
+    namespace: str = ""
+) -> str:
+    """Get logs from the MTV controller pod for debugging.
+    
+    This tool automatically finds the MTV controller namespace using kubectl-mtv version,
+    locates the forklift-controller pod, and retrieves logs from the specified container.
+    
+    Args:
+        container: Container name to get logs from (main, inventory). Defaults to "main"
+        lines: Number of recent log lines to retrieve. Defaults to 100
+        follow: Follow log output (stream logs). Not recommended for MCP usage
+        namespace: Override the MTV operator namespace (optional, auto-detected if not provided)
+        
+    Returns:
+        Controller pod logs from the specified container
+    """
+    try:
+        # Get the MTV operator namespace if not provided
+        if not namespace:
+            namespace = await get_mtv_operator_namespace()
+        
+        # Find the controller pod
+        pod_name = await find_controller_pod(namespace)
+        
+        # Build kubectl logs command
+        logs_args = ["logs", "-n", namespace, pod_name, "-c", container, "--tail", str(lines)]
+        
+        if follow:
+            logs_args.append("-f")
+        
+        # Get the logs
+        return await run_kubectl_command(logs_args)
+        
+    except Exception as e:
+        return f"Error retrieving controller logs: {str(e)}"
+
+
+@mcp.tool()
+async def get_migration_pvcs(
+    migration_id: str = "",
+    plan_id: str = "",
+    vm_id: str = "",
+    namespace: str = "",
+    all_namespaces: bool = False,
+    output_format: str = "json"
+) -> str:
+    """Get PersistentVolumeClaims related to VM migrations.
+    
+    Find PVCs that are part of VM migrations by searching for specific labels:
+    - migration: Migration UUID
+    - plan: Plan UUID  
+    - vmID: VM identifier (e.g., vm-45)
+    
+    Args:
+        migration_id: Migration UUID to filter by (optional)
+        plan_id: Plan UUID to filter by (optional)
+        vm_id: VM ID to filter by (optional)
+        namespace: Kubernetes namespace to search in (optional)
+        all_namespaces: Search across all namespaces
+        output_format: Output format (json, yaml, or table)
+        
+    Returns:
+        JSON/YAML formatted PVC information or table output
+    """
+    try:
+        # Build label selector
+        label_selectors = []
+        if migration_id:
+            label_selectors.append(f"migration={migration_id}")
+        if plan_id:
+            label_selectors.append(f"plan={plan_id}")
+        if vm_id:
+            label_selectors.append(f"vmID={vm_id}")
+        
+        # Build kubectl command
+        cmd_args = ["get", "pvc"]
+        
+        if all_namespaces:
+            cmd_args.append("-A")
+        elif namespace:
+            cmd_args.extend(["-n", namespace])
+        
+        if label_selectors:
+            cmd_args.extend(["-l", ",".join(label_selectors)])
+        
+        if output_format != "table":
+            cmd_args.extend(["-o", output_format])
+        
+        return await run_kubectl_command(cmd_args)
+        
+    except Exception as e:
+        return f"Error retrieving migration PVCs: {str(e)}"
+
+
+@mcp.tool()
+async def get_migration_datavolumes(
+    migration_id: str = "",
+    plan_id: str = "",
+    vm_id: str = "",
+    namespace: str = "",
+    all_namespaces: bool = False,
+    output_format: str = "json"
+) -> str:
+    """Get DataVolumes related to VM migrations.
+    
+    Find DataVolumes that are part of VM migrations by searching for specific labels:
+    - migration: Migration UUID
+    - plan: Plan UUID  
+    - vmID: VM identifier (e.g., vm-45)
+    
+    Args:
+        migration_id: Migration UUID to filter by (optional)
+        plan_id: Plan UUID to filter by (optional)
+        vm_id: VM ID to filter by (optional)
+        namespace: Kubernetes namespace to search in (optional)
+        all_namespaces: Search across all namespaces
+        output_format: Output format (json, yaml, or table)
+        
+    Returns:
+        JSON/YAML formatted DataVolume information or table output
+    """
+    try:
+        # Build label selector
+        label_selectors = []
+        if migration_id:
+            label_selectors.append(f"migration={migration_id}")
+        if plan_id:
+            label_selectors.append(f"plan={plan_id}")
+        if vm_id:
+            label_selectors.append(f"vmID={vm_id}")
+        
+        # Build kubectl command
+        cmd_args = ["get", "datavolumes"]
+        
+        if all_namespaces:
+            cmd_args.append("-A")
+        elif namespace:
+            cmd_args.extend(["-n", namespace])
+        
+        if label_selectors:
+            cmd_args.extend(["-l", ",".join(label_selectors)])
+        
+        if output_format != "table":
+            cmd_args.extend(["-o", output_format])
+        
+        return await run_kubectl_command(cmd_args)
+        
+    except Exception as e:
+        return f"Error retrieving migration DataVolumes: {str(e)}"
+
+
+@mcp.tool()
+async def get_migration_storage(
+    migration_id: str = "",
+    plan_id: str = "",
+    vm_id: str = "",
+    namespace: str = "",
+    all_namespaces: bool = False,
+    output_format: str = "json"
+) -> str:
+    """Get all storage resources (PVCs and DataVolumes) related to VM migrations.
+    
+    Find both PVCs and DataVolumes that are part of VM migrations by searching for specific labels:
+    - migration: Migration UUID
+    - plan: Plan UUID  
+    - vmID: VM identifier (e.g., vm-45)
+    
+    This is a convenience tool that combines results from both PVCs and DataVolumes.
+    
+    Args:
+        migration_id: Migration UUID to filter by (optional)
+        plan_id: Plan UUID to filter by (optional)
+        vm_id: VM ID to filter by (optional)
+        namespace: Kubernetes namespace to search in (optional)
+        all_namespaces: Search across all namespaces
+        output_format: Output format (json, yaml, or table)
+        
+    Returns:
+        Combined JSON/YAML formatted storage information or table output
+    """
+    try:
+        # Get both PVCs and DataVolumes
+        pvcs_result = await get_migration_pvcs(
+            migration_id=migration_id,
+            plan_id=plan_id,
+            vm_id=vm_id,
+            namespace=namespace,
+            all_namespaces=all_namespaces,
+            output_format=output_format
+        )
+        
+        dvs_result = await get_migration_datavolumes(
+            migration_id=migration_id,
+            plan_id=plan_id,
+            vm_id=vm_id,
+            namespace=namespace,
+            all_namespaces=all_namespaces,
+            output_format=output_format
+        )
+        
+        if output_format == "table":
+            return f"=== PersistentVolumeClaims ===\n{pvcs_result}\n\n=== DataVolumes ===\n{dvs_result}"
+        elif output_format == "json":
+            # Try to combine JSON results
+            try:
+                import json
+                pvcs_data = json.loads(pvcs_result) if pvcs_result.strip() else {"items": []}
+                dvs_data = json.loads(dvs_result) if dvs_result.strip() else {"items": []}
+                
+                combined = {
+                    "pvcs": pvcs_data,
+                    "datavolumes": dvs_data
+                }
+                return json.dumps(combined, indent=2)
+            except json.JSONDecodeError:
+                return f"PVCs:\n{pvcs_result}\n\nDataVolumes:\n{dvs_result}"
+        else:
+            return f"PVCs:\n{pvcs_result}\n\nDataVolumes:\n{dvs_result}"
+        
+    except Exception as e:
+        return f"Error retrieving migration storage resources: {str(e)}"
 
 
 if __name__ == "__main__":
