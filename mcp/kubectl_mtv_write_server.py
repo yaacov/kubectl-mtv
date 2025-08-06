@@ -575,6 +575,19 @@ async def create_plan(
         target_node_selector: Target node selector - 'key1=value1,key2=value2' format (optional)
         warm: Enable warm migration - prefer migration_type parameter (optional, default False)
         target_affinity: Target affinity using KARL syntax (optional)
+            KARL (Kubernetes Affinity Rule Language) provides human-readable syntax for pod scheduling rules.
+            
+            KARL Rule Syntax: [RULE_TYPE] pods([SELECTORS]) on [TOPOLOGY]
+            - Rule Types: REQUIRE, PREFER, AVOID, REPEL
+            - Target: Only pods() supported (no node affinity)
+            - Topology: node, zone, region, rack
+            - No AND/OR logic support (single rule only)
+            
+            KARL Examples:
+            - 'REQUIRE pods(app=database) on node' - Co-locate with database pods
+            - 'PREFER pods(tier=web) on zone' - Prefer same zone as web pods
+            - 'AVOID pods(app=cache) on node' - Separate from cache pods on same node
+            - 'REPEL pods(workload=heavy) on zone weight=80' - Soft avoid in same zone
         target_power_state: Target power state - 'on', 'off', or 'auto' (optional)
         inventory_url: Base URL for inventory service (optional, auto-discovered if not provided)
         
@@ -594,6 +607,18 @@ async def create_plan(
                    storage_pairs="fast-datastore:ocs-storagecluster-ceph-rbd",
                    target_power_state="on",
                    description="Production VM migration")
+                   
+        # Create plan with KARL affinity rules
+        create_plan("db-plan", "vsphere-provider",
+                   vms="database-vm",
+                   target_affinity="REQUIRE pods(app=database) on node",
+                   description="Co-locate with existing database pods")
+                   
+        # KARL affinity with zone preference (soft constraint)
+        create_plan("web-plan", "vsphere-provider",
+                   vms="web-server-01,web-server-02", 
+                   target_affinity="PREFER pods(tier=web) on zone",
+                   description="Web servers prefer same zone as existing web pods")
     """
     args = ["create", "plan", plan_name]
     
@@ -1289,6 +1314,19 @@ async def patch_plan(
         target_node_selector: Target node selector - 'key=value,key2=value2' format (optional)
         use_compatibility_mode: Use compatibility mode for migration (optional)
         target_affinity: Target affinity using KARL syntax (optional)
+            KARL (Kubernetes Affinity Rule Language) provides human-readable syntax for pod scheduling rules.
+            
+            KARL Rule Syntax: [RULE_TYPE] pods([SELECTORS]) on [TOPOLOGY]
+            - Rule Types: REQUIRE, PREFER, AVOID, REPEL
+            - Target: Only pods() supported (no node affinity)
+            - Topology: node, zone, region, rack
+            - No AND/OR logic support (single rule only)
+            
+            KARL Examples:
+            - 'REQUIRE pods(app=database) on node' - Co-locate with database pods
+            - 'PREFER pods(tier=web) on zone' - Prefer same zone as web pods
+            - 'AVOID pods(app=cache) on node' - Separate from cache pods on same node
+            - 'REPEL pods(workload=heavy) on zone weight=80' - Soft avoid in same zone
         target_namespace: Target namespace for migrated VMs (optional)
         target_power_state: Target power state - 'on', 'off', or 'auto' (optional)
         description: Plan description (optional)
@@ -1314,6 +1352,12 @@ async def patch_plan(
         # Enable compatibility mode and set target power state
         patch_plan("my-plan", use_compatibility_mode=True, target_power_state="on")
         
+        # Add KARL affinity rules for co-location with database
+        patch_plan("my-plan", target_affinity="REQUIRE pods(app=database) on node")
+        
+        # Pod anti-affinity to spread VMs across different nodes
+        patch_plan("distributed-app", target_affinity="AVOID pods(app=web) on node")
+                 
         # Archive plan and add description
         patch_plan("my-plan", archived=True, description="Completed production migration")
     """

@@ -90,17 +90,17 @@ kubectl-mtv patch plan my-plan \
 #### Configure Advanced Affinity
 
 ```bash
-# Set node affinity using KARL syntax
+# Set pod affinity using KARL syntax
 kubectl-mtv patch plan my-plan \
   --target-affinity 'REQUIRE pods(app=database) on node'
 
-# Complex KARL rule with multiple conditions
+# Zone-based pod affinity (soft constraint)
 kubectl-mtv patch plan production-plan \
-  --target-affinity 'REQUIRE pods(tier=web) on node(zone=us-east-1a) AND AVOID node(maintenance=true)'
+  --target-affinity 'PREFER pods(tier=web) on zone'
 
 # Pod anti-affinity rule
 kubectl-mtv patch plan distributed-app \
-  --target-affinity 'AVOID pods(app=web) on same node'
+  --target-affinity 'AVOID pods(app=web) on node'
 ```
 
 #### Configure Plan Templates and Settings
@@ -390,7 +390,7 @@ kubectl-mtv patch plan my-plan \
 
 # Common KARL syntax patterns
 kubectl-mtv patch plan my-plan \
-  --target-affinity 'REQUIRE node(zone=us-east-1a)'
+  --target-affinity 'PREFER pods(tier=frontend) on zone'
 ```
 
 #### Transfer Network Not Found
