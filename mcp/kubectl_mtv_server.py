@@ -945,5 +945,188 @@ async def get_migration_storage(
         return f"Error retrieving migration storage resources: {str(e)}"
 
 
+@mcp.tool()
+async def get_version(
+    output_format: str = "json"
+) -> str:
+    """Get kubectl-mtv and MTV operator version information.
+    
+    This tool provides comprehensive version information including:
+    - kubectl-mtv client version
+    - MTV operator version and status
+    - MTV operator namespace
+    - MTV inventory service URL and availability
+    
+    This is essential for troubleshooting MTV setup and understanding the deployment.
+    
+    Args:
+        output_format: Output format (json, yaml, or table)
+        
+    Returns:
+        Version information in the specified format
+    """
+    args = ["version"]
+    if output_format != "table":
+        args.extend(["-o", output_format])
+    
+    return await run_kubectl_mtv_command(args)
+
+
+@mcp.tool()
+async def get_plan_vms(
+    plan_name: str,
+    namespace: str = "",
+    output_format: str = "json",
+    watch: bool = False
+) -> str:
+    """Get VMs and their status from a specific migration plan.
+    
+    This shows all VMs included in a migration plan along with their current migration status,
+    progress, and any issues. Essential for monitoring migration progress and troubleshooting
+    specific VM migration problems.
+    
+    Args:
+        plan_name: Name of the migration plan to query
+        namespace: Kubernetes namespace containing the plan (optional)
+        output_format: Output format (json, yaml, or table)
+        watch: Watch for changes (not recommended for MCP usage)
+        
+    Returns:
+        JSON/YAML formatted VM status information or table output
+    """
+    args = ["get", "plan-vms", plan_name]
+    
+    if namespace:
+        args.extend(["-n", namespace])
+    
+    if output_format != "table":
+        args.extend(["-o", output_format])
+        
+    if watch:
+        args.append("--watch")
+    
+    return await run_kubectl_mtv_command(args)
+
+
+@mcp.tool()
+async def describe_plan(
+    plan_name: str,
+    namespace: str = "",
+    with_vms: bool = False
+) -> str:
+    """Get detailed information about a migration plan.
+    
+    This provides comprehensive details about a migration plan including its configuration,
+    status, progress, and optionally the list of VMs. Essential for understanding plan
+    setup and troubleshooting migration issues.
+    
+    Args:
+        plan_name: Name of the migration plan to describe
+        namespace: Kubernetes namespace containing the plan (optional)
+        with_vms: Include list of VMs in the plan specification
+        
+    Returns:
+        Detailed text description of the migration plan
+    """
+    args = ["describe", "plan", plan_name]
+    
+    if namespace:
+        args.extend(["-n", namespace])
+        
+    if with_vms:
+        args.append("--with-vms")
+    
+    return await run_kubectl_mtv_command(args)
+
+
+@mcp.tool()
+async def describe_vm(
+    plan_name: str,
+    vm_name: str,
+    namespace: str = "",
+    watch: bool = False
+) -> str:
+    """Get detailed status of a specific VM in a migration plan.
+    
+    This provides detailed information about a VM's migration progress, including current
+    phase, errors, warnings, and migration steps. Essential for troubleshooting specific
+    VM migration issues.
+    
+    Args:
+        plan_name: Name of the migration plan containing the VM
+        vm_name: Name of the VM to describe
+        namespace: Kubernetes namespace containing the plan (optional)
+        watch: Watch VM status with live updates (not recommended for MCP usage)
+        
+    Returns:
+        Detailed text description of the VM's migration status
+    """
+    args = ["describe", "plan-vm", plan_name, "--vm", vm_name]
+    
+    if namespace:
+        args.extend(["-n", namespace])
+        
+    if watch:
+        args.extend(["--watch"])
+    
+    return await run_kubectl_mtv_command(args)
+
+
+@mcp.tool()
+async def describe_host(
+    host_name: str,
+    namespace: str = ""
+) -> str:
+    """Get detailed information about a migration host.
+    
+    This provides comprehensive details about a migration host including its configuration,
+    status, and capabilities. Useful for troubleshooting host connectivity and setup issues.
+    
+    Args:
+        host_name: Name of the migration host to describe
+        namespace: Kubernetes namespace containing the host (optional)
+        
+    Returns:
+        Detailed text description of the migration host
+    """
+    args = ["describe", "host", host_name]
+    
+    if namespace:
+        args.extend(["-n", namespace])
+    
+    return await run_kubectl_mtv_command(args)
+
+
+@mcp.tool()
+async def describe_mapping(
+    mapping_type: str,
+    mapping_name: str,
+    namespace: str = ""
+) -> str:
+    """Get detailed information about a network or storage mapping.
+    
+    This provides comprehensive details about network or storage mappings including
+    source and destination mappings, rules, and configuration. Essential for
+    troubleshooting mapping setup and connectivity issues.
+    
+    Args:
+        mapping_type: Type of mapping ('network' or 'storage')
+        mapping_name: Name of the mapping to describe
+        namespace: Kubernetes namespace containing the mapping (optional)
+        
+    Returns:
+        Detailed text description of the mapping configuration
+    """
+    if mapping_type not in ["network", "storage"]:
+        return "Error: mapping_type must be 'network' or 'storage'"
+    
+    args = ["describe", "mapping", mapping_type, mapping_name]
+    
+    if namespace:
+        args.extend(["-n", namespace])
+    
+    return await run_kubectl_mtv_command(args)
+
+
 if __name__ == "__main__":
     mcp.run()
