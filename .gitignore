@@ -192,3 +192,4 @@ inventory_json_dump
 cursor-mcp-config-generated.json
 claude-desktop-config-generated.json
 generic-mcp-config-generated.json
+http-server-config-generated.json

@@ -58,6 +58,19 @@ def generate_generic_config() -> dict:
     }
 
 
+def generate_http_server_config(host: str = "127.0.0.1", port: int = 8000) -> dict:
+    """Generate HTTP server configuration for running MCP as a web service."""
+    return {
+        "mcpServers": {
+            "kubectl-mtv": {
+                "transport": "http",
+                "url": f"http://{host}:{port}/mcp",
+                "description": "kubectl-mtv MCP server running as HTTP service"
+            }
+        }
+    }
+
+
 def save_config(config: dict, filename: str) -> None:
     """Save configuration to a file."""
     with open(filename, 'w') as f:
@@ -81,6 +94,7 @@ def main():
         (generate_cursor_config(), "cursor-mcp-config-generated.json", "Cursor IDE"),
         (generate_claude_desktop_config(), "claude-desktop-config-generated.json", "Claude Desktop"),
         (generate_generic_config(), "generic-mcp-config-generated.json", "Generic MCP Client"),
+        (generate_http_server_config(), "http-server-config-generated.json", "HTTP Server Client"),
     ]
     
     for config, filename, description in configs:
@@ -91,7 +105,9 @@ def main():
     print("1. Copy the appropriate configuration to your MCP client")
     print("2. For Cursor: Use the content of cursor-mcp-config-generated.json")
     print("3. For Claude Desktop: Copy claude-desktop-config-generated.json content to your Claude config")
-    print("4. Restart your MCP client")
+    print("4. For HTTP server: Use http-server-config-generated.json and start the server with:")
+    print("   python kubectl_mtv_server.py --transport http --host 127.0.0.1 --port 8000")
+    print("5. Restart your MCP client")
     print()
     print("For detailed setup instructions, see MCP_SETUP.md")
 
