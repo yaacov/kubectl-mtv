@@ -30,7 +30,7 @@ Tool Categories:
 
 Integration with Write Tools:
 Use these read tools to discover and prepare data, then use write tools to create/modify resources:
-- list_inventory_vms(output_format="planvms") output can be used directly with create_plan(vms="@file.yaml")
+- ListInventory("vm", "provider", output_format="planvms") output can be used directly with create_plan(vms="@file.yaml")
 - get_plan_vms() shows migration status for troubleshooting with cancel_plan()
 - list_inventory_networks/storage() help identify mappings for create_*_mapping() tools
 - Use output_format="planvms" specifically for plan VM selection (minimal VM structures)
@@ -142,9 +142,8 @@ async def _build_base_args(arguments: dict[str, Any]) -> list[str]:
     elif "namespace" in arguments and arguments["namespace"]:
         args.extend(["-n", arguments["namespace"]])
     
-    output_format = arguments.get("output_format", "json")
-    if output_format != "table":
-        args.extend(["-o", output_format])
+    # Always use JSON output format for MCP
+    args.extend(["-o", "json"])
     
     return args
 
@@ -160,9 +159,12 @@ async def _list_inventory(arguments: dict[str, Any], resource_type: str) -> str:
     if "query" in arguments and arguments["query"]:
         args.extend(["-q", arguments["query"]])
     
+    # Support both json and planvms output formats
     output_format = arguments.get("output_format", "json")
-    if output_format != "table":
+    if output_format in ["json", "planvms"]:
         args.extend(["-o", output_format])
+    else:
+        args.extend(["-o", "json"])  # Default to json for unsupported formats
     
     return await run_kubectl_mtv_command(args)
 
@@ -179,68 +181,56 @@ async def _list_inventory_generic(arguments: dict[str, Any]) -> str:
     if "query" in arguments and arguments["query"]:
         args.extend(["-q", arguments["query"]])
     
+    # Support both json and planvms output formats
     output_format = arguments.get("output_format", "json")
-    if output_format != "table":
+    if output_format in ["json", "planvms"]:
         args.extend(["-o", output_format])
+    else:
+        args.extend(["-o", "json"])  # Default to json for unsupported formats
     
     return await run_kubectl_mtv_command(args)
 
 
 
 # Sub-action methods for basic resources
-async def _list_providers(namespace: str, all_namespaces: bool, output_format: str, watch: bool) -> str:
+async def _list_providers(namespace: str, all_namespaces: bool) -> str:
     """List providers implementation."""
     args = ["get", "provider"] + await _build_base_args({
         "namespace": namespace, 
-        "all_namespaces": all_namespaces, 
-        "output_format": output_format
+        "all_namespaces": all_namespaces
     })
-    if watch:
-        args.append("--watch")
     return await run_kubectl_mtv_command(args)
 
-async def _list_plans(namespace: str, all_namespaces: bool, output_format: str, watch: bool) -> str:
+async def _list_plans(namespace: str, all_namespaces: bool) -> str:
     """List plans implementation."""
     args = ["get", "plan"] + await _build_base_args({
         "namespace": namespace,
-        "all_namespaces": all_namespaces,
-        "output_format": output_format
+        "all_namespaces": all_namespaces
     })
-    if watch:
-        args.append("--watch")
     return await run_kubectl_mtv_command(args)
 
-async def _list_mappings(namespace: str, all_namespaces: bool, output_format: str, watch: bool) -> str:
+async def _list_mappings(namespace: str, all_namespaces: bool) -> str:
     """List mappings implementation."""
     args = ["get", "mapping"] + await _build_base_args({
         "namespace": namespace,
-        "all_namespaces": all_namespaces,
-        "output_format": output_format
+        "all_namespaces": all_namespaces
     })
-    if watch:
-        args.append("--watch")
     return await run_kubectl_mtv_command(args)
 
-async def _list_hosts(namespace: str, all_namespaces: bool, output_format: str, watch: bool) -> str:
+async def _list_hosts(namespace: str, all_namespaces: bool) -> str:
     """List hosts implementation."""
     args = ["get", "host"] + await _build_base_args({
         "namespace": namespace,
-        "all_namespaces": all_namespaces,
-        "output_format": output_format
+        "all_namespaces": all_namespaces
     })
-    if watch:
-        args.append("--watch")
     return await run_kubectl_mtv_command(args)
 
-async def _list_hooks(namespace: str, all_namespaces: bool, output_format: str, watch: bool) -> str:
+async def _list_hooks(namespace: str, all_namespaces: bool) -> str:
     """List hooks implementation."""
     args = ["get", "hook"] + await _build_base_args({
         "namespace": namespace,
-        "all_namespaces": all_namespaces,
-        "output_format": output_format
+        "all_namespaces": all_namespaces
     })
-    if watch:
-        args.append("--watch")
     return await run_kubectl_mtv_command(args)
 
 
@@ -249,9 +239,7 @@ async def _list_hooks(namespace: str, all_namespaces: bool, output_format: str, 
 async def ListResources(
     resource_type: str,
     namespace: str = "",
-    all_namespaces: bool = False,
-    output_format: str = "json",
-    watch: bool = False
+    all_namespaces: bool = False
 ) -> str:
     """List MTV resources in the cluster.
     
@@ -262,21 +250,19 @@ async def ListResources(
         resource_type: Type of resource to list - 'provider', 'plan', 'mapping', 'host', or 'hook'
         namespace: Kubernetes namespace to query (optional, defaults to current namespace)
         all_namespaces: List resources across all namespaces
-        output_format: Output format (json, yaml, or table)
-        watch: Watch for changes (not recommended for MCP, only supported for plans)
         
     Returns:
-        JSON/YAML formatted resource information or table output
+        JSON formatted resource information
         
     Examples:
         # List all providers
         ListResources("provider")
         
-        # List plans across all namespaces with table output
-        ListResources("plan", all_namespaces=True, output_format="table")
+        # List plans across all namespaces
+        ListResources("plan", all_namespaces=True)
         
-        # Watch plan changes (specific namespace)
-        ListResources("plan", namespace="demo", watch=True)
+        # List plans in specific namespace
+        ListResources("plan", namespace="demo")
     """
     # Validate resource type
     valid_types = ["provider", "plan", "mapping", "host", "hook"]
@@ -285,15 +271,15 @@ async def ListResources(
     
     # Route to appropriate sub-action method
     if resource_type == "provider":
-        return await _list_providers(namespace, all_namespaces, output_format, watch)
+        return await _list_providers(namespace, all_namespaces)
     elif resource_type == "plan":
-        return await _list_plans(namespace, all_namespaces, output_format, watch)
+        return await _list_plans(namespace, all_namespaces)
     elif resource_type == "mapping":
-        return await _list_mappings(namespace, all_namespaces, output_format, watch)
+        return await _list_mappings(namespace, all_namespaces)
     elif resource_type == "host":
-        return await _list_hosts(namespace, all_namespaces, output_format, watch)
+        return await _list_hosts(namespace, all_namespaces)
     elif resource_type == "hook":
-        return await _list_hooks(namespace, all_namespaces, output_format, watch)
+        return await _list_hooks(namespace, all_namespaces)
 
 
 @mcp.tool()
@@ -370,15 +356,24 @@ async def ListInventory(
     - "WHERE object.status.phase = 'Bound'"
     - "SELECT name, namespace, object.spec.storageClassName, object.status.capacity.storage ORDER BY name"
     
+    Output Formats:
+    - 'json': Full inventory data with all fields (default)
+    - 'planvms': Plan-compatible VM structures for use with create_plan(vms="@file.yaml")
+    
+    The 'planvms' format is specifically useful when listing VMs for plan creation:
+    - Returns minimal VM structures suitable for plan VM selection
+    - Output can be saved to a file and used directly with create_plan
+    - Example: ListInventory("vm", "my-provider", output_format="planvms") > vm-list.yaml
+    
     Args:
         resource_type: Type of inventory resource to list
         provider_name: Name of the provider to query
         namespace: Kubernetes namespace containing the provider (optional)
         query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
-        output_format: Output format (json, yaml, or table)
+        output_format: Output format - 'json' for full data or 'planvms' for plan-compatible VM structures (default 'json')
         
     Returns:
-        JSON/YAML formatted inventory or table output
+        JSON formatted inventory or plan-compatible VM structures (planvms format)
     """
     return await _list_inventory_generic({
         "resource_type": resource_type,
@@ -572,7 +567,7 @@ async def _get_importer_logs(lines: int, follow: bool, namespace: str, plan_id: 
 # Sub-action methods for migration storage
 async def _get_migration_pvcs(
     migration_id: str, plan_id: str, vm_id: str, 
-    namespace: str, all_namespaces: bool, output_format: str
+    namespace: str, all_namespaces: bool
 ) -> str:
     """Get PVCs implementation."""
     try:
@@ -596,13 +591,13 @@ async def _get_migration_pvcs(
         if label_selectors:
             cmd_args.extend(["-l", ",".join(label_selectors)])
         
-        if output_format != "table":
-            cmd_args.extend(["-o", output_format])
+        # Always use JSON output format for MCP
+        cmd_args.extend(["-o", "json"])
         
         result = await run_kubectl_command(cmd_args)
         
-        # For JSON output, enhance with describe information
-        if output_format == "json" and result:
+        # Enhance with describe information
+        if result:
             try:
                 import json
                 pvc_data = json.loads(result)
@@ -630,7 +625,7 @@ async def _get_migration_pvcs(
 
 async def _get_migration_datavolumes(
     migration_id: str, plan_id: str, vm_id: str,
-    namespace: str, all_namespaces: bool, output_format: str
+    namespace: str, all_namespaces: bool
 ) -> str:
     """Get DataVolumes implementation."""
     try:
@@ -654,13 +649,13 @@ async def _get_migration_datavolumes(
         if label_selectors:
             cmd_args.extend(["-l", ",".join(label_selectors)])
         
-        if output_format != "table":
-            cmd_args.extend(["-o", output_format])
+        # Always use JSON output format for MCP
+        cmd_args.extend(["-o", "json"])
         
         result = await run_kubectl_command(cmd_args)
         
-        # For JSON output, enhance with describe information
-        if output_format == "json" and result:
+        # Enhance with describe information
+        if result:
             try:
                 import json
                 dv_data = json.loads(result)
@@ -694,8 +689,7 @@ async def GetMigrationStorage(
     plan_id: str = "",
     vm_id: str = "",
     namespace: str = "",
-    all_namespaces: bool = False,
-    output_format: str = "json"
+    all_namespaces: bool = False
 ) -> str:
     """Get storage resources (PVCs and DataVolumes) related to VM migrations.
     
@@ -730,13 +724,12 @@ async def GetMigrationStorage(
         vm_id: VM ID to filter by (optional) - e.g., vm-47, vm-73
         namespace: Kubernetes namespace to search in (optional)
         all_namespaces: Search across all namespaces
-        output_format: Output format (json, yaml, or table)
         
     Returns:
-        JSON/YAML formatted storage information or table output
+        JSON formatted storage information
         
         Enhanced JSON Output:
-        When using JSON output format, resources include:
+        Resources include:
         - "describe" field with kubectl describe output
         - Complete diagnostic information and events
         
@@ -745,8 +738,8 @@ async def GetMigrationStorage(
         GetMigrationStorage("all", "4399056b-4f08-497d-a559-3dd530de3459", 
                            "3943f9a2-d4a4-4326-b25c-57d06ff53c21", "vm-47", "demo")
         
-        # Get only PVCs in namespace (table format)
-        GetMigrationStorage("pvc", namespace="demo", output_format="table")
+        # Get only PVCs in namespace
+        GetMigrationStorage("pvc", namespace="demo")
         
         # Get only DataVolumes for specific plan
         GetMigrationStorage("datavolume", plan_id="3943f9a2-d4a4-4326-b25c-57d06ff53c21")
@@ -759,31 +752,26 @@ async def GetMigrationStorage(
         
         # Route to appropriate sub-action method(s)
         if resource_type == "pvc":
-            return await _get_migration_pvcs(migration_id, plan_id, vm_id, namespace, all_namespaces, output_format)
+            return await _get_migration_pvcs(migration_id, plan_id, vm_id, namespace, all_namespaces)
         elif resource_type == "datavolume":
-            return await _get_migration_datavolumes(migration_id, plan_id, vm_id, namespace, all_namespaces, output_format)
+            return await _get_migration_datavolumes(migration_id, plan_id, vm_id, namespace, all_namespaces)
         else:  # resource_type == "all"
             # Get both PVCs and DataVolumes
-            pvcs_result = await _get_migration_pvcs(migration_id, plan_id, vm_id, namespace, all_namespaces, output_format)
-            dvs_result = await _get_migration_datavolumes(migration_id, plan_id, vm_id, namespace, all_namespaces, output_format)
+            pvcs_result = await _get_migration_pvcs(migration_id, plan_id, vm_id, namespace, all_namespaces)
+            dvs_result = await _get_migration_datavolumes(migration_id, plan_id, vm_id, namespace, all_namespaces)
             
-            if output_format == "table":
-                return f"=== PersistentVolumeClaims ===\n{pvcs_result}\n\n=== DataVolumes ===\n{dvs_result}"
-            elif output_format == "json":
-                # Try to combine JSON results
-                try:
-                    import json
-                    pvcs_data = json.loads(pvcs_result) if pvcs_result.strip() else {"items": []}
-                    dvs_data = json.loads(dvs_result) if dvs_result.strip() else {"items": []}
-                    
-                    combined = {
-                        "pvcs": pvcs_data,
-                        "datavolumes": dvs_data
-                    }
-                    return json.dumps(combined, indent=2)
-                except json.JSONDecodeError:
-                    return f"PVCs:\n{pvcs_result}\n\nDataVolumes:\n{dvs_result}"
-            else:
+            # Combine JSON results
+            try:
+                import json
+                pvcs_data = json.loads(pvcs_result) if pvcs_result.strip() else {"items": []}
+                dvs_data = json.loads(dvs_result) if dvs_result.strip() else {"items": []}
+                
+                combined = {
+                    "pvcs": pvcs_data,
+                    "datavolumes": dvs_data
+                }
+                return json.dumps(combined, indent=2)
+            except json.JSONDecodeError:
                 return f"PVCs:\n{pvcs_result}\n\nDataVolumes:\n{dvs_result}"
         
     except Exception as e:
@@ -792,9 +780,7 @@ async def GetMigrationStorage(
 
 
 @mcp.tool()
-async def GetVersion(
-    output_format: str = "json"
-) -> str:
+async def GetVersion() -> str:
     """Get kubectl-mtv and MTV operator version information.
     
     This tool provides comprehensive version information including:
@@ -805,15 +791,10 @@ async def GetVersion(
     
     This is essential for troubleshooting MTV setup and understanding the deployment.
     
-    Args:
-        output_format: Output format (json, yaml, or table)
-        
     Returns:
-        Version information in the specified format
+        Version information in JSON format
     """
-    args = ["version"]
-    if output_format != "table":
-        args.extend(["-o", output_format])
+    args = ["version", "-o", "json"]
     
     return await run_kubectl_mtv_command(args)
 
@@ -821,9 +802,7 @@ async def GetVersion(
 @mcp.tool()
 async def GetPlanVms(
     plan_name: str,
-    namespace: str = "",
-    output_format: str = "json",
-    watch: bool = False
+    namespace: str = ""
 ) -> str:
     """Get VMs and their status from a specific migration plan.
     
@@ -834,11 +813,9 @@ async def GetPlanVms(
     Args:
         plan_name: Name of the migration plan to query
         namespace: Kubernetes namespace containing the plan (optional)
-        output_format: Output format (json, yaml, or table)
-        watch: Watch for changes (not recommended for MCP usage)
         
     Returns:
-        JSON/YAML formatted VM status information or table output
+        JSON formatted VM status information
         
     Integration with Write Tools:
         Use this tool to monitor migration progress and troubleshoot:
@@ -851,11 +828,8 @@ async def GetPlanVms(
     if namespace:
         args.extend(["-n", namespace])
     
-    if output_format != "table":
-        args.extend(["-o", output_format])
-        
-    if watch:
-        args.append("--watch")
+    # Always use JSON output format for MCP
+    args.extend(["-o", "json"])
     
     return await run_kubectl_mtv_command(args)
 

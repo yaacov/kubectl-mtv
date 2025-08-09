@@ -23,7 +23,7 @@ Tool Categories:
 
 Integration with Read Tools:
 Use read tools to discover and analyze data before making changes:
-- Use list_inventory_vms(output_format="planvms") to get VM structures for create_plan(vms="@file.yaml")
+- Use ListInventory("vm", "provider", output_format="planvms") to get VM structures for create_plan(vms="@file.yaml")
 - Use list_inventory_networks/storage() to identify available resources for mappings
 - Use get_plan_vms() to monitor progress and identify VMs for cancel_plan()
 - Use list_providers() to verify provider status before creating plans
@@ -653,7 +653,7 @@ async def CreatePlan(
     ]
     
     Integration with read tools:
-    1. Use list_inventory_vms(output_format="planvms") to get complete VM structures
+    1. Use ListInventory("vm", "provider", output_format="planvms") to get complete VM structures
     2. Save the YAML output to a file: vm-list.yaml
     3. Edit file to select desired VMs (optional)
     4. Use file: vms="@vm-list.yaml"
@@ -819,7 +819,7 @@ async def CreatePlan(
         
         # Plan with file-based VM selection (from planvms output)
         create_plan("my-plan", "vsphere-provider",
-                   vms="@vm-list.yaml",  # from list_inventory_vms(output_format="planvms")
+                   vms="@vm-list.yaml",  # from ListInventory("vm", "provider", output_format="planvms")
                    network_mapping="existing-net-map",
                    storage_mapping="existing-storage-map")
         
