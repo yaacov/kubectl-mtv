@@ -76,6 +76,77 @@ Before setting up the MCP server, ensure you have:
 
 3. **Restart Claude Desktop**.
 
+### Claude Code (CLI Installation)
+
+For Claude Code users, you can use the built-in `mcp install` command for the easiest setup:
+
+1. **Install the MCP server directly**:
+   ```bash
+   claude mcp add python /full/path/to/your/kubectl-mtv/mcp/kubectl_mtv_server.py
+   ```
+
+2. **Verify the installation**:
+   ```bash
+   claude mcp list
+   ```
+   You should see `kubectl-mtv` in the list of installed servers.
+
+3. **Optional: Install the write server** for destructive operations:
+   ```bash
+   # Only install if you need write/modify capabilities
+   claude mcp add python /full/path/to/your/kubectl-mtv/mcp/kubectl_mtv_write_server.py
+   ```
+
+5. **The server(s) are now available** - Claude Code will automatically load and use the servers.
+
+#### Auto-Execution Settings (Optional)
+
+By default, Claude CLI may prompt for user consent before executing MCP tool operations. To enable automatic execution without prompts:
+
+1. **Create or edit Claude CLI configuration**:
+   ```bash
+   # Create config directory if it doesn't exist
+   mkdir -p ~/.config/claude
+   
+   # Edit the configuration file
+   nano ~/.config/claude/config.json
+   ```
+
+2. **Add MCP auto-execution settings**:
+   ```json
+   {
+     "mcp": {
+       "servers": {
+         "kubectl-mtv": {
+           "command": "python",
+           "args": ["/full/path/to/your/kubectl-mtv/mcp/kubectl_mtv_server.py"],
+           "autoExecute": true,
+           "confirmBeforeExecution": false,
+           "trusted": true
+         }
+       }
+     },
+     "execution": {
+       "autoExecute": true,
+       "trustedServers": ["kubectl-mtv"]
+     }
+   }
+   ```
+
+3. **Alternative: Use environment variables**:
+   ```bash
+   # Add to your ~/.bashrc or ~/.zshrc
+   export CLAUDE_MCP_AUTO_EXECUTE=true
+   export CLAUDE_MCP_TRUSTED_SERVERS="kubectl-mtv"
+   export CLAUDE_MCP_CONFIRM_EXECUTION=false
+   ```
+
+4. **Command-line flags** (temporary override):
+   ```bash
+   # Run Claude CLI with auto-execution enabled
+   claude --mcp-auto-execute --mcp-trusted-server kubectl-mtv
+   ```
+
 ### Generic MCP Client
 
 For other MCP-compatible applications, use this general configuration format:

@@ -67,49 +67,9 @@ async def run_kubectl_mtv_command(args: list[str]) -> str:
         raise KubectlMTVError("kubectl-mtv not found in PATH") from None
 
 
-# Plan Lifecycle Operations
-@mcp.tool()
-async def start_plan(
-    plan_name: str,
-    namespace: str = "",
-    cutover: str = ""
-) -> str:
-    """Start one or more migration plans to begin migrating VMs.
-    
-    This initiates the migration process for all VMs in the specified plan(s).
-    Plans must be in a ready state with all prerequisites met before starting.
-    
-    Cutover Scheduling:
-    - If cutover time is specified, plan will start but wait until cutover time for final sync
-    - Useful for warm migrations to minimize downtime during business hours
-    - Time format: ISO8601 (e.g., '2023-12-31T15:30:00Z' or '$(date -d "+1 hour" --iso-8601=sec)')
-    - If not specified, defaults to 1 hour from start time
-    
-    Prerequisites for Plan Start:
-    - Provider connectivity must be validated
-    - Network and storage mappings must be configured  
-    - VM inventory must be current and accessible
-    - Target namespace must exist (if specified)
-    - Required secrets and permissions must be in place
-    
-    Args:
-        plan_name: Name of the migration plan to start (required, supports multiple space-separated names)
-        namespace: Kubernetes namespace containing the plan (optional)
-        cutover: Cutover time in ISO8601 format for warm migrations (optional)
-        
-    Returns:
-        Command output confirming plan start
-        
-    Examples:
-        # Start plan immediately
-        start_plan("production-migration")
-        
-        # Start plan with scheduled cutover
-        start_plan("production-migration", cutover="2023-12-25T02:00:00Z")
-        
-        # Start multiple plans with cutover
-        start_plan("plan1 plan2 plan3", cutover="2023-12-25T02:00:00Z")
-    """
+# Sub-action methods for plan lifecycle
+async def _start_plan(plan_name: str, namespace: str, cutover: str) -> str:
+    """Start plan implementation."""
     # Handle multiple plan names by splitting them
     plan_names = plan_name.split() if " " in plan_name else [plan_name]
     args = ["start", "plan"] + plan_names
@@ -122,62 +82,8 @@ async def start_plan(
     
     return await run_kubectl_mtv_command(args)
 
-
-@mcp.tool()
-async def cancel_plan(
-    plan_name: str,
-    vms: str,
-    namespace: str = ""
-) -> str:
-    """Cancel specific VMs in a running migration plan.
-    
-    This stops the migration process for specific VMs within a plan that is currently executing.
-    Only the specified VMs will be cancelled - other VMs in the plan continue migrating.
-    VMs that have already completed migration cannot be cancelled.
-    
-    VM Selection Format:
-    - Comma-separated list: "vm1,vm2,vm3"
-    - File reference: "@filename" to load VM names from JSON/YAML file
-    
-    File Format (@filename):
-    For cancel_plan, files should contain JSON/YAML arrays of VM name strings:
-    
-    JSON format: ["vm-name-1", "vm-name-2", "vm-name-3"]
-    YAML format:
-      - vm-name-1
-      - vm-name-2
-      - vm-name-3
-    
-    Integration with read tools:
-    1. Use list_inventory_vms() to get available VMs
-    2. Extract VM names from the output 
-    3. Create JSON/YAML file with name strings
-    4. Use file: "@vm-names.json" or "@vm-names.yaml"
-    
-    Cancellation Effects:
-    - Stops in-progress disk transfers for the specified VMs
-    - Releases resources allocated for cancelled VM migrations
-    - VMs remain in their original location (source environment)
-    - Plan continues with remaining VMs not specified for cancellation
-    
-    Args:
-        plan_name: Name of the migration plan containing VMs to cancel (required)
-        vms: VM names to cancel - comma-separated list or @filename for JSON/YAML file with VM name strings (required)
-        namespace: Kubernetes namespace containing the plan (optional)
-        
-    Returns:
-        Command output confirming VM cancellation
-        
-    Examples:
-        # Cancel specific VMs by name
-        cancel_plan("production-migration", "webserver-01,database-02,cache-03")
-        
-        # Cancel VMs listed in JSON/YAML file
-        cancel_plan("production-migration", "@vms-to-cancel.json")
-        
-        # Cancel single VM
-        cancel_plan("production-migration", "problematic-vm")
-    """
+async def _cancel_plan(plan_name: str, namespace: str, vms: str) -> str:
+    """Cancel plan implementation."""
     args = ["cancel", "plan", plan_name, "--vms", vms]
     
     if namespace:
@@ -185,24 +91,8 @@ async def cancel_plan(
     
     return await run_kubectl_mtv_command(args)
 
-
-@mcp.tool()
-async def cutover_plan(
-    plan_name: str,
-    namespace: str = ""
-) -> str:
-    """Perform cutover for a migration plan.
-    
-    This performs the final cutover phase of migration, typically switching
-    from the source VMs to the migrated VMs in the destination.
-    
-    Args:
-        plan_name: Name of the migration plan to cutover
-        namespace: Kubernetes namespace containing the plan (optional)
-        
-    Returns:
-        Command output confirming plan cutover
-    """
+async def _cutover_plan(plan_name: str, namespace: str) -> str:
+    """Cutover plan implementation."""
     args = ["cutover", "plan", plan_name]
     
     if namespace:
@@ -210,24 +100,8 @@ async def cutover_plan(
     
     return await run_kubectl_mtv_command(args)
 
-
-@mcp.tool()
-async def archive_plan(
-    plan_name: str,
-    namespace: str = ""
-) -> str:
-    """Archive a completed migration plan.
-    
-    This archives a migration plan that has completed successfully,
-    cleaning up temporary resources while preserving the plan configuration.
-    
-    Args:
-        plan_name: Name of the migration plan to archive
-        namespace: Kubernetes namespace containing the plan (optional)
-        
-    Returns:
-        Command output confirming plan archival
-    """
+async def _archive_plan(plan_name: str, namespace: str) -> str:
+    """Archive plan implementation."""
     args = ["archive", "plan", plan_name]
     
     if namespace:
@@ -235,24 +109,8 @@ async def archive_plan(
     
     return await run_kubectl_mtv_command(args)
 
-
-@mcp.tool()
-async def unarchive_plan(
-    plan_name: str,
-    namespace: str = ""
-) -> str:
-    """Unarchive a migration plan.
-    
-    This restores an archived migration plan, making it available
-    for potential re-execution or modification.
-    
-    Args:
-        plan_name: Name of the migration plan to unarchive
-        namespace: Kubernetes namespace containing the plan (optional)
-        
-    Returns:
-        Command output confirming plan unarchival
-    """
+async def _unarchive_plan(plan_name: str, namespace: str) -> str:
+    """Unarchive plan implementation."""
     args = ["unarchive", "plan", plan_name]
     
     if namespace:
@@ -261,9 +119,110 @@ async def unarchive_plan(
     return await run_kubectl_mtv_command(args)
 
 
+# Plan Lifecycle Operations
+@mcp.tool()
+async def ManagePlanLifecycle(
+    action: str,
+    plan_name: str,
+    namespace: str = "",
+    cutover: str = "",
+    vms: str = ""
+) -> str:
+    """Manage migration plan lifecycle operations.
+    
+    Unified tool for all plan lifecycle actions including start, cancel, cutover, archive, and unarchive.
+    Each action has specific prerequisites and effects on the migration process.
+    
+    Actions:
+    - 'start': Begin migrating VMs in the plan
+    - 'cancel': Cancel specific VMs in a running migration
+    - 'cutover': Perform final cutover phase
+    - 'archive': Archive completed migration plan
+    - 'unarchive': Restore archived migration plan
+    
+    Action-Specific Parameters:
+    - start: cutover (optional ISO8601 timestamp for warm migrations)
+    - cancel: vms (required - VM names to cancel)
+    - cutover, archive, unarchive: no additional parameters
+    
+    Prerequisites by Action:
+    Start:
+    - Provider connectivity must be validated
+    - Network and storage mappings must be configured  
+    - VM inventory must be current and accessible
+    - Target namespace must exist (if specified)
+    
+    Cancel:
+    - Plan must be actively running
+    - VMs must not have completed migration
+    
+    Cutover:
+    - Plan must be in warm migration state
+    - Initial data sync must be complete
+    
+    Archive/Unarchive:
+    - Plan must be in completed/archived state respectively
+    
+    Args:
+        action: Lifecycle action - 'start', 'cancel', 'cutover', 'archive', 'unarchive'
+        plan_name: Name of the migration plan (supports space-separated names for start action)
+        namespace: Kubernetes namespace containing the plan (optional)
+        cutover: Cutover time in ISO8601 format for start action (optional)
+        vms: VM names for cancel action - comma-separated or @filename (required for cancel)
+        
+    Returns:
+        Command output confirming the lifecycle action
+        
+    Examples:
+        # Start plan immediately
+        ManagePlanLifecycle("start", "production-migration")
+        
+        # Start plan with scheduled cutover
+        ManagePlanLifecycle("start", "production-migration", cutover="2023-12-25T02:00:00Z")
+        
+        # Start multiple plans
+        ManagePlanLifecycle("start", "plan1 plan2 plan3")
+        
+        # Cancel specific VMs
+        ManagePlanLifecycle("cancel", "production-migration", vms="webserver-01,database-02")
+        
+        # Cancel VMs from file
+        ManagePlanLifecycle("cancel", "production-migration", vms="@vms-to-cancel.json")
+        
+        # Perform cutover
+        ManagePlanLifecycle("cutover", "production-migration")
+        
+        # Archive completed plan
+        ManagePlanLifecycle("archive", "production-migration")
+        
+        # Restore archived plan
+        ManagePlanLifecycle("unarchive", "production-migration")
+    """
+    # Validate action
+    valid_actions = ["start", "cancel", "cutover", "archive", "unarchive"]
+    if action not in valid_actions:
+        raise KubectlMTVError(f"Invalid action '{action}'. Valid actions: {', '.join(valid_actions)}")
+    
+    # Validate action-specific required parameters
+    if action == "cancel" and not vms:
+        raise KubectlMTVError("The 'vms' parameter is required for cancel action")
+    
+    # Route to appropriate sub-action method
+    if action == "start":
+        return await _start_plan(plan_name, namespace, cutover)
+    elif action == "cancel":
+        return await _cancel_plan(plan_name, namespace, vms)
+    elif action == "cutover":
+        return await _cutover_plan(plan_name, namespace)
+    elif action == "archive":
+        return await _archive_plan(plan_name, namespace)
+    elif action == "unarchive":
+        return await _unarchive_plan(plan_name, namespace)
+
+
 # Resource Creation Operations
 @mcp.tool()
-async def create_provider(
+async def CreateProvider(
     provider_name: str,
     provider_type: str,
     namespace: str = "",
@@ -392,48 +351,12 @@ async def create_provider(
     return await run_kubectl_mtv_command(args)
 
 
-@mcp.tool()
-async def create_network_mapping(
-    mapping_name: str,
-    source_provider: str,
-    target_provider: str,
-    namespace: str = "",
-    network_pairs: str = "",
-    inventory_url: str = ""
+# Sub-action methods for mapping operations
+async def _create_network_mapping(
+    mapping_name: str, source_provider: str, target_provider: str,
+    namespace: str, pairs: str, inventory_url: str
 ) -> str:
-    """Create a new network mapping between source and target providers.
-    
-    Network mappings define how source networks map to target networks during VM migration.
-    They ensure that migrated VMs are connected to the appropriate networks in the target environment.
-    
-    Network Pairs Format:
-    The network_pairs parameter supports flexible mapping syntax:
-    - 'source:target-namespace/target-network' - Map to network in specific namespace  
-    - 'source:target-network' - Map to network in default namespace
-    - 'source:default' - Map to pod/default networking
-    - 'source:ignored' - Don't migrate this network connection
-    
-    Multiple pairs can be comma-separated: 'net1:target1,net2:target2,net3:ignored'
-    
-    Args:
-        mapping_name: Name for the new network mapping (required)
-        source_provider: Name of the source provider (required)
-        target_provider: Name of the target provider (required)
-        namespace: Kubernetes namespace to create the mapping in (optional)
-        network_pairs: Network mapping pairs in format described above (optional)
-        inventory_url: Base URL for the inventory service (optional, auto-discovered if not provided)
-        
-    Returns:
-        Command output confirming network mapping creation
-        
-    Examples:
-        # Create basic network mapping
-        create_network_mapping("my-net-mapping", "vsphere-provider", "openshift-provider")
-        
-        # Create with specific network pairs
-        create_network_mapping("my-net-mapping", "vsphere-provider", "openshift-provider",
-                              network_pairs="VM Network:default,Management:mgmt/management-net,DMZ:ignored")
-    """
+    """Create network mapping implementation."""
     args = ["create", "mapping", "network", mapping_name]
     
     if namespace:
@@ -443,52 +366,18 @@ async def create_network_mapping(
         args.extend(["--source", source_provider])
     if target_provider:
         args.extend(["--target", target_provider])
-    if network_pairs:
-        args.extend(["--network-pairs", network_pairs])
+    if pairs:
+        args.extend(["--network-pairs", pairs])
     if inventory_url:
         args.extend(["--inventory-url", inventory_url])
     
     return await run_kubectl_mtv_command(args)
 
-
-@mcp.tool()
-async def create_storage_mapping(
-    mapping_name: str,
-    source_provider: str,
-    target_provider: str,
-    namespace: str = "",
-    storage_pairs: str = "",
-    inventory_url: str = ""
+async def _create_storage_mapping(
+    mapping_name: str, source_provider: str, target_provider: str,
+    namespace: str, pairs: str, inventory_url: str
 ) -> str:
-    """Create a new storage mapping between source and target providers.
-    
-    Storage mappings define how source storage/datastores map to target storage classes during VM migration.
-    They ensure that migrated VM disks are provisioned on the appropriate storage in the target environment.
-    
-    Storage Pairs Format:
-    The storage_pairs parameter uses the format: 'source:storage-class'
-    - Storage classes are cluster-scoped resources in Kubernetes/OpenShift
-    - Multiple pairs can be comma-separated: 'datastore1:fast-ssd,datastore2:slow-hdd'
-    
-    Args:
-        mapping_name: Name for the new storage mapping (required)
-        source_provider: Name of the source provider (required)
-        target_provider: Name of the target provider (required)
-        namespace: Kubernetes namespace to create the mapping in (optional)
-        storage_pairs: Storage mapping pairs in format 'source:storage-class' (optional)
-        inventory_url: Base URL for the inventory service (optional, auto-discovered if not provided)
-        
-    Returns:
-        Command output confirming storage mapping creation
-        
-    Examples:
-        # Create basic storage mapping
-        create_storage_mapping("my-storage-mapping", "vsphere-provider", "openshift-provider")
-        
-        # Create with specific storage pairs
-        create_storage_mapping("my-storage-mapping", "vsphere-provider", "openshift-provider",
-                              storage_pairs="fast-datastore:ocs-storagecluster-ceph-rbd,slow-datastore:standard")
-    """
+    """Create storage mapping implementation."""
     args = ["create", "mapping", "storage", mapping_name]
     
     if namespace:
@@ -498,16 +387,194 @@ async def create_storage_mapping(
         args.extend(["--source", source_provider])
     if target_provider:
         args.extend(["--target", target_provider])
-    if storage_pairs:
-        args.extend(["--storage-pairs", storage_pairs])
+    if pairs:
+        args.extend(["--storage-pairs", pairs])
+    if inventory_url:
+        args.extend(["--inventory-url", inventory_url])
+    
+    return await run_kubectl_mtv_command(args)
+
+async def _delete_network_mapping(mapping_name: str, namespace: str) -> str:
+    """Delete network mapping implementation."""
+    args = ["delete", "mapping", "network", mapping_name]
+    
+    if namespace:
+        args.extend(["-n", namespace])
+    
+    return await run_kubectl_mtv_command(args)
+
+async def _delete_storage_mapping(mapping_name: str, namespace: str) -> str:
+    """Delete storage mapping implementation."""
+    args = ["delete", "mapping", "storage", mapping_name]
+    
+    if namespace:
+        args.extend(["-n", namespace])
+    
+    return await run_kubectl_mtv_command(args)
+
+async def _patch_network_mapping(
+    mapping_name: str, namespace: str, add_pairs: str, 
+    update_pairs: str, remove_pairs: str, inventory_url: str
+) -> str:
+    """Patch network mapping implementation."""
+    args = ["patch", "mapping", "network", mapping_name]
+    
+    if namespace:
+        args.extend(["-n", namespace])
+    
+    if add_pairs:
+        args.extend(["--add-pairs", add_pairs])
+    if update_pairs:
+        args.extend(["--update-pairs", update_pairs])
+    if remove_pairs:
+        args.extend(["--remove-pairs", remove_pairs])
+    if inventory_url:
+        args.extend(["--inventory-url", inventory_url])
+    
+    return await run_kubectl_mtv_command(args)
+
+async def _patch_storage_mapping(
+    mapping_name: str, namespace: str, add_pairs: str,
+    update_pairs: str, remove_pairs: str, inventory_url: str
+) -> str:
+    """Patch storage mapping implementation."""
+    args = ["patch", "mapping", "storage", mapping_name]
+    
+    if namespace:
+        args.extend(["-n", namespace])
+    
+    if add_pairs:
+        args.extend(["--add-pairs", add_pairs])
+    if update_pairs:
+        args.extend(["--update-pairs", update_pairs])
+    if remove_pairs:
+        args.extend(["--remove-pairs", remove_pairs])
     if inventory_url:
         args.extend(["--inventory-url", inventory_url])
     
     return await run_kubectl_mtv_command(args)
 
 
+# Unified Mapping Operations
 @mcp.tool()
-async def create_plan(
+async def ManageMapping(
+    action: str,
+    mapping_type: str,
+    mapping_name: str,
+    namespace: str = "",
+    source_provider: str = "",
+    target_provider: str = "",
+    pairs: str = "",
+    add_pairs: str = "",
+    update_pairs: str = "",
+    remove_pairs: str = "",
+    inventory_url: str = ""
+) -> str:
+    """Manage network and storage mappings with unified operations.
+    
+    Unified tool for creating, deleting, and patching both network and storage mappings.
+    Mappings define how source resources map to target resources during VM migration.
+    
+    Actions:
+    - 'create': Create a new mapping
+    - 'delete': Delete an existing mapping  
+    - 'patch': Modify an existing mapping
+    
+    Mapping Types:
+    - 'network': Network mappings for VM network interfaces
+    - 'storage': Storage mappings for VM disk placement
+    
+    Action-Specific Parameters:
+    Create:
+    - source_provider, target_provider (required)
+    - pairs (optional, initial mappings)
+    
+    Delete:
+    - No additional parameters
+    
+    Patch:
+    - add_pairs, update_pairs, remove_pairs (at least one required)
+    
+    Mapping Pairs Format:
+    Network pairs: 'source:target-namespace/target-network' or 'source:target-network' 
+    Storage pairs: 'source:storage-class'
+    Special values: 'source:default' (pod networking), 'source:ignored' (skip network)
+    Multiple pairs: comma-separated 'pair1,pair2,pair3'
+    
+    Args:
+        action: Action to perform - 'create', 'delete', or 'patch'
+        mapping_type: Type of mapping - 'network' or 'storage'
+        mapping_name: Name of the mapping
+        namespace: Kubernetes namespace (optional)
+        source_provider: Source provider name (required for create)
+        target_provider: Target provider name (required for create) 
+        pairs: Initial mapping pairs for create (optional)
+        add_pairs: Pairs to add during patch (optional)
+        update_pairs: Pairs to update during patch (optional)
+        remove_pairs: Source names to remove during patch (optional)
+        inventory_url: Inventory service URL (optional)
+        
+    Returns:
+        Command output confirming the mapping operation
+        
+    Examples:
+        # Create network mapping
+        ManageMapping("create", "network", "my-net-mapping", 
+                     source_provider="vsphere-provider", target_provider="openshift-provider",
+                     pairs="VM Network:default,Management:mgmt/mgmt-net")
+        
+        # Create storage mapping
+        ManageMapping("create", "storage", "my-storage-mapping",
+                     source_provider="vsphere-provider", target_provider="openshift-provider", 
+                     pairs="fast-datastore:ocs-storagecluster-ceph-rbd")
+        
+        # Delete mapping
+        ManageMapping("delete", "network", "old-mapping")
+        
+        # Patch network mapping - add and remove pairs
+        ManageMapping("patch", "network", "my-net-mapping",
+                     add_pairs="DMZ:dmz-namespace/dmz-net",
+                     remove_pairs="OldNetwork,UnusedNetwork")
+        
+        # Patch storage mapping - update existing
+        ManageMapping("patch", "storage", "my-storage-mapping",
+                     update_pairs="slow-datastore:standard,fast-datastore:premium")
+    """
+    # Validate action and mapping type
+    valid_actions = ["create", "delete", "patch"]
+    valid_types = ["network", "storage"]
+    
+    if action not in valid_actions:
+        raise KubectlMTVError(f"Invalid action '{action}'. Valid actions: {', '.join(valid_actions)}")
+    
+    if mapping_type not in valid_types:
+        raise KubectlMTVError(f"Invalid mapping_type '{mapping_type}'. Valid types: {', '.join(valid_types)}")
+    
+    # Validate action-specific required parameters
+    if action == "create":
+        if not source_provider or not target_provider:
+            raise KubectlMTVError("source_provider and target_provider are required for create action")
+    elif action == "patch":
+        if not (add_pairs or update_pairs or remove_pairs):
+            raise KubectlMTVError("At least one of add_pairs, update_pairs, or remove_pairs is required for patch action")
+    
+    # Route to appropriate sub-action method
+    if action == "create" and mapping_type == "network":
+        return await _create_network_mapping(mapping_name, source_provider, target_provider, namespace, pairs, inventory_url)
+    elif action == "create" and mapping_type == "storage":
+        return await _create_storage_mapping(mapping_name, source_provider, target_provider, namespace, pairs, inventory_url)
+    elif action == "delete" and mapping_type == "network":
+        return await _delete_network_mapping(mapping_name, namespace)
+    elif action == "delete" and mapping_type == "storage":
+        return await _delete_storage_mapping(mapping_name, namespace)
+    elif action == "patch" and mapping_type == "network":
+        return await _patch_network_mapping(mapping_name, namespace, add_pairs, update_pairs, remove_pairs, inventory_url)
+    elif action == "patch" and mapping_type == "storage":
+        return await _patch_storage_mapping(mapping_name, namespace, add_pairs, update_pairs, remove_pairs, inventory_url)
+
+
+@mcp.tool()
+async def CreatePlan(
     plan_name: str,
     source_provider: str,
     namespace: str = "",
@@ -636,6 +703,47 @@ async def create_plan(
     - Volume: "pvc-{{.PVCName}}" → "pvc-web-server-01-disk-0"
     - Network: "net-{{.NetworkIndex}}" → "net-0"
     - Network: "{{if eq .NetworkType \"Pod\"}}pod{{else}}multus-{{.NetworkIndex}}{{end}}" → "pod"
+    
+    Available Template Functions:
+    Templates support Go text template syntax including the following built-in functions:
+    
+    String Functions:
+    - lower: Converts string to lowercase → {{ lower "TEXT" }} → text
+    - upper: Converts string to uppercase → {{ upper "text" }} → TEXT
+    - contains: Checks if string contains substring → {{ contains "hello" "lo" }} → true
+    - replace: Replaces occurrences in a string → {{"I Am Henry VIII" | replace " " "-"}} → I-Am-Henry-VIII
+    - trim: Removes whitespace from both ends → {{ trim "  text  " }} → text
+    - trimAll: Removes specified characters from both ends → {{ trimAll "$" "$5.00$" }} → 5.00
+    - trimSuffix: Removes suffix if present → {{ trimSuffix ".go" "file.go" }} → file
+    - trimPrefix: Removes prefix if present → {{ trimPrefix "go." "go.file" }} → file
+    - title: Converts to title case → {{ title "hello world" }} → Hello World
+    - untitle: Converts to lowercase → {{ untitle "Hello World" }} → hello world
+    - repeat: Repeats string n times → {{ repeat 3 "abc" }} → abcabcabc
+    - substr: Extracts substring from start to end → {{ substr 1 4 "abcdef" }} → bcd
+    - nospace: Removes all whitespace → {{ nospace "a b  c" }} → abc
+    - trunc: Truncates string to specified length → {{ trunc 3 "abcdef" }} → abc
+    - initials: Extracts first letter of each word → {{ initials "John Doe" }} → JD
+    - hasPrefix: Checks if string starts with prefix → {{ hasPrefix "go" "golang" }} → true
+    - hasSuffix: Checks if string ends with suffix → {{ hasSuffix "ing" "coding" }} → true
+    - mustRegexReplaceAll: Replaces matches using regex → {{ mustRegexReplaceAll "a(x*)b" "-ab-axxb-" "${1}W" }} → -W-xxW-
+    
+    Math Functions:
+    - add: Sum numbers → {{ add 1 2 3 }} → 6
+    - add1: Increment by 1 → {{ add1 5 }} → 6
+    - sub: Subtract second number from first → {{ sub 5 3 }} → 2
+    - div: Integer division → {{ div 10 3 }} → 3
+    - mod: Modulo operation → {{ mod 10 3 }} → 1
+    - mul: Multiply numbers → {{ mul 2 3 4 }} → 24
+    - max: Return largest integer → {{ max 1 5 3 }} → 5
+    - min: Return smallest integer → {{ min 1 5 3 }} → 1
+    - floor: Round down to nearest integer → {{ floor 3.75 }} → 3.0
+    - ceil: Round up to nearest integer → {{ ceil 3.25 }} → 4.0
+    - round: Round to specified decimal places → {{ round 3.75159 2 }} → 3.75
+    
+    Template Function Examples:
+    - PVC with filename processing: "{{.FileName | trimSuffix \".vmdk\" | replace \"_\" \"-\" | lower}}" 
+    - PVC with conditional formatting: "{{if .Shared}}shared-{{else}}{{.VmName | lower}}-{{end}}disk-{{.DiskIndex}}"
+    - Volume with uppercase naming: "{{.VmName | upper}}-VOL-{{.VolumeIndex}}"
     
     Args:
         plan_name: Name for the new migration plan (required)
@@ -802,7 +910,7 @@ async def create_plan(
 
 
 @mcp.tool()
-async def create_host(
+async def CreateHost(
     host_name: str,
     provider: str,
     namespace: str = "",
@@ -890,7 +998,7 @@ async def create_host(
 
 
 @mcp.tool()
-async def create_hook(
+async def CreateHook(
     hook_name: str,
     image: str,
     namespace: str = "",
@@ -957,7 +1065,7 @@ async def create_hook(
 
 # Resource Deletion Operations  
 @mcp.tool()
-async def delete_provider(
+async def DeleteProvider(
     provider_name: str,
     namespace: str = ""
 ) -> str:
@@ -980,58 +1088,11 @@ async def delete_provider(
     return await run_kubectl_mtv_command(args)
 
 
-@mcp.tool()
-async def delete_network_mapping(
-    mapping_name: str,
-    namespace: str = ""
-) -> str:
-    """Delete a network mapping.
-    
-    WARNING: This will remove the network mapping and may affect associated migration plans.
-    Plans using this mapping may need to be updated or recreated.
-    
-    Args:
-        mapping_name: Name of the network mapping to delete (required)
-        namespace: Kubernetes namespace containing the mapping (optional)
-        
-    Returns:
-        Command output confirming network mapping deletion
-    """
-    args = ["delete", "mapping", "network", mapping_name]
-    
-    if namespace:
-        args.extend(["-n", namespace])
-    
-    return await run_kubectl_mtv_command(args)
+
 
 
 @mcp.tool()
-async def delete_storage_mapping(
-    mapping_name: str,
-    namespace: str = ""
-) -> str:
-    """Delete a storage mapping.
-    
-    WARNING: This will remove the storage mapping and may affect associated migration plans.
-    Plans using this mapping may need to be updated or recreated.
-    
-    Args:
-        mapping_name: Name of the storage mapping to delete (required)
-        namespace: Kubernetes namespace containing the mapping (optional)
-        
-    Returns:
-        Command output confirming storage mapping deletion
-    """
-    args = ["delete", "mapping", "storage", mapping_name]
-    
-    if namespace:
-        args.extend(["-n", namespace])
-    
-    return await run_kubectl_mtv_command(args)
-
-
-@mcp.tool()
-async def delete_plan(
+async def DeletePlan(
     plan_name: str,
     namespace: str = ""
 ) -> str:
@@ -1055,7 +1116,7 @@ async def delete_plan(
 
 
 @mcp.tool()
-async def delete_host(
+async def DeleteHost(
     host_name: str,
     namespace: str = ""
 ) -> str:
@@ -1079,7 +1140,7 @@ async def delete_host(
 
 
 @mcp.tool()
-async def delete_hook(
+async def DeleteHook(
     hook_name: str,
     namespace: str = ""
 ) -> str:
@@ -1104,7 +1165,7 @@ async def delete_hook(
 
 # Patch Operations
 @mcp.tool()
-async def patch_provider(
+async def PatchProvider(
     provider_name: str,
     namespace: str = "",
     url: str = "",
@@ -1219,148 +1280,11 @@ async def patch_provider(
     return await run_kubectl_mtv_command(args)
 
 
-@mcp.tool()
-async def patch_network_mapping(
-    mapping_name: str,
-    namespace: str = "",
-    add_pairs: str = "",
-    update_pairs: str = "",
-    remove_pairs: str = "",
-    inventory_url: str = ""
-) -> str:
-    """Patch a network mapping by adding, updating, or removing network pairs.
-    
-    This allows modifying network mapping configuration without recreating the entire mapping.
-    You can add new network pairs, update existing ones, or remove unwanted pairs.
-    
-    Network Pairs Format:
-    The pairs parameters use the same format as create operations:
-    - 'source:target-namespace/target-network' - Map to network in specific namespace  
-    - 'source:target-network' - Map to network in default namespace
-    - 'source:default' - Map to pod/default networking
-    - 'source:ignored' - Don't migrate this network connection
-    
-    Multiple pairs are comma-separated: 'net1:target1,net2:target2,net3:ignored'
-    
-    Operation Types:
-    - add-pairs: Add new network mappings (fails if source already exists)
-    - update-pairs: Update existing network mappings (fails if source doesn't exist)
-    - remove-pairs: Remove network mappings by source name
-    
-    Args:
-        mapping_name: Name of the network mapping to patch (required)
-        namespace: Kubernetes namespace containing the mapping (optional)
-        add_pairs: Network pairs to add (optional)
-        update_pairs: Network pairs to update (optional)
-        remove_pairs: Source network names to remove, comma-separated (optional)
-        inventory_url: Base URL for inventory service (optional, auto-discovered if not provided)
-        
-    Returns:
-        Command output confirming network mapping patch
-        
-    Examples:
-        # Add new network mappings
-        patch_network_mapping("my-mapping", add_pairs="DMZ:dmz-namespace/dmz-net,Test:ignored")
-        
-        # Update existing mappings
-        patch_network_mapping("my-mapping", update_pairs="Management:mgmt-namespace/new-mgmt-net")
-        
-        # Remove network mappings
-        patch_network_mapping("my-mapping", remove_pairs="OldNetwork,UnusedNetwork")
-        
-        # Combine operations
-        patch_network_mapping("my-mapping", 
-                             add_pairs="NewNet:default", 
-                             update_pairs="ExistingNet:updated-target",
-                             remove_pairs="ObsoleteNet")
-    """
-    args = ["patch", "mapping", "network", mapping_name]
-    
-    if namespace:
-        args.extend(["-n", namespace])
-    
-    if add_pairs:
-        args.extend(["--add-pairs", add_pairs])
-    if update_pairs:
-        args.extend(["--update-pairs", update_pairs])
-    if remove_pairs:
-        args.extend(["--remove-pairs", remove_pairs])
-    if inventory_url:
-        args.extend(["--inventory-url", inventory_url])
-    
-    return await run_kubectl_mtv_command(args)
+
 
 
 @mcp.tool()
-async def patch_storage_mapping(
-    mapping_name: str,
-    namespace: str = "",
-    add_pairs: str = "",
-    update_pairs: str = "",
-    remove_pairs: str = "",
-    inventory_url: str = ""
-) -> str:
-    """Patch a storage mapping by adding, updating, or removing storage pairs.
-    
-    This allows modifying storage mapping configuration without recreating the entire mapping.
-    You can add new storage pairs, update existing ones, or remove unwanted pairs.
-    
-    Storage Pairs Format:
-    The pairs parameters use the format: 'source:storage-class'
-    - Storage classes are cluster-scoped resources in Kubernetes/OpenShift
-    - Multiple pairs are comma-separated: 'datastore1:fast-ssd,datastore2:slow-hdd'
-    
-    Operation Types:
-    - add-pairs: Add new storage mappings (fails if source already exists)
-    - update-pairs: Update existing storage mappings (fails if source doesn't exist)  
-    - remove-pairs: Remove storage mappings by source name
-    
-    Args:
-        mapping_name: Name of the storage mapping to patch (required)
-        namespace: Kubernetes namespace containing the mapping (optional)
-        add_pairs: Storage pairs to add in format 'source:storage-class' (optional)
-        update_pairs: Storage pairs to update in format 'source:storage-class' (optional)
-        remove_pairs: Source storage names to remove, comma-separated (optional)
-        inventory_url: Base URL for inventory service (optional, auto-discovered if not provided)
-        
-    Returns:
-        Command output confirming storage mapping patch
-        
-    Examples:
-        # Add new storage mappings
-        patch_storage_mapping("my-mapping", add_pairs="ssd-datastore:ocs-storagecluster-ceph-rbd")
-        
-        # Update existing mappings to different storage classes
-        patch_storage_mapping("my-mapping", update_pairs="slow-datastore:standard,fast-datastore:premium")
-        
-        # Remove storage mappings
-        patch_storage_mapping("my-mapping", remove_pairs="unused-datastore,old-datastore")
-        
-        # Combine operations
-        patch_storage_mapping("my-mapping",
-                             add_pairs="new-datastore:fast-ssd",
-                             update_pairs="existing-datastore:updated-class",
-                             remove_pairs="obsolete-datastore")
-    """
-    args = ["patch", "mapping", "storage", mapping_name]
-    
-    if namespace:
-        args.extend(["-n", namespace])
-    
-    if add_pairs:
-        args.extend(["--add-pairs", add_pairs])
-    if update_pairs:
-        args.extend(["--update-pairs", update_pairs])
-    if remove_pairs:
-        args.extend(["--remove-pairs", remove_pairs])
-    if inventory_url:
-        args.extend(["--inventory-url", inventory_url])
-    
-    return await run_kubectl_mtv_command(args)
-
-
-@mcp.tool()
-async def patch_plan(
+async def PatchPlan(
     plan_name: str,
     namespace: str = "",
     transfer_network: str = "",
@@ -1522,7 +1446,7 @@ async def patch_plan(
 
 
 @mcp.tool()
-async def patch_plan_vm(
+async def PatchPlanVm(
     plan_name: str,
     vm_name: str,
     namespace: str = "",
@@ -1565,6 +1489,42 @@ async def patch_plan_vm(
     - {{.NetworkNamespace}} - Namespace of network attachment definition (if applicable)
     - {{.NetworkType}} - Network type ("Multus" or "Pod")
     - {{.NetworkIndex}} - Sequential index of network interface (0-based)
+    
+    Available Template Functions:
+    Templates support Go text template syntax including the following built-in functions:
+    
+    String Functions:
+    - lower: Converts string to lowercase → {{ lower "TEXT" }} → text
+    - upper: Converts string to uppercase → {{ upper "text" }} → TEXT
+    - contains: Checks if string contains substring → {{ contains "hello" "lo" }} → true
+    - replace: Replaces occurrences in a string → {{"I Am Henry VIII" | replace " " "-"}} → I-Am-Henry-VIII
+    - trim: Removes whitespace from both ends → {{ trim "  text  " }} → text
+    - trimAll: Removes specified characters from both ends → {{ trimAll "$" "$5.00$" }} → 5.00
+    - trimSuffix: Removes suffix if present → {{ trimSuffix ".go" "file.go" }} → file
+    - trimPrefix: Removes prefix if present → {{ trimPrefix "go." "go.file" }} → file
+    - title: Converts to title case → {{ title "hello world" }} → Hello World
+    - untitle: Converts to lowercase → {{ untitle "Hello World" }} → hello world
+    - repeat: Repeats string n times → {{ repeat 3 "abc" }} → abcabcabc
+    - substr: Extracts substring from start to end → {{ substr 1 4 "abcdef" }} → bcd
+    - nospace: Removes all whitespace → {{ nospace "a b  c" }} → abc
+    - trunc: Truncates string to specified length → {{ trunc 3 "abcdef" }} → abc
+    - initials: Extracts first letter of each word → {{ initials "John Doe" }} → JD
+    - hasPrefix: Checks if string starts with prefix → {{ hasPrefix "go" "golang" }} → true
+    - hasSuffix: Checks if string ends with suffix → {{ hasSuffix "ing" "coding" }} → true
+    - mustRegexReplaceAll: Replaces matches using regex → {{ mustRegexReplaceAll "a(x*)b" "-ab-axxb-" "${1}W" }} → -W-xxW-
+    
+    Math Functions:
+    - add: Sum numbers → {{ add 1 2 3 }} → 6
+    - add1: Increment by 1 → {{ add1 5 }} → 6
+    - sub: Subtract second number from first → {{ sub 5 3 }} → 2
+    - div: Integer division → {{ div 10 3 }} → 3
+    - mod: Modulo operation → {{ mod 10 3 }} → 1
+    - mul: Multiply numbers → {{ mul 2 3 4 }} → 24
+    - max: Return largest integer → {{ max 1 5 3 }} → 5
+    - min: Return smallest integer → {{ min 1 5 3 }} → 1
+    - floor: Round down to nearest integer → {{ floor 3.75 }} → 3.0
+    - ceil: Round up to nearest integer → {{ ceil 3.25 }} → 4.0
+    - round: Round to specified decimal places → {{ round 3.75159 2 }} → 3.75
     
     LUKS Secret Usage:
     The luks_secret parameter should reference a Kubernetes Secret containing the actual
