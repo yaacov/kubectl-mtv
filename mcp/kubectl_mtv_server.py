@@ -187,505 +187,127 @@ async def _list_inventory_generic(arguments: dict[str, Any]) -> str:
 
 
 
-# Tool functions using FastMCP
-@mcp.tool()
-async def list_providers(
-    namespace: str = "",
-    all_namespaces: bool = False,
-    output_format: str = "json"
-) -> str:
-    """List all MTV providers in the cluster.
-    
-    Providers connect MTV to source virtualization platforms (vSphere, oVirt, OpenStack, OVA, other KubeVirt clusters). 
-    This is typically the first step in understanding your MTV setup.
-    
-    Args:
-        namespace: Kubernetes namespace to query (optional, defaults to current namespace)
-        all_namespaces: List providers across all namespaces
-        output_format: Output format (json, yaml, or table)
-        
-    Returns:
-        JSON/YAML formatted provider information or table output
-    """
+# Sub-action methods for basic resources
+async def _list_providers(namespace: str, all_namespaces: bool, output_format: str, watch: bool) -> str:
+    """List providers implementation."""
     args = ["get", "provider"] + await _build_base_args({
         "namespace": namespace, 
         "all_namespaces": all_namespaces, 
         "output_format": output_format
     })
+    if watch:
+        args.append("--watch")
     return await run_kubectl_mtv_command(args)
 
-
-@mcp.tool()
-async def list_plans(
-    namespace: str = "",
-    all_namespaces: bool = False,
-    output_format: str = "json",
-    watch: bool = False
-) -> str:
-    """List all MTV migration plans in the cluster.
-    
-    Plans define which VMs to migrate and track migration progress. 
-    Use this to monitor active migrations or see migration history.
-    
-    Args:
-        namespace: Kubernetes namespace to query (optional)
-        all_namespaces: List plans across all namespaces
-        output_format: Output format (json, yaml, or table)
-        watch: Watch for changes (not recommended for MCP)
-        
-    Returns:
-        JSON/YAML formatted plan information or table output
-    """
+async def _list_plans(namespace: str, all_namespaces: bool, output_format: str, watch: bool) -> str:
+    """List plans implementation."""
     args = ["get", "plan"] + await _build_base_args({
         "namespace": namespace,
         "all_namespaces": all_namespaces,
         "output_format": output_format
     })
-    
     if watch:
         args.append("--watch")
-    
     return await run_kubectl_mtv_command(args)
 
-
-@mcp.tool()
-async def list_mappings(
-    namespace: str = "",
-    all_namespaces: bool = False,
-    output_format: str = "json"
-) -> str:
-    """List all MTV mappings (network and storage) in the cluster.
-    
-    Args:
-        namespace: Kubernetes namespace to query (optional)
-        all_namespaces: List mappings across all namespaces
-        output_format: Output format (json, yaml, or table)
-        
-    Returns:
-        JSON/YAML formatted mapping information or table output
-    """
+async def _list_mappings(namespace: str, all_namespaces: bool, output_format: str, watch: bool) -> str:
+    """List mappings implementation."""
     args = ["get", "mapping"] + await _build_base_args({
         "namespace": namespace,
         "all_namespaces": all_namespaces,
         "output_format": output_format
     })
+    if watch:
+        args.append("--watch")
     return await run_kubectl_mtv_command(args)
 
-
-@mcp.tool()
-async def list_hosts(
-    namespace: str = "",
-    all_namespaces: bool = False,
-    output_format: str = "json"
-) -> str:
-    """List all MTV migration hosts in the cluster.
-    
-    Args:
-        namespace: Kubernetes namespace to query (optional)
-        all_namespaces: List hosts across all namespaces
-        output_format: Output format (json, yaml, or table)
-        
-    Returns:
-        JSON/YAML formatted host information or table output
-    """
+async def _list_hosts(namespace: str, all_namespaces: bool, output_format: str, watch: bool) -> str:
+    """List hosts implementation."""
     args = ["get", "host"] + await _build_base_args({
         "namespace": namespace,
         "all_namespaces": all_namespaces,
         "output_format": output_format
     })
+    if watch:
+        args.append("--watch")
     return await run_kubectl_mtv_command(args)
 
-
-@mcp.tool()
-async def list_hooks(
-    namespace: str = "",
-    all_namespaces: bool = False,
-    output_format: str = "json"
-) -> str:
-    """List all MTV migration hooks in the cluster.
-    
-    Args:
-        namespace: Kubernetes namespace to query (optional)
-        all_namespaces: List hooks across all namespaces  
-        output_format: Output format (json, yaml, or table)
-        
-    Returns:
-        JSON/YAML formatted hook information or table output
-    """
+async def _list_hooks(namespace: str, all_namespaces: bool, output_format: str, watch: bool) -> str:
+    """List hooks implementation."""
     args = ["get", "hook"] + await _build_base_args({
         "namespace": namespace,
         "all_namespaces": all_namespaces,
         "output_format": output_format
     })
+    if watch:
+        args.append("--watch")
     return await run_kubectl_mtv_command(args)
 
 
+# Unified Tool functions using FastMCP
 @mcp.tool()
-async def list_inventory_vms(
-    provider_name: str,
+async def ListResources(
+    resource_type: str,
     namespace: str = "",
-    query: str = "",
-    output_format: str = "json"
+    all_namespaces: bool = False,
+    output_format: str = "json",
+    watch: bool = False
 ) -> str:
-    """List VMs from a specific provider's inventory.
+    """List MTV resources in the cluster.
     
-    This shows all VMs available for migration from a source platform. 
-    Use queries to filter by memory, CPU, power state, or name. Essential for migration planning.
-    
-    QUERY EXAMPLES:
-    vSphere:
-    - Basic filtering: "WHERE powerState = 'poweredOn'"
-    - Memory filtering: "WHERE memoryMB > 4096"
-    - Complex: "WHERE powerState = 'poweredOn' AND memoryMB > 4096 ORDER BY cpuCount DESC"
-    - Field selection: "SELECT name, powerStateHuman AS state, memoryGB, cpuCount WHERE memoryMB > 2048"
-    - Find concerns: "WHERE warningConcerns > 0 OR criticalConcerns > 0"
-    - Guest OS: "WHERE guestName LIKE '%Windows%'"
-    - Shared disks: "WHERE any(disks[*].shared = true)"
-    
-    oVirt:
-    - Active VMs: "WHERE status = 'up'"
-    - Memory filtering: "WHERE memory > 4294967296"  (bytes)
-    - CPU filtering: "WHERE cpuCores > 2 AND cpuSockets >= 1"
-    - Network info: "SELECT name, nics[*].mac, nics[*].ipAddress WHERE len(nics) > 0"
-    
-    OpenStack:
-    - Active instances: "WHERE status = 'ACTIVE'"
-    - By flavor: "WHERE flavorID = 'specific-flavor-id'"
-    - Network addresses: "SELECT name, addresses WHERE len(addresses) > 0"
-    - Recent VMs: "WHERE created > '2023-01-01' ORDER BY created DESC"
-    
-    OpenShift:
-    - Running VMs: "WHERE object.status.ready = true"
-    - By namespace: "WHERE namespace = 'specific-namespace'"
-    - VM instances: "SELECT name, namespace, object.spec.instancetype.name, diskCapacity ORDER BY name"
-    - With concerns: "WHERE criticalConcerns > 0 OR infoConcerns > 0"
-    
-    OVA:
-    - Basic VMs: "SELECT name, guestId, memoryMB, cpuCount, diskCapacity ORDER BY memoryMB DESC"
-    - By guest OS: "WHERE guestId LIKE '%linux%' OR guestId LIKE '%windows%'"
-    
-    COMMON VM FIELDS (varies by provider):
-    vSphere: name, powerState, powerStateHuman, cpuCount, memoryMB, memoryGB, ipAddress, 
-             guestName, host, id, disks[*].capacity, disks[*].shared, networks[*], 
-             concerns[*], concernsHuman, criticalConcerns, infoConcerns, warningConcerns,
-             devices[*], firmware, connectionState, isTemplate, path, parent
-    oVirt: name, status, memory, cpuCores, cpuSockets, cpuThreads, guestName, host, 
-           diskAttachments[*], nics[*].mac, nics[*].ipAddress, placementPolicyAffinity,
-           cluster, description, origin, highAvailability, stateless, deleteProtected
-    OpenStack: name, status, flavorID, imageID, hostID, addresses, created, updated, 
-               attachedVolumes[*], securityGroups[*], metadata, keyName, tenantID, 
-               flavor.name, image.name, project.name, hypervisorHostname
-    OpenShift: name, namespace, id, object.spec, object.status, concernsHuman, 
-               criticalConcerns, infoConcerns, diskCapacity, provider, uid, version
-    OVA: name, id, description, guestId, memoryMB, cpuCount, diskCapacity
+    Unified tool to list various MTV resource types including providers, plans, mappings, hosts, and hooks.
+    This consolidates multiple list operations into a single efficient tool.
     
     Args:
-        provider_name: Name of the provider to query
-        namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
-        output_format: Output format (json, yaml, table, or planvms)
-        
-    Returns:
-        VM inventory in the specified format:
-        - json/yaml: Full VM inventory objects with all details
-        - table: Human-readable table format
-        - planvms: Minimal VM structures (name + id only) in YAML format for plan creation
-        
-    Integration with Write Tools:
-        For create_plan() - use planvms format for direct compatibility:
-        1. Query VMs: list_inventory_vms("my-provider", output_format="planvms", query="WHERE powerState = 'poweredOn'")
-        2. Save YAML output to file: vm-list.yaml
-        3. Create plan: create_plan("my-plan", "my-provider", vms="@vm-list.yaml")
-        
-        For cancel_plan() - extract VM names from any format into a separate JSON/YAML array file
-    """
-    return await _list_inventory({
-        "provider_name": provider_name,
-        "namespace": namespace,
-        "query": query,
-        "output_format": output_format
-    }, "vm")
-
-
-@mcp.tool()
-async def list_inventory_networks(
-    provider_name: str,
-    namespace: str = "",
-    query: str = "",
-    output_format: str = "json"
-) -> str:
-    """List networks from a specific provider's inventory.
-    
-    TIP: Also query target OpenShift providers to discover available networks for mappings.
-    
-    QUERY EXAMPLES:
-    vSphere:
-    - Name filtering: "WHERE name LIKE '%VM Network%'"
-    - Network type: "WHERE variant = 'Standard'"
-    - VLAN networks: "WHERE vlanId != ''"
-    - Field selection: "SELECT name, variant, vlanId, path WHERE variant = 'Standard'"
-    
-    oVirt:
-    - Management networks: "WHERE name LIKE '%mgmt%' OR description LIKE '%Management%'"
-    - VM networks: "WHERE 'vm' IN usages"
-    - VLAN networks: "WHERE vlan != ''"
-    - NIC profiles: "SELECT name, nicProfiles, vlan WHERE len(nicProfiles) > 0"
-    
-    OpenStack:
-    - Active networks: "WHERE status = 'ACTIVE'"
-    - Shared networks: "WHERE shared = true"
-    - By project: "WHERE projectID = 'specific-project-id'"
-    - Recent networks: "WHERE createdAt > '2023-01-01' ORDER BY createdAt DESC"
-    
-    OpenShift:
-    - NetworkAttachmentDefinitions: "SELECT name, namespace, object.spec.config ORDER BY namespace, name"
-    - By namespace: "WHERE namespace = 'specific-namespace'"
-    - Bridge networks: "WHERE object.spec.config LIKE '%bridge%'"
-    
-    OVA:
-    - Available networks: "SELECT name, type, description ORDER BY name"
-    - Network types: "WHERE type = 'specific-network-type'"
-    
-    COMMON NETWORK FIELDS (varies by provider):
-    vSphere: name, id, variant (Standard, DvSwitch), vlanId, hostCount, path, parent.id, 
-             revision, accessible, summary.network
-    oVirt: name, id, dataCenter, vlan, usages[*], nicProfiles[*], description, hostCount, 
-           cluster, required, mtu, profileRequired, vnicProfilesDetails[*]
-    OpenStack: name, id, status, shared, adminStateUp, projectID, tenantID, subnets[*], 
-               createdAt, updatedAt, routerExternal, providerNetworkType, providerPhysicalNetwork
-    OpenShift: name, namespace, id, object.spec.config, object.kind, provider, uid, version, 
-               hostCount, selfLink (NetworkAttachmentDefinition resources)
-    OVA: name, id, description, type, hostCount
-    
-    Args:
-        provider_name: Name of the provider to query
-        namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
+        resource_type: Type of resource to list - 'provider', 'plan', 'mapping', 'host', or 'hook'
+        namespace: Kubernetes namespace to query (optional, defaults to current namespace)
+        all_namespaces: List resources across all namespaces
         output_format: Output format (json, yaml, or table)
+        watch: Watch for changes (not recommended for MCP, only supported for plans)
         
     Returns:
-        JSON/YAML formatted network inventory or table output
+        JSON/YAML formatted resource information or table output
+        
+    Examples:
+        # List all providers
+        ListResources("provider")
+        
+        # List plans across all namespaces with table output
+        ListResources("plan", all_namespaces=True, output_format="table")
+        
+        # Watch plan changes (specific namespace)
+        ListResources("plan", namespace="demo", watch=True)
     """
-    return await _list_inventory({
-        "provider_name": provider_name,
-        "namespace": namespace,
-        "query": query,
-        "output_format": output_format
-    }, "network")
+    # Validate resource type
+    valid_types = ["provider", "plan", "mapping", "host", "hook"]
+    if resource_type not in valid_types:
+        raise KubectlMTVError(f"Invalid resource_type '{resource_type}'. Valid types: {', '.join(valid_types)}")
+    
+    # Route to appropriate sub-action method
+    if resource_type == "provider":
+        return await _list_providers(namespace, all_namespaces, output_format, watch)
+    elif resource_type == "plan":
+        return await _list_plans(namespace, all_namespaces, output_format, watch)
+    elif resource_type == "mapping":
+        return await _list_mappings(namespace, all_namespaces, output_format, watch)
+    elif resource_type == "host":
+        return await _list_hosts(namespace, all_namespaces, output_format, watch)
+    elif resource_type == "hook":
+        return await _list_hooks(namespace, all_namespaces, output_format, watch)
 
 
 @mcp.tool()
-async def list_inventory_storage(
-    provider_name: str,
-    namespace: str = "",
-    query: str = "",
-    output_format: str = "json"
-) -> str:
-    """List storage from a specific provider's inventory.
-    
-    TIP: Also query target OpenShift providers to discover available StorageClasses for mappings.
-    
-    QUERY EXAMPLES:
-    vSphere:
-    - Available space: "WHERE free > 500Gi ORDER BY free DESC"
-    - Storage type: "WHERE type = 'NFS'"
-    - Maintenance check: "WHERE maintenance != 'normal'"
-    - Utilization: "SELECT name, capacityHuman, freeHuman, type WHERE (capacity - free) / capacity > 0.7"
-    - Large datastores: "WHERE capacity > 1Ti ORDER BY capacity DESC"
-    - SAN storage: "WHERE len(backingDevicesNames) > 0"
-    
-    oVirt:
-    - Data domains: "WHERE type = 'data'"
-    - Available storage: "WHERE free > 107374182400 ORDER BY free DESC"  # >100GB
-    - Storage technology: "WHERE storage.type = 'nfs'"
-    - By datacenter: "WHERE dataCenter = 'specific-datacenter-id'"
-    - Export domains: "WHERE type = 'export'"
-    
-    OpenStack:
-    - Available storage: "WHERE free > 107374182400 ORDER BY free DESC"
-    - Volume types: "SELECT name, description, isPublic, extraSpecs ORDER BY name"
-    - Public volumes: "WHERE isPublic = true"
-    
-    OpenShift:
-    - StorageClasses: "SELECT name, object.provisioner, object.reclaimPolicy ORDER BY name"
-    - Default storage: "WHERE object.metadata.annotations['storageclass.kubernetes.io/is-default-class'] = 'true'"
-    - Virtualization storage: "WHERE object.metadata.annotations['storageclass.kubevirt.io/is-default-virt-class'] = 'true'"
-    - By provisioner: "WHERE object.provisioner LIKE '%ceph%' OR object.provisioner LIKE '%nfs%'"
-    
-    OVA:
-    - Available storage: "SELECT name, type, capacityHuman, freeHuman WHERE capacity > 1073741824 ORDER BY capacity DESC"
-    - Storage types: "WHERE type = 'specific-storage-type'"
-    
-    COMMON STORAGE FIELDS (varies by provider):
-    vSphere: name, id, type (NFS, VMFS), capacity, capacityHuman, free, freeHuman, 
-             maintenance, path, accessible, multipleHostAccess, summary.datastore
-    oVirt: name, id, type (data, export, image), capacity, capacityHuman, free, freeHuman, 
-           dataCenter, storage.type (nfs, fcp, glance), path, status, master, diskProfileCompatibility[*]
-    OpenStack: name, id, description, isPublic, qosSpecs.id, extraSpecs, 
-               volumeBackendName (volume types for storage)
-    OpenShift: name, id, object.provisioner, object.reclaimPolicy, object.volumeBindingMode, 
-               object.allowVolumeExpansion, object.parameters, provider, uid, version,
-               object.metadata.annotations['storageclass.kubernetes.io/is-default-class']
-    OVA: name, id, description, capacity, capacityHuman, free, freeHuman, type
-    
-    Args:
-        provider_name: Name of the provider to query
-        namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
-        output_format: Output format (json, yaml, or table)
-        
-    Returns:
-        JSON/YAML formatted storage inventory or table output
-    """
-    return await _list_inventory({
-        "provider_name": provider_name,
-        "namespace": namespace,
-        "query": query,
-        "output_format": output_format
-    }, "storage")
-
-
-@mcp.tool()
-async def list_inventory_hosts(
-    provider_name: str,
-    namespace: str = "",
-    query: str = "",
-    output_format: str = "json"
-) -> str:
-    """List hosts from a specific provider's inventory.
-    
-    QUERY EXAMPLES:
-    vSphere:
-    - Active hosts: "WHERE inMaintenance = false"
-    - High-capacity hosts: "WHERE cpuCores > 16 AND cpuSockets >= 2"
-    - Network speed: "WHERE any(networkAdapters[*].linkSpeed >= 10000)"
-    - Storage connectivity: "SELECT name, cpuCores, len(datastores) AS datastoreCount WHERE len(datastores) > 5"
-    - Physical NICs: "SELECT name, networking.pNICs[*].linkSpeed WHERE len(networking.pNICs) > 4"
-    
-    oVirt:
-    - By cluster: "WHERE cluster = 'specific-cluster-id'"
-    - Resource analysis: "SELECT name, cpuCores, cpuSockets, memory WHERE cpuCores > 8"
-    - Status check: "WHERE status != 'up'"
-    
-    COMMON HOST FIELDS:
-    - name, inMaintenance, cpuCores, cpuSockets, managementServerIp, cluster
-    - networkAdapters[*].ipAddress, networkAdapters[*].linkSpeed, networkAdapters[*].mtu
-    - datastores[*].id, networking.pNICs[*].linkSpeed, hostScsiDisks[*]
-    
-    Args:
-        provider_name: Name of the provider to query
-        namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
-        output_format: Output format (json, yaml, or table)
-        
-    Returns:
-        JSON/YAML formatted host inventory or table output
-    """
-    return await _list_inventory({
-        "provider_name": provider_name,
-        "namespace": namespace,
-        "query": query,
-        "output_format": output_format
-    }, "host")
-
-
-@mcp.tool()
-async def list_inventory_clusters(
-    provider_name: str,
-    namespace: str = "",
-    query: str = "",
-    output_format: str = "json"
-) -> str:
-    """List clusters from a specific provider's inventory (oVirt, vSphere).
-    
-    QUERY EXAMPLES:
-    vSphere:
-    - High availability clusters: "WHERE haEnabled = true"
-    - DRS enabled clusters: "WHERE drsEnabled = true"
-    - Resource pools: "SELECT name, totalCpuMhz, totalMemoryMB WHERE totalCpuMhz > 50000"
-    - By datacenter: "WHERE dataCenter = 'specific-datacenter-id'"
-    
-    oVirt:
-    - Active clusters: "WHERE status = 'up'"
-    - CPU architecture: "WHERE architecture = 'x86_64'"
-    - Cluster features: "SELECT name, cpuArchitecture, version, haReservation WHERE haReservation = true"
-    - By datacenter: "WHERE dataCenter = 'specific-datacenter-id'"
-    
-    COMMON CLUSTER FIELDS (varies by provider):
-    vSphere: name, id, dataCenter, haEnabled, drsEnabled, totalCpuMhz, totalMemoryMB, numHosts
-    oVirt: name, id, dataCenter, status, architecture, version, haReservation, cpuArchitecture
-    
-    Args:
-        provider_name: Name of the provider to query
-        namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
-        output_format: Output format (json, yaml, or table)
-        
-    Returns:
-        JSON/YAML formatted cluster inventory or table output
-    """
-    return await _list_inventory({
-        "provider_name": provider_name,
-        "namespace": namespace,
-        "query": query,
-        "output_format": output_format
-    }, "cluster")
-
-
-@mcp.tool()
-async def list_inventory_datacenters(
-    provider_name: str,
-    namespace: str = "",
-    query: str = "",
-    output_format: str = "json"
-) -> str:
-    """List datacenters from a specific provider's inventory (oVirt, vSphere).
-    
-    QUERY EXAMPLES:
-    vSphere:
-    - All datacenters: "SELECT name, id, path ORDER BY name"
-    - By location: "WHERE name LIKE '%US%' OR name LIKE '%East%'"
-    - Resource summary: "SELECT name, totalClusters, totalHosts WHERE totalHosts > 10"
-    
-    oVirt:
-    - Active datacenters: "WHERE status = 'up'"
-    - By version: "WHERE version LIKE '4.%'"
-    - Storage analysis: "SELECT name, storageFormat, quotaMode WHERE quotaMode = 'enabled'"
-    - MAC pools: "SELECT name, macPoolRanges WHERE len(macPoolRanges) > 0"
-    
-    COMMON DATACENTER FIELDS (varies by provider):
-    vSphere: name, id, path, totalClusters, totalHosts, totalVMs
-    oVirt: name, id, status, version, storageFormat, quotaMode, macPoolRanges[*]
-    
-    Args:
-        provider_name: Name of the provider to query
-        namespace: Kubernetes namespace containing the provider (optional)
-        query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
-        output_format: Output format (json, yaml, or table)
-        
-    Returns:
-        JSON/YAML formatted datacenter inventory or table output
-    """
-    return await _list_inventory({
-        "provider_name": provider_name,
-        "namespace": namespace,
-        "query": query,
-        "output_format": output_format
-    }, "datacenter")
-
-
-@mcp.tool()
-async def list_inventory_generic(
+async def ListInventory(
     resource_type: str,
     provider_name: str,
     namespace: str = "",
     query: str = "",
     output_format: str = "json"
 ) -> str:
-    """List any inventory resource type from a provider (advanced users).
+    """List inventory resources from a provider.
     
-    This is the most flexible inventory tool - use it to access any resource type not covered 
-    by the specific tools above. All the same query syntax applies.
+    Unified tool to query various resource types from provider inventories.
+    Supports all resource types with powerful SQL-like query capabilities.
     
     AVAILABLE RESOURCE TYPES BY PROVIDER:
     vSphere: vm, network, storage, host, cluster, datacenter, datastore, folder, resource-pool
@@ -768,7 +390,7 @@ async def list_inventory_generic(
 
 
 @mcp.tool()
-async def get_logs(
+async def GetLogs(
     pod_type: str = "controller",
     container: str = "main", 
     lines: int = 100,
@@ -947,58 +569,12 @@ async def _get_importer_logs(lines: int, follow: bool, namespace: str, plan_id: 
     return json.dumps(result, indent=2)
 
 
-@mcp.tool()
-async def get_migration_pvcs(
-    migration_id: str = "",
-    plan_id: str = "",
-    vm_id: str = "",
-    namespace: str = "",
-    all_namespaces: bool = False,
-    output_format: str = "json"
+# Sub-action methods for migration storage
+async def _get_migration_pvcs(
+    migration_id: str, plan_id: str, vm_id: str, 
+    namespace: str, all_namespaces: bool, output_format: str
 ) -> str:
-    """Get PersistentVolumeClaims related to VM migrations.
-    
-    Find PVCs that are part of VM migrations by searching for specific labels:
-    - migration: Migration UUID (NOT the migration name)
-    - plan: Plan UUID (NOT the plan name)  
-    - vmID: VM identifier (e.g., vm-47)
-    
-    IMPORTANT: Use UUIDs, not names! 
-    - CORRECT: migration_id="4399056b-4f08-497d-a559-3dd530de3459" (UUID from plan status)
-    - WRONG: migration_id="migrate-small-vm-mmpj4" (migration name - won't work)
-    - CORRECT: plan_id="3943f9a2-d4a4-4326-b25c-57d06ff53c21" (UUID from plan metadata)  
-    - WRONG: plan_id="migrate-small-vm" (plan name - won't work)
-    
-    How to get the correct UUIDs:
-    1. Use get_plan_vms() to get migration UUIDs from plan status
-    2. Use list_plans() with json output to get plan UUIDs from metadata.uid
-    3. Check kubectl labels: kubectl get pvc -n <namespace> --show-labels
-    
-    Args:
-        migration_id: Migration UUID to filter by (optional) - get from plan VM status
-        plan_id: Plan UUID to filter by (optional) - get from plan metadata.uid
-        vm_id: VM ID to filter by (optional) - e.g., vm-47, vm-73
-        namespace: Kubernetes namespace to search in (optional)
-        all_namespaces: Search across all namespaces
-        output_format: Output format (json, yaml, or table)
-        
-    Returns:
-        JSON/YAML formatted PVC information or table output
-        
-        Enhanced JSON Output:
-        When using JSON output format, PVCs include:
-        - "describe" field with kubectl describe output
-        - Complete diagnostic information and events
-        
-    Examples:
-        # Get PVCs for specific migration (use UUIDs from get_plan_vms output)
-        get_migration_pvcs("4399056b-4f08-497d-a559-3dd530de3459", 
-                          "3943f9a2-d4a4-4326-b25c-57d06ff53c21", 
-                          "vm-47", "demo")
-        
-        # Get all migration PVCs in namespace  
-        get_migration_pvcs(namespace="demo", output_format="table")
-    """
+    """Get PVCs implementation."""
     try:
         # Build label selector
         label_selectors = []
@@ -1039,70 +615,24 @@ async def get_migration_pvcs(
                     try:
                         describe_cmd = ["describe", "pvc", pvc_name, "-n", pvc_namespace]
                         describe_result = await run_kubectl_command(describe_cmd)
-                        # Add describe information to the PVC object
                         pvc["describe"] = describe_result
                     except Exception as e:
                         pvc["describe"] = f"Could not get describe output: {str(e)}"
                 
                 return json.dumps(pvc_data, indent=2)
             except json.JSONDecodeError:
-                pass  # Fall back to original result if JSON parsing fails
+                pass
         
         return result
         
     except Exception as e:
         return f"Error retrieving migration PVCs: {str(e)}"
 
-
-@mcp.tool()
-async def get_migration_datavolumes(
-    migration_id: str = "",
-    plan_id: str = "",
-    vm_id: str = "",
-    namespace: str = "",
-    all_namespaces: bool = False,
-    output_format: str = "json"
+async def _get_migration_datavolumes(
+    migration_id: str, plan_id: str, vm_id: str,
+    namespace: str, all_namespaces: bool, output_format: str
 ) -> str:
-    """Get DataVolumes related to VM migrations.
-    
-    Find DataVolumes that are part of VM migrations by searching for specific labels:
-    - migration: Migration UUID (NOT the migration name)
-    - plan: Plan UUID (NOT the plan name)  
-    - vmID: VM identifier (e.g., vm-47)
-    
-    IMPORTANT: Use UUIDs, not names! 
-    - CORRECT: migration_id="4399056b-4f08-497d-a559-3dd530de3459" (UUID from plan status)
-    - WRONG: migration_id="migrate-small-vm-mmpj4" (migration name - won't work)
-    - CORRECT: plan_id="3943f9a2-d4a4-4326-b25c-57d06ff53c21" (UUID from plan metadata)  
-    - WRONG: plan_id="migrate-small-vm" (plan name - won't work)
-    
-    How to get the correct UUIDs:
-    1. Use get_plan_vms() to get migration UUIDs from plan status
-    2. Use list_plans() with json output to get plan UUIDs from metadata.uid
-    3. Check kubectl labels: kubectl get dv -n <namespace> --show-labels
-    
-    Args:
-        migration_id: Migration UUID to filter by (optional) - get from plan VM status
-        plan_id: Plan UUID to filter by (optional) - get from plan metadata.uid
-        vm_id: VM ID to filter by (optional) - e.g., vm-47, vm-73
-        namespace: Kubernetes namespace to search in (optional)
-        all_namespaces: Search across all namespaces
-        output_format: Output format (json, yaml, or table)
-        
-    Returns:
-        JSON/YAML formatted DataVolume information or table output
-        
-        Enhanced JSON Output:
-        When using JSON output format, DataVolumes include:
-        - "describe" field with kubectl describe output
-        - Complete diagnostic information and events
-        
-    Examples:
-        # Get DataVolumes for specific migration (use UUIDs from get_plan_vms output)
-        get_migration_datavolumes("4399056b-4f08-497d-a559-3dd530de3459", 
-                                 "3943f9a2-d4a4-4326-b25c-57d06ff53c21", 
-                                 "vm-47", "demo")
-    """
+    """Get DataVolumes implementation."""
     try:
         # Build label selector
         label_selectors = []
@@ -1143,14 +673,13 @@ async def get_migration_datavolumes(
                     try:
                         describe_cmd = ["describe", "datavolume", dv_name, "-n", dv_namespace]
                         describe_result = await run_kubectl_command(describe_cmd)
-                        # Add describe information to the DataVolume object
                         dv["describe"] = describe_result
                     except Exception as e:
                         dv["describe"] = f"Could not get describe output: {str(e)}"
                 
                 return json.dumps(dv_data, indent=2)
             except json.JSONDecodeError:
-                pass  # Fall back to original result if JSON parsing fails
+                pass
         
         return result
         
@@ -1159,7 +688,8 @@ async def get_migration_datavolumes(
 
 
 @mcp.tool()
-async def get_migration_storage(
+async def GetMigrationStorage(
+    resource_type: str = "all",
     migration_id: str = "",
     plan_id: str = "",
     vm_id: str = "",
@@ -1167,14 +697,20 @@ async def get_migration_storage(
     all_namespaces: bool = False,
     output_format: str = "json"
 ) -> str:
-    """Get all storage resources (PVCs and DataVolumes) related to VM migrations.
+    """Get storage resources (PVCs and DataVolumes) related to VM migrations.
     
-    Find both PVCs and DataVolumes that are part of VM migrations by searching for specific labels:
+    Unified tool to access migration storage resources with granular control over resource types.
+    Supports filtering by migration labels to find specific storage resources.
+    
+    Resource Types:
+    - 'all': Get both PVCs and DataVolumes (default)
+    - 'pvc': Get only PersistentVolumeClaims 
+    - 'datavolume': Get only DataVolumes
+    
+    Find storage resources that are part of VM migrations by searching for specific labels:
     - migration: Migration UUID (NOT the migration name)
     - plan: Plan UUID (NOT the plan name)  
     - vmID: VM identifier (e.g., vm-47)
-    
-    This is a convenience tool that combines results from both PVCs and DataVolumes.
     
     IMPORTANT: Use UUIDs, not names! 
     - CORRECT: migration_id="4399056b-4f08-497d-a559-3dd530de3459" (UUID from plan status)
@@ -1183,11 +719,12 @@ async def get_migration_storage(
     - WRONG: plan_id="migrate-small-vm" (plan name - won't work)
     
     How to get the correct UUIDs:
-    1. Use get_plan_vms() to get migration UUIDs from plan status  
-    2. Use list_plans() with json output to get plan UUIDs from metadata.uid
+    1. Use GetPlanVms() to get migration UUIDs from plan status  
+    2. Use ListResources("plan") with json output to get plan UUIDs from metadata.uid
     3. Check kubectl labels: kubectl get pvc,dv -n <namespace> --show-labels
     
     Args:
+        resource_type: Type of storage resource - 'all', 'pvc', or 'datavolume' (default 'all')
         migration_id: Migration UUID to filter by (optional) - get from plan VM status
         plan_id: Plan UUID to filter by (optional) - get from plan metadata.uid
         vm_id: VM ID to filter by (optional) - e.g., vm-47, vm-73
@@ -1196,65 +733,58 @@ async def get_migration_storage(
         output_format: Output format (json, yaml, or table)
         
     Returns:
-        Combined JSON/YAML formatted storage information or table output
+        JSON/YAML formatted storage information or table output
         
         Enhanced JSON Output:
-        When using JSON output format, PVCs and DataVolumes include:
+        When using JSON output format, resources include:
         - "describe" field with kubectl describe output
         - Complete diagnostic information and events
         
-        Additional manual troubleshooting:
-        - Check events: kubectl get events -n <namespace> --sort-by=.metadata.creationTimestamp
-        - Verify storage class: kubectl get storageclass
-        - Check storage cluster health: kubectl get pods -n openshift-storage
-        
     Examples:
         # Get all storage for specific migration
-        get_migration_storage("4399056b-4f08-497d-a559-3dd530de3459", 
-                             "3943f9a2-d4a4-4326-b25c-57d06ff53c21", 
-                             "vm-47", "demo")
+        GetMigrationStorage("all", "4399056b-4f08-497d-a559-3dd530de3459", 
+                           "3943f9a2-d4a4-4326-b25c-57d06ff53c21", "vm-47", "demo")
         
-        # Get all migration storage in namespace (table format for overview)
-        get_migration_storage(namespace="demo", output_format="table")
+        # Get only PVCs in namespace (table format)
+        GetMigrationStorage("pvc", namespace="demo", output_format="table")
+        
+        # Get only DataVolumes for specific plan
+        GetMigrationStorage("datavolume", plan_id="3943f9a2-d4a4-4326-b25c-57d06ff53c21")
     """
     try:
-        # Get both PVCs and DataVolumes
-        pvcs_result = await get_migration_pvcs(
-            migration_id=migration_id,
-            plan_id=plan_id,
-            vm_id=vm_id,
-            namespace=namespace,
-            all_namespaces=all_namespaces,
-            output_format=output_format
-        )
+        # Validate resource type
+        valid_types = ["all", "pvc", "datavolume"]
+        if resource_type not in valid_types:
+            raise KubectlMTVError(f"Invalid resource_type '{resource_type}'. Valid types: {', '.join(valid_types)}")
         
-        dvs_result = await get_migration_datavolumes(
-            migration_id=migration_id,
-            plan_id=plan_id,
-            vm_id=vm_id,
-            namespace=namespace,
-            all_namespaces=all_namespaces,
-            output_format=output_format
-        )
-        
-        if output_format == "table":
-            return f"=== PersistentVolumeClaims ===\n{pvcs_result}\n\n=== DataVolumes ===\n{dvs_result}"
-        elif output_format == "json":
-            # Try to combine JSON results
-            try:
-                import json
-                pvcs_data = json.loads(pvcs_result) if pvcs_result.strip() else {"items": []}
-                dvs_data = json.loads(dvs_result) if dvs_result.strip() else {"items": []}
-                
-                combined = {
-                    "pvcs": pvcs_data,
-                    "datavolumes": dvs_data
-                }
-                return json.dumps(combined, indent=2)
-            except json.JSONDecodeError:
+        # Route to appropriate sub-action method(s)
+        if resource_type == "pvc":
+            return await _get_migration_pvcs(migration_id, plan_id, vm_id, namespace, all_namespaces, output_format)
+        elif resource_type == "datavolume":
+            return await _get_migration_datavolumes(migration_id, plan_id, vm_id, namespace, all_namespaces, output_format)
+        else:  # resource_type == "all"
+            # Get both PVCs and DataVolumes
+            pvcs_result = await _get_migration_pvcs(migration_id, plan_id, vm_id, namespace, all_namespaces, output_format)
+            dvs_result = await _get_migration_datavolumes(migration_id, plan_id, vm_id, namespace, all_namespaces, output_format)
+            
+            if output_format == "table":
+                return f"=== PersistentVolumeClaims ===\n{pvcs_result}\n\n=== DataVolumes ===\n{dvs_result}"
+            elif output_format == "json":
+                # Try to combine JSON results
+                try:
+                    import json
+                    pvcs_data = json.loads(pvcs_result) if pvcs_result.strip() else {"items": []}
+                    dvs_data = json.loads(dvs_result) if dvs_result.strip() else {"items": []}
+                    
+                    combined = {
+                        "pvcs": pvcs_data,
+                        "datavolumes": dvs_data
+                    }
+                    return json.dumps(combined, indent=2)
+                except json.JSONDecodeError:
+                    return f"PVCs:\n{pvcs_result}\n\nDataVolumes:\n{dvs_result}"
+            else:
                 return f"PVCs:\n{pvcs_result}\n\nDataVolumes:\n{dvs_result}"
-        else:
-            return f"PVCs:\n{pvcs_result}\n\nDataVolumes:\n{dvs_result}"
         
     except Exception as e:
         return f"Error retrieving migration storage resources: {str(e)}"
@@ -1262,7 +792,7 @@ async def get_migration_storage(
 
 
 @mcp.tool()
-async def get_version(
+async def GetVersion(
     output_format: str = "json"
 ) -> str:
     """Get kubectl-mtv and MTV operator version information.
@@ -1289,7 +819,7 @@ async def get_version(
 
 
 @mcp.tool()
-async def get_plan_vms(
+async def GetPlanVms(
     plan_name: str,
     namespace: str = "",
     output_format: str = "json",
@@ -1334,4 +864,5 @@ async def get_plan_vms(
 
 
 if __name__ == "__main__":
+    mcp.run()
     mcp.run()
