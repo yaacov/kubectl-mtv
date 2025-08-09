@@ -61,8 +61,6 @@ For AI assistants and chat applications: These MCP servers provide access to the
 - **start_plan**: Start a migration plan to begin migrating VMs
 - **cancel_plan**: Cancel a running migration plan
 - **cutover_plan**: Perform cutover for a migration plan
-- **archive_plan**: Archive a completed migration plan
-- **unarchive_plan**: Unarchive a migration plan
 
 **Resource Creation:**
 - **create_provider**: Create a new provider for connecting to source platforms
@@ -81,7 +79,7 @@ For AI assistants and chat applications: These MCP servers provide access to the
 **Resource Modification:**
 - **patch_provider**: Patch/modify an existing provider
 - **patch_mapping**: Patch/modify an existing mapping
-- **patch_plan**: Patch/modify an existing migration plan
+- **patch_plan**: Patch/modify an existing migration plan (includes archiving/unarchiving)
 
 ## Quick Start
 

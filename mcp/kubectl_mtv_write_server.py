@@ -192,14 +192,12 @@ async def ManagePlanLifecycle(
         # Perform cutover
         ManagePlanLifecycle("cutover", "production-migration")
         
-        # Archive completed plan
-        ManagePlanLifecycle("archive", "production-migration")
-        
-        # Restore archived plan
-        ManagePlanLifecycle("unarchive", "production-migration")
+        # Note: To archive/unarchive plans, use PatchPlan:
+        # PatchPlan("production-migration", archived=True)   # Archive
+        # PatchPlan("production-migration", archived=False)  # Unarchive
     """
     # Validate action
-    valid_actions = ["start", "cancel", "cutover", "archive", "unarchive"]
+    valid_actions = ["start", "cancel", "cutover"]
     if action not in valid_actions:
         raise KubectlMTVError(f"Invalid action '{action}'. Valid actions: {', '.join(valid_actions)}")
     
@@ -214,10 +212,6 @@ async def ManagePlanLifecycle(
         return await _cancel_plan(plan_name, namespace, vms)
     elif action == "cutover":
         return await _cutover_plan(plan_name, namespace)
-    elif action == "archive":
-        return await _archive_plan(plan_name, namespace)
-    elif action == "unarchive":
-        return await _unarchive_plan(plan_name, namespace)
 
 
 # Resource Creation Operations
