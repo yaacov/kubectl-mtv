@@ -19,9 +19,9 @@ func FetchProviders(configFlags *genericclioptions.ConfigFlags, baseURL string) 
 	}
 
 	// Construct the path for provider inventory: /providers/<spec.type>/<metadata.uid>
-	path := "/providers"
+	path := "/providers?detail=1"
 
-	klog.V(4).Infof("Fetching provider inventory from path: %s", path)
+	klog.V(4).Infof("Fetching provider inventory from: %s%s", baseURL, path)
 
 	// Fetch the provider inventory
 	responseBytes, err := httpClient.Get(path)
