@@ -159,6 +159,9 @@ async def _list_inventory(arguments: dict[str, Any], resource_type: str) -> str:
     if "query" in arguments and arguments["query"]:
         args.extend(["-q", arguments["query"]])
     
+    if "inventory_url" in arguments and arguments["inventory_url"]:
+        args.extend(["--inventory-url", arguments["inventory_url"]])
+    
     # Support both json and planvms output formats
     output_format = arguments.get("output_format", "json")
     if output_format in ["json", "planvms"]:
@@ -181,6 +184,9 @@ async def _list_inventory_generic(arguments: dict[str, Any]) -> str:
     if "query" in arguments and arguments["query"]:
         args.extend(["-q", arguments["query"]])
     
+    if "inventory_url" in arguments and arguments["inventory_url"]:
+        args.extend(["--inventory-url", arguments["inventory_url"]])
+    
     # Support both json and planvms output formats
     output_format = arguments.get("output_format", "json")
     if output_format in ["json", "planvms"]:
@@ -193,12 +199,14 @@ async def _list_inventory_generic(arguments: dict[str, Any]) -> str:
 
 
 # Sub-action methods for basic resources
-async def _list_providers(namespace: str, all_namespaces: bool) -> str:
+async def _list_providers(namespace: str, all_namespaces: bool, inventory_url: str = "") -> str:
     """List providers implementation."""
     args = ["get", "provider"] + await _build_base_args({
         "namespace": namespace, 
         "all_namespaces": all_namespaces
     })
+    if inventory_url:
+        args.extend(["--inventory-url", inventory_url])
     return await run_kubectl_mtv_command(args)
 
 async def _list_plans(namespace: str, all_namespaces: bool) -> str:
@@ -239,7 +247,8 @@ async def _list_hooks(namespace: str, all_namespaces: bool) -> str:
 async def ListResources(
     resource_type: str,
     namespace: str = "",
-    all_namespaces: bool = False
+    all_namespaces: bool = False,
+    inventory_url: str = ""
 ) -> str:
     """List MTV resources in the cluster.
     
@@ -250,6 +259,7 @@ async def ListResources(
         resource_type: Type of resource to list - 'provider', 'plan', 'mapping', 'host', or 'hook'
         namespace: Kubernetes namespace to query (optional, defaults to current namespace)
         all_namespaces: List resources across all namespaces
+        inventory_url: Base URL for inventory service (optional, only used for provider listings to fetch inventory counts)
         
     Returns:
         JSON formatted resource information
@@ -257,6 +267,9 @@ async def ListResources(
     Examples:
         # List all providers
         ListResources("provider")
+        
+        # List providers with inventory information
+        ListResources("provider", inventory_url="https://inventory.example.com")
         
         # List plans across all namespaces
         ListResources("plan", all_namespaces=True)
@@ -271,7 +284,7 @@ async def ListResources(
     
     # Route to appropriate sub-action method
     if resource_type == "provider":
-        return await _list_providers(namespace, all_namespaces)
+        return await _list_providers(namespace, all_namespaces, inventory_url)
     elif resource_type == "plan":
         return await _list_plans(namespace, all_namespaces)
     elif resource_type == "mapping":
@@ -288,7 +301,8 @@ async def ListInventory(
     provider_name: str,
     namespace: str = "",
     query: str = "",
-    output_format: str = "json"
+    output_format: str = "json",
+    inventory_url: str = ""
 ) -> str:
     """List inventory resources from a provider.
     
@@ -371,6 +385,7 @@ async def ListInventory(
         namespace: Kubernetes namespace containing the provider (optional)
         query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
         output_format: Output format - 'json' for full data or 'planvms' for plan-compatible VM structures (default 'json')
+        inventory_url: Base URL for inventory service (optional, auto-discovered if not provided)
         
     Returns:
         JSON formatted inventory or plan-compatible VM structures (planvms format)
@@ -380,7 +395,8 @@ async def ListInventory(
         "provider_name": provider_name,
         "namespace": namespace,
         "query": query,
-        "output_format": output_format
+        "output_format": output_format,
+        "inventory_url": inventory_url
     })
 
 
