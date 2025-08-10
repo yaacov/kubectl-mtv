@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/klog/v2"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/providerutil"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
@@ -100,6 +101,32 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 		}
 	}
 
+	// Fetch bulk provider inventory data
+	var bulkProviderData map[string][]map[string]interface{}
+	if baseURL != "" {
+		if bulk, err := client.FetchProviders(configFlags, baseURL); err == nil && bulk != nil {
+			if bulkMap, ok := bulk.(map[string]interface{}); ok {
+				bulkProviderData = make(map[string][]map[string]interface{})
+				// Parse bulk data for each provider type
+				for providerType, providerList := range bulkMap {
+					if providerListSlice, ok := providerList.([]interface{}); ok {
+						var typedProviders []map[string]interface{}
+						for _, p := range providerListSlice {
+							if providerMap, ok := p.(map[string]interface{}); ok {
+								typedProviders = append(typedProviders, providerMap)
+							}
+						}
+						bulkProviderData[providerType] = typedProviders
+					}
+				}
+			} else {
+				klog.V(4).Infof("Failed to parse bulk provider response: expected map, got %T", bulk)
+			}
+		} else {
+			klog.V(4).Infof("Failed to fetch bulk provider data: %v", err)
+		}
+	}
+
 	// Create printer items with condition statuses incorporated
 	items := []map[string]interface{}{}
 	for i := range providers.Items {
@@ -125,18 +152,79 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 			"object": provider.Object, // Include the original object
 		}
 
-		if baseURL != "" {
-			inventory, err := client.FetchProviderInventory(configFlags, baseURL, provider, "")
-			if err == nil && inventory != nil {
-				if inventoryMap, ok := inventory.(map[string]interface{}); ok {
-					item["vmCount"] = inventoryMap["vmCount"]
-					item["hostCount"] = inventoryMap["hostCount"]
-					item["datacenterCount"] = inventoryMap["datacenterCount"]
-					item["clusterCount"] = inventoryMap["clusterCount"]
-					item["networkCount"] = inventoryMap["networkCount"]
-					item["datastoreCount"] = inventoryMap["datastoreCount"]
-					item["storageClassCount"] = inventoryMap["storageClassCount"]
-					item["product"] = inventoryMap["product"]
+		// Extract inventory counts from bulk data
+		if bulkProviderData != nil {
+			providerType, found, _ := unstructured.NestedString(provider.Object, "spec", "type")
+			providerUID := string(provider.GetUID())
+			providerName := provider.GetName()
+
+			if found && providerType != "" {
+				if providersList, exists := bulkProviderData[providerType]; exists {
+					// Find matching provider by UID in bulk data
+					providerFound := false
+					for _, bulkProvider := range providersList {
+						if bulkUID, ok := bulkProvider["uid"].(string); ok && bulkUID == providerUID {
+							providerFound = true
+
+							// Extract inventory counts from bulk data
+							if vmCount, ok := bulkProvider["vmCount"]; ok {
+								item["vmCount"] = vmCount
+							}
+							if hostCount, ok := bulkProvider["hostCount"]; ok {
+								item["hostCount"] = hostCount
+							}
+							if datacenterCount, ok := bulkProvider["datacenterCount"]; ok {
+								item["datacenterCount"] = datacenterCount
+							}
+							if clusterCount, ok := bulkProvider["clusterCount"]; ok {
+								item["clusterCount"] = clusterCount
+							}
+							if networkCount, ok := bulkProvider["networkCount"]; ok {
+								item["networkCount"] = networkCount
+							}
+							if datastoreCount, ok := bulkProvider["datastoreCount"]; ok {
+								item["datastoreCount"] = datastoreCount
+							}
+							if storageClassCount, ok := bulkProvider["storageClassCount"]; ok {
+								item["storageClassCount"] = storageClassCount
+							}
+							if product, ok := bulkProvider["product"]; ok {
+								item["product"] = product
+							}
+							// Add other provider-type specific counts
+							if regionCount, ok := bulkProvider["regionCount"]; ok {
+								item["regionCount"] = regionCount
+							}
+							if projectCount, ok := bulkProvider["projectCount"]; ok {
+								item["projectCount"] = projectCount
+							}
+							if imageCount, ok := bulkProvider["imageCount"]; ok {
+								item["imageCount"] = imageCount
+							}
+							if volumeCount, ok := bulkProvider["volumeCount"]; ok {
+								item["volumeCount"] = volumeCount
+							}
+							if volumeTypeCount, ok := bulkProvider["volumeTypeCount"]; ok {
+								item["volumeTypeCount"] = volumeTypeCount
+							}
+							if diskCount, ok := bulkProvider["diskCount"]; ok {
+								item["diskCount"] = diskCount
+							}
+							if storageCount, ok := bulkProvider["storageCount"]; ok {
+								item["storageCount"] = storageCount
+							}
+							if storageDomainCount, ok := bulkProvider["storageDomainCount"]; ok {
+								item["storageDomainCount"] = storageDomainCount
+							}
+							break
+						}
+					}
+
+					if !providerFound {
+						klog.V(4).Infof("Provider %s (%s) not found in bulk data", providerName, providerUID)
+					}
+				} else {
+					klog.V(4).Infof("No bulk data available for provider type %s", providerType)
 				}
 			}
 		}
