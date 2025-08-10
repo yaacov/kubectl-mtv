@@ -14,7 +14,6 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 
-	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 
@@ -37,14 +36,16 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 		return fmt.Errorf("failed to get provider '%s': %v", name, err)
 	}
 
-	// Convert to typed provider for easier manipulation and validation
-	var provider forkliftv1beta1.Provider
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(existingProvider.Object, &provider)
+	// Get provider type using unstructured operations
+	providerType, found, err := unstructured.NestedString(existingProvider.Object, "spec", "type")
 	if err != nil {
-		return fmt.Errorf("failed to convert provider: %v", err)
+		return fmt.Errorf("failed to get provider type: %v", err)
+	}
+	if !found {
+		return fmt.Errorf("provider type not found in spec")
 	}
 
-	klog.V(3).Infof("Current provider type: %s", *provider.Spec.Type)
+	klog.V(3).Infof("Current provider type: %s", providerType)
 
 	// Track if we need to update credentials
 	needsCredentialUpdate := username != "" || password != "" || token != "" || cacert != "" ||
@@ -53,7 +54,7 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 	// Get and validate secret ownership if credentials need updating
 	var secret *corev1.Secret
 	if needsCredentialUpdate {
-		secret, err = getAndValidateSecret(configFlags, &provider)
+		secret, err = getAndValidateSecret(configFlags, existingProvider)
 		if err != nil {
 			return err
 		}
@@ -65,15 +66,20 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 
 	// Update URL if provided
 	if url != "" {
-		klog.V(2).Infof("Updating provider URL from '%s' to '%s'", provider.Spec.URL, url)
+		currentURL, _, _ := unstructured.NestedString(existingProvider.Object, "spec", "url")
+		klog.V(2).Infof("Updating provider URL from '%s' to '%s'", currentURL, url)
 		patchSpec["url"] = url
 		providerUpdated = true
 	}
 
 	// Get current settings or create empty map for patch
 	currentSettings := make(map[string]string)
-	if provider.Spec.Settings != nil {
-		for k, v := range provider.Spec.Settings {
+	existingSettings, found, err := unstructured.NestedStringMap(existingProvider.Object, "spec", "settings")
+	if err != nil {
+		return fmt.Errorf("failed to get provider settings: %v", err)
+	}
+	if found && existingSettings != nil {
+		for k, v := range existingSettings {
 			currentSettings[k] = v
 		}
 	}
@@ -86,7 +92,7 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 	}
 
 	// Update VDDK settings for vSphere providers
-	if *provider.Spec.Type == "vsphere" {
+	if providerType == "vsphere" {
 		if vddkInitImage != "" {
 			klog.V(2).Infof("Updating VDDK init image to '%s'", vddkInitImage)
 			currentSettings["vddkInitImage"] = vddkInitImage
@@ -119,7 +125,7 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 	// Update credentials if provided and secret is owned by provider
 	secretUpdated := false
 	if needsCredentialUpdate && secret != nil {
-		secretUpdated, err = updateSecretCredentials(configFlags, secret, &provider,
+		secretUpdated, err = updateSecretCredentials(configFlags, secret, providerType,
 			username, password, cacert, token, domainName, projectName, regionName)
 		if err != nil {
 			return fmt.Errorf("failed to update credentials: %v", err)
@@ -165,9 +171,26 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 }
 
 // getAndValidateSecret retrieves the secret and validates that it's owned by the provider
-func getAndValidateSecret(configFlags *genericclioptions.ConfigFlags, provider *forkliftv1beta1.Provider) (*corev1.Secret, error) {
-	if provider.Spec.Secret.Name == "" {
+func getAndValidateSecret(configFlags *genericclioptions.ConfigFlags, provider *unstructured.Unstructured) (*corev1.Secret, error) {
+	// Get secret reference using unstructured operations
+	secretRef, found, err := unstructured.NestedMap(provider.Object, "spec", "secret")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get secret reference: %v", err)
+	}
+	if !found || secretRef == nil {
 		return nil, fmt.Errorf("provider has no associated secret")
+	}
+
+	secretName, nameOk := secretRef["name"].(string)
+	secretNamespace, namespaceOk := secretRef["namespace"].(string)
+
+	if !nameOk || secretName == "" {
+		return nil, fmt.Errorf("provider has no associated secret")
+	}
+
+	if !namespaceOk || secretNamespace == "" {
+		// Use provider namespace if secret namespace is not specified
+		secretNamespace = provider.GetNamespace()
 	}
 
 	k8sClient, err := client.GetKubernetesClientset(configFlags)
@@ -176,16 +199,16 @@ func getAndValidateSecret(configFlags *genericclioptions.ConfigFlags, provider *
 	}
 
 	// Get the secret
-	secret, err := k8sClient.CoreV1().Secrets(provider.Spec.Secret.Namespace).Get(
-		context.TODO(), provider.Spec.Secret.Name, metav1.GetOptions{})
+	secret, err := k8sClient.CoreV1().Secrets(secretNamespace).Get(
+		context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get secret '%s': %v", provider.Spec.Secret.Name, err)
+		return nil, fmt.Errorf("failed to get secret '%s': %v", secretName, err)
 	}
 
 	// Check if the secret is owned by this provider
 	isOwned := false
 	for _, ownerRef := range secret.GetOwnerReferences() {
-		if ownerRef.Kind == "Provider" && ownerRef.Name == provider.Name && ownerRef.UID == provider.UID {
+		if ownerRef.Kind == "Provider" && ownerRef.Name == provider.GetName() && ownerRef.UID == provider.GetUID() {
 			isOwned = true
 			break
 		}
@@ -197,15 +220,15 @@ func getAndValidateSecret(configFlags *genericclioptions.ConfigFlags, provider *
 			"To update credentials, either:\n"+
 			"1. Update the secret directly: kubectl patch secret %s -p '{...}'\n"+
 			"2. Create a new secret and update the provider to use it: kubectl patch provider %s --secret new-secret-name",
-			secret.Name, provider.Name, secret.Name, provider.Name)
+			secret.Name, provider.GetName(), secret.Name, provider.GetName())
 	}
 
-	klog.V(2).Infof("Secret '%s' is owned by provider '%s', credentials can be updated", secret.Name, provider.Name)
+	klog.V(2).Infof("Secret '%s' is owned by provider '%s', credentials can be updated", secret.Name, provider.GetName())
 	return secret, nil
 }
 
 // updateSecretCredentials updates the secret with new credential values
-func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret *corev1.Secret, provider *forkliftv1beta1.Provider,
+func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret *corev1.Secret, providerType string,
 	username, password, cacert, token, domainName, projectName, regionName string) (bool, error) {
 
 	updated := false
@@ -215,7 +238,6 @@ func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret 
 	}
 
 	// Update credentials based on provider type
-	providerType := string(*provider.Spec.Type)
 
 	switch providerType {
 	case "openshift":
