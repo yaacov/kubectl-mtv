@@ -57,36 +57,80 @@ class KubectlMTVError(Exception):
 
 
 async def run_kubectl_mtv_command(args: list[str]) -> str:
-    """Run a kubectl-mtv command and return the output."""
+    """Run a kubectl-mtv command and return structured JSON with command info."""
+    cmd = ["kubectl-mtv"] + args
     try:
-        cmd = ["kubectl-mtv"] + args
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return result.stdout
+        response = {
+            "command": " ".join(cmd),
+            "return_value": 0,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        }
+        return json.dumps(response, indent=2)
     except subprocess.CalledProcessError as e:
-        error_msg = f"Command failed: {' '.join(cmd)}\nError: {e.stderr}"
-        raise KubectlMTVError(error_msg) from e
+        response = {
+            "command": " ".join(cmd),
+            "return_value": e.returncode,
+            "stdout": e.stdout if e.stdout else "",
+            "stderr": e.stderr if e.stderr else "",
+        }
+        return json.dumps(response, indent=2)
     except FileNotFoundError:
-        raise KubectlMTVError("kubectl-mtv not found in PATH") from None
+        response = {
+            "command": " ".join(cmd),
+            "return_value": -1,
+            "stdout": "",
+            "stderr": "kubectl-mtv not found in PATH",
+        }
+        return json.dumps(response, indent=2)
 
 
 async def run_kubectl_command(args: list[str]) -> str:
-    """Run a kubectl command and return the output."""
+    """Run a kubectl command and return structured JSON with command info."""
+    cmd = ["kubectl"] + args
     try:
-        cmd = ["kubectl"] + args
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return result.stdout
+        response = {
+            "command": " ".join(cmd),
+            "return_value": 0,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        }
+        return json.dumps(response, indent=2)
     except subprocess.CalledProcessError as e:
-        error_msg = f"Command failed: {' '.join(cmd)}\nError: {e.stderr}"
-        raise KubectlMTVError(error_msg) from e
+        response = {
+            "command": " ".join(cmd),
+            "return_value": e.returncode,
+            "stdout": e.stdout if e.stdout else "",
+            "stderr": e.stderr if e.stderr else "",
+        }
+        return json.dumps(response, indent=2)
     except FileNotFoundError:
-        raise KubectlMTVError("kubectl not found in PATH") from None
+        response = {
+            "command": " ".join(cmd),
+            "return_value": -1,
+            "stdout": "",
+            "stderr": "kubectl not found in PATH",
+        }
+        return json.dumps(response, indent=2)
+
+
+def extract_stdout_from_response(response_json: str) -> str:
+    """Extract stdout from structured JSON response."""
+    try:
+        response = json.loads(response_json)
+        return response.get("stdout", "")
+    except json.JSONDecodeError:
+        return response_json  # Fallback to original response
 
 
 async def get_mtv_operator_namespace() -> str:
     """Get the MTV operator namespace from kubectl-mtv version."""
     try:
         version_output = await run_kubectl_mtv_command(["version", "-o", "json"])
-        version_data = json.loads(version_output)
+        stdout_content = extract_stdout_from_response(version_output)
+        version_data = json.loads(stdout_content)
         namespace = version_data.get("operatorNamespace")
         if not namespace:
             raise KubectlMTVError(
@@ -104,7 +148,8 @@ async def find_controller_pod(namespace: str) -> str:
         pods_output = await run_kubectl_command(
             ["get", "pods", "-n", namespace, "-o", "json"]
         )
-        pods_data = json.loads(pods_output)
+        stdout_content = extract_stdout_from_response(pods_output)
+        pods_data = json.loads(stdout_content)
 
         controller_pods = []
         for pod in pods_data.get("items", []):
@@ -484,7 +529,8 @@ async def _get_controller_logs(
     pod_info_output = await run_kubectl_command(
         ["get", "pod", "-n", namespace, pod_name, "-o", "json"]
     )
-    pod_info = json.loads(pod_info_output)
+    pod_stdout = extract_stdout_from_response(pod_info_output)
+    pod_info = json.loads(pod_stdout)
 
     # Build kubectl logs command
     logs_args = [
@@ -502,10 +548,11 @@ async def _get_controller_logs(
         logs_args.append("-f")
 
     # Get the logs
-    logs = await run_kubectl_command(logs_args)
+    logs_output = await run_kubectl_command(logs_args)
+    logs_stdout = extract_stdout_from_response(logs_output)
 
-    # Return structured response
-    result = {"pod": pod_info, "logs": logs}
+    # Return structured response (this is what the tool returns, not the kubectl command format)
+    result = {"pod": pod_info, "logs": logs_stdout}
     return json.dumps(result, indent=2)
 
 
@@ -531,8 +578,8 @@ async def _get_importer_logs(
     pvcs_output = await run_kubectl_command(
         ["get", "pvc", "-n", namespace, "-l", label_selector, "-o", "json"]
     )
-
-    pvcs_data = json.loads(pvcs_output)
+    pvcs_stdout = extract_stdout_from_response(pvcs_output)
+    pvcs_data = json.loads(pvcs_stdout)
     pvcs = pvcs_data.get("items", [])
 
     if not pvcs:
@@ -554,8 +601,8 @@ async def _get_importer_logs(
     all_pvcs_output = await run_kubectl_command(
         ["get", "pvc", "-n", namespace, "-o", "json"]
     )
-
-    all_pvcs_data = json.loads(all_pvcs_output)
+    all_pvcs_stdout = extract_stdout_from_response(all_pvcs_output)
+    all_pvcs_data = json.loads(all_pvcs_stdout)
     importer_pod_name = None
 
     for pvc in all_pvcs_data.get("items", []):
@@ -582,7 +629,8 @@ async def _get_importer_logs(
     pod_info_output = await run_kubectl_command(
         ["get", "pod", "-n", namespace, importer_pod_name, "-o", "json"]
     )
-    pod_info = json.loads(pod_info_output)
+    pod_info_stdout = extract_stdout_from_response(pod_info_output)
+    pod_info = json.loads(pod_info_stdout)
 
     # Step 4: Get logs from the importer pod
     logs_args = ["logs", "-n", namespace, importer_pod_name, "--tail", str(lines)]
@@ -590,10 +638,11 @@ async def _get_importer_logs(
     if follow:
         logs_args.append("-f")
 
-    logs = await run_kubectl_command(logs_args)
+    logs_output = await run_kubectl_command(logs_args)
+    logs_stdout = extract_stdout_from_response(logs_output)
 
-    # Return structured response
-    result = {"pod": pod_info, "logs": logs}
+    # Return structured response (this is what the tool returns, not the kubectl command format)
+    result = {"pod": pod_info, "logs": logs_stdout}
     return json.dumps(result, indent=2)
 
 
@@ -627,13 +676,14 @@ async def _get_migration_pvcs(
         cmd_args.extend(["-o", "json"])
 
         result = await run_kubectl_command(cmd_args)
+        result_stdout = extract_stdout_from_response(result)
 
         # Enhance with describe information
-        if result:
+        if result_stdout:
             try:
                 import json
 
-                pvc_data = json.loads(result)
+                pvc_data = json.loads(result_stdout)
 
                 # Add describe information for each PVC
                 for pvc in pvc_data.get("items", []):
@@ -649,7 +699,8 @@ async def _get_migration_pvcs(
                             pvc_namespace,
                         ]
                         describe_result = await run_kubectl_command(describe_cmd)
-                        pvc["describe"] = describe_result
+                        describe_stdout = extract_stdout_from_response(describe_result)
+                        pvc["describe"] = describe_stdout
                     except Exception as e:
                         pvc["describe"] = f"Could not get describe output: {str(e)}"
 
@@ -692,13 +743,14 @@ async def _get_migration_datavolumes(
         cmd_args.extend(["-o", "json"])
 
         result = await run_kubectl_command(cmd_args)
+        result_stdout = extract_stdout_from_response(result)
 
         # Enhance with describe information
-        if result:
+        if result_stdout:
             try:
                 import json
 
-                dv_data = json.loads(result)
+                dv_data = json.loads(result_stdout)
 
                 # Add describe information for each DataVolume
                 for dv in dv_data.get("items", []):
@@ -714,7 +766,8 @@ async def _get_migration_datavolumes(
                             dv_namespace,
                         ]
                         describe_result = await run_kubectl_command(describe_cmd)
-                        dv["describe"] = describe_result
+                        describe_stdout = extract_stdout_from_response(describe_result)
+                        dv["describe"] = describe_stdout
                     except Exception as e:
                         dv["describe"] = f"Could not get describe output: {str(e)}"
 

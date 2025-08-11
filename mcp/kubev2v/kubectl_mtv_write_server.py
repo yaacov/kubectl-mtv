@@ -32,6 +32,7 @@ Use read tools to discover and analyze data before making changes:
 
 import os
 import subprocess
+import json
 
 from fastmcp import FastMCP
 
@@ -49,16 +50,33 @@ class KubectlMTVError(Exception):
 
 
 async def run_kubectl_mtv_command(args: list[str]) -> str:
-    """Run a kubectl-mtv command and return the output."""
+    """Run a kubectl-mtv command and return structured JSON with command info."""
+    cmd = ["kubectl-mtv"] + args
     try:
-        cmd = ["kubectl-mtv"] + args
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return result.stdout
+        response = {
+            "command": " ".join(cmd),
+            "return_value": 0,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        }
+        return json.dumps(response, indent=2)
     except subprocess.CalledProcessError as e:
-        error_msg = f"Command failed: {' '.join(cmd)}\nError: {e.stderr}"
-        raise KubectlMTVError(error_msg) from e
+        response = {
+            "command": " ".join(cmd),
+            "return_value": e.returncode,
+            "stdout": e.stdout if e.stdout else "",
+            "stderr": e.stderr if e.stderr else "",
+        }
+        return json.dumps(response, indent=2)
     except FileNotFoundError:
-        raise KubectlMTVError("kubectl-mtv not found in PATH") from None
+        response = {
+            "command": " ".join(cmd),
+            "return_value": -1,
+            "stdout": "",
+            "stderr": "kubectl-mtv not found in PATH",
+        }
+        return json.dumps(response, indent=2)
 
 
 # Sub-action methods for plan lifecycle
