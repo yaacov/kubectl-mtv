@@ -31,13 +31,13 @@ def generate_cursor_config() -> dict:
             "kubectl-mtv": {
                 "command": "python",
                 "args": [get_server_path("read")],
-                "env": {}
+                "env": {},
             },
             "kubectl-mtv-write": {
-                "command": "python", 
+                "command": "python",
                 "args": [get_server_path("write")],
-                "env": {}
-            }
+                "env": {},
+            },
         }
     }
 
@@ -49,13 +49,13 @@ def generate_claude_desktop_config() -> dict:
             "kubectl-mtv": {
                 "command": "python",
                 "args": [get_server_path("read")],
-                "env": {}
+                "env": {},
             },
             "kubectl-mtv-write": {
                 "command": "python",
                 "args": [get_server_path("write")],
-                "env": {}
-            }
+                "env": {},
+            },
         }
     }
 
@@ -67,13 +67,13 @@ def generate_generic_config() -> dict:
             "kubectl-mtv": {
                 "command": "python",
                 "args": [get_server_path("read")],
-                "env": {}
+                "env": {},
             },
             "kubectl-mtv-write": {
                 "command": "python",
                 "args": [get_server_path("write")],
-                "env": {}
-            }
+                "env": {},
+            },
         }
     }
 
@@ -85,20 +85,20 @@ def generate_http_server_config(host: str = "127.0.0.1", port: int = 8000) -> di
             "kubectl-mtv": {
                 "transport": "http",
                 "url": f"http://{host}:{port}/mcp",
-                "description": "kubectl-mtv MCP server (read-only) running as HTTP service"
+                "description": "kubectl-mtv MCP server (read-only) running as HTTP service",
             },
             "kubectl-mtv-write": {
                 "transport": "http",
                 "url": f"http://{host}:{port + 1}/mcp",
-                "description": "kubectl-mtv MCP server (write operations) running as HTTP service"
-            }
+                "description": "kubectl-mtv MCP server (write operations) running as HTTP service",
+            },
         }
     }
 
 
 def save_config(config: dict, filename: str) -> None:
     """Save configuration to a file."""
-    with open(filename, 'w') as f:
+    with open(filename, "w") as f:
         json.dump(config, f, indent=2)
     print(f"Generated {filename}")
 
@@ -109,33 +109,55 @@ def main():
     print(f"Read server path: {get_server_path('read')}")
     print(f"Write server path: {get_server_path('write')}")
     print()
-    
+
     # Check if both servers exist
     for server_type in ["read", "write"]:
         server_path = get_server_path(server_type)
         if not os.path.exists(server_path):
-            print(f"Error: {server_type.capitalize()} server file not found at {server_path}")
+            print(
+                f"Error: {server_type.capitalize()} server file not found at {server_path}"
+            )
             sys.exit(1)
-    
+
     # Generate configurations
     configs = [
         (generate_cursor_config(), "cursor-mcp-config-generated.json", "Cursor IDE"),
-        (generate_claude_desktop_config(), "claude-desktop-config-generated.json", "Claude Desktop"),
-        (generate_generic_config(), "generic-mcp-config-generated.json", "Generic MCP Client"),
-        (generate_http_server_config(), "http-server-config-generated.json", "HTTP Server Client"),
+        (
+            generate_claude_desktop_config(),
+            "claude-desktop-config-generated.json",
+            "Claude Desktop",
+        ),
+        (
+            generate_generic_config(),
+            "generic-mcp-config-generated.json",
+            "Generic MCP Client",
+        ),
+        (
+            generate_http_server_config(),
+            "http-server-config-generated.json",
+            "HTTP Server Client",
+        ),
     ]
-    
+
     for config, filename, description in configs:
         save_config(config, filename)
-    
+
     print()
     print("Next steps:")
     print("1. Copy the appropriate configuration to your MCP client")
     print("2. For Cursor: Use the content of cursor-mcp-config-generated.json")
-    print("3. For Claude Desktop: Copy claude-desktop-config-generated.json content to your Claude config")
-    print("4. For HTTP server: Use http-server-config-generated.json and start both servers with:")
-    print("   python kubev2v/kubectl_mtv_server.py --transport http --host 127.0.0.1 --port 8000")
-    print("   python kubev2v/kubectl_mtv_write_server.py --transport http --host 127.0.0.1 --port 8001")
+    print(
+        "3. For Claude Desktop: Copy claude-desktop-config-generated.json content to your Claude config"
+    )
+    print(
+        "4. For HTTP server: Use http-server-config-generated.json and start both servers with:"
+    )
+    print(
+        "   python kubev2v/kubectl_mtv_server.py --transport http --host 127.0.0.1 --port 8000"
+    )
+    print(
+        "   python kubev2v/kubectl_mtv_write_server.py --transport http --host 127.0.0.1 --port 8001"
+    )
     print("5. Alternatively, if installed via pip (mtv-mcp package):")
     print("   kubectl-mtv-mcp --transport http --host 127.0.0.1 --port 8000")
     print("   kubectl-mtv-write-mcp --transport http --host 127.0.0.1 --port 8001")
