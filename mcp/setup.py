@@ -5,24 +5,9 @@ Setup script for kubectl-mtv MCP servers
 
 from setuptools import setup, find_namespace_packages
 
-
-def main_kubectl_mtv_server():
-    """Entry point for kubectl-mtv MCP read server"""
-    from kubev2v.kubectl_mtv_server import mcp
-
-    mcp.run()
-
-
-def main_kubectl_mtv_write_server():
-    """Entry point for kubectl-mtv MCP write server"""
-    from kubev2v.kubectl_mtv_write_server import mcp
-
-    mcp.run()
-
-
 setup(
     name="mtv-mcp",
-    version="1.0.0",
+    version="1.0.1",
     description="MCP Servers for kubectl-mtv - Migration Toolkit for Virtualization",
     author="kubectl-mtv MCP Server",
     packages=find_namespace_packages(include=["kubev2v*"]),
@@ -32,8 +17,8 @@ setup(
     python_requires=">=3.8",
     entry_points={
         "console_scripts": [
-            "kubectl-mtv-mcp=setup:main_kubectl_mtv_server",
-            "kubectl-mtv-write-mcp=setup:main_kubectl_mtv_write_server",
+            "kubectl-mtv-mcp=kubev2v.kubectl_mtv_server:mcp.run",
+            "kubectl-mtv-write-mcp=kubev2v.kubectl_mtv_write_server:mcp.run",
         ],
     },
     classifiers=[
