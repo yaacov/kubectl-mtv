@@ -941,7 +941,7 @@ async def GetPlanVms(plan_name: str, namespace: str = "") -> str:
         2. Cancel problematic VMs: cancel_plan("my-plan", "failed-vm1,stuck-vm2")
         3. Get detailed logs: get_logs("importer", plan_id="...", migration_id="...", vm_id="...")
     """
-    args = ["get", "plan-vms", plan_name]
+    args = ["get", "plan", plan_name, "--vms"]
 
     if namespace:
         args.extend(["-n", namespace])

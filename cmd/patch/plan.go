@@ -165,8 +165,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	return cmd
 }
 
-// NewPlanVmsCmd creates the patch plan-vms command
-func NewPlanVmsCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+// NewPlanVMCmd creates the patch planvm command
+func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	// VM-specific fields that can be patched
 	var targetName string
 	var rootDisk string
@@ -184,7 +184,7 @@ func NewPlanVmsCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comman
 	var clearHooks bool
 
 	cmd := &cobra.Command{
-		Use:               "plan-vms PLAN_NAME VM_NAME",
+		Use:               "planvm PLAN_NAME VM_NAME",
 		Short:             "Patch a specific VM within a migration plan",
 		Long:              `Patch VM-specific fields for a VM within a migration plan's VM list.`,
 		Args:              cobra.ExactArgs(2),

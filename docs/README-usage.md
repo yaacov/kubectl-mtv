@@ -234,39 +234,39 @@ Modify specific VM configurations within a plan's VM list.
 
 ```bash
 # Update VM target name and instance type
-kubectl mtv patch plan-vms production-plan web-server-vm \
+kubectl mtv patch planvm production-plan web-server-vm \
   --target-name production-web-01 \
   --instance-type m5.xlarge
 
 # Configure naming templates
-kubectl mtv patch plan-vms my-plan app-server \
+kubectl mtv patch planvm my-plan app-server \
   --pvc-name-template "{{.VmName}}-storage-{{.DiskIndex}}" \
   --volume-name-template "{{.PVCName}}-vol{{.VolumeIndex}}"
 
 # Set encryption configuration
-kubectl mtv patch plan-vms secure-plan encrypted-vm \
+kubectl mtv patch planvm secure-plan encrypted-vm \
   --luks-secret disk-encryption-keys \
   --root-disk "hard-disk-1"
 
 # Combined VM updates
-kubectl mtv patch plan-vms enterprise-migration critical-app \
+kubectl mtv patch planvm enterprise-migration critical-app \
   --target-name prod-critical-app-01 \
   --instance-type c5.2xlarge \
   --pvc-name-template "prod-{{.VmName}}-disk{{.DiskIndex}}" \
   --luks-secret app-encryption-keys
 
 # Manage VM hooks
-kubectl mtv patch plan-vms production-plan database-vm \
+kubectl mtv patch planvm production-plan database-vm \
   --add-pre-hook backup-database-hook \
   --add-post-hook verify-migration-hook
 
 # Remove hooks from VM
-kubectl mtv patch plan-vms test-plan test-vm \
+kubectl mtv patch planvm test-plan test-vm \
   --remove-hook old-hook \
   --clear-hooks
 ```
 
-**Protected Fields**: Source/target providers, network/storage mappings, and the VM list itself cannot be changed through patch plan. Individual VM modifications use patch plan-vms.
+**Protected Fields**: Source/target providers, network/storage mappings, and the VM list itself cannot be changed through patch plan. Individual VM modifications use patch planvm.
 
 **Note**: See [Patch Plans Guide](README_patch_plans.md) for comprehensive usage examples, template variables, and best practices.
 
@@ -552,7 +552,7 @@ kubectl mtv get plans
 kubectl mtv get plan <plan-name> -o yaml
 
 # List VMs in a plan
-kubectl mtv get plan-vms <plan-name>
+kubectl mtv get plan <plan-name> --vms
 ```
 
 ### Create Migration Plans
@@ -650,7 +650,7 @@ For advanced scheduling, see the [Target Affinity Guide](README_target_affinity.
 kubectl mtv describe plan <plan-name>
 
 # Describe specific VM in plan
-kubectl mtv describe plan-vm <plan-name> --vm <vm-name>
+kubectl mtv describe plan <plan-name> --vm <vm-name>
 ```
 
 ### Delete Plans
@@ -907,7 +907,7 @@ kubectl mtv start plan web-migration
 
 # 8. Monitor progress
 kubectl mtv describe plan web-migration
-kubectl mtv get plan-vms web-migration
+kubectl mtv get plan web-migration --vms
 
 # 9. Archive completed plan
 kubectl mtv archive plan web-migration
@@ -929,7 +929,7 @@ kubectl mtv start plan critical-migration
 kubectl mtv describe plan critical-migration
 
 # 4. Wait for initial sync to complete and verify readiness
-kubectl mtv get plan-vms critical-migration
+kubectl mtv get plan critical-migration --vms
 
 # 5. During maintenance window, perform final cutover
 # Option A: Cutover immediately
@@ -942,7 +942,7 @@ kubectl mtv cutover plan critical-migration --cutover "2024-01-15T02:00:00Z"
 kubectl mtv cutover plan critical-migration --cutover "$(date -d '+30 minutes' --iso-8601=sec)"
 
 # 6. Verify migration completion
-kubectl mtv get plan-vms critical-migration
+kubectl mtv get plan critical-migration --vms
 ```
 
 ### Batch Operations
@@ -977,13 +977,13 @@ kubectl mtv get inventory hosts <provider-name>
 kubectl mtv describe plan <plan-name>
 
 # Monitor VM migration status
-kubectl mtv describe plan-vm <plan-name> <vm-name>
+kubectl mtv describe plan <plan-name> --vm <vm-name>
 
 # Get logs (using kubectl directly)
 kubectl logs -n forklift-operator deployment/forklift-controller
 
 # Check migration progress with verbose output
-kubectl mtv get plan-vms <plan-name> -v=5
+kubectl mtv get plan <plan-name> --vms -v=5
 ```
 
 ## Tips and Best Practices

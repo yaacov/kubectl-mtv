@@ -1,6 +1,8 @@
 package get
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -14,6 +16,7 @@ import (
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
+	var vms bool
 
 	cmd := &cobra.Command{
 		Use:               "plan [NAME]",
@@ -32,6 +35,20 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 				planName = args[0]
 			}
 
+			// If --vms flag is used, switch to ListVMs behavior
+			if vms {
+				if planName == "" {
+					return fmt.Errorf("plan NAME is required when using --vms flag")
+				}
+				// Log the operation being performed
+				logNamespaceOperation("Getting plan VMs", namespace, config.GetAllNamespaces())
+				logOutputFormat(outputFormatFlag.GetValue())
+
+				return plan.ListVMs(config.GetKubeConfigFlags(), planName, namespace, watch)
+			}
+
+			// Default behavior: list plans
+
 			// Log the operation being performed
 			if planName != "" {
 				logNamespaceOperation("Getting plan", namespace, config.GetAllNamespaces())
@@ -46,6 +63,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	cmd.Flags().BoolVar(&vms, "vms", false, "Get VMs status in the migration plan (requires plan NAME)")
 
 	// Add completion for output format flag
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

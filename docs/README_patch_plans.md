@@ -1,15 +1,15 @@
 # Patching Migration Plans
 
-This guide explains how to modify existing migration plans using the `kubectl-mtv patch plan` and `kubectl-mtv patch plan-vms` commands. These commands allow you to update plan configurations and individual VM settings without recreating the entire migration plan.
+This guide explains how to modify existing migration plans using the `kubectl-mtv patch plan` and `kubectl-mtv patch planvm` commands. These commands allow you to update plan configurations and individual VM settings without recreating the entire migration plan.
 
 ## Overview
 
 The patch plan functionality provides two distinct commands:
 
 - **`patch plan`**: Updates plan-level settings like migration type, target configuration, and transfer networks
-- **`patch plan-vms`**: Modifies individual VM configurations within a plan's VM list
+- **`patch planvm`**: Modifies individual VM configurations within a plan's VM list
 
-**Protected Fields**: Source/target providers, network/storage mappings, and the VM list itself cannot be changed through `patch plan`. Use `patch plan-vms` for VM-specific modifications.
+**Protected Fields**: Source/target providers, network/storage mappings, and the VM list itself cannot be changed through `patch plan`. Use `patch planvm` for VM-specific modifications.
 
 ## Patch Plan Command
 
@@ -149,7 +149,7 @@ kubectl-mtv patch plan completed-migration \
 ### Basic Syntax
 
 ```bash
-kubectl-mtv patch plan-vms PLAN_NAME VM_NAME [flags]
+kubectl-mtv patch planvm PLAN_NAME VM_NAME [flags]
 ```
 
 ### Editable VM Fields
@@ -197,12 +197,12 @@ The template fields support Go template syntax with different variables for each
 
 ```bash
 # Set custom target name and instance type
-kubectl-mtv patch plan-vms production-plan web-server-vm \
+kubectl-mtv patch planvm production-plan web-server-vm \
   --target-name production-web-01 \
   --instance-type m5.xlarge
 
 # Configure boot disk
-kubectl-mtv patch plan-vms my-plan database-vm \
+kubectl-mtv patch planvm my-plan database-vm \
   --root-disk "hard-disk-1" \
   --instance-type memory-optimized
 ```
@@ -211,11 +211,11 @@ kubectl-mtv patch plan-vms my-plan database-vm \
 
 ```bash
 # Set PVC naming template
-kubectl-mtv patch plan-vms my-plan app-server \
+kubectl-mtv patch planvm my-plan app-server \
   --pvc-name-template "{{.VmName}}-storage-{{.DiskIndex}}"
 
 # Configure all naming templates
-kubectl-mtv patch plan-vms production-plan web-vm \
+kubectl-mtv patch planvm production-plan web-vm \
   --pvc-name-template "prod-{{.VmName}}-disk-{{.DiskIndex}}" \
   --volume-name-template "prod-vol{{.VolumeIndex}}-{{.PVCName}}" \
   --network-name-template "prod-{{.VmName}}-net{{.NetworkIndex}}"
@@ -225,7 +225,7 @@ kubectl-mtv patch plan-vms production-plan web-vm \
 
 ```bash
 # Configure LUKS disk encryption
-kubectl-mtv patch plan-vms secure-plan encrypted-vm \
+kubectl-mtv patch planvm secure-plan encrypted-vm \
   --luks-secret disk-encryption-keys \
   --target-name secure-production-vm
 ```
@@ -234,7 +234,7 @@ kubectl-mtv patch plan-vms secure-plan encrypted-vm \
 
 ```bash
 # Update multiple VM settings at once
-kubectl-mtv patch plan-vms enterprise-migration critical-app-vm \
+kubectl-mtv patch planvm enterprise-migration critical-app-vm \
   --target-name prod-critical-app-01 \
   --instance-type c5.2xlarge \
   --root-disk "disk-0" \
@@ -246,28 +246,28 @@ kubectl-mtv patch plan-vms enterprise-migration critical-app-vm \
 
 ```bash
 # Add pre-migration hook for data backup
-kubectl-mtv patch plan-vms production-plan database-vm \
+kubectl-mtv patch planvm production-plan database-vm \
   --add-pre-hook backup-database-hook
 
 # Add post-migration hook for cleanup
-kubectl-mtv patch plan-vms production-plan web-server-vm \
+kubectl-mtv patch planvm production-plan web-server-vm \
   --add-post-hook cleanup-temp-files-hook
 
 # Add both pre and post hooks
-kubectl-mtv patch plan-vms critical-migration app-server \
+kubectl-mtv patch planvm critical-migration app-server \
   --add-pre-hook stop-services-hook \
   --add-post-hook start-services-hook
 
 # Remove a specific hook
-kubectl-mtv patch plan-vms production-plan legacy-vm \
+kubectl-mtv patch planvm production-plan legacy-vm \
   --remove-hook old-migration-hook
 
 # Clear all hooks from a VM
-kubectl-mtv patch plan-vms test-migration test-vm \
+kubectl-mtv patch planvm test-migration test-vm \
   --clear-hooks
 
 # Combined hook and configuration update
-kubectl-mtv patch plan-vms enterprise-migration database-vm \
+kubectl-mtv patch planvm enterprise-migration database-vm \
   --target-name prod-db-primary \
   --instance-type memory-optimized \
   --add-pre-hook database-snapshot-hook \
@@ -296,7 +296,7 @@ PLAN_NAME="production-migration"
 VMS=("web-01" "web-02" "api-server" "database")
 
 for vm in "${VMS[@]}"; do
-  kubectl-mtv patch plan-vms "$PLAN_NAME" "$vm" \
+  kubectl-mtv patch planvm "$PLAN_NAME" "$vm" \
     --target-name "prod-${vm}" \
     --pvc-name-template "prod-{{.VmName}}-disk{{.DiskIndex}}" \
     --instance-type "m5.large"
@@ -327,7 +327,7 @@ kubectl-mtv patch plan production-migration \
 - Network and infrastructure settings
 - Labels and selectors affecting all VMs
 
-**Use `patch plan-vms` for:**
+**Use `patch planvm` for:**
 - Individual VM customization
 - VM-specific resource requirements
 - Custom naming schemes
@@ -428,7 +428,7 @@ kubectl-mtv patch plan staging-to-prod \
   --target-labels "env=production,migration-batch=1"
 
 # Configure critical VMs
-kubectl-mtv patch plan-vms staging-to-prod database-server \
+kubectl-mtv patch planvm staging-to-prod database-server \
   --target-name prod-db-primary \
   --instance-type memory-optimized \
   --luks-secret database-encryption
@@ -441,7 +441,7 @@ kubectl-mtv patch plan-vms staging-to-prod database-server \
 kubectl-mtv patch plan active-migration --migration-type cold
 
 # Update individual VM if needed
-kubectl-mtv patch plan-vms active-migration problematic-vm \
+kubectl-mtv patch planvm active-migration problematic-vm \
   --instance-type smaller-instance
 ```
 
@@ -470,7 +470,7 @@ kubectl-mtv describe plan my-plan
 
 ```bash
 # Test template rendering (conceptual)
-kubectl-mtv patch plan-vms my-plan test-vm \
+kubectl-mtv patch planvm my-plan test-vm \
   --pvc-name-template "test-{{.VmName}}-disk{{.DiskIndex}}" \
   --dry-run
 ```
