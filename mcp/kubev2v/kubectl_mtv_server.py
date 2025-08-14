@@ -363,11 +363,22 @@ async def ListInventory(
     - WHERE condition (using TSL operators and functions)
     - ORDER BY field1 [ASC|DESC], field2
     - LIMIT n
+    
+    ORDER REQUIREMENT: Parts can be omitted but MUST follow this sequence if present.
+    Valid: "WHERE x = 1", "SELECT a WHERE b = 2", "WHERE x = 1 ORDER BY y LIMIT 5"
+    Invalid: "WHERE x = 1 SELECT a", "LIMIT 5 WHERE x = 1"
 
-    TSL OPERATORS: =, !=, <, <=, >, >=, LIKE, ILIKE, ~= (regex), IN, BETWEEN, AND, OR, NOT
+    TSL OPERATORS: =, !=, <, <=, >, >=, LIKE, ILIKE, ~= (regex), ~! (regex), IN, BETWEEN, AND, OR, NOT
     TSL FUNCTIONS: sum(), len(), any(), all()
     TSL LITERALS: strings ('text'), numbers (1024, 2.5Gi), dates ('2023-01-01'), booleans (true/false)
     TSL ARRAY ACCESS: Use [*] for array elements, dot notation for nested fields (e.g., disks[*].capacity, parent.name)
+    
+    TSL USAGE RULES:
+    - LIKE patterns: '%' = any chars, '_' = single char (case-sensitive), ILIKE = case-insensitive
+    - String values MUST be quoted: 'text', "text", or `text`
+    - Array functions: len(networks) > 2, sum(disks[*].capacity) > 1000, any(tags[*] = 'prod')
+    - Use parentheses for complex logic: (a = 1 OR b = 2) AND c = 3
+    - Regex match (~=) and not match (~!): name ~= '^web.*', status ~! 'test.*'
 
     EXAMPLE QUERIES FOR SPECIALIZED RESOURCES:
 
@@ -400,7 +411,7 @@ async def ListInventory(
     - "SELECT name, cidr, gatewayIp, networkId, enableDhcp ORDER BY name"
 
     Images (OpenStack):
-    - "WHERE status = 'active' AND visibility = 'public'"
+    - "WHERE status IN ['active', 'queued', 'saving'] AND visibility = 'public'"
     - "SELECT name, status, visibility, diskFormat, containerFormat, size ORDER BY name"
 
     DataVolumes (OpenShift):
