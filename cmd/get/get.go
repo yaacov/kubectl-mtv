@@ -52,9 +52,6 @@ func NewGetCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig f
 	planCmd.Aliases = []string{"plans"}
 	cmd.AddCommand(planCmd)
 
-	// Add plan-vms subcommand
-	cmd.AddCommand(NewPlanVMsCmd(kubeConfigFlags, getGlobalConfig))
-
 	// Add provider subcommand with plural alias
 	providerCmd := NewProviderCmd(kubeConfigFlags, getGlobalConfig)
 	providerCmd.Aliases = []string{"providers"}

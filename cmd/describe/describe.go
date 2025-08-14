@@ -17,7 +17,6 @@ func NewDescribeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalCon
 	}
 
 	cmd.AddCommand(NewPlanCmd(kubeConfigFlags, getGlobalConfig))
-	cmd.AddCommand(NewVMCmd(kubeConfigFlags, getGlobalConfig))
 	cmd.AddCommand(NewHostCmd(kubeConfigFlags, getGlobalConfig))
 	cmd.AddCommand(NewHookCmd(kubeConfigFlags, getGlobalConfig))
 	cmd.AddCommand(NewMappingCmd(kubeConfigFlags, getGlobalConfig))
