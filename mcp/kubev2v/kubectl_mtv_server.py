@@ -363,7 +363,7 @@ async def ListInventory(
     - WHERE condition (using TSL operators and functions)
     - ORDER BY field1 [ASC|DESC], field2
     - LIMIT n
-    
+
     ORDER REQUIREMENT: Parts can be omitted but MUST follow this sequence if present.
     Valid: "WHERE x = 1", "SELECT a WHERE b = 2", "WHERE x = 1 ORDER BY y LIMIT 5"
     Invalid: "WHERE x = 1 SELECT a", "LIMIT 5 WHERE x = 1"
@@ -372,7 +372,7 @@ async def ListInventory(
     TSL FUNCTIONS: sum(), len(), any(), all()
     TSL LITERALS: strings ('text'), numbers (1024, 2.5Gi), dates ('2023-01-01'), booleans (true/false)
     TSL ARRAY ACCESS: Use [*] for array elements, dot notation for nested fields (e.g., disks[*].capacity, parent.name)
-    
+
     TSL USAGE RULES:
     - LIKE patterns: '%' = any chars, '_' = single char (case-sensitive), ILIKE = case-insensitive
     - String values MUST be quoted: 'text', "text", or `text`

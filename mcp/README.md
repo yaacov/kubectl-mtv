@@ -17,15 +17,9 @@ These MCP servers enable AI assistants to help with MTV operations by providing:
 
 ## Quick Installation
 
-1. Install dependencies:
+### Install from PyPI:
 ```bash
-cd mcp
-pip install -r requirements.txt
-```
-
-2. Generate MCP client configuration:
-```bash
-python generate_config.py
+pip install mtv-mcp
 ```
 
 3. Configure your MCP client with the generated files
@@ -40,13 +34,35 @@ If you're using Claude Code, you can install directly:
 
 ```bash
 # Read-only server (recommended for most users)
+claude mcp add kubectl-mtv-mcp
+
+# Write server (USE WITH CAUTION - can modify/delete resources)
+claude mcp add kubectl-mtv-write-mcp
+```
+
+## Development
+
+### Development Installation
+
+For development work, install from source:
+
+```bash
+cd mcp
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
+```
+
+### Manual Server Configuration
+
+For development or when you need direct control, you can use the servers directly:
+
+```bash
+# Read-only server (recommended for most users)
 claude mcp add python /full/path/to/kubectl-mtv/mcp/kubev2v/kubectl_mtv_server.py
 
 # Write server (USE WITH CAUTION - can modify/delete resources)
 claude mcp add python /full/path/to/kubectl-mtv/mcp/kubev2v/kubectl_mtv_write_server.py
 ```
-
-## Development
 
 ### Important Make Targets
 
@@ -64,8 +80,26 @@ make lint              # Run flake8 linting
 make format            # Format code with black
 make format-check      # Check if code is formatted correctly
 
+# Build and publishing
+make build             # Build both source distribution and wheel using python -m build
+make build-sdist       # Build source distribution only
+make build-wheel       # Build wheel only
+make upload-test       # Upload to TestPyPI
+make upload            # Upload to PyPI
+
 # Configuration and cleanup
 make config            # Generate MCP client configuration files
 make clean             # Clean build artifacts
-make clean-all         # Clean everything including generated configs
+```
+
+### Building and Publishing
+
+To build and upload the package to PyPI:
+
+```bash
+# Build the package
+python -m build
+
+# Upload to PyPI
+twine upload dist/*
 ```

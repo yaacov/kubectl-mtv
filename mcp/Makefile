@@ -36,15 +36,15 @@ format-check:
 
 .PHONY: build
 build: clean
-	$(PYTHON) setup.py sdist bdist_wheel
+	$(PYTHON) -m build
 
 .PHONY: build-sdist
 build-sdist: clean
-	$(PYTHON) setup.py sdist
+	$(PYTHON) -m build --sdist
 
 .PHONY: build-wheel
 build-wheel: clean
-	$(PYTHON) setup.py bdist_wheel
+	$(PYTHON) -m build --wheel
 
 .PHONY: upload-test
 upload-test: build
@@ -61,11 +61,3 @@ clean:
 	rm -rf *.egg-info/
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-
-.PHONY: clean-all
-clean-all: clean
-	rm -f *-config-generated.json
-
-.PHONY: config
-config:
-	$(PYTHON) generate_config.py

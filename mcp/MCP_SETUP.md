@@ -13,18 +13,12 @@ Before setting up the MCP server, ensure you have:
 
 ## Quick Setup
 
-1. **Install dependencies** (if not already installed):
+1. **Install the MTV MCP package**:
    ```bash
-   pip install -r requirements.txt
+   pip install mtv-mcp
    ```
 
-2. **Generate configuration files**:
-   ```bash
-   python generate_config.py
-   ```
-   This will create configuration files with the correct paths for your installation.
-
-3. **Configure your MCP client** (see client-specific instructions below)
+2. **Configure your MCP client** (see client-specific instructions below)
 
 ## Client Configuration
 
@@ -35,15 +29,12 @@ Before setting up the MCP server, ensure you have:
    - Search for "MCP" or look for Model Context Protocol settings
 
 2. **Add the MCP server configuration**:
-   - **Easy way**: Run `python generate_config.py` and use `cursor-mcp-config-generated.json`
-   - **Manual way**: Use the provided `cursor-mcp-config.json` as a template and update the path:
-
    ```json
    {
      "mcpServers": {
        "kubectl-mtv": {
-         "command": "python",
-         "args": ["/full/path/to/your/kubectl-mtv/mcp/kubectl_mtv_server.py"],
+         "command": "kubectl-mtv-mcp",
+         "args": [],
          "env": {}
        }
      }
@@ -60,14 +51,12 @@ Before setting up the MCP server, ensure you have:
    - **Linux**: `~/.config/claude/claude_desktop_config.json`
 
 2. **Add the server configuration**:
-   - **Easy way**: Copy content from `claude-desktop-config-generated.json` (after running `python generate_config.py`)
-   - **Manual way**: Add this configuration:
    ```json
    {
      "mcpServers": {
        "kubectl-mtv": {
-         "command": "python",
-         "args": ["/full/path/to/your/kubectl-mtv/mcp/kubectl_mtv_server.py"],
+         "command": "kubectl-mtv-mcp",
+         "args": [],
          "env": {}
        }
      }
@@ -82,7 +71,7 @@ For Claude Code users, you can use the built-in `mcp install` command for the ea
 
 1. **Install the MCP server directly**:
    ```bash
-   claude mcp add python /full/path/to/your/kubectl-mtv/mcp/kubectl_mtv_server.py
+   claude mcp add kubectl-mtv-mcp
    ```
 
 2. **Verify the installation**:
@@ -94,7 +83,7 @@ For Claude Code users, you can use the built-in `mcp install` command for the ea
 3. **Optional: Install the write server** for destructive operations:
    ```bash
    # Only install if you need write/modify capabilities
-   claude mcp add python /full/path/to/your/kubectl-mtv/mcp/kubectl_mtv_write_server.py
+   claude mcp add kubectl-mtv-write-mcp
    ```
 
 5. **The server(s) are now available** - Claude Code will automatically load and use the servers.
@@ -118,8 +107,8 @@ By default, Claude CLI may prompt for user consent before executing MCP tool ope
      "mcp": {
        "servers": {
          "kubectl-mtv": {
-           "command": "python",
-           "args": ["/full/path/to/your/kubectl-mtv/mcp/kubectl_mtv_server.py"],
+           "command": "kubectl-mtv-mcp",
+           "args": [],
            "autoExecute": true,
            "confirmBeforeExecution": false,
            "trusted": true
@@ -155,8 +144,8 @@ For other MCP-compatible applications, use this general configuration format:
 {
   "servers": {
     "kubectl-mtv": {
-      "command": "python",
-      "args": ["/full/path/to/your/kubectl-mtv/mcp/kubectl_mtv_server.py"],
+      "command": "kubectl-mtv-mcp",
+      "args": [],
       "env": {}
     }
   }
@@ -177,19 +166,16 @@ Instead of using STDIO transport (where each client spawns its own server proces
 1. **Start the HTTP server**:
    ```bash
    # Default: localhost:8000
-   python kubectl_mtv_server.py --transport http
+   kubectl-mtv-mcp --transport http
    
    # Custom host/port
-   python kubectl_mtv_server.py --transport http --host 0.0.0.0 --port 9000
+   kubectl-mtv-mcp --transport http --host 0.0.0.0 --port 9000
    
    # With debug logging
-   python kubectl_mtv_server.py --transport http --log-level debug
+   kubectl-mtv-mcp --transport http --log-level debug
    ```
 
 2. **Configure your MCP client** to use HTTP transport:
-   - **Easy way**: Use `http-server-config-generated.json` (after running `python generate_config.py`)
-   - **Manual way**: Use this configuration format:
-
    ```json
    {
      "mcpServers": {
