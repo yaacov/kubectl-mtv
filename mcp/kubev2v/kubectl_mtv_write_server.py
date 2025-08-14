@@ -1623,7 +1623,7 @@ async def PatchPlanVm(
         # Use custom PVC naming template
         patch_plan_vm("my-plan", "storage-vm", pvc_name_template="{{.VmName}}-disk-{{.DiskIndex}}")
     """
-    args = ["patch", "plan-vms", plan_name, vm_name]
+    args = ["patch", "planvm", plan_name, vm_name]
 
     if namespace:
         args.extend(["-n", namespace])

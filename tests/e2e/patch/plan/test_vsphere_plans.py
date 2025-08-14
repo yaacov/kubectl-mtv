@@ -224,9 +224,9 @@ class TestVSpherePlanPatch:
         """Test patching VM-specific settings within a plan."""
         vm_name = VSPHERE_TEST_VMS[0]
         
-        # Patch VM with target name and instance type using the correct plan-vms command
+        # Patch VM with target name and instance type using the correct planvm command
         cmd_parts = [
-            "patch plan-vms",
+            "patch planvm",
             f"{migration_plan}",
             f"'{vm_name}'",
             f"--target-name 'migrated-{vm_name}'",

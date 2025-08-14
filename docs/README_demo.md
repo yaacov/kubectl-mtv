@@ -120,8 +120,8 @@ Monitor migration progress and status:
 
 ```bash
 kubectl mtv describe plan demo -w
-kubectl mtv get plan-vms demo -w
-kubectl mtv describe plan-vm demo --vm your_selected_vm -w
+kubectl mtv get plan demo --vms -w
+kubectl mtv describe plan demo --vm your_selected_vm -w
 ```
 
 Monitor logs, pods, and persistent volume claims:
