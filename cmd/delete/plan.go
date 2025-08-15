@@ -15,10 +15,13 @@ import (
 // NewPlanCmd creates the plan deletion command
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var all bool
+	var skipArchive bool
+	var cleanAll bool
 
 	cmd := &cobra.Command{
-		Use:               "plan [NAME...] [--all]",
+		Use:               "plan [NAME...] [--all] [--skip-archive] [--clean-all]",
 		Short:             "Delete one or more migration plans",
+		Long:              "Delete one or more migration plans. By default, plans are archived before deletion. Use --skip-archive to skip archiving and delete immediately. Use --clean-all to archive, delete VMs on failed migration, then delete.",
 		Args:              flags.ValidateAllFlagArgs(func() bool { return all }, 1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
@@ -44,7 +47,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 
 			// Loop over each plan name and delete it
 			for _, name := range planNames {
-				err := plan.Delete(kubeConfigFlags, name, namespace)
+				err := plan.Delete(kubeConfigFlags, name, namespace, skipArchive, cleanAll)
 				if err != nil {
 					return err
 				}
@@ -54,6 +57,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&all, "all", false, "Delete all migration plans in the namespace")
+	cmd.Flags().BoolVar(&skipArchive, "skip-archive", false, "Skip archiving and delete the plan immediately")
+	cmd.Flags().BoolVar(&cleanAll, "clean-all", false, "Archive, delete VMs on failed migration, then delete")
 
 	return cmd
 }

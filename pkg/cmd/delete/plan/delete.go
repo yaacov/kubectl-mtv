@@ -7,28 +7,77 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/dynamic"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/archive/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 
 // Delete removes a plan by name from the cluster
-func Delete(configFlags *genericclioptions.ConfigFlags, name, namespace string) error {
+func Delete(configFlags *genericclioptions.ConfigFlags, name, namespace string, skipArchive, cleanAll bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
 	}
 
-	// Archive the plan
-	err = plan.Archive(configFlags, name, namespace, true)
-	if err != nil {
-		return fmt.Errorf("failed to archive plan: %v", err)
+	// Patch the plan to add deleteVmOnFailMigration=true if cleanAll is true
+	if cleanAll {
+		fmt.Printf("Clean-all mode enabled for plan '%s'\n", name)
+
+		// Patch the plan to add deleteVmOnFailMigration=true
+		fmt.Printf("Patching plan '%s' to enable VM deletion on failed migration...\n", name)
+		err = patchPlanDeleteVmOnFailMigration(c, name, namespace)
+		if err != nil {
+			return fmt.Errorf("failed to patch plan: %v", err)
+		}
+
+		fmt.Printf("Plan '%s' patched with deleteVmOnFailMigration=true\n", name)
 	}
 
-	// Wait for the Archived condition to be true
-	fmt.Printf("Waiting for plan '%s' to be archived...\n", name)
+	// Archive the plan if not skipped
+	if skipArchive {
+		fmt.Printf("Skipping archive and deleting plan '%s' immediately...\n", name)
+	} else {
+		// Archive the plan
+		err = plan.Archive(configFlags, name, namespace, true)
+		if err != nil {
+			return fmt.Errorf("failed to archive plan: %v", err)
+		}
+
+		// Wait for the Archived condition to be true
+		fmt.Printf("Waiting for plan '%s' to be archived...\n", name)
+		err = waitForArchivedCondition(c, name, namespace, 60)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	// Delete the plan
+	err = c.Resource(client.PlansGVR).Namespace(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to delete plan: %v", err)
+	}
+
+	fmt.Printf("Plan '%s' deleted from namespace '%s'\n", name, namespace)
+	return nil
+}
+
+// waitForArchivedCondition waits for a plan to reach the Archived condition with a timeout
+func waitForArchivedCondition(c dynamic.Interface, name, namespace string, timeoutSec int) error {
+	// Set timeout based on provided seconds
+	timeout := time.Duration(timeoutSec) * time.Second
+	startTime := time.Now()
+
 	for {
+		// Check if we've exceeded the timeout
+		if time.Since(startTime) > timeout {
+			return fmt.Errorf("timeout waiting for plan '%s' to be archived after %v", name, timeout)
+		}
+
 		plan, err := c.Resource(client.PlansGVR).Namespace(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to get plan: %v", err)
@@ -62,13 +111,36 @@ func Delete(configFlags *genericclioptions.ConfigFlags, name, namespace string) 
 		// Wait before checking again
 		time.Sleep(2 * time.Second)
 	}
+	return nil
+}
 
-	// Delete the plan
-	err = c.Resource(client.PlansGVR).Namespace(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to delete plan: %v", err)
+// patchPlanDeleteVmOnFailMigration patches a plan to add deleteVmOnFailMigration=true
+func patchPlanDeleteVmOnFailMigration(c dynamic.Interface, name, namespace string) error {
+	// Create patch data
+	patchSpec := map[string]interface{}{
+		"deleteVmOnFailMigration": true,
 	}
 
-	fmt.Printf("Plan '%s' deleted from namespace '%s'\n", name, namespace)
+	patchData := map[string]interface{}{
+		"spec": patchSpec,
+	}
+
+	patchBytes, err := runtime.Encode(unstructured.UnstructuredJSONScheme, &unstructured.Unstructured{Object: patchData})
+	if err != nil {
+		return fmt.Errorf("failed to encode patch data: %v", err)
+	}
+
+	// Apply the patch
+	_, err = c.Resource(client.PlansGVR).Namespace(namespace).Patch(
+		context.TODO(),
+		name,
+		types.MergePatchType,
+		patchBytes,
+		metav1.PatchOptions{},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to patch plan: %v", err)
+	}
+
 	return nil
 }
