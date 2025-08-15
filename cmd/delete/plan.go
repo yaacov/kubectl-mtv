@@ -1,28 +1,49 @@
 package delete
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/delete/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewPlanCmd creates the plan deletion command
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+	var all bool
+
 	cmd := &cobra.Command{
-		Use:               "plan NAME [NAME...]",
+		Use:               "plan [NAME...] [--all]",
 		Short:             "Delete one or more migration plans",
-		Args:              cobra.MinimumNArgs(1),
+		Args:              flags.ValidateAllFlagArgs(func() bool { return all }, 1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
+			var planNames []string
+			if all {
+				// Get all plan names from the namespace
+				var err error
+				planNames, err = client.GetAllPlanNames(kubeConfigFlags, namespace)
+				if err != nil {
+					return fmt.Errorf("failed to get all plan names: %v", err)
+				}
+				if len(planNames) == 0 {
+					fmt.Printf("No plans found in namespace %s\n", namespace)
+					return nil
+				}
+			} else {
+				planNames = args
+			}
+
 			// Loop over each plan name and delete it
-			for _, name := range args {
+			for _, name := range planNames {
 				err := plan.Delete(kubeConfigFlags, name, namespace)
 				if err != nil {
 					return err
@@ -31,6 +52,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVar(&all, "all", false, "Delete all migration plans in the namespace")
 
 	return cmd
 }

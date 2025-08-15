@@ -10,16 +10,18 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/cutover/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewPlanCmd creates the plan cutover command
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var cutoverTimeStr string
+	var all bool
 
 	cmd := &cobra.Command{
-		Use:               "plan NAME [NAME...]",
+		Use:               "plan [NAME...] [--all]",
 		Short:             "Set the cutover time for one or more warm migration plans",
-		Args:              cobra.MinimumNArgs(1),
+		Args:              flags.ValidateAllFlagArgs(func() bool { return all }, 1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -36,8 +38,24 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				cutoverTime = &t
 			}
 
+			var planNames []string
+			if all {
+				// Get all plan names from the namespace
+				var err error
+				planNames, err = client.GetAllPlanNames(kubeConfigFlags, namespace)
+				if err != nil {
+					return fmt.Errorf("failed to get all plan names: %v", err)
+				}
+				if len(planNames) == 0 {
+					fmt.Printf("No plans found in namespace %s\n", namespace)
+					return nil
+				}
+			} else {
+				planNames = args
+			}
+
 			// Loop over each plan name and set cutover time
-			for _, planName := range args {
+			for _, planName := range planNames {
 				err := plan.Cutover(kubeConfigFlags, planName, namespace, cutoverTime)
 				if err != nil {
 					return err
@@ -48,6 +66,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&cutoverTimeStr, "cutover", "c", "", "Cutover time in ISO8601 format (e.g., 2023-12-31T15:30:00Z, '$(date --iso-8601=sec)'). If not specified, defaults to current time.")
+	cmd.Flags().BoolVar(&all, "all", false, "Set cutover time for all migration plans in the namespace")
 
 	return cmd
 }
