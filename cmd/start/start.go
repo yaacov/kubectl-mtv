@@ -16,6 +16,9 @@ func NewStartCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig
 		SilenceUsage: true,
 	}
 
-	cmd.AddCommand(NewPlanCmd(kubeConfigFlags, getGlobalConfig))
+	// Add plan subcommand with plural alias
+	planCmd := NewPlanCmd(kubeConfigFlags, getGlobalConfig)
+	planCmd.Aliases = []string{"plans"}
+	cmd.AddCommand(planCmd)
 	return cmd
 }

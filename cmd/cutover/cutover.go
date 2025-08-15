@@ -14,6 +14,9 @@ func NewCutoverCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comman
 		SilenceUsage: true,
 	}
 
-	cmd.AddCommand(NewPlanCmd(kubeConfigFlags))
+	// Add plan subcommand with plural alias
+	planCmd := NewPlanCmd(kubeConfigFlags)
+	planCmd.Aliases = []string{"plans"}
+	cmd.AddCommand(planCmd)
 	return cmd
 }
