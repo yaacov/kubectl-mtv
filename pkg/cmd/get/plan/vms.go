@@ -15,6 +15,37 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/watch"
 )
 
+// getVMCompletionStatus determines if a completed VM succeeded, failed, or was canceled
+func getVMCompletionStatus(vm map[string]interface{}) string {
+	conditions, exists, _ := unstructured.NestedSlice(vm, "conditions")
+	if !exists {
+		return status.StatusUnknown
+	}
+
+	for _, c := range conditions {
+		condition, ok := c.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		condType, _, _ := unstructured.NestedString(condition, "type")
+		condStatus, _, _ := unstructured.NestedString(condition, "status")
+
+		if condStatus == "True" {
+			switch condType {
+			case status.StatusSucceeded:
+				return status.StatusSucceeded
+			case status.StatusFailed:
+				return status.StatusFailed
+			case status.StatusCanceled:
+				return status.StatusCanceled
+			}
+		}
+	}
+
+	return status.StatusUnknown
+}
+
 // ListVMs lists all VMs in a migration plan
 func ListVMs(configFlags *genericclioptions.ConfigFlags, name, namespace string, watchMode bool) error {
 	if watchMode {
@@ -136,8 +167,23 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 
 				progress := "-"
 				if vmPhase == "Completed" || phaseStatus == "Completed" {
-					progress = fmt.Sprintf("%14.1f%%", 100.0)
-					progress = output.Green(progress)
+					// Check the actual completion status to differentiate between success and failure
+					completionStatus := getVMCompletionStatus(vm)
+					switch completionStatus {
+					case status.StatusSucceeded:
+						progress = fmt.Sprintf("%14.1f%%", 100.0)
+						progress = output.Green(progress)
+					case status.StatusFailed:
+						progress = fmt.Sprintf("%14s", "FAILED")
+						progress = output.Red(progress)
+					case status.StatusCanceled:
+						progress = fmt.Sprintf("%14s", "CANCELED")
+						progress = output.Yellow(progress)
+					default:
+						// If completion status is unknown, still show 100% but in a neutral color
+						progress = fmt.Sprintf("%14.1f%%", 100.0)
+						progress = output.Blue(progress)
+					}
 				} else {
 					progressMap, exists, _ := unstructured.NestedMap(phase, "progress")
 					if exists {
