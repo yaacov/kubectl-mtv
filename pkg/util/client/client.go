@@ -1,12 +1,15 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/dynamic"
@@ -148,6 +151,156 @@ func GetAuthenticatedHTTPClient(configFlags *genericclioptions.ConfigFlags, base
 	}
 
 	return NewHTTPClient(baseURL, transport), nil
+}
+
+// GetAllPlanNames retrieves all plan names from the given namespace
+func GetAllPlanNames(configFlags *genericclioptions.ConfigFlags, namespace string) ([]string, error) {
+	dynamicClient, err := GetDynamicClient(configFlags)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dynamic client: %v", err)
+	}
+
+	var planList *unstructured.UnstructuredList
+	if namespace != "" {
+		planList, err = dynamicClient.Resource(PlansGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	} else {
+		planList, err = dynamicClient.Resource(PlansGVR).List(context.TODO(), metav1.ListOptions{})
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to list plans: %v", err)
+	}
+
+	var planNames []string
+	for _, plan := range planList.Items {
+		planNames = append(planNames, plan.GetName())
+	}
+
+	return planNames, nil
+}
+
+// GetAllHookNames retrieves all hook names from the given namespace
+func GetAllHookNames(configFlags *genericclioptions.ConfigFlags, namespace string) ([]string, error) {
+	dynamicClient, err := GetDynamicClient(configFlags)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dynamic client: %v", err)
+	}
+
+	var hookList *unstructured.UnstructuredList
+	if namespace != "" {
+		hookList, err = dynamicClient.Resource(HooksGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	} else {
+		hookList, err = dynamicClient.Resource(HooksGVR).List(context.TODO(), metav1.ListOptions{})
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to list hooks: %v", err)
+	}
+
+	var hookNames []string
+	for _, hook := range hookList.Items {
+		hookNames = append(hookNames, hook.GetName())
+	}
+
+	return hookNames, nil
+}
+
+// GetAllHostNames retrieves all host names from the given namespace
+func GetAllHostNames(configFlags *genericclioptions.ConfigFlags, namespace string) ([]string, error) {
+	dynamicClient, err := GetDynamicClient(configFlags)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dynamic client: %v", err)
+	}
+
+	var hostList *unstructured.UnstructuredList
+	if namespace != "" {
+		hostList, err = dynamicClient.Resource(HostsGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	} else {
+		hostList, err = dynamicClient.Resource(HostsGVR).List(context.TODO(), metav1.ListOptions{})
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to list hosts: %v", err)
+	}
+
+	var hostNames []string
+	for _, host := range hostList.Items {
+		hostNames = append(hostNames, host.GetName())
+	}
+
+	return hostNames, nil
+}
+
+// GetAllProviderNames retrieves all provider names from the given namespace
+func GetAllProviderNames(configFlags *genericclioptions.ConfigFlags, namespace string) ([]string, error) {
+	dynamicClient, err := GetDynamicClient(configFlags)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dynamic client: %v", err)
+	}
+
+	var providerList *unstructured.UnstructuredList
+	if namespace != "" {
+		providerList, err = dynamicClient.Resource(ProvidersGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	} else {
+		providerList, err = dynamicClient.Resource(ProvidersGVR).List(context.TODO(), metav1.ListOptions{})
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to list providers: %v", err)
+	}
+
+	var providerNames []string
+	for _, provider := range providerList.Items {
+		providerNames = append(providerNames, provider.GetName())
+	}
+
+	return providerNames, nil
+}
+
+// GetAllNetworkMappingNames retrieves all network mapping names from the given namespace
+func GetAllNetworkMappingNames(configFlags *genericclioptions.ConfigFlags, namespace string) ([]string, error) {
+	dynamicClient, err := GetDynamicClient(configFlags)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dynamic client: %v", err)
+	}
+
+	var mappingList *unstructured.UnstructuredList
+	if namespace != "" {
+		mappingList, err = dynamicClient.Resource(NetworkMapGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	} else {
+		mappingList, err = dynamicClient.Resource(NetworkMapGVR).List(context.TODO(), metav1.ListOptions{})
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to list network mappings: %v", err)
+	}
+
+	var mappingNames []string
+	for _, mapping := range mappingList.Items {
+		mappingNames = append(mappingNames, mapping.GetName())
+	}
+
+	return mappingNames, nil
+}
+
+// GetAllStorageMappingNames retrieves all storage mapping names from the given namespace
+func GetAllStorageMappingNames(configFlags *genericclioptions.ConfigFlags, namespace string) ([]string, error) {
+	dynamicClient, err := GetDynamicClient(configFlags)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get dynamic client: %v", err)
+	}
+
+	var mappingList *unstructured.UnstructuredList
+	if namespace != "" {
+		mappingList, err = dynamicClient.Resource(StorageMapGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+	} else {
+		mappingList, err = dynamicClient.Resource(StorageMapGVR).List(context.TODO(), metav1.ListOptions{})
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to list storage mappings: %v", err)
+	}
+
+	var mappingNames []string
+	for _, mapping := range mappingList.Items {
+		mappingNames = append(mappingNames, mapping.GetName())
+	}
+
+	return mappingNames, nil
 }
 
 // HTTPClient represents a client for making HTTP requests with authentication
