@@ -15,6 +15,39 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/watch"
 )
 
+// getVMCompletionStatus determines if a completed VM succeeded, failed, or was canceled
+func getVMCompletionStatus(vm map[string]interface{}) string {
+	conditions, exists, _ := unstructured.NestedSlice(vm, "conditions")
+	if !exists {
+		return status.StatusUnknown
+	}
+
+	for _, c := range conditions {
+		condition, ok := c.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		condType, _, _ := unstructured.NestedString(condition, "type")
+		condStatus, _, _ := unstructured.NestedString(condition, "status")
+
+		if condStatus == "True" {
+			switch condType {
+			case status.StatusSucceeded:
+				return status.StatusSucceeded
+			case status.StatusFailed:
+				return status.StatusFailed
+			case status.StatusCanceled:
+				return status.StatusCanceled
+			case status.StatusCompleted:
+				return status.StatusCompleted
+			}
+		}
+	}
+
+	return status.StatusUnknown
+}
+
 // ListVMs lists all VMs in a migration plan
 func ListVMs(configFlags *genericclioptions.ConfigFlags, name, namespace string, watchMode bool) error {
 	if watchMode {
@@ -105,8 +138,11 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 		started, _, _ := unstructured.NestedString(vm, "started")
 		completed, _, _ := unstructured.NestedString(vm, "completed")
 
+		vmCompletionStatus := getVMCompletionStatus(vm)
+
 		fmt.Printf("%s %s (%s %s)\n", output.Bold("VM:"), output.Yellow(vmName), output.Bold("vmID="), output.Cyan(vmID))
 		fmt.Printf("%s %s\n", output.Bold("Phase:"), output.ColorizeStatus(vmPhase))
+		fmt.Printf("%s %s\n", output.Bold("Status:"), output.ColorizeStatus(vmCompletionStatus))
 		fmt.Printf("%s %s\n", output.Bold("OS:"), output.Blue(vmOS))
 		if started != "" {
 			fmt.Printf("%s %s\n", output.Bold("Started:"), output.Blue(started))
@@ -133,29 +169,39 @@ func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace str
 				phaseStatus, _, _ := unstructured.NestedString(phase, "phase")
 				phaseStarted, _, _ := unstructured.NestedString(phase, "started")
 				phaseCompleted, _, _ := unstructured.NestedString(phase, "completed")
-
 				progress := "-"
-				if vmPhase == "Completed" || phaseStatus == "Completed" {
-					progress = fmt.Sprintf("%14.1f%%", 100.0)
-					progress = output.Green(progress)
-				} else {
-					progressMap, exists, _ := unstructured.NestedMap(phase, "progress")
-					if exists {
-						completed, _, _ := unstructured.NestedInt64(progressMap, "completed")
-						total, _, _ := unstructured.NestedInt64(progressMap, "total")
-						if total > 0 {
-							percentage := float64(completed) / float64(total) * 100
-							progressText := fmt.Sprintf("%14.1f%%", percentage)
-							if percentage >= 100 {
-								progress = output.Green(progressText)
-							} else if percentage >= 75 {
-								progress = output.Blue(progressText)
-							} else if percentage >= 25 {
-								progress = output.Yellow(progressText)
-							} else {
-								progress = output.Cyan(progressText)
-							}
+
+				var progCompleted int64
+				var progTotal int64
+
+				progressMap, progressExists, _ := unstructured.NestedMap(phase, "progress")
+				percentage := -1.0
+				if phaseStatus == status.StatusCompleted {
+					// Always show 100% for completed phases, even when totals are missing
+					percentage = 100.0
+				} else if progressExists {
+					progCompleted, _, _ = unstructured.NestedInt64(progressMap, "completed")
+					progTotal, _, _ = unstructured.NestedInt64(progressMap, "total")
+					if progTotal > 0 {
+						percentage = float64(progCompleted) / float64(progTotal) * 100
+						if percentage > 100.0 {
+							percentage = 100.0
 						}
+					}
+				}
+				if percentage >= 0 {
+					progressText := fmt.Sprintf("%14.1f%%", percentage)
+
+					// Handle VM completion status
+					switch vmCompletionStatus {
+					case status.StatusFailed:
+						progress = output.Red(progressText)
+					case status.StatusCanceled:
+						progress = output.Yellow(progressText)
+					case status.StatusSucceeded, status.StatusCompleted:
+						progress = output.Green(progressText)
+					default:
+						progress = output.Cyan(progressText)
 					}
 				}
 

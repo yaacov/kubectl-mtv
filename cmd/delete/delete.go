@@ -14,11 +14,30 @@ func NewDeleteCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 		SilenceUsage: true,
 	}
 
-	cmd.AddCommand(NewMappingCmd(kubeConfigFlags))
-	cmd.AddCommand(NewPlanCmd(kubeConfigFlags))
-	cmd.AddCommand(NewProviderCmd(kubeConfigFlags))
-	cmd.AddCommand(NewHostCmd(kubeConfigFlags))
-	cmd.AddCommand(NewHookCmd(kubeConfigFlags))
+	// Add mapping subcommand with plural alias
+	mappingCmd := NewMappingCmd(kubeConfigFlags)
+	mappingCmd.Aliases = []string{"mappings"}
+	cmd.AddCommand(mappingCmd)
+
+	// Add plan subcommand with plural alias
+	planCmd := NewPlanCmd(kubeConfigFlags)
+	planCmd.Aliases = []string{"plans"}
+	cmd.AddCommand(planCmd)
+
+	// Add provider subcommand with plural alias
+	providerCmd := NewProviderCmd(kubeConfigFlags)
+	providerCmd.Aliases = []string{"providers"}
+	cmd.AddCommand(providerCmd)
+
+	// Add host subcommand with plural alias
+	hostCmd := NewHostCmd(kubeConfigFlags)
+	hostCmd.Aliases = []string{"hosts"}
+	cmd.AddCommand(hostCmd)
+
+	// Add hook subcommand with plural alias
+	hookCmd := NewHookCmd(kubeConfigFlags)
+	hookCmd.Aliases = []string{"hooks"}
+	cmd.AddCommand(hookCmd)
 
 	return cmd
 }

@@ -14,6 +14,9 @@ func NewUnArchiveCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comm
 		SilenceUsage: true,
 	}
 
-	cmd.AddCommand(NewPlanCmd(kubeConfigFlags))
+	// Add plan subcommand with plural alias
+	planCmd := NewPlanCmd(kubeConfigFlags)
+	planCmd.Aliases = []string{"plans"}
+	cmd.AddCommand(planCmd)
 	return cmd
 }

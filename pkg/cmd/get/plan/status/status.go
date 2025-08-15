@@ -19,6 +19,7 @@ const (
 	StatusCanceled  = "Canceled"
 	StatusUnknown   = "-"
 	StatusExecuting = "Executing"
+	StatusCompleted = "Completed"
 )
 
 // IsPlanReady checks if a migration plan is ready
