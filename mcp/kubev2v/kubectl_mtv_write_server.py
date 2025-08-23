@@ -715,6 +715,7 @@ async def CreatePlan(
     archived: bool = False,
     pvc_name_template_use_generate_name: bool = True,
     delete_guest_conversion_pod: bool = False,
+    delete_vm_on_fail_migration: bool = False,
     skip_guest_conversion: bool = False,
     install_legacy_drivers: str = "",
     migration_type: str = "",
@@ -1019,6 +1020,8 @@ async def CreatePlan(
         args.append("--pvc-name-template-use-generate-name=false")
     if delete_guest_conversion_pod:
         args.append("--delete-guest-conversion-pod")
+    if delete_vm_on_fail_migration:
+        args.append("--delete-vm-on-fail-migration")
     if skip_guest_conversion:
         args.append("--skip-guest-conversion")
     if install_legacy_drivers:
@@ -1203,19 +1206,36 @@ async def CreateHook(
 
 # Resource Deletion Operations
 @mcp.tool()
-async def DeleteProvider(provider_name: str, namespace: str = "") -> str:
-    """Delete a provider.
+async def DeleteProvider(
+    provider_name: str = "", namespace: str = "", all_providers: bool = False
+) -> str:
+    """Delete one or more providers.
 
-    WARNING: This will remove the provider and may affect associated plans and mappings.
+    WARNING: This will remove providers and may affect associated plans and mappings.
 
     Args:
-        provider_name: Name of the provider to delete
+        provider_name: Name of the provider to delete (required unless all_providers=True)
         namespace: Kubernetes namespace containing the provider (optional)
+        all_providers: Delete all providers in the namespace (optional)
 
     Returns:
         Command output confirming provider deletion
+
+    Examples:
+        # Delete specific provider
+        DeleteProvider("my-provider")
+
+        # Delete all providers in namespace
+        DeleteProvider(all_providers=True, namespace="demo")
     """
-    args = ["delete", "provider", provider_name]
+    args = ["delete", "provider"]
+
+    if all_providers:
+        args.append("--all")
+    else:
+        if not provider_name:
+            raise ValueError("provider_name is required when all_providers=False")
+        args.append(provider_name)
 
     if namespace:
         args.extend(["-n", namespace])
@@ -1224,40 +1244,96 @@ async def DeleteProvider(provider_name: str, namespace: str = "") -> str:
 
 
 @mcp.tool()
-async def DeletePlan(plan_name: str, namespace: str = "") -> str:
-    """Delete a migration plan.
+async def DeletePlan(
+    plan_name: str = "",
+    namespace: str = "",
+    all_plans: bool = False,
+    skip_archive: bool = False,
+    clean_all: bool = False,
+) -> str:
+    """Delete one or more migration plans.
 
-    WARNING: This will remove the migration plan and all associated migration data.
+    WARNING: This will remove migration plans and all associated migration data.
+
+    By default, plans are archived before deletion to ensure a clean shutdown. Use skip_archive
+    to delete immediately without archiving. Use clean_all to archive, enable VM deletion on
+    failed migration, then delete.
 
     Args:
-        plan_name: Name of the plan to delete
+        plan_name: Name of the plan to delete (required unless all_plans=True)
         namespace: Kubernetes namespace containing the plan (optional)
+        all_plans: Delete all plans in the namespace (optional)
+        skip_archive: Skip archiving and delete immediately (optional)
+        clean_all: Archive, delete VMs on failed migration, then delete (optional)
 
     Returns:
         Command output confirming plan deletion
+
+    Examples:
+        # Delete specific plan with default archiving
+        DeletePlan("my-plan")
+
+        # Delete plan without archiving
+        DeletePlan("my-plan", skip_archive=True)
+
+        # Delete plan with VM cleanup on failure
+        DeletePlan("my-plan", clean_all=True)
+
+        # Delete all plans in namespace
+        DeletePlan(all_plans=True, namespace="demo")
     """
-    args = ["delete", "plan", plan_name]
+    args = ["delete", "plan"]
+
+    if all_plans:
+        args.append("--all")
+    else:
+        if not plan_name:
+            raise ValueError("plan_name is required when all_plans=False")
+        args.append(plan_name)
 
     if namespace:
         args.extend(["-n", namespace])
+
+    if skip_archive:
+        args.append("--skip-archive")
+
+    if clean_all:
+        args.append("--clean-all")
 
     return await run_kubectl_mtv_command(args)
 
 
 @mcp.tool()
-async def DeleteHost(host_name: str, namespace: str = "") -> str:
-    """Delete a migration host.
+async def DeleteHost(
+    host_name: str = "", namespace: str = "", all_hosts: bool = False
+) -> str:
+    """Delete one or more migration hosts.
 
-    WARNING: This will remove the migration host.
+    WARNING: This will remove migration hosts.
 
     Args:
-        host_name: Name of the host to delete
+        host_name: Name of the host to delete (required unless all_hosts=True)
         namespace: Kubernetes namespace containing the host (optional)
+        all_hosts: Delete all hosts in the namespace (optional)
 
     Returns:
         Command output confirming host deletion
+
+    Examples:
+        # Delete specific host
+        DeleteHost("esxi-host-01")
+
+        # Delete all hosts in namespace
+        DeleteHost(all_hosts=True, namespace="demo")
     """
-    args = ["delete", "host", host_name]
+    args = ["delete", "host"]
+
+    if all_hosts:
+        args.append("--all")
+    else:
+        if not host_name:
+            raise ValueError("host_name is required when all_hosts=False")
+        args.append(host_name)
 
     if namespace:
         args.extend(["-n", namespace])
@@ -1266,19 +1342,36 @@ async def DeleteHost(host_name: str, namespace: str = "") -> str:
 
 
 @mcp.tool()
-async def DeleteHook(hook_name: str, namespace: str = "") -> str:
-    """Delete a migration hook.
+async def DeleteHook(
+    hook_name: str = "", namespace: str = "", all_hooks: bool = False
+) -> str:
+    """Delete one or more migration hooks.
 
-    WARNING: This will remove the migration hook.
+    WARNING: This will remove migration hooks.
 
     Args:
-        hook_name: Name of the hook to delete
+        hook_name: Name of the hook to delete (required unless all_hooks=True)
         namespace: Kubernetes namespace containing the hook (optional)
+        all_hooks: Delete all hooks in the namespace (optional)
 
     Returns:
         Command output confirming hook deletion
+
+    Examples:
+        # Delete specific hook
+        DeleteHook("pre-migration-check")
+
+        # Delete all hooks in namespace
+        DeleteHook(all_hooks=True, namespace="demo")
     """
-    args = ["delete", "hook", hook_name]
+    args = ["delete", "hook"]
+
+    if all_hooks:
+        args.append("--all")
+    else:
+        if not hook_name:
+            raise ValueError("hook_name is required when all_hooks=False")
+        args.append(hook_name)
 
     if namespace:
         args.extend(["-n", namespace])
@@ -1426,6 +1519,7 @@ async def PatchPlan(
     archived: bool = None,
     pvc_name_template_use_generate_name: bool = None,
     delete_guest_conversion_pod: bool = None,
+    delete_vm_on_fail_migration: bool = None,
     skip_guest_conversion: bool = None,
     warm: bool = None,
 ) -> str:
@@ -1489,6 +1583,7 @@ async def PatchPlan(
         archived: Whether plan should be archived (optional)
         pvc_name_template_use_generate_name: Use generateName for PVC template (optional)
         delete_guest_conversion_pod: Delete conversion pod after migration (optional)
+        delete_vm_on_fail_migration: Delete target VM when migration fails (optional)
         skip_guest_conversion: Skip guest conversion process (optional)
         warm: Enable warm migration (optional, prefer migration_type parameter)
 
@@ -1566,6 +1661,10 @@ async def PatchPlan(
         args.extend(
             ["--delete-guest-conversion-pod", str(delete_guest_conversion_pod).lower()]
         )
+    if delete_vm_on_fail_migration is not None:
+        args.extend(
+            ["--delete-vm-on-fail-migration", str(delete_vm_on_fail_migration).lower()]
+        )
     if skip_guest_conversion is not None:
         args.extend(["--skip-guest-conversion", str(skip_guest_conversion).lower()])
     if warm is not None:
@@ -1591,6 +1690,7 @@ async def PatchPlanVm(
     add_post_hook: str = "",
     remove_hook: str = "",
     clear_hooks: bool = False,
+    delete_vm_on_fail_migration: bool = None,
 ) -> str:
     """Patch VM-specific fields for a VM within a migration plan's VM list.
 
@@ -1718,6 +1818,12 @@ async def PatchPlanVm(
         args.extend(["--luks-secret", luks_secret])
     if target_power_state:
         args.extend(["--target-power-state", target_power_state])
+
+    # VM-level options
+    if delete_vm_on_fail_migration is not None:
+        args.extend(
+            ["--delete-vm-on-fail-migration", str(delete_vm_on_fail_migration).lower()]
+        )
 
     # Hook management
     if add_pre_hook:
