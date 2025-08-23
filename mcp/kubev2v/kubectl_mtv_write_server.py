@@ -573,7 +573,7 @@ async def ManageMapping(
 
     Mapping Pairs Format:
     Network pairs: 'source:target-namespace/target-network' or 'source:target-network'
-    Storage pairs: 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)
+    Storage pairs: 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|primera3par|pureFlashArray|powerflex|powermax]' (comma-separated pairs, semicolon-separated parameters)
     Special values: 'source:default' (pod networking), 'source:ignored' (skip network)
     Multiple pairs: comma-separated 'pair1,pair2,pair3'
 
@@ -604,9 +604,11 @@ async def ManageMapping(
         inventory_url: Inventory service URL (optional)
         default_volume_mode: Default volume mode for storage pairs (Filesystem|Block) (optional)
         default_access_mode: Default access mode for storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany) (optional)
-        default_offload_plugin: Default offload plugin type for storage pairs (vsphere) (optional)
+        default_offload_plugin: Default offload plugin type for storage pairs (optional)
+            • Supported plugins: vsphere
         default_offload_secret: Default offload plugin secret name for storage pairs (optional)
-        default_offload_vendor: Default offload plugin vendor for storage pairs (vantara|ontap|primera3par|pureFlashArray|powerflex|powermax) (optional)
+        default_offload_vendor: Default offload plugin vendor for storage pairs (optional)
+            • Supported vendors: vantara, ontap, primera3par, pureFlashArray, powerflex, powermax
 
     Returns:
         Command output confirming the mapping operation
@@ -773,7 +775,7 @@ async def CreatePlan(
     Automatic Behaviors:
     - Target provider: If not specified, uses first available OpenShift provider automatically
     - Target namespace: If not specified, uses the plan's namespace
-    - Network/Storage mappings: Auto-created if not provided or specified as pairs
+    - Network/Storage mappings: Auto-created if not provided or specified as pairs (except for conversion-only migrations which skip storage mapping creation)
     - VM validation: All VMs are validated against provider inventory before plan creation
     - Missing VM handling: VMs not found in provider are automatically removed with warnings
 
@@ -818,9 +820,15 @@ async def CreatePlan(
     - cold: VMs are shut down during migration (default, most reliable)
     - warm: Initial copy while VM runs, brief downtime for final sync
     - live: Minimal downtime migration (advanced, limited compatibility)
+    - conversion: Only perform guest OS conversion without disk transfer (storage mappings not allowed)
 
     Note: Both migration_type and warm parameters are supported. If both are specified,
     migration_type takes precedence over the warm flag.
+
+    Conversion-Only Migration Constraints:
+    - Cannot use storage_mapping or storage_pairs parameters
+    - Storage mapping will be empty in the resulting plan
+    - Only network mapping is created/used for VM networking configuration
 
     Target Power State Options:
     - on: Start VMs after migration
@@ -906,10 +914,16 @@ async def CreatePlan(
         target_provider: Name of the target provider to migrate to (optional, auto-detects first OpenShift provider if not specified). Supports namespace/name pattern (e.g., 'other-namespace/my-provider') to reference providers in different namespaces, defaults to plan namespace if not specified.
         network_mapping: Name of existing network mapping to use (optional, auto-created if not provided)
         storage_mapping: Name of existing storage mapping to use (optional, auto-created if not provided)
-        network_pairs: Network mapping pairs - 'source:target-namespace/target-network' format (optional, creates mapping if provided). Note: All source networks must be mapped, pod/multus targets can only be used once, use 'source:ignored' for unmappable networks
-        storage_pairs: Storage mapping pairs in enhanced format (optional, creates mapping if provided):
-            'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany]
-            [;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]'
+        network_pairs: Network mapping pairs (optional, creates mapping if provided) - supports multiple formats:
+            • 'source:target-namespace/target-network' - explicit namespace/name format
+            • 'source:target-network' - uses plan namespace if no namespace specified
+            • 'source:default' - maps to pod networking
+            • 'source:ignored' - ignores the source network
+            Note: All source networks must be mapped, pod/multus targets can only be used once
+        storage_pairs: Storage mapping pairs (optional, creates mapping if provided) - enhanced format with optional parameters:
+            • Basic: 'source:storage-class' - simple storage class mapping
+            • Enhanced: 'source:storage-class;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadSecret=secret;offloadVendor=vantara'
+            • All semicolon-separated parameters are optional: volumeMode, accessMode, offloadPlugin, offloadSecret, offloadVendor
             Note: All source storages must be mapped, auto-selection uses
             storageclass.kubevirt.io/is-default-virt-class > storageclass.kubernetes.io/is-default-class >
             name with "virtualization"
@@ -918,7 +932,7 @@ async def CreatePlan(
         post_hook: Post-migration hook to add to all VMs (optional)
         description: Plan description (optional)
         target_namespace: Target namespace for migrated VMs (optional, defaults to plan namespace)
-        transfer_network: Network attachment definition for VM data transfer (optional)
+        transfer_network: Network attachment definition for VM data transfer - supports 'namespace/network-name' or just 'network-name' (uses plan namespace) (optional)
         preserve_cluster_cpu_model: Preserve CPU model and flags from oVirt cluster (optional, default False)
         preserve_static_ips: Preserve static IPs of vSphere VMs (optional, default False)
         pvc_name_template: Template for generating PVC names for VM disks (optional)
@@ -931,8 +945,8 @@ async def CreatePlan(
         skip_guest_conversion: Skip guest conversion process (optional, default False)
         use_compatibility_mode: Use compatibility devices when skipping conversion (optional, default True, auto-patched if False)
         install_legacy_drivers: Install legacy Windows drivers - 'true'/'false' (optional)
-        migration_type: Migration type - 'cold', 'warm', or 'live' (optional)
-        default_target_network: Default target network - 'default' for pod networking (optional)
+        migration_type: Migration type - 'cold', 'warm', 'live', or 'conversion' (optional). Note: 'conversion' type cannot be used with storage_mapping or storage_pairs
+        default_target_network: Default target network - 'default' for pod networking, 'namespace/network-name', or just 'network-name' (uses plan namespace) (optional)
         default_target_storage_class: Default target storage class (optional)
         target_labels: Target VM labels - 'key1=value1,key2=value2' format (optional)
         target_node_selector: Target node selector - 'key1=value1,key2=value2' format (optional)
@@ -955,9 +969,11 @@ async def CreatePlan(
         inventory_url: Base URL for inventory service (optional, auto-discovered if not provided)
         default_volume_mode: Default volume mode for storage pairs (Filesystem|Block) (optional)
         default_access_mode: Default access mode for storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany) (optional)
-        default_offload_plugin: Default offload plugin type for storage pairs (vsphere) (optional)
+        default_offload_plugin: Default offload plugin type for storage pairs (optional)
+            • Supported plugins: vsphere
         default_offload_secret: Default offload plugin secret name for storage pairs (optional)
-        default_offload_vendor: Default offload plugin vendor for storage pairs (vantara|ontap|primera3par|pureFlashArray|powerflex|powermax) (optional)
+        default_offload_vendor: Default offload plugin vendor for storage pairs (optional)
+            • Supported vendors: vantara, ontap, primera3par, pureFlashArray, powerflex, powermax
 
     Returns:
         Command output confirming plan creation
@@ -971,17 +987,21 @@ async def CreatePlan(
                    target_provider="target-ns/openshift-provider",
                    namespace="demo")
 
-        # Create comprehensive plan with explicit settings
+        # Create comprehensive plan showing optional parameters and namespace/name syntax
         create_plan("my-plan", "vsphere-provider",
                    target_provider="openshift-target",
                    target_namespace="migrated-vms",
                    vms="vm1,vm2,vm3",
                    migration_type="warm",
-                   network_pairs="VM Network:default,Management:mgmt/mgmt-net",
-                   storage_pairs="fast-datastore:ocs-storagecluster-ceph-rbd;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=vantara",
+                   # Network pairs: shows different formats (namespace/name, name-only, default, ignored)
+                   network_pairs="VM Network:default,Management:mgmt-ns/mgmt-net,Production:prod-net,DMZ:ignored",
+                   # Storage pairs: shows basic and enhanced format with optional parameters
+                   storage_pairs="fast-datastore:premium-ssd,slow-datastore:standard-hdd;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=vantara",
                    default_volume_mode="Block",
+                   default_target_network="openshift-sriov-network/high-perf-net",
+                   transfer_network="sriov-namespace/transfer-network",
                    target_power_state="on",
-                   description="Production VM migration")
+                   description="Production VM migration showing optional parameters and formats")
 
         # Plan with comma-separated VM names
         create_plan("my-plan", "vsphere-provider",
@@ -1003,6 +1023,19 @@ async def CreatePlan(
                    target_affinity="REQUIRE pods(app=database) on node",
                    description="Co-locate with existing database pods")
     """
+    # Validate that conversion-only migrations don't use storage mappings
+    if migration_type == "conversion":
+        if storage_mapping:
+            raise KubectlMTVError(
+                "Cannot use storage_mapping with migration_type 'conversion'. "
+                "Conversion-only migrations require empty storage mapping."
+            )
+        if storage_pairs:
+            raise KubectlMTVError(
+                "Cannot use storage_pairs with migration_type 'conversion'. "
+                "Conversion-only migrations require empty storage mapping."
+            )
+
     args = ["create", "plan", plan_name]
 
     if namespace:
@@ -1578,6 +1611,7 @@ async def PatchPlan(
     - cold: Traditional migration with VM shutdown (most reliable)
     - warm: Warm migration with reduced downtime (initial copy while VM runs)
     - live: Minimal downtime migration (advanced, limited compatibility)
+    - conversion: Only perform guest OS conversion without disk transfer
 
     Target Power State:
     - on: Start VMs after migration
@@ -1592,9 +1626,9 @@ async def PatchPlan(
     Args:
         plan_name: Name of the migration plan to patch (required)
         namespace: Kubernetes namespace containing the plan (optional)
-        transfer_network: Network to use for transferring VM data (optional)
+        transfer_network: Network to use for transferring VM data - supports 'namespace/network-name' or just 'network-name' (uses plan namespace) (optional)
         install_legacy_drivers: Install legacy drivers - 'true', 'false', or empty for auto (optional)
-        migration_type: Migration type - 'cold', 'warm', or 'live' (optional)
+        migration_type: Migration type - 'cold', 'warm', 'live', or 'conversion' (optional)
         target_labels: Target VM labels - 'key=value,key2=value2' format (optional)
         target_node_selector: Target node selector - 'key=value,key2=value2' format (optional)
         use_compatibility_mode: Use compatibility mode for migration (optional)

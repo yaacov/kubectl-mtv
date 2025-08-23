@@ -56,7 +56,8 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 	// Display enhanced mappings section
 	networkMapping, _, _ := unstructured.NestedString(plan.Object, "spec", "map", "network", "name")
 	storageMapping, _, _ := unstructured.NestedString(plan.Object, "spec", "map", "storage", "name")
-	displayPlanMappings(networkMapping, storageMapping)
+	migrationType, _, _ := unstructured.NestedString(plan.Object, "spec", "type")
+	displayPlanMappings(networkMapping, storageMapping, migrationType)
 
 	// Running Migration
 	if planDetails.RunningMigration != nil {
@@ -180,11 +181,21 @@ func displayPlanSpec(plan *unstructured.Unstructured) {
 	source, _, _ := unstructured.NestedString(plan.Object, "spec", "provider", "source", "name")
 	target, _, _ := unstructured.NestedString(plan.Object, "spec", "provider", "destination", "name")
 	targetNamespace, _, _ := unstructured.NestedString(plan.Object, "spec", "targetNamespace")
-	warm, _, _ := unstructured.NestedBool(plan.Object, "spec", "warm")
 	transferNetwork, _, _ := unstructured.NestedString(plan.Object, "spec", "transferNetwork", "name")
 	description, _, _ := unstructured.NestedString(plan.Object, "spec", "description")
 	preserveCPUModel, _, _ := unstructured.NestedBool(plan.Object, "spec", "preserveClusterCPUModel")
 	preserveStaticIPs, _, _ := unstructured.NestedBool(plan.Object, "spec", "preserveStaticIPs")
+
+	// Determine migration type
+	migrationType := "cold" // Default
+	if migrationTypeValue, exists, _ := unstructured.NestedString(plan.Object, "spec", "type"); exists && migrationTypeValue != "" {
+		migrationType = migrationTypeValue
+	} else {
+		// Fall back to legacy 'warm' boolean field
+		if warm, exists, _ := unstructured.NestedBool(plan.Object, "spec", "warm"); exists && warm {
+			migrationType = "warm"
+		}
+	}
 
 	fmt.Printf("\n%s\n", output.Cyan("SPECIFICATION"))
 
@@ -196,7 +207,7 @@ func displayPlanSpec(plan *unstructured.Unstructured) {
 	// Migration settings
 	fmt.Printf("\n%s\n", output.Bold("Migration Settings:"))
 	fmt.Printf("  %s %s\n", output.Bold("Target Namespace:"), output.Yellow(targetNamespace))
-	fmt.Printf("  %s %s\n", output.Bold("Warm Migration:"), output.ColorizeBoolean(warm))
+	fmt.Printf("  %s %s\n", output.Bold("Migration Type:"), output.Yellow(migrationType))
 	if transferNetwork != "" {
 		fmt.Printf("  %s %s\n", output.Bold("Transfer Network:"), output.Yellow(transferNetwork))
 	}
@@ -214,7 +225,7 @@ func displayPlanSpec(plan *unstructured.Unstructured) {
 }
 
 // displayPlanMappings displays the mapping references in a beautified format
-func displayPlanMappings(networkMapping, storageMapping string) {
+func displayPlanMappings(networkMapping, storageMapping, migrationType string) {
 	fmt.Printf("\n%s\n", output.Cyan("MAPPINGS"))
 
 	if networkMapping != "" {
@@ -226,7 +237,12 @@ func displayPlanMappings(networkMapping, storageMapping string) {
 	if storageMapping != "" {
 		fmt.Printf("%s %s\n", output.Bold("Storage Mapping:"), output.Yellow(storageMapping))
 	} else {
-		fmt.Printf("%s %s\n", output.Bold("Storage Mapping:"), output.Red("Not specified"))
+		// Special message for conversion-only migrations
+		if migrationType == "conversion" {
+			fmt.Printf("%s %s\n", output.Bold("Storage Mapping:"), output.Green("Not required (conversion-only)"))
+		} else {
+			fmt.Printf("%s %s\n", output.Bold("Storage Mapping:"), output.Red("Not specified"))
+		}
 	}
 }
 

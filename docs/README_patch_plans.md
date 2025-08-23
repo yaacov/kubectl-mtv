@@ -25,7 +25,7 @@ kubectl-mtv patch plan PLAN_NAME [flags]
 |------|-------------|----------------|
 | `--transfer-network` | Network for VM data transfer | `network-name` or `namespace/network-name` |
 | `--install-legacy-drivers` | Install legacy drivers | `true`, `false` |
-| `--migration-type` | Type of migration | `cold`, `warm` |
+| `--migration-type` | Type of migration | `cold`, `warm`, `live`, `conversion` |
 | `--target-labels` | Labels for target VMs | `env=prod,team=platform` |
 | `--target-node-selector` | Node selector for target VMs | `node-type=compute,zone=us-east` |
 | `--use-compatibility-mode` | Enable compatibility mode | `true`, `false` |
@@ -43,6 +43,8 @@ kubectl-mtv patch plan PLAN_NAME [flags]
 | `--delete-guest-conversion-pod` | Delete conversion pod after migration | `true`, `false` |
 | `--skip-guest-conversion` | Skip guest conversion process | `true`, `false` |
 | `--warm` | Enable warm migration (legacy flag) | `true`, `false` |
+| `--target-power-state` | Target power state for VMs after migration | `on`, `off`, `auto` |
+| `--delete-vm-on-fail-migration` | Delete target VM when migration fails | `true`, `false` |
 
 ### Usage Examples
 
@@ -142,6 +144,12 @@ kubectl-mtv patch plan storage-migration \
 kubectl-mtv patch plan completed-migration \
   --archived=true \
   --description "Completed migration - archived for records"
+
+# Configure power management and failure handling
+kubectl-mtv patch plan production-migration \
+  --target-power-state on \
+  --delete-vm-on-fail-migration=true \
+  --description "Production migration with automatic cleanup on failure"
 ```
 
 ## Patch Plan VMs Command
@@ -167,6 +175,8 @@ kubectl-mtv patch planvm PLAN_NAME VM_NAME [flags]
 | `--add-post-hook` | Add a post-migration hook | `cleanup-hook` |
 | `--remove-hook` | Remove a hook by name | `old-hook-name` |
 | `--clear-hooks` | Remove all hooks from VM | `true`, `false` |
+| `--target-power-state` | Target power state for this VM after migration | `on`, `off`, `auto` |
+| `--delete-vm-on-fail-migration` | Delete target VM when migration fails (overrides plan-level) | `true`, `false` |
 
 ### Template Variables
 
@@ -240,6 +250,12 @@ kubectl-mtv patch planvm enterprise-migration critical-app-vm \
   --root-disk "disk-0" \
   --pvc-name-template "{{.VmName}}-disk{{.DiskIndex}}-storage" \
   --luks-secret app-encryption-keys
+
+# Configure power management and failure handling for specific VM
+kubectl-mtv patch planvm production-migration critical-database \
+  --target-name prod-db-primary \
+  --target-power-state on \
+  --delete-vm-on-fail-migration=false
 ```
 
 #### Manage VM Hooks
@@ -322,7 +338,7 @@ kubectl-mtv patch plan production-migration \
 ### 1. Plan-Level vs VM-Level Changes
 
 **Use `patch plan` for:**
-- Migration strategy changes (cold/warm)
+- Migration strategy changes (cold/warm/live/conversion)
 - Target environment configuration
 - Network and infrastructure settings
 - Labels and selectors affecting all VMs
@@ -384,7 +400,7 @@ kubectl-mtv get plan my-plan -o yaml | grep -A10 "vms:"
 
 #### Invalid Migration Type
 ```bash
-Error: invalid migration type 'hot' (must be 'cold' or 'warm')
+Error: invalid migration type 'hot' (must be 'cold', 'warm', 'live', or 'conversion')
 ```
 **Solution**: Use valid migration types with tab completion:
 ```bash
