@@ -393,8 +393,13 @@ async def _create_storage_mapping(
     namespace: str,
     pairs: str,
     inventory_url: str,
+    default_volume_mode: str = "",
+    default_access_mode: str = "",
+    default_offload_plugin: str = "",
+    default_offload_secret: str = "",
+    default_offload_vendor: str = "",
 ) -> str:
-    """Create storage mapping implementation."""
+    """Create storage mapping implementation with enhanced options."""
     args = ["create", "mapping", "storage", mapping_name]
 
     if namespace:
@@ -406,6 +411,16 @@ async def _create_storage_mapping(
         args.extend(["--target", target_provider])
     if pairs:
         args.extend(["--storage-pairs", pairs])
+    if default_volume_mode:
+        args.extend(["--default-volume-mode", default_volume_mode])
+    if default_access_mode:
+        args.extend(["--default-access-mode", default_access_mode])
+    if default_offload_plugin:
+        args.extend(["--default-offload-plugin", default_offload_plugin])
+    if default_offload_secret:
+        args.extend(["--default-offload-secret", default_offload_secret])
+    if default_offload_vendor:
+        args.extend(["--default-offload-vendor", default_offload_vendor])
     if inventory_url:
         args.extend(["--inventory-url", inventory_url])
 
@@ -465,8 +480,13 @@ async def _patch_storage_mapping(
     update_pairs: str,
     remove_pairs: str,
     inventory_url: str,
+    default_volume_mode: str = "",
+    default_access_mode: str = "",
+    default_offload_plugin: str = "",
+    default_offload_secret: str = "",
+    default_offload_vendor: str = "",
 ) -> str:
-    """Patch storage mapping implementation."""
+    """Patch storage mapping implementation with enhanced options."""
     args = ["patch", "mapping", "storage", mapping_name]
 
     if namespace:
@@ -478,6 +498,16 @@ async def _patch_storage_mapping(
         args.extend(["--update-pairs", update_pairs])
     if remove_pairs:
         args.extend(["--remove-pairs", remove_pairs])
+    if default_volume_mode:
+        args.extend(["--default-volume-mode", default_volume_mode])
+    if default_access_mode:
+        args.extend(["--default-access-mode", default_access_mode])
+    if default_offload_plugin:
+        args.extend(["--default-offload-plugin", default_offload_plugin])
+    if default_offload_secret:
+        args.extend(["--default-offload-secret", default_offload_secret])
+    if default_offload_vendor:
+        args.extend(["--default-offload-vendor", default_offload_vendor])
     if inventory_url:
         args.extend(["--inventory-url", inventory_url])
 
@@ -498,6 +528,11 @@ async def ManageMapping(
     update_pairs: str = "",
     remove_pairs: str = "",
     inventory_url: str = "",
+    default_volume_mode: str = "",
+    default_access_mode: str = "",
+    default_offload_plugin: str = "",
+    default_offload_secret: str = "",
+    default_offload_vendor: str = "",
 ) -> str:
     """Manage network and storage mappings with unified operations.
 
@@ -526,7 +561,7 @@ async def ManageMapping(
 
     Mapping Pairs Format:
     Network pairs: 'source:target-namespace/target-network' or 'source:target-network'
-    Storage pairs: 'source:storage-class'
+    Storage pairs: 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)
     Special values: 'source:default' (pod networking), 'source:ignored' (skip network)
     Multiple pairs: comma-separated 'pair1,pair2,pair3'
 
@@ -542,6 +577,11 @@ async def ManageMapping(
         update_pairs: Pairs to update during patch (optional)
         remove_pairs: Source names to remove during patch (optional)
         inventory_url: Inventory service URL (optional)
+        default_volume_mode: Default volume mode for storage pairs (Filesystem|Block) (optional)
+        default_access_mode: Default access mode for storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany) (optional)
+        default_offload_plugin: Default offload plugin type for storage pairs (vsphere) (optional)
+        default_offload_secret: Default offload plugin secret name for storage pairs (optional)
+        default_offload_vendor: Default offload plugin vendor for storage pairs (vantara|ontap|primera3par|pureFlashArray|powerflex|powermax) (optional)
 
     Returns:
         Command output confirming the mapping operation
@@ -552,10 +592,11 @@ async def ManageMapping(
                      source_provider="vsphere-provider", target_provider="openshift-provider",
                      pairs="VM Network:default,Management:mgmt/mgmt-net")
 
-        # Create storage mapping
+        # Create storage mapping with enhanced features
         ManageMapping("create", "storage", "my-storage-mapping",
                      source_provider="vsphere-provider", target_provider="openshift-provider",
-                     pairs="fast-datastore:ocs-storagecluster-ceph-rbd")
+                     pairs="fast-datastore:ocs-storagecluster-ceph-rbd;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=vantara",
+                     default_volume_mode="Block")
 
         # Delete mapping
         ManageMapping("delete", "network", "old-mapping")
@@ -565,9 +606,10 @@ async def ManageMapping(
                      add_pairs="DMZ:dmz-namespace/dmz-net",
                      remove_pairs="OldNetwork,UnusedNetwork")
 
-        # Patch storage mapping - update existing
+        # Patch storage mapping with enhanced options
         ManageMapping("patch", "storage", "my-storage-mapping",
-                     update_pairs="slow-datastore:standard,fast-datastore:premium")
+                     update_pairs="slow-datastore:standard;volumeMode=Filesystem,fast-datastore:premium;volumeMode=Block;accessMode=ReadWriteOnce",
+                     default_offload_plugin="vsphere", default_offload_vendor="ontap")
     """
     # Validate action and mapping type
     valid_actions = ["create", "delete", "patch"]
@@ -613,6 +655,11 @@ async def ManageMapping(
             namespace,
             pairs,
             inventory_url,
+            default_volume_mode,
+            default_access_mode,
+            default_offload_plugin,
+            default_offload_secret,
+            default_offload_vendor,
         )
     elif action == "delete" and mapping_type == "network":
         return await _delete_network_mapping(mapping_name, namespace)
@@ -635,6 +682,11 @@ async def ManageMapping(
             update_pairs,
             remove_pairs,
             inventory_url,
+            default_volume_mode,
+            default_access_mode,
+            default_offload_plugin,
+            default_offload_secret,
+            default_offload_vendor,
         )
 
 
@@ -675,6 +727,11 @@ async def CreatePlan(
     target_affinity: str = "",
     target_power_state: str = "",
     inventory_url: str = "",
+    default_volume_mode: str = "",
+    default_access_mode: str = "",
+    default_offload_plugin: str = "",
+    default_offload_secret: str = "",
+    default_offload_vendor: str = "",
 ) -> str:
     """Create a new migration plan with comprehensive configuration options.
 
@@ -818,7 +875,7 @@ async def CreatePlan(
         network_mapping: Name of existing network mapping to use (optional, auto-created if not provided)
         storage_mapping: Name of existing storage mapping to use (optional, auto-created if not provided)
         network_pairs: Network mapping pairs - 'source:target-namespace/target-network' format (optional, creates mapping if provided)
-        storage_pairs: Storage mapping pairs - 'source:storage-class' format (optional, creates mapping if provided)
+        storage_pairs: Storage mapping pairs in enhanced format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (optional, creates mapping if provided)
         vms: VM names (comma-separated) or @filename for YAML/JSON file with VM structures (optional)
         pre_hook: Pre-migration hook to add to all VMs (optional)
         post_hook: Post-migration hook to add to all VMs (optional)
@@ -859,6 +916,11 @@ async def CreatePlan(
             - 'REPEL pods(workload=heavy) on zone weight=80' - Soft avoid in same zone
         target_power_state: Target power state - 'on', 'off', or 'auto' (optional)
         inventory_url: Base URL for inventory service (optional, auto-discovered if not provided)
+        default_volume_mode: Default volume mode for storage pairs (Filesystem|Block) (optional)
+        default_access_mode: Default access mode for storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany) (optional)
+        default_offload_plugin: Default offload plugin type for storage pairs (vsphere) (optional)
+        default_offload_secret: Default offload plugin secret name for storage pairs (optional)
+        default_offload_vendor: Default offload plugin vendor for storage pairs (vantara|ontap|primera3par|pureFlashArray|powerflex|powermax) (optional)
 
     Returns:
         Command output confirming plan creation
@@ -874,7 +936,8 @@ async def CreatePlan(
                    vms="vm1,vm2,vm3",
                    migration_type="warm",
                    network_pairs="VM Network:default,Management:mgmt/mgmt-net",
-                   storage_pairs="fast-datastore:ocs-storagecluster-ceph-rbd",
+                   storage_pairs="fast-datastore:ocs-storagecluster-ceph-rbd;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=vantara",
+                   default_volume_mode="Block",
                    target_power_state="on",
                    description="Production VM migration")
 
@@ -914,6 +977,16 @@ async def CreatePlan(
         args.extend(["--network-pairs", network_pairs])
     if storage_pairs:
         args.extend(["--storage-pairs", storage_pairs])
+    if default_volume_mode:
+        args.extend(["--default-volume-mode", default_volume_mode])
+    if default_access_mode:
+        args.extend(["--default-access-mode", default_access_mode])
+    if default_offload_plugin:
+        args.extend(["--default-offload-plugin", default_offload_plugin])
+    if default_offload_secret:
+        args.extend(["--default-offload-secret", default_offload_secret])
+    if default_offload_vendor:
+        args.extend(["--default-offload-vendor", default_offload_vendor])
     if vms:
         args.extend(["--vms", vms])
     if pre_hook:
