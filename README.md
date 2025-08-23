@@ -61,14 +61,6 @@ kubectl mtv create plan migration-1 \
   --network-mapping prod-net \
   --storage-mapping prod-storage \
   --vms vm1,vm2,vm3
-
-# Or using inline mappings with enhanced storage options
-kubectl mtv create plan migration-2 \
-  --source vsphere-01 \
-  --network-pairs "VM Network:default" \
-  --storage-pairs "datastore1:standard;volumeMode=Block;accessMode=ReadWriteOnce" \
-  --default-volume-mode Block \
-  --vms vm1,vm2,vm3
 ```
 
 ### 4. Start Migration
