@@ -28,6 +28,18 @@ Use read tools to discover and analyze data before making changes:
 - Use get_plan_vms() to monitor progress and identify VMs for cancel_plan()
 - Use list_providers() to verify provider status before creating plans
 - Use get_logs() for troubleshooting failed operations
+
+Network Mapping Important Notes:
+- All source networks must be mapped (no unmapped source networks allowed)
+- Pod networking and specific multus targets can only be mapped once (no duplicate targets)
+- Use 'source:ignored' for networks that don't have suitable targets or are not needed
+
+Storage Mapping Important Notes:
+- All source storages must be mapped (no unmapped source storages allowed)
+- Storage class selection priority: user-defined > virt annotation > k8s annotation > name match > first available
+- Virt annotation: storageclass.kubevirt.io/is-default-virt-class=true
+- K8s annotation: storageclass.kubernetes.io/is-default-class=true
+- Name matching: case-insensitive search for "virtualization" in storage class name
 """
 
 import os
@@ -564,6 +576,19 @@ async def ManageMapping(
     Storage pairs: 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)
     Special values: 'source:default' (pod networking), 'source:ignored' (skip network)
     Multiple pairs: comma-separated 'pair1,pair2,pair3'
+    
+    Network Mapping Constraints:
+    - All source networks must be mapped (no source networks can be left unmapped)
+    - Pod networking and specific multus targets can only be mapped once (no duplicate targets)
+    - Use 'source:ignored' to map networks that don't have suitable targets or are not needed
+    
+    Storage Mapping Constraints:
+    - All source storages must be mapped (no source storages can be left unmapped)
+    - Preferred storage classes have virt annotation, k8s annotation, or "virtualization" in name
+    - Virt annotation: storageclass.kubevirt.io/is-default-virt-class=true (highest priority)
+    - K8s annotation: storageclass.kubernetes.io/is-default-class=true (fallback if no virt annotation)
+    - Name matching: case-insensitive search for "virtualization" in storage class name
+    - Selection priority: user-defined > virt annotation > k8s annotation > name match > first available
 
     Args:
         action: Action to perform - 'create', 'delete', or 'patch'
@@ -597,6 +622,12 @@ async def ManageMapping(
                      source_provider="vsphere-provider", target_provider="openshift-provider",
                      pairs="fast-datastore:ocs-storagecluster-ceph-rbd;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=vantara",
                      default_volume_mode="Block")
+        
+        # Auto-selection will prioritize storage classes with these annotations:
+        # 1. storageclass.kubevirt.io/is-default-virt-class=true (preferred for virtualization)
+        # 2. storageclass.kubernetes.io/is-default-class=true (Kubernetes default)
+        # 3. Storage classes with "virtualization" in name (e.g., "ocs-virtualization-rbd")
+        # 4. First available storage class if none of the above are found
 
         # Delete mapping
         ManageMapping("delete", "network", "old-mapping")
@@ -875,8 +906,8 @@ async def CreatePlan(
         target_provider: Name of the target provider to migrate to (optional, auto-detects first OpenShift provider if not specified). Supports namespace/name pattern (e.g., 'other-namespace/my-provider') to reference providers in different namespaces, defaults to plan namespace if not specified.
         network_mapping: Name of existing network mapping to use (optional, auto-created if not provided)
         storage_mapping: Name of existing storage mapping to use (optional, auto-created if not provided)
-        network_pairs: Network mapping pairs - 'source:target-namespace/target-network' format (optional, creates mapping if provided)
-        storage_pairs: Storage mapping pairs in enhanced format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (optional, creates mapping if provided)
+        network_pairs: Network mapping pairs - 'source:target-namespace/target-network' format (optional, creates mapping if provided). Note: All source networks must be mapped, pod/multus targets can only be used once, use 'source:ignored' for unmappable networks
+        storage_pairs: Storage mapping pairs in enhanced format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (optional, creates mapping if provided). Note: All source storages must be mapped, auto-selection uses storageclass.kubevirt.io/is-default-virt-class > storageclass.kubernetes.io/is-default-class > name with "virtualization"
         vms: VM names (comma-separated) or @filename for YAML/JSON file with VM structures (optional)
         pre_hook: Pre-migration hook to add to all VMs (optional)
         post_hook: Post-migration hook to add to all VMs (optional)

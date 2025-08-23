@@ -11,7 +11,7 @@ type StorageMappingOptions struct {
 	DefaultTargetStorageClass string
 }
 
-// CreateStoragePairs creates storage mapping pairs using simplified logic
+// CreateStoragePairs creates storage mapping pairs
 func CreateStoragePairs(sourceStorages []ref.Ref, targetStorages []forkliftv1beta1.DestinationStorage, opts StorageMappingOptions) ([]forkliftv1beta1.StoragePair, error) {
 	var storagePairs []forkliftv1beta1.StoragePair
 

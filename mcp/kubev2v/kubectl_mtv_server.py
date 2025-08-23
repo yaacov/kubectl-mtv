@@ -33,6 +33,8 @@ Use these read tools to discover and prepare data, then use write tools to creat
 - ListInventory("vm", "provider", output_format="planvms") output can be used directly with create_plan(vms="@file.yaml")
 - get_plan_vms() shows migration status for troubleshooting with cancel_plan()
 - list_inventory_networks/storage() help identify mappings for create_*_mapping() tools
+- Network mappings require: all sources mapped, no duplicate pod/multus targets, use 'ignored' for unmappable networks
+- Storage mappings require: all sources mapped, auto-selection uses storageclass.kubevirt.io/is-default-virt-class > storageclass.kubernetes.io/is-default-class > "virtualization" in name
 - Use output_format="planvms" specifically for plan VM selection (minimal VM structures)
 """
 
