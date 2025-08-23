@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -31,6 +32,8 @@ type CreatePlanOptions struct {
 	Namespace                 string
 	SourceProvider            string
 	TargetProvider            string
+	SourceProviderNamespace   string // parsed from SourceProvider if it contains namespace/name pattern
+	TargetProviderNamespace   string // parsed from TargetProvider if it contains namespace/name pattern
 	NetworkMapping            string
 	StorageMapping            string
 	InventoryURL              string
@@ -40,6 +43,27 @@ type CreatePlanOptions struct {
 	ConfigFlags               *genericclioptions.ConfigFlags
 	NetworkPairs              string
 	StoragePairs              string
+
+	// Storage enhancement options
+	DefaultVolumeMode    string
+	DefaultAccessMode    string
+	DefaultOffloadPlugin string
+	DefaultOffloadSecret string
+	DefaultOffloadVendor string
+}
+
+// parseProviderName parses a provider name that might contain namespace/name pattern
+// Returns the name and namespace separately. If no namespace is specified, returns the default namespace.
+func parseProviderName(providerName, defaultNamespace string) (name, namespace string) {
+	if strings.Contains(providerName, "/") {
+		parts := strings.SplitN(providerName, "/", 2)
+		namespace = strings.TrimSpace(parts[0])
+		name = strings.TrimSpace(parts[1])
+	} else {
+		name = strings.TrimSpace(providerName)
+		namespace = defaultNamespace
+	}
+	return name, namespace
 }
 
 // Create creates a new migration plan
@@ -48,6 +72,11 @@ func Create(opts CreatePlanOptions) error {
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
 	}
+
+	// Parse provider names to extract namespaces and names
+	sourceProviderName, sourceProviderNamespace := parseProviderName(opts.SourceProvider, opts.Namespace)
+	opts.SourceProvider = sourceProviderName
+	opts.SourceProviderNamespace = sourceProviderNamespace
 
 	// If the plan already exists, return an error
 	_, err = c.Resource(client.PlansGVR).Namespace(opts.Namespace).Get(context.TODO(), opts.Name, metav1.GetOptions{})
@@ -66,6 +95,11 @@ func Create(opts CreatePlanOptions) error {
 		opts.TargetProvider = defaultProvider
 		fmt.Printf("No target provider specified, using default OpenShift provider: %s\n", opts.TargetProvider)
 	}
+
+	// Parse target provider name to extract namespace and name (do this after default provider logic)
+	targetProviderName, targetProviderNamespace := parseProviderName(opts.TargetProvider, opts.Namespace)
+	opts.TargetProvider = targetProviderName
+	opts.TargetProviderNamespace = targetProviderNamespace
 
 	// Validate that VMs exist in the source provider
 	err = validateVMs(opts.ConfigFlags, &opts)
@@ -88,7 +122,16 @@ func Create(opts CreatePlanOptions) error {
 		if opts.NetworkPairs != "" {
 			// Create network mapping from pairs
 			networkMapName := fmt.Sprintf("%s-network", opts.Name)
-			err := mapping.CreateNetwork(opts.ConfigFlags, networkMapName, opts.Namespace, opts.SourceProvider, opts.TargetProvider, opts.NetworkPairs, opts.InventoryURL)
+			// For mapping creation, we need to pass the full provider references with namespaces
+			sourceProviderRef := opts.SourceProvider
+			if opts.SourceProviderNamespace != opts.Namespace {
+				sourceProviderRef = fmt.Sprintf("%s/%s", opts.SourceProviderNamespace, opts.SourceProvider)
+			}
+			targetProviderRef := opts.TargetProvider
+			if opts.TargetProviderNamespace != opts.Namespace {
+				targetProviderRef = fmt.Sprintf("%s/%s", opts.TargetProviderNamespace, opts.TargetProvider)
+			}
+			err := mapping.CreateNetwork(opts.ConfigFlags, networkMapName, opts.Namespace, sourceProviderRef, targetProviderRef, opts.NetworkPairs, opts.InventoryURL)
 			if err != nil {
 				return fmt.Errorf("failed to create network map from pairs: %v", err)
 			}
@@ -98,14 +141,16 @@ func Create(opts CreatePlanOptions) error {
 		} else {
 			// Create default network mapping using existing logic
 			networkMapName, err := network.CreateNetworkMap(network.NetworkMapperOptions{
-				Name:                 opts.Name,
-				Namespace:            opts.Namespace,
-				SourceProvider:       opts.SourceProvider,
-				TargetProvider:       opts.TargetProvider,
-				ConfigFlags:          opts.ConfigFlags,
-				InventoryURL:         opts.InventoryURL,
-				PlanVMNames:          planVMNames,
-				DefaultTargetNetwork: opts.DefaultTargetNetwork,
+				Name:                    opts.Name,
+				Namespace:               opts.Namespace,
+				SourceProvider:          opts.SourceProvider,
+				SourceProviderNamespace: opts.SourceProviderNamespace,
+				TargetProvider:          opts.TargetProvider,
+				TargetProviderNamespace: opts.TargetProviderNamespace,
+				ConfigFlags:             opts.ConfigFlags,
+				InventoryURL:            opts.InventoryURL,
+				PlanVMNames:             planVMNames,
+				DefaultTargetNetwork:    opts.DefaultTargetNetwork,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to create default network map: %v", err)
@@ -120,7 +165,29 @@ func Create(opts CreatePlanOptions) error {
 		if opts.StoragePairs != "" {
 			// Create storage mapping from pairs
 			storageMapName := fmt.Sprintf("%s-storage", opts.Name)
-			err := mapping.CreateStorage(opts.ConfigFlags, storageMapName, opts.Namespace, opts.SourceProvider, opts.TargetProvider, opts.StoragePairs, opts.InventoryURL)
+			// For mapping creation, we need to pass the full provider references with namespaces
+			sourceProviderRef := opts.SourceProvider
+			if opts.SourceProviderNamespace != opts.Namespace {
+				sourceProviderRef = fmt.Sprintf("%s/%s", opts.SourceProviderNamespace, opts.SourceProvider)
+			}
+			targetProviderRef := opts.TargetProvider
+			if opts.TargetProviderNamespace != opts.Namespace {
+				targetProviderRef = fmt.Sprintf("%s/%s", opts.TargetProviderNamespace, opts.TargetProvider)
+			}
+			err := mapping.CreateStorageWithOptions(mapping.StorageCreateOptions{
+				ConfigFlags:          opts.ConfigFlags,
+				Name:                 storageMapName,
+				Namespace:            opts.Namespace,
+				SourceProvider:       sourceProviderRef,
+				TargetProvider:       targetProviderRef,
+				StoragePairs:         opts.StoragePairs,
+				InventoryURL:         opts.InventoryURL,
+				DefaultVolumeMode:    opts.DefaultVolumeMode,
+				DefaultAccessMode:    opts.DefaultAccessMode,
+				DefaultOffloadPlugin: opts.DefaultOffloadPlugin,
+				DefaultOffloadSecret: opts.DefaultOffloadSecret,
+				DefaultOffloadVendor: opts.DefaultOffloadVendor,
+			})
 			if err != nil {
 				// Clean up the network map if we created it
 				if createdNetworkMap {
@@ -139,7 +206,9 @@ func Create(opts CreatePlanOptions) error {
 				Name:                      opts.Name,
 				Namespace:                 opts.Namespace,
 				SourceProvider:            opts.SourceProvider,
+				SourceProviderNamespace:   opts.SourceProviderNamespace,
 				TargetProvider:            opts.TargetProvider,
+				TargetProviderNamespace:   opts.TargetProviderNamespace,
 				ConfigFlags:               opts.ConfigFlags,
 				InventoryURL:              opts.InventoryURL,
 				PlanVMNames:               planVMNames,
@@ -180,13 +249,13 @@ func Create(opts CreatePlanOptions) error {
 			Kind:       "Provider",
 			APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
 			Name:       opts.SourceProvider,
-			Namespace:  opts.Namespace,
+			Namespace:  opts.SourceProviderNamespace,
 		},
 		Destination: corev1.ObjectReference{
 			Kind:       "Provider",
 			APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
 			Name:       opts.TargetProvider,
-			Namespace:  opts.Namespace,
+			Namespace:  opts.TargetProviderNamespace,
 		},
 	}
 
@@ -347,8 +416,8 @@ func Create(opts CreatePlanOptions) error {
 // sets their IDs based on the names, and removes any that don't exist.
 // Returns an error if no valid VMs remain.
 func validateVMs(configFlags *genericclioptions.ConfigFlags, opts *CreatePlanOptions) error {
-	// Fetch source provider
-	sourceProvider, err := inventory.GetProviderByName(configFlags, opts.SourceProvider, opts.Namespace)
+	// Fetch source provider using the parsed namespace
+	sourceProvider, err := inventory.GetProviderByName(configFlags, opts.SourceProvider, opts.SourceProviderNamespace)
 	if err != nil {
 		return fmt.Errorf("failed to get source provider: %v", err)
 	}

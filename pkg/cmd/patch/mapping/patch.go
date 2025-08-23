@@ -13,9 +13,14 @@ func PatchNetwork(configFlags *genericclioptions.ConfigFlags, name, namespace, a
 	return patchNetworkMapping(configFlags, name, namespace, addPairs, updatePairs, removePairs, inventoryURL)
 }
 
-// PatchStorage patches a storage mapping
+// PatchStorage patches a storage mapping (wrapper for backward compatibility)
 func PatchStorage(configFlags *genericclioptions.ConfigFlags, name, namespace, addPairs, updatePairs, removePairs, inventoryURL string) error {
-	return patchStorageMapping(configFlags, name, namespace, addPairs, updatePairs, removePairs, inventoryURL)
+	return PatchStorageWithOptions(configFlags, name, namespace, addPairs, updatePairs, removePairs, inventoryURL, "", "", "", "", "")
+}
+
+// PatchStorageWithOptions patches a storage mapping with additional options for VolumeMode, AccessMode, and OffloadPlugin
+func PatchStorageWithOptions(configFlags *genericclioptions.ConfigFlags, name, namespace, addPairs, updatePairs, removePairs, inventoryURL string, defaultVolumeMode, defaultAccessMode, defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor string) error {
+	return patchStorageMappingWithOptions(configFlags, name, namespace, addPairs, updatePairs, removePairs, inventoryURL, defaultVolumeMode, defaultAccessMode, defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor)
 }
 
 // getSourceProviderFromMapping extracts the source provider name and namespace from a mapping

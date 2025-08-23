@@ -40,14 +40,16 @@ type NetworkMapperInterface interface {
 
 // NetworkMapperOptions contains common options for network mapping
 type NetworkMapperOptions struct {
-	Name                 string
-	Namespace            string
-	SourceProvider       string
-	TargetProvider       string
-	ConfigFlags          *genericclioptions.ConfigFlags
-	InventoryURL         string
-	PlanVMNames          []string
-	DefaultTargetNetwork string
+	Name                    string
+	Namespace               string
+	SourceProvider          string
+	SourceProviderNamespace string
+	TargetProvider          string
+	TargetProviderNamespace string
+	ConfigFlags             *genericclioptions.ConfigFlags
+	InventoryURL            string
+	PlanVMNames             []string
+	DefaultTargetNetwork    string
 }
 
 // GetSourceNetworkFetcher returns the appropriate source network fetcher based on provider type
@@ -133,22 +135,30 @@ func CreateNetworkMap(opts NetworkMapperOptions) (string, error) {
 	klog.V(4).Infof("DEBUG: Creating network map - Source: %s, Target: %s, DefaultTargetNetwork: '%s'",
 		opts.SourceProvider, opts.TargetProvider, opts.DefaultTargetNetwork)
 
-	// Get source network fetcher
-	sourceFetcher, err := GetSourceNetworkFetcher(opts.ConfigFlags, opts.SourceProvider, opts.Namespace)
+	// Get source network fetcher using the provider's namespace
+	sourceProviderNamespace := opts.SourceProviderNamespace
+	if sourceProviderNamespace == "" {
+		sourceProviderNamespace = opts.Namespace
+	}
+	sourceFetcher, err := GetSourceNetworkFetcher(opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace)
 	if err != nil {
 		return "", fmt.Errorf("failed to get source network fetcher: %v", err)
 	}
 	klog.V(4).Infof("DEBUG: Source fetcher created for provider: %s", opts.SourceProvider)
 
-	// Get target network fetcher
-	targetFetcher, err := GetTargetNetworkFetcher(opts.ConfigFlags, opts.TargetProvider, opts.Namespace)
+	// Get target network fetcher using the provider's namespace
+	targetProviderNamespace := opts.TargetProviderNamespace
+	if targetProviderNamespace == "" {
+		targetProviderNamespace = opts.Namespace
+	}
+	targetFetcher, err := GetTargetNetworkFetcher(opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace)
 	if err != nil {
 		return "", fmt.Errorf("failed to get target network fetcher: %v", err)
 	}
 	klog.V(4).Infof("DEBUG: Target fetcher created for provider: %s", opts.TargetProvider)
 
 	// Fetch source networks
-	sourceNetworks, err := sourceFetcher.FetchSourceNetworks(opts.ConfigFlags, opts.SourceProvider, opts.Namespace, opts.InventoryURL, opts.PlanVMNames)
+	sourceNetworks, err := sourceFetcher.FetchSourceNetworks(opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.InventoryURL, opts.PlanVMNames)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch source networks: %v", err)
 	}
@@ -158,7 +168,7 @@ func CreateNetworkMap(opts NetworkMapperOptions) (string, error) {
 	var targetNetworks []forkliftv1beta1.DestinationNetwork
 	if opts.DefaultTargetNetwork == "" || (opts.DefaultTargetNetwork != "default" && opts.DefaultTargetNetwork != "") {
 		klog.V(4).Infof("DEBUG: Fetching target networks from target provider: %s", opts.TargetProvider)
-		targetNetworks, err = targetFetcher.FetchTargetNetworks(opts.ConfigFlags, opts.TargetProvider, opts.Namespace, opts.InventoryURL)
+		targetNetworks, err = targetFetcher.FetchTargetNetworks(opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace, opts.InventoryURL)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch target networks: %v", err)
 		}

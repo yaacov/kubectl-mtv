@@ -44,6 +44,7 @@ type PatchPlanOptions struct {
 	Archived                       bool
 	PVCNameTemplateUseGenerateName bool
 	DeleteGuestConversionPod       bool
+	DeleteVmOnFailMigration        bool
 	SkipGuestConversion            bool
 	Warm                           bool
 
@@ -55,6 +56,7 @@ type PatchPlanOptions struct {
 	ArchivedChanged                       bool
 	PVCNameTemplateUseGenerateNameChanged bool
 	DeleteGuestConversionPodChanged       bool
+	DeleteVmOnFailMigrationChanged        bool
 	SkipGuestConversionChanged            bool
 	WarmChanged                           bool
 }
@@ -264,6 +266,13 @@ func PatchPlan(opts PatchPlanOptions) error {
 		planUpdated = true
 	}
 
+	// Update delete VM on fail migration if flag was changed
+	if opts.DeleteVmOnFailMigrationChanged {
+		patchSpec["deleteVmOnFailMigration"] = opts.DeleteVmOnFailMigration
+		klog.V(2).Infof("Updated delete VM on fail migration to %t", opts.DeleteVmOnFailMigration)
+		planUpdated = true
+	}
+
 	// Update skip guest conversion if flag was changed
 	if opts.SkipGuestConversionChanged {
 		patchSpec["skipGuestConversion"] = opts.SkipGuestConversion
@@ -312,7 +321,7 @@ func PatchPlan(opts PatchPlanOptions) error {
 // PatchPlanVM patches a specific VM within a plan's VM list
 func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, namespace string,
 	targetName, rootDisk, instanceType, pvcNameTemplate, volumeNameTemplate, networkNameTemplate, luksSecret, targetPowerState string,
-	addPreHook, addPostHook, removeHook string, clearHooks bool) error {
+	addPreHook, addPostHook, removeHook string, clearHooks bool, deleteVmOnFailMigration bool, deleteVmOnFailMigrationChanged bool) error {
 
 	klog.V(2).Infof("Patching VM '%s' in plan '%s'", vmName, planName)
 
@@ -455,6 +464,16 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 			return fmt.Errorf("failed to set target power state: %v", err)
 		}
 		klog.V(2).Infof("Updated VM target power state to '%s'", targetPowerState)
+		vmUpdated = true
+	}
+
+	// Update delete VM on fail migration if flag was changed
+	if deleteVmOnFailMigrationChanged {
+		err = unstructured.SetNestedField(vmCopy, deleteVmOnFailMigration, "deleteVmOnFailMigration")
+		if err != nil {
+			return fmt.Errorf("failed to set delete VM on fail migration: %v", err)
+		}
+		klog.V(2).Infof("Updated VM delete on fail migration to %t", deleteVmOnFailMigration)
 		vmUpdated = true
 	}
 

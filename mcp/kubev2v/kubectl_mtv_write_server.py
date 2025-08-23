@@ -393,8 +393,13 @@ async def _create_storage_mapping(
     namespace: str,
     pairs: str,
     inventory_url: str,
+    default_volume_mode: str = "",
+    default_access_mode: str = "",
+    default_offload_plugin: str = "",
+    default_offload_secret: str = "",
+    default_offload_vendor: str = "",
 ) -> str:
-    """Create storage mapping implementation."""
+    """Create storage mapping implementation with enhanced options."""
     args = ["create", "mapping", "storage", mapping_name]
 
     if namespace:
@@ -406,6 +411,16 @@ async def _create_storage_mapping(
         args.extend(["--target", target_provider])
     if pairs:
         args.extend(["--storage-pairs", pairs])
+    if default_volume_mode:
+        args.extend(["--default-volume-mode", default_volume_mode])
+    if default_access_mode:
+        args.extend(["--default-access-mode", default_access_mode])
+    if default_offload_plugin:
+        args.extend(["--default-offload-plugin", default_offload_plugin])
+    if default_offload_secret:
+        args.extend(["--default-offload-secret", default_offload_secret])
+    if default_offload_vendor:
+        args.extend(["--default-offload-vendor", default_offload_vendor])
     if inventory_url:
         args.extend(["--inventory-url", inventory_url])
 
@@ -465,8 +480,13 @@ async def _patch_storage_mapping(
     update_pairs: str,
     remove_pairs: str,
     inventory_url: str,
+    default_volume_mode: str = "",
+    default_access_mode: str = "",
+    default_offload_plugin: str = "",
+    default_offload_secret: str = "",
+    default_offload_vendor: str = "",
 ) -> str:
-    """Patch storage mapping implementation."""
+    """Patch storage mapping implementation with enhanced options."""
     args = ["patch", "mapping", "storage", mapping_name]
 
     if namespace:
@@ -478,6 +498,16 @@ async def _patch_storage_mapping(
         args.extend(["--update-pairs", update_pairs])
     if remove_pairs:
         args.extend(["--remove-pairs", remove_pairs])
+    if default_volume_mode:
+        args.extend(["--default-volume-mode", default_volume_mode])
+    if default_access_mode:
+        args.extend(["--default-access-mode", default_access_mode])
+    if default_offload_plugin:
+        args.extend(["--default-offload-plugin", default_offload_plugin])
+    if default_offload_secret:
+        args.extend(["--default-offload-secret", default_offload_secret])
+    if default_offload_vendor:
+        args.extend(["--default-offload-vendor", default_offload_vendor])
     if inventory_url:
         args.extend(["--inventory-url", inventory_url])
 
@@ -498,6 +528,11 @@ async def ManageMapping(
     update_pairs: str = "",
     remove_pairs: str = "",
     inventory_url: str = "",
+    default_volume_mode: str = "",
+    default_access_mode: str = "",
+    default_offload_plugin: str = "",
+    default_offload_secret: str = "",
+    default_offload_vendor: str = "",
 ) -> str:
     """Manage network and storage mappings with unified operations.
 
@@ -526,7 +561,7 @@ async def ManageMapping(
 
     Mapping Pairs Format:
     Network pairs: 'source:target-namespace/target-network' or 'source:target-network'
-    Storage pairs: 'source:storage-class'
+    Storage pairs: 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)
     Special values: 'source:default' (pod networking), 'source:ignored' (skip network)
     Multiple pairs: comma-separated 'pair1,pair2,pair3'
 
@@ -542,6 +577,11 @@ async def ManageMapping(
         update_pairs: Pairs to update during patch (optional)
         remove_pairs: Source names to remove during patch (optional)
         inventory_url: Inventory service URL (optional)
+        default_volume_mode: Default volume mode for storage pairs (Filesystem|Block) (optional)
+        default_access_mode: Default access mode for storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany) (optional)
+        default_offload_plugin: Default offload plugin type for storage pairs (vsphere) (optional)
+        default_offload_secret: Default offload plugin secret name for storage pairs (optional)
+        default_offload_vendor: Default offload plugin vendor for storage pairs (vantara|ontap|primera3par|pureFlashArray|powerflex|powermax) (optional)
 
     Returns:
         Command output confirming the mapping operation
@@ -552,10 +592,11 @@ async def ManageMapping(
                      source_provider="vsphere-provider", target_provider="openshift-provider",
                      pairs="VM Network:default,Management:mgmt/mgmt-net")
 
-        # Create storage mapping
+        # Create storage mapping with enhanced features
         ManageMapping("create", "storage", "my-storage-mapping",
                      source_provider="vsphere-provider", target_provider="openshift-provider",
-                     pairs="fast-datastore:ocs-storagecluster-ceph-rbd")
+                     pairs="fast-datastore:ocs-storagecluster-ceph-rbd;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=vantara",
+                     default_volume_mode="Block")
 
         # Delete mapping
         ManageMapping("delete", "network", "old-mapping")
@@ -565,9 +606,10 @@ async def ManageMapping(
                      add_pairs="DMZ:dmz-namespace/dmz-net",
                      remove_pairs="OldNetwork,UnusedNetwork")
 
-        # Patch storage mapping - update existing
+        # Patch storage mapping with enhanced options
         ManageMapping("patch", "storage", "my-storage-mapping",
-                     update_pairs="slow-datastore:standard,fast-datastore:premium")
+                     update_pairs="slow-datastore:standard;volumeMode=Filesystem,fast-datastore:premium;volumeMode=Block;accessMode=ReadWriteOnce",
+                     default_offload_plugin="vsphere", default_offload_vendor="ontap")
     """
     # Validate action and mapping type
     valid_actions = ["create", "delete", "patch"]
@@ -613,6 +655,11 @@ async def ManageMapping(
             namespace,
             pairs,
             inventory_url,
+            default_volume_mode,
+            default_access_mode,
+            default_offload_plugin,
+            default_offload_secret,
+            default_offload_vendor,
         )
     elif action == "delete" and mapping_type == "network":
         return await _delete_network_mapping(mapping_name, namespace)
@@ -635,6 +682,11 @@ async def ManageMapping(
             update_pairs,
             remove_pairs,
             inventory_url,
+            default_volume_mode,
+            default_access_mode,
+            default_offload_plugin,
+            default_offload_secret,
+            default_offload_vendor,
         )
 
 
@@ -663,6 +715,7 @@ async def CreatePlan(
     archived: bool = False,
     pvc_name_template_use_generate_name: bool = True,
     delete_guest_conversion_pod: bool = False,
+    delete_vm_on_fail_migration: bool = False,
     skip_guest_conversion: bool = False,
     install_legacy_drivers: str = "",
     migration_type: str = "",
@@ -675,6 +728,11 @@ async def CreatePlan(
     target_affinity: str = "",
     target_power_state: str = "",
     inventory_url: str = "",
+    default_volume_mode: str = "",
+    default_access_mode: str = "",
+    default_offload_plugin: str = "",
+    default_offload_secret: str = "",
+    default_offload_vendor: str = "",
 ) -> str:
     """Create a new migration plan with comprehensive configuration options.
 
@@ -812,13 +870,13 @@ async def CreatePlan(
 
     Args:
         plan_name: Name for the new migration plan (required)
-        source_provider: Name of the source provider to migrate from (required)
+        source_provider: Name of the source provider to migrate from (required). Supports namespace/name pattern (e.g., 'other-namespace/my-provider') to reference providers in different namespaces, defaults to plan namespace if not specified.
         namespace: Kubernetes namespace to create the plan in (optional)
-        target_provider: Name of the target provider to migrate to (optional, auto-detects first OpenShift provider if not specified)
+        target_provider: Name of the target provider to migrate to (optional, auto-detects first OpenShift provider if not specified). Supports namespace/name pattern (e.g., 'other-namespace/my-provider') to reference providers in different namespaces, defaults to plan namespace if not specified.
         network_mapping: Name of existing network mapping to use (optional, auto-created if not provided)
         storage_mapping: Name of existing storage mapping to use (optional, auto-created if not provided)
         network_pairs: Network mapping pairs - 'source:target-namespace/target-network' format (optional, creates mapping if provided)
-        storage_pairs: Storage mapping pairs - 'source:storage-class' format (optional, creates mapping if provided)
+        storage_pairs: Storage mapping pairs in enhanced format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (optional, creates mapping if provided)
         vms: VM names (comma-separated) or @filename for YAML/JSON file with VM structures (optional)
         pre_hook: Pre-migration hook to add to all VMs (optional)
         post_hook: Post-migration hook to add to all VMs (optional)
@@ -859,6 +917,11 @@ async def CreatePlan(
             - 'REPEL pods(workload=heavy) on zone weight=80' - Soft avoid in same zone
         target_power_state: Target power state - 'on', 'off', or 'auto' (optional)
         inventory_url: Base URL for inventory service (optional, auto-discovered if not provided)
+        default_volume_mode: Default volume mode for storage pairs (Filesystem|Block) (optional)
+        default_access_mode: Default access mode for storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany) (optional)
+        default_offload_plugin: Default offload plugin type for storage pairs (vsphere) (optional)
+        default_offload_secret: Default offload plugin secret name for storage pairs (optional)
+        default_offload_vendor: Default offload plugin vendor for storage pairs (vantara|ontap|primera3par|pureFlashArray|powerflex|powermax) (optional)
 
     Returns:
         Command output confirming plan creation
@@ -867,6 +930,11 @@ async def CreatePlan(
         # Create basic plan (auto-detects target provider, creates mappings)
         create_plan("my-plan", "vsphere-provider")
 
+        # Create plan with providers from different namespaces
+        create_plan("my-plan", "source-ns/vsphere-provider",
+                   target_provider="target-ns/openshift-provider",
+                   namespace="demo")
+
         # Create comprehensive plan with explicit settings
         create_plan("my-plan", "vsphere-provider",
                    target_provider="openshift-target",
@@ -874,7 +942,8 @@ async def CreatePlan(
                    vms="vm1,vm2,vm3",
                    migration_type="warm",
                    network_pairs="VM Network:default,Management:mgmt/mgmt-net",
-                   storage_pairs="fast-datastore:ocs-storagecluster-ceph-rbd",
+                   storage_pairs="fast-datastore:ocs-storagecluster-ceph-rbd;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=vantara",
+                   default_volume_mode="Block",
                    target_power_state="on",
                    description="Production VM migration")
 
@@ -914,6 +983,16 @@ async def CreatePlan(
         args.extend(["--network-pairs", network_pairs])
     if storage_pairs:
         args.extend(["--storage-pairs", storage_pairs])
+    if default_volume_mode:
+        args.extend(["--default-volume-mode", default_volume_mode])
+    if default_access_mode:
+        args.extend(["--default-access-mode", default_access_mode])
+    if default_offload_plugin:
+        args.extend(["--default-offload-plugin", default_offload_plugin])
+    if default_offload_secret:
+        args.extend(["--default-offload-secret", default_offload_secret])
+    if default_offload_vendor:
+        args.extend(["--default-offload-vendor", default_offload_vendor])
     if vms:
         args.extend(["--vms", vms])
     if pre_hook:
@@ -946,6 +1025,8 @@ async def CreatePlan(
         args.append("--pvc-name-template-use-generate-name=false")
     if delete_guest_conversion_pod:
         args.append("--delete-guest-conversion-pod")
+    if delete_vm_on_fail_migration:
+        args.append("--delete-vm-on-fail-migration")
     if skip_guest_conversion:
         args.append("--skip-guest-conversion")
     if install_legacy_drivers:
@@ -1130,19 +1211,36 @@ async def CreateHook(
 
 # Resource Deletion Operations
 @mcp.tool()
-async def DeleteProvider(provider_name: str, namespace: str = "") -> str:
-    """Delete a provider.
+async def DeleteProvider(
+    provider_name: str = "", namespace: str = "", all_providers: bool = False
+) -> str:
+    """Delete one or more providers.
 
-    WARNING: This will remove the provider and may affect associated plans and mappings.
+    WARNING: This will remove providers and may affect associated plans and mappings.
 
     Args:
-        provider_name: Name of the provider to delete
+        provider_name: Name of the provider to delete (required unless all_providers=True)
         namespace: Kubernetes namespace containing the provider (optional)
+        all_providers: Delete all providers in the namespace (optional)
 
     Returns:
         Command output confirming provider deletion
+
+    Examples:
+        # Delete specific provider
+        DeleteProvider("my-provider")
+
+        # Delete all providers in namespace
+        DeleteProvider(all_providers=True, namespace="demo")
     """
-    args = ["delete", "provider", provider_name]
+    args = ["delete", "provider"]
+
+    if all_providers:
+        args.append("--all")
+    else:
+        if not provider_name:
+            raise ValueError("provider_name is required when all_providers=False")
+        args.append(provider_name)
 
     if namespace:
         args.extend(["-n", namespace])
@@ -1151,40 +1249,96 @@ async def DeleteProvider(provider_name: str, namespace: str = "") -> str:
 
 
 @mcp.tool()
-async def DeletePlan(plan_name: str, namespace: str = "") -> str:
-    """Delete a migration plan.
+async def DeletePlan(
+    plan_name: str = "",
+    namespace: str = "",
+    all_plans: bool = False,
+    skip_archive: bool = False,
+    clean_all: bool = False,
+) -> str:
+    """Delete one or more migration plans.
 
-    WARNING: This will remove the migration plan and all associated migration data.
+    WARNING: This will remove migration plans and all associated migration data.
+
+    By default, plans are archived before deletion to ensure a clean shutdown. Use skip_archive
+    to delete immediately without archiving. Use clean_all to archive, enable VM deletion on
+    failed migration, then delete.
 
     Args:
-        plan_name: Name of the plan to delete
+        plan_name: Name of the plan to delete (required unless all_plans=True)
         namespace: Kubernetes namespace containing the plan (optional)
+        all_plans: Delete all plans in the namespace (optional)
+        skip_archive: Skip archiving and delete immediately (optional)
+        clean_all: Archive, delete VMs on failed migration, then delete (optional)
 
     Returns:
         Command output confirming plan deletion
+
+    Examples:
+        # Delete specific plan with default archiving
+        DeletePlan("my-plan")
+
+        # Delete plan without archiving
+        DeletePlan("my-plan", skip_archive=True)
+
+        # Delete plan with VM cleanup on failure
+        DeletePlan("my-plan", clean_all=True)
+
+        # Delete all plans in namespace
+        DeletePlan(all_plans=True, namespace="demo")
     """
-    args = ["delete", "plan", plan_name]
+    args = ["delete", "plan"]
+
+    if all_plans:
+        args.append("--all")
+    else:
+        if not plan_name:
+            raise ValueError("plan_name is required when all_plans=False")
+        args.append(plan_name)
 
     if namespace:
         args.extend(["-n", namespace])
+
+    if skip_archive:
+        args.append("--skip-archive")
+
+    if clean_all:
+        args.append("--clean-all")
 
     return await run_kubectl_mtv_command(args)
 
 
 @mcp.tool()
-async def DeleteHost(host_name: str, namespace: str = "") -> str:
-    """Delete a migration host.
+async def DeleteHost(
+    host_name: str = "", namespace: str = "", all_hosts: bool = False
+) -> str:
+    """Delete one or more migration hosts.
 
-    WARNING: This will remove the migration host.
+    WARNING: This will remove migration hosts.
 
     Args:
-        host_name: Name of the host to delete
+        host_name: Name of the host to delete (required unless all_hosts=True)
         namespace: Kubernetes namespace containing the host (optional)
+        all_hosts: Delete all hosts in the namespace (optional)
 
     Returns:
         Command output confirming host deletion
+
+    Examples:
+        # Delete specific host
+        DeleteHost("esxi-host-01")
+
+        # Delete all hosts in namespace
+        DeleteHost(all_hosts=True, namespace="demo")
     """
-    args = ["delete", "host", host_name]
+    args = ["delete", "host"]
+
+    if all_hosts:
+        args.append("--all")
+    else:
+        if not host_name:
+            raise ValueError("host_name is required when all_hosts=False")
+        args.append(host_name)
 
     if namespace:
         args.extend(["-n", namespace])
@@ -1193,19 +1347,36 @@ async def DeleteHost(host_name: str, namespace: str = "") -> str:
 
 
 @mcp.tool()
-async def DeleteHook(hook_name: str, namespace: str = "") -> str:
-    """Delete a migration hook.
+async def DeleteHook(
+    hook_name: str = "", namespace: str = "", all_hooks: bool = False
+) -> str:
+    """Delete one or more migration hooks.
 
-    WARNING: This will remove the migration hook.
+    WARNING: This will remove migration hooks.
 
     Args:
-        hook_name: Name of the hook to delete
+        hook_name: Name of the hook to delete (required unless all_hooks=True)
         namespace: Kubernetes namespace containing the hook (optional)
+        all_hooks: Delete all hooks in the namespace (optional)
 
     Returns:
         Command output confirming hook deletion
+
+    Examples:
+        # Delete specific hook
+        DeleteHook("pre-migration-check")
+
+        # Delete all hooks in namespace
+        DeleteHook(all_hooks=True, namespace="demo")
     """
-    args = ["delete", "hook", hook_name]
+    args = ["delete", "hook"]
+
+    if all_hooks:
+        args.append("--all")
+    else:
+        if not hook_name:
+            raise ValueError("hook_name is required when all_hooks=False")
+        args.append(hook_name)
 
     if namespace:
         args.extend(["-n", namespace])
@@ -1353,6 +1524,7 @@ async def PatchPlan(
     archived: bool = None,
     pvc_name_template_use_generate_name: bool = None,
     delete_guest_conversion_pod: bool = None,
+    delete_vm_on_fail_migration: bool = None,
     skip_guest_conversion: bool = None,
     warm: bool = None,
 ) -> str:
@@ -1416,6 +1588,7 @@ async def PatchPlan(
         archived: Whether plan should be archived (optional)
         pvc_name_template_use_generate_name: Use generateName for PVC template (optional)
         delete_guest_conversion_pod: Delete conversion pod after migration (optional)
+        delete_vm_on_fail_migration: Delete target VM when migration fails (optional)
         skip_guest_conversion: Skip guest conversion process (optional)
         warm: Enable warm migration (optional, prefer migration_type parameter)
 
@@ -1493,6 +1666,10 @@ async def PatchPlan(
         args.extend(
             ["--delete-guest-conversion-pod", str(delete_guest_conversion_pod).lower()]
         )
+    if delete_vm_on_fail_migration is not None:
+        args.extend(
+            ["--delete-vm-on-fail-migration", str(delete_vm_on_fail_migration).lower()]
+        )
     if skip_guest_conversion is not None:
         args.extend(["--skip-guest-conversion", str(skip_guest_conversion).lower()])
     if warm is not None:
@@ -1518,6 +1695,7 @@ async def PatchPlanVm(
     add_post_hook: str = "",
     remove_hook: str = "",
     clear_hooks: bool = False,
+    delete_vm_on_fail_migration: bool = None,
 ) -> str:
     """Patch VM-specific fields for a VM within a migration plan's VM list.
 
@@ -1645,6 +1823,12 @@ async def PatchPlanVm(
         args.extend(["--luks-secret", luks_secret])
     if target_power_state:
         args.extend(["--target-power-state", target_power_state])
+
+    # VM-level options
+    if delete_vm_on_fail_migration is not None:
+        args.extend(
+            ["--delete-vm-on-fail-migration", str(delete_vm_on_fail_migration).lower()]
+        )
 
     # Hook management
     if add_pre_hook:

@@ -34,6 +34,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var archived bool
 	var pvcNameTemplateUseGenerateName bool
 	var deleteGuestConversionPod bool
+	var deleteVmOnFailMigration bool
 	var skipGuestConversion bool
 	var warm bool
 
@@ -45,6 +46,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var archivedChanged bool
 	var pvcNameTemplateUseGenerateNameChanged bool
 	var deleteGuestConversionPodChanged bool
+	var deleteVmOnFailMigrationChanged bool
 	var skipGuestConversionChanged bool
 	var warmChanged bool
 
@@ -70,6 +72,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 			archivedChanged = cmd.Flags().Changed("archived")
 			pvcNameTemplateUseGenerateNameChanged = cmd.Flags().Changed("pvc-name-template-use-generate-name")
 			deleteGuestConversionPodChanged = cmd.Flags().Changed("delete-guest-conversion-pod")
+			deleteVmOnFailMigrationChanged = cmd.Flags().Changed("delete-vm-on-fail-migration")
 			skipGuestConversionChanged = cmd.Flags().Changed("skip-guest-conversion")
 			warmChanged = cmd.Flags().Changed("warm")
 
@@ -111,6 +114,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				ArchivedChanged:                       archivedChanged,
 				PVCNameTemplateUseGenerateNameChanged: pvcNameTemplateUseGenerateNameChanged,
 				DeleteGuestConversionPodChanged:       deleteGuestConversionPodChanged,
+				DeleteVmOnFailMigration:               deleteVmOnFailMigration,
+				DeleteVmOnFailMigrationChanged:        deleteVmOnFailMigrationChanged,
 				SkipGuestConversionChanged:            skipGuestConversionChanged,
 				WarmChanged:                           warmChanged,
 			})
@@ -138,6 +143,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().BoolVar(&archived, "archived", false, "Whether this plan should be archived")
 	cmd.Flags().BoolVar(&pvcNameTemplateUseGenerateName, "pvc-name-template-use-generate-name", true, "Use generateName instead of name for PVC name template")
 	cmd.Flags().BoolVar(&deleteGuestConversionPod, "delete-guest-conversion-pod", false, "Delete guest conversion pod after successful migration")
+	cmd.Flags().BoolVar(&deleteVmOnFailMigration, "delete-vm-on-fail-migration", false, "Delete target VM when migration fails")
 	cmd.Flags().BoolVar(&skipGuestConversion, "skip-guest-conversion", false, "Skip the guest conversion process")
 	cmd.Flags().BoolVar(&warm, "warm", false, "Enable warm migration (use --migration-type=warm instead)")
 
@@ -183,6 +189,10 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	var removeHook string
 	var clearHooks bool
 
+	// Additional VM flags
+	var deleteVmOnFailMigration bool
+	var deleteVmOnFailMigrationChanged bool
+
 	cmd := &cobra.Command{
 		Use:               "planvm PLAN_NAME VM_NAME",
 		Short:             "Patch a specific VM within a migration plan",
@@ -198,9 +208,12 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
+			// Check if boolean flags have been explicitly set (changed from default)
+			deleteVmOnFailMigrationChanged = cmd.Flags().Changed("delete-vm-on-fail-migration")
+
 			return plan.PatchPlanVM(kubeConfigFlags, planName, vmName, namespace,
 				targetName, rootDisk, instanceType, pvcNameTemplate, volumeNameTemplate, networkNameTemplate, luksSecret, targetPowerState,
-				addPreHook, addPostHook, removeHook, clearHooks)
+				addPreHook, addPostHook, removeHook, clearHooks, deleteVmOnFailMigration, deleteVmOnFailMigrationChanged)
 		},
 	}
 
@@ -219,6 +232,9 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	cmd.Flags().StringVar(&addPostHook, "add-post-hook", "", "Add a post-migration hook to this VM")
 	cmd.Flags().StringVar(&removeHook, "remove-hook", "", "Remove a hook from this VM by hook name")
 	cmd.Flags().BoolVar(&clearHooks, "clear-hooks", false, "Remove all hooks from this VM")
+
+	// Additional VM flags
+	cmd.Flags().BoolVar(&deleteVmOnFailMigration, "delete-vm-on-fail-migration", false, "Delete target VM when migration fails (overrides plan-level setting)")
 
 	// Add completion for hook flags
 	if err := cmd.RegisterFlagCompletionFunc("add-pre-hook", completion.HookResourceNameCompletion(kubeConfigFlags)); err != nil {

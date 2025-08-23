@@ -55,6 +55,10 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var networkPairs, storagePairs string
 	var preHook, postHook string
 
+	// Storage mapping enhancement options
+	var defaultVolumeMode, defaultAccessMode string
+	var defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor string
+
 	// PlanSpec fields
 	var planSpec forkliftv1beta1.PlanSpec
 	var transferNetwork string
@@ -256,6 +260,11 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				PlanSpec:                  planSpec,
 				NetworkPairs:              networkPairs,
 				StoragePairs:              storagePairs,
+				DefaultVolumeMode:         defaultVolumeMode,
+				DefaultAccessMode:         defaultAccessMode,
+				DefaultOffloadPlugin:      defaultOffloadPlugin,
+				DefaultOffloadSecret:      defaultOffloadSecret,
+				DefaultOffloadVendor:      defaultOffloadVendor,
 			}
 
 			err := plan.Create(opts)
@@ -263,12 +272,20 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
-	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name")
+	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name (supports namespace/name pattern, defaults to plan namespace)")
+	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name (supports namespace/name pattern, defaults to plan namespace)")
 	cmd.Flags().StringVar(&networkMapping, "network-mapping", "", "Network mapping name")
 	cmd.Flags().StringVar(&storageMapping, "storage-mapping", "", "Storage mapping name")
 	cmd.Flags().StringVar(&networkPairs, "network-pairs", "", "Network mapping pairs in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated)")
-	cmd.Flags().StringVar(&storagePairs, "storage-pairs", "", "Storage mapping pairs in format 'source:storage-class' (comma-separated). Note: storage classes are cluster-scoped")
+	cmd.Flags().StringVar(&storagePairs, "storage-pairs", "", "Storage mapping pairs in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)")
+
+	// Storage enhancement flags
+	cmd.Flags().StringVar(&defaultVolumeMode, "default-volume-mode", "", "Default volume mode for storage pairs (Filesystem|Block)")
+	cmd.Flags().StringVar(&defaultAccessMode, "default-access-mode", "", "Default access mode for storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany)")
+	cmd.Flags().StringVar(&defaultOffloadPlugin, "default-offload-plugin", "", "Default offload plugin type for storage pairs (vsphere)")
+	cmd.Flags().StringVar(&defaultOffloadSecret, "default-offload-secret", "", "Default offload plugin secret name for storage pairs")
+	cmd.Flags().StringVar(&defaultOffloadVendor, "default-offload-vendor", "", "Default offload plugin vendor for storage pairs (vantara|ontap|primera3par|pureFlashArray|powerflex|powermax)")
+
 	cmd.Flags().StringVar(&vmNamesOrFile, "vms", "", "List of VM names (comma-separated) or path to YAML/JSON file containing a list of VM structs")
 	cmd.Flags().StringVar(&preHook, "pre-hook", "", "Pre-migration hook to add to all VMs in the plan")
 	cmd.Flags().StringVar(&postHook, "post-hook", "", "Post-migration hook to add to all VMs in the plan")
@@ -287,6 +304,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().BoolVar(&planSpec.Archived, "archived", false, "Whether this plan should be archived")
 	cmd.Flags().BoolVar(&planSpec.PVCNameTemplateUseGenerateName, "pvc-name-template-use-generate-name", true, "Use generateName instead of name for PVC name template")
 	cmd.Flags().BoolVar(&planSpec.DeleteGuestConversionPod, "delete-guest-conversion-pod", false, "Delete guest conversion pod after successful migration")
+	cmd.Flags().BoolVar(&planSpec.DeleteVmOnFailMigration, "delete-vm-on-fail-migration", false, "Delete target VM when migration fails")
 	cmd.Flags().BoolVar(&planSpec.SkipGuestConversion, "skip-guest-conversion", false, "Skip the guest conversion process")
 	cmd.Flags().StringVar(&installLegacyDrivers, "install-legacy-drivers", "", "Install legacy Windows drivers (true/false, leave empty for auto-detection)")
 	cmd.Flags().VarP(migrationTypeFlag, "migration-type", "m", "Migration type: cold, warm, or live (supersedes --warm flag)")
@@ -298,6 +316,31 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().BoolVar(&planSpec.Warm, "warm", false, "Enable warm migration (can also be set with --migration-type=warm)")
 	cmd.Flags().StringVar(&targetAffinity, "target-affinity", "", "Target affinity to constrain VM scheduling using KARL syntax (e.g. 'REQUIRE pods(app=database) on node')")
 	cmd.Flags().StringVar(&targetPowerState, "target-power-state", "", "Target power state for VMs after migration: 'on', 'off', or 'auto' (default: match source VM power state)")
+
+	// Add completion for storage enhancement flags
+	if err := cmd.RegisterFlagCompletionFunc("default-volume-mode", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"Filesystem", "Block"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	if err := cmd.RegisterFlagCompletionFunc("default-access-mode", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"ReadWriteOnce", "ReadWriteMany", "ReadOnlyMany"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	if err := cmd.RegisterFlagCompletionFunc("default-offload-plugin", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"vsphere"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	if err := cmd.RegisterFlagCompletionFunc("default-offload-vendor", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"vantara", "ontap", "primera3par", "pureFlashArray", "powerflex", "powermax"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
 
 	// Add completion for migration type flag
 	if err := cmd.RegisterFlagCompletionFunc("migration-type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
