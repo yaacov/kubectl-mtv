@@ -818,6 +818,7 @@ async def CreatePlan(
     - cold: VMs are shut down during migration (default, most reliable)
     - warm: Initial copy while VM runs, brief downtime for final sync
     - live: Minimal downtime migration (advanced, limited compatibility)
+    - conversion: Only perform guest OS conversion without disk transfer
 
     Note: Both migration_type and warm parameters are supported. If both are specified,
     migration_type takes precedence over the warm flag.
@@ -931,7 +932,7 @@ async def CreatePlan(
         skip_guest_conversion: Skip guest conversion process (optional, default False)
         use_compatibility_mode: Use compatibility devices when skipping conversion (optional, default True, auto-patched if False)
         install_legacy_drivers: Install legacy Windows drivers - 'true'/'false' (optional)
-        migration_type: Migration type - 'cold', 'warm', or 'live' (optional)
+        migration_type: Migration type - 'cold', 'warm', 'live', or 'conversion' (optional)
         default_target_network: Default target network - 'default' for pod networking (optional)
         default_target_storage_class: Default target storage class (optional)
         target_labels: Target VM labels - 'key1=value1,key2=value2' format (optional)
@@ -1578,6 +1579,7 @@ async def PatchPlan(
     - cold: Traditional migration with VM shutdown (most reliable)
     - warm: Warm migration with reduced downtime (initial copy while VM runs)
     - live: Minimal downtime migration (advanced, limited compatibility)
+    - conversion: Only perform guest OS conversion without disk transfer
 
     Target Power State:
     - on: Start VMs after migration
@@ -1594,7 +1596,7 @@ async def PatchPlan(
         namespace: Kubernetes namespace containing the plan (optional)
         transfer_network: Network to use for transferring VM data (optional)
         install_legacy_drivers: Install legacy drivers - 'true', 'false', or empty for auto (optional)
-        migration_type: Migration type - 'cold', 'warm', or 'live' (optional)
+        migration_type: Migration type - 'cold', 'warm', 'live', or 'conversion' (optional)
         target_labels: Target VM labels - 'key=value,key2=value2' format (optional)
         target_node_selector: Target node selector - 'key=value,key2=value2' format (optional)
         use_compatibility_mode: Use compatibility mode for migration (optional)

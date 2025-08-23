@@ -25,7 +25,7 @@ kubectl-mtv patch plan PLAN_NAME [flags]
 |------|-------------|----------------|
 | `--transfer-network` | Network for VM data transfer | `network-name` or `namespace/network-name` |
 | `--install-legacy-drivers` | Install legacy drivers | `true`, `false` |
-| `--migration-type` | Type of migration | `cold`, `warm` |
+| `--migration-type` | Type of migration | `cold`, `warm`, `live`, `conversion` |
 | `--target-labels` | Labels for target VMs | `env=prod,team=platform` |
 | `--target-node-selector` | Node selector for target VMs | `node-type=compute,zone=us-east` |
 | `--use-compatibility-mode` | Enable compatibility mode | `true`, `false` |
@@ -384,7 +384,7 @@ kubectl-mtv get plan my-plan -o yaml | grep -A10 "vms:"
 
 #### Invalid Migration Type
 ```bash
-Error: invalid migration type 'hot' (must be 'cold' or 'warm')
+Error: invalid migration type 'hot' (must be 'cold', 'warm', 'live', or 'conversion')
 ```
 **Solution**: Use valid migration types with tab completion:
 ```bash

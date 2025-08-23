@@ -131,35 +131,30 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 				planDetails.DiskProgress.Total/(1024))     // Convert to GB
 		}
 
-		// Determine cutover information
+		// Determine migration type and cutover information
 		cutoverInfo := "cold" // Default for cold migration
-
-		// Check both the new 'type' field and legacy 'warm' boolean field
-		isWarmMigration := false
 
 		// First check the new 'type' field
 		migrationType, exists, _ := unstructured.NestedString(p.Object, "spec", "type")
-		if exists && migrationType == "warm" {
-			isWarmMigration = true
+		if exists && migrationType != "" {
+			cutoverInfo = migrationType
 		} else {
 			// Fall back to legacy 'warm' boolean field
 			warm, exists, _ := unstructured.NestedBool(p.Object, "spec", "warm")
 			if exists && warm {
-				isWarmMigration = true
+				cutoverInfo = "warm"
 			}
 		}
 
-		if isWarmMigration {
-			cutoverInfo = "warm" // Default for warm migration without running migration
-			if planDetails.RunningMigration != nil {
-				// Extract cutover time from running migration
-				cutoverTimeStr, exists, _ := unstructured.NestedString(planDetails.RunningMigration.Object, "spec", "cutover")
-				if exists && cutoverTimeStr != "" {
-					// Parse the cutover time string
-					cutoverTime, err := time.Parse(time.RFC3339, cutoverTimeStr)
-					if err == nil {
-						cutoverInfo = output.FormatTimestamp(cutoverTime, useUTC)
-					}
+		// For warm migrations, check if there's a specific cutover time
+		if cutoverInfo == "warm" && planDetails.RunningMigration != nil {
+			// Extract cutover time from running migration
+			cutoverTimeStr, exists, _ := unstructured.NestedString(planDetails.RunningMigration.Object, "spec", "cutover")
+			if exists && cutoverTimeStr != "" {
+				// Parse the cutover time string
+				cutoverTime, err := time.Parse(time.RFC3339, cutoverTimeStr)
+				if err == nil {
+					cutoverInfo = output.FormatTimestamp(cutoverTime, useUTC)
 				}
 			}
 		}

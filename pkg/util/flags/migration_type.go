@@ -16,7 +16,7 @@ func (m *MigrationTypeFlag) String() string {
 }
 
 func (m *MigrationTypeFlag) Set(value string) error {
-	validTypes := []v1beta1.MigrationType{v1beta1.MigrationCold, v1beta1.MigrationWarm, v1beta1.MigrationLive}
+	validTypes := []v1beta1.MigrationType{v1beta1.MigrationCold, v1beta1.MigrationWarm, v1beta1.MigrationLive, v1beta1.MigrationOnlyConversion}
 
 	isValid := false
 	for _, validType := range validTypes {
@@ -27,7 +27,7 @@ func (m *MigrationTypeFlag) Set(value string) error {
 	}
 
 	if !isValid {
-		return fmt.Errorf("invalid migration type: %s. Valid types are: cold, warm, live", value)
+		return fmt.Errorf("invalid migration type: %s. Valid types are: cold, warm, live, conversion", value)
 	}
 
 	m.value = v1beta1.MigrationType(value)
@@ -45,7 +45,7 @@ func (m *MigrationTypeFlag) GetValue() v1beta1.MigrationType {
 
 // GetValidValues returns all valid migration type values for auto-completion
 func (m *MigrationTypeFlag) GetValidValues() []string {
-	return []string{"cold", "warm", "live"}
+	return []string{"cold", "warm", "live", "conversion"}
 }
 
 // NewMigrationTypeFlag creates a new migration type flag

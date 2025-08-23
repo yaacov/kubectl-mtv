@@ -307,7 +307,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().BoolVar(&planSpec.DeleteVmOnFailMigration, "delete-vm-on-fail-migration", false, "Delete target VM when migration fails")
 	cmd.Flags().BoolVar(&planSpec.SkipGuestConversion, "skip-guest-conversion", false, "Skip the guest conversion process")
 	cmd.Flags().StringVar(&installLegacyDrivers, "install-legacy-drivers", "", "Install legacy Windows drivers (true/false, leave empty for auto-detection)")
-	cmd.Flags().VarP(migrationTypeFlag, "migration-type", "m", "Migration type: cold, warm, or live (supersedes --warm flag)")
+	cmd.Flags().VarP(migrationTypeFlag, "migration-type", "m", "Migration type: cold, warm, live, or conversion (supersedes --warm flag)")
 	cmd.Flags().StringVarP(&defaultTargetNetwork, "default-target-network", "N", "", "Default target network for network mapping. Use 'default' for pod networking, or specify a NetworkAttachmentDefinition name")
 	cmd.Flags().StringVar(&defaultTargetStorageClass, "default-target-storage-class", "", "Default target storage class for storage mapping")
 	cmd.Flags().BoolVar(&useCompatibilityMode, "use-compatibility-mode", true, "Use compatibility devices (SATA bus, E1000E NIC) when skipGuestConversion is true to ensure bootability")

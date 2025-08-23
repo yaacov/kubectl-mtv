@@ -632,7 +632,7 @@ kubectl mtv create plan mapped-migration \
 | `--delete-guest-conversion-pod` | Clean up conversion pods | `--delete-guest-conversion-pod` |
 | `--skip-guest-conversion` | Skip guest OS conversion | `--skip-guest-conversion` |
 | `--install-legacy-drivers` | Install legacy Windows drivers | `--install-legacy-drivers=true` |
-| `--migration-type`, `-m` | Migration type: `cold`, `warm`, or `live` | `--migration-type warm` |
+| `--migration-type`, `-m` | Migration type: `cold`, `warm`, `live`, or `conversion` | `--migration-type warm` |
 | `--warm` | Enable warm migration (deprecated) | `--warm` |
 | `--default-target-network`, `-N` | Default target network for mapping | `-N default` |
 | `--default-target-storage-class` | Default target storage class | `--default-target-storage-class thin` |
