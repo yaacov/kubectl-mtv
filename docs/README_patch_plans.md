@@ -338,7 +338,7 @@ kubectl-mtv patch plan production-migration \
 ### 1. Plan-Level vs VM-Level Changes
 
 **Use `patch plan` for:**
-- Migration strategy changes (cold/warm)
+- Migration strategy changes (cold/warm/live/conversion)
 - Target environment configuration
 - Network and infrastructure settings
 - Labels and selectors affecting all VMs

@@ -208,9 +208,13 @@ kubectl mtv patch plan my-migration-plan \
   --target-namespace production \
   --use-compatibility-mode=true
 
-# Configure transfer network
+# Configure transfer network (supports namespace/name syntax)
 kubectl mtv patch plan my-plan \
   --transfer-network openshift-sriov-network/fast-network
+
+# Use default namespace (equivalent to above if in openshift-sriov-network namespace)
+kubectl mtv patch plan my-plan \
+  --transfer-network fast-network
 
 # Set target VM labels and node selector
 kubectl mtv patch plan production-migration \
@@ -451,7 +455,7 @@ kubectl mtv create mapping storage enhanced-storage \
 kubectl mtv create mapping storage tiered-storage \
   --source-provider vmware \
   --target-provider host \
-  --storage-pairs "SSD-Datastore:production/premium-ssd,SATA-Datastore:production/standard-hdd,NVMe-Datastore:production/ultra-ssd"
+  --storage-pairs "SSD-Datastore:premium-ssd,SATA-Datastore:standard-hdd,NVMe-Datastore:ultra-ssd"
 
 # Multi-cluster storage mapping with specific storage classes
 kubectl mtv create mapping storage distributed-storage \
@@ -463,7 +467,7 @@ kubectl mtv create mapping storage distributed-storage \
 kubectl mtv create mapping storage workload-storage \
   --source-provider vmware \
   --target-provider host \
-  --storage-pairs "Database-Storage:db-namespace/high-iops-ssd,Application-Storage:app-namespace/balanced-ssd,Archive-Storage:archive-namespace/cold-storage"
+  --storage-pairs "Database-Storage:high-iops-ssd,Application-Storage:balanced-ssd,Archive-Storage:cold-storage"
 ```
 
 #### Network Mapping Pairs Format
@@ -638,7 +642,7 @@ kubectl mtv create plan mapped-migration \
 | `--storage-pairs` | Inline storage mapping pairs with enhanced options | `--storage-pairs 'src-ds:tgt-sc;volumeMode=Block;accessMode=ReadWriteOnce'` |
 | `--description` | Plan description | `--description "Migrate web servers"` |
 | `--target-namespace` | Target Kubernetes namespace | `--target-namespace production` |
-| `--transfer-network` | Network to use for disk transfer | `--transfer-network my-nad` |
+| `--transfer-network` | Network to use for disk transfer (supports namespace/name) | `--transfer-network sriov-ns/fast-net` |
 | `--preserve-cluster-cpu-model` | Preserve oVirt cluster CPU model | `--preserve-cluster-cpu-model` |
 | `--preserve-static-ips` | Preserve static IPs from vSphere | `--preserve-static-ips` |
 | `--pvc-name-template` | Template for PVC names | `--pvc-name-template "{{.VmName}}-{{.DiskIndex}}"` |
@@ -653,7 +657,7 @@ kubectl mtv create plan mapped-migration \
 | `--install-legacy-drivers` | Install legacy Windows drivers | `--install-legacy-drivers=true` |
 | `--migration-type`, `-m` | Migration type: `cold`, `warm`, `live`, or `conversion` | `--migration-type warm` |
 | `--warm` | Enable warm migration (deprecated) | `--warm` |
-| `--default-target-network`, `-N` | Default target network for mapping | `-N default` |
+| `--default-target-network`, `-N` | Default target network for mapping (supports namespace/name) | `-N sriov-ns/perf-net` |
 | `--default-target-storage-class` | Default target storage class | `--default-target-storage-class thin` |
 | `--use-compatibility-mode` | Use compatibility devices for bootability | `--use-compatibility-mode=false` |
 | `--target-labels`, `-L` | Labels to add to the migrated VM | `-L app=web,tier=frontend` |
@@ -919,7 +923,7 @@ kubectl mtv create mapping network production-networks \
 kubectl mtv create mapping storage production-storage \
   --source-provider vmware \
   --target-provider host \
-  --storage-pairs "SSD-Datastore:production/fast-ssd,Standard-Datastore:production/standard-hdd"
+  --storage-pairs "SSD-Datastore:fast-ssd,Standard-Datastore:standard-hdd"
 
 # 6. Create migration plan with custom mappings
 kubectl mtv create plan web-migration \
