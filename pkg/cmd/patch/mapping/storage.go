@@ -301,7 +301,18 @@ func patchStorageMappingWithOptions(configFlags *genericclioptions.ConfigFlags, 
 	// Process additions
 	if addPairs != "" {
 		klog.V(2).Infof("Adding storage pairs to mapping: %s", addPairs)
-		newPairs, err := mapping.ParseStoragePairsWithOptions(addPairs, sourceProviderNamespace, configFlags, sourceProviderName, inventoryURL, defaultVolumeMode, defaultAccessMode, defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor)
+		newPairs, err := mapping.ParseStoragePairsWithOptions(mapping.StorageParseOptions{
+			PairStr:              addPairs,
+			DefaultNamespace:     sourceProviderNamespace,
+			ConfigFlags:          configFlags,
+			SourceProvider:       sourceProviderName,
+			InventoryURL:         inventoryURL,
+			DefaultVolumeMode:    defaultVolumeMode,
+			DefaultAccessMode:    defaultAccessMode,
+			DefaultOffloadPlugin: defaultOffloadPlugin,
+			DefaultOffloadSecret: defaultOffloadSecret,
+			DefaultOffloadVendor: defaultOffloadVendor,
+		})
 		if err != nil {
 			return fmt.Errorf("failed to parse add-pairs: %v", err)
 		}
@@ -336,7 +347,18 @@ func patchStorageMappingWithOptions(configFlags *genericclioptions.ConfigFlags, 
 	// Process updates
 	if updatePairs != "" {
 		klog.V(2).Infof("Updating storage pairs in mapping: %s", updatePairs)
-		updatePairsList, err := mapping.ParseStoragePairsWithOptions(updatePairs, sourceProviderNamespace, configFlags, sourceProviderName, inventoryURL, defaultVolumeMode, defaultAccessMode, defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor)
+		updatePairsList, err := mapping.ParseStoragePairsWithOptions(mapping.StorageParseOptions{
+			PairStr:              updatePairs,
+			DefaultNamespace:     sourceProviderNamespace,
+			ConfigFlags:          configFlags,
+			SourceProvider:       sourceProviderName,
+			InventoryURL:         inventoryURL,
+			DefaultVolumeMode:    defaultVolumeMode,
+			DefaultAccessMode:    defaultAccessMode,
+			DefaultOffloadPlugin: defaultOffloadPlugin,
+			DefaultOffloadSecret: defaultOffloadSecret,
+			DefaultOffloadVendor: defaultOffloadVendor,
+		})
 		if err != nil {
 			return fmt.Errorf("failed to parse update-pairs: %v", err)
 		}

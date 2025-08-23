@@ -272,8 +272,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
-	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name")
+	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name (supports namespace/name pattern, defaults to plan namespace)")
+	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name (supports namespace/name pattern, defaults to plan namespace)")
 	cmd.Flags().StringVar(&networkMapping, "network-mapping", "", "Network mapping name")
 	cmd.Flags().StringVar(&storageMapping, "storage-mapping", "", "Storage mapping name")
 	cmd.Flags().StringVar(&networkPairs, "network-pairs", "", "Network mapping pairs in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated)")

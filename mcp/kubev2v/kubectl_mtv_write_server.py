@@ -870,9 +870,9 @@ async def CreatePlan(
 
     Args:
         plan_name: Name for the new migration plan (required)
-        source_provider: Name of the source provider to migrate from (required)
+        source_provider: Name of the source provider to migrate from (required). Supports namespace/name pattern (e.g., 'other-namespace/my-provider') to reference providers in different namespaces, defaults to plan namespace if not specified.
         namespace: Kubernetes namespace to create the plan in (optional)
-        target_provider: Name of the target provider to migrate to (optional, auto-detects first OpenShift provider if not specified)
+        target_provider: Name of the target provider to migrate to (optional, auto-detects first OpenShift provider if not specified). Supports namespace/name pattern (e.g., 'other-namespace/my-provider') to reference providers in different namespaces, defaults to plan namespace if not specified.
         network_mapping: Name of existing network mapping to use (optional, auto-created if not provided)
         storage_mapping: Name of existing storage mapping to use (optional, auto-created if not provided)
         network_pairs: Network mapping pairs - 'source:target-namespace/target-network' format (optional, creates mapping if provided)
@@ -929,6 +929,11 @@ async def CreatePlan(
     Examples:
         # Create basic plan (auto-detects target provider, creates mappings)
         create_plan("my-plan", "vsphere-provider")
+
+        # Create plan with providers from different namespaces
+        create_plan("my-plan", "source-ns/vsphere-provider",
+                   target_provider="target-ns/openshift-provider",
+                   namespace="demo")
 
         # Create comprehensive plan with explicit settings
         create_plan("my-plan", "vsphere-provider",

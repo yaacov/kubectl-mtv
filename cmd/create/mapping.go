@@ -91,9 +91,20 @@ func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra
 				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
 			}
 
-			return mapping.CreateStorageWithOptions(kubeConfigFlags, name, namespace, sourceProvider, targetProvider,
-				storagePairs, inventoryURL, defaultVolumeMode, defaultAccessMode,
-				defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor)
+			return mapping.CreateStorageWithOptions(mapping.StorageCreateOptions{
+				ConfigFlags:          kubeConfigFlags,
+				Name:                 name,
+				Namespace:            namespace,
+				SourceProvider:       sourceProvider,
+				TargetProvider:       targetProvider,
+				StoragePairs:         storagePairs,
+				InventoryURL:         inventoryURL,
+				DefaultVolumeMode:    defaultVolumeMode,
+				DefaultAccessMode:    defaultAccessMode,
+				DefaultOffloadPlugin: defaultOffloadPlugin,
+				DefaultOffloadSecret: defaultOffloadSecret,
+				DefaultOffloadVendor: defaultOffloadVendor,
+			})
 		},
 	}
 

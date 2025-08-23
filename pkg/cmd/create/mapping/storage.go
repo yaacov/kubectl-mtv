@@ -175,6 +175,11 @@ func parseStoragePairsInternal(pairStr, defaultNamespace string, configFlags *ge
 			}
 		}
 
+		// Validate offload configuration completeness
+		if (offloadPlugin != "" && offloadVendor == "") || (offloadPlugin == "" && offloadVendor != "") {
+			return nil, fmt.Errorf("both offloadPlugin and offloadVendor must be specified together for storage pair '%s'", sourceName)
+		}
+
 		// Resolve source storage name to ID
 		sourceStorageRefs, err := resolveStorageNameToID(configFlags, sourceProvider, defaultNamespace, inventoryURL, sourceName)
 		if err != nil {
@@ -204,12 +209,19 @@ func parseStoragePairsInternal(pairStr, defaultNamespace string, configFlags *ge
 
 			// Set offload plugin if specified
 			if offloadPlugin != "" && offloadVendor != "" {
-				pair.OffloadPlugin = &forkliftv1beta1.OffloadPlugin{
-					VSphereXcopyPluginConfig: &forkliftv1beta1.VSphereXcopyPluginConfig{
+				offloadPluginConfig := &forkliftv1beta1.OffloadPlugin{}
+
+				switch offloadPlugin {
+				case "vsphere":
+					offloadPluginConfig.VSphereXcopyPluginConfig = &forkliftv1beta1.VSphereXcopyPluginConfig{
 						SecretRef:            offloadSecret,
 						StorageVendorProduct: forkliftv1beta1.StorageVendorProduct(offloadVendor),
-					},
+					}
+				default:
+					return nil, fmt.Errorf("unknown offload plugin '%s' for storage pair '%s': supported plugins are: vsphere", offloadPlugin, sourceName)
 				}
+
+				pair.OffloadPlugin = offloadPluginConfig
 			}
 
 			pairs = append(pairs, pair)
