@@ -773,7 +773,7 @@ async def CreatePlan(
     Automatic Behaviors:
     - Target provider: If not specified, uses first available OpenShift provider automatically
     - Target namespace: If not specified, uses the plan's namespace
-    - Network/Storage mappings: Auto-created if not provided or specified as pairs
+    - Network/Storage mappings: Auto-created if not provided or specified as pairs (except for conversion-only migrations which skip storage mapping creation)
     - VM validation: All VMs are validated against provider inventory before plan creation
     - Missing VM handling: VMs not found in provider are automatically removed with warnings
 
@@ -818,10 +818,15 @@ async def CreatePlan(
     - cold: VMs are shut down during migration (default, most reliable)
     - warm: Initial copy while VM runs, brief downtime for final sync
     - live: Minimal downtime migration (advanced, limited compatibility)
-    - conversion: Only perform guest OS conversion without disk transfer
+    - conversion: Only perform guest OS conversion without disk transfer (storage mappings not allowed)
 
     Note: Both migration_type and warm parameters are supported. If both are specified,
     migration_type takes precedence over the warm flag.
+
+    Conversion-Only Migration Constraints:
+    - Cannot use storage_mapping or storage_pairs parameters
+    - Storage mapping will be empty in the resulting plan
+    - Only network mapping is created/used for VM networking configuration
 
     Target Power State Options:
     - on: Start VMs after migration
@@ -932,7 +937,7 @@ async def CreatePlan(
         skip_guest_conversion: Skip guest conversion process (optional, default False)
         use_compatibility_mode: Use compatibility devices when skipping conversion (optional, default True, auto-patched if False)
         install_legacy_drivers: Install legacy Windows drivers - 'true'/'false' (optional)
-        migration_type: Migration type - 'cold', 'warm', 'live', or 'conversion' (optional)
+        migration_type: Migration type - 'cold', 'warm', 'live', or 'conversion' (optional). Note: 'conversion' type cannot be used with storage_mapping or storage_pairs
         default_target_network: Default target network - 'default' for pod networking (optional)
         default_target_storage_class: Default target storage class (optional)
         target_labels: Target VM labels - 'key1=value1,key2=value2' format (optional)
@@ -1004,6 +1009,19 @@ async def CreatePlan(
                    target_affinity="REQUIRE pods(app=database) on node",
                    description="Co-locate with existing database pods")
     """
+    # Validate that conversion-only migrations don't use storage mappings
+    if migration_type == "conversion":
+        if storage_mapping:
+            raise KubectlMTVError(
+                "Cannot use storage_mapping with migration_type 'conversion'. "
+                "Conversion-only migrations require empty storage mapping."
+            )
+        if storage_pairs:
+            raise KubectlMTVError(
+                "Cannot use storage_pairs with migration_type 'conversion'. "
+                "Conversion-only migrations require empty storage mapping."
+            )
+
     args = ["create", "plan", plan_name]
 
     if namespace:

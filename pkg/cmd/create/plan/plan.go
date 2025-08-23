@@ -161,7 +161,8 @@ func Create(opts CreatePlanOptions) error {
 	}
 
 	// If storage map is not provided, create a default storage map
-	if opts.StorageMapping == "" {
+	// Skip storage mapping for conversion-only migrations
+	if opts.StorageMapping == "" && opts.PlanSpec.Type != forkliftv1beta1.MigrationOnlyConversion {
 		if opts.StoragePairs != "" {
 			// Create storage mapping from pairs
 			storageMapName := fmt.Sprintf("%s-storage", opts.Name)
@@ -267,12 +268,16 @@ func Create(opts CreatePlanOptions) error {
 			Name:       opts.NetworkMapping,
 			Namespace:  opts.Namespace,
 		},
-		Storage: corev1.ObjectReference{
+	}
+
+	// Only set storage mapping for non-conversion migrations
+	if opts.PlanSpec.Type != forkliftv1beta1.MigrationOnlyConversion {
+		planObj.Spec.Map.Storage = corev1.ObjectReference{
 			Kind:       "StorageMap",
 			APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
 			Name:       opts.StorageMapping,
 			Namespace:  opts.Namespace,
-		},
+		}
 	}
 	planObj.Kind = "Plan"
 	planObj.APIVersion = forkliftv1beta1.SchemeGroupVersion.String()

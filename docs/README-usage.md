@@ -437,7 +437,15 @@ kubectl mtv create mapping storage storage-map \
 kubectl mtv create mapping storage production-storage \
   --source-provider vmware \
   --target-provider host \
-  --storage-pairs "datastore1:default/fast-ssd,datastore2:default/standard-hdd"
+  --storage-pairs "datastore1:fast-ssd,datastore2:standard-hdd"
+
+# Storage mapping with enhanced options
+kubectl mtv create mapping storage enhanced-storage \
+  --source-provider vmware \
+  --target-provider host \
+  --storage-pairs "datastore1:fast-ssd;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=vantara,datastore2:standard-hdd;volumeMode=Filesystem;accessMode=ReadWriteMany" \
+  --default-volume-mode Block \
+  --default-offload-plugin vsphere
 
 # Performance-tiered storage mapping
 kubectl mtv create mapping storage tiered-storage \
@@ -470,13 +478,24 @@ Examples:
 
 #### Storage Mapping Pairs Format
 
-Storage pairs use the format: `"source-storage:target-namespace/target-storage-class"`
+Storage pairs support enhanced format with semicolon-separated parameters: `"source-storage:target-storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]"`
 
-Examples:
+**Basic Examples:**
+- `"datastore1:fast-ssd"` - Simple storage mapping
+- `"tier1-storage:premium-ssd"` - Maps to specific storage class
 
-- `"datastore1:default/fast-ssd"` - Maps VMware datastore to Kubernetes storage class
-- `"tier1-storage:production/premium-ssd"` - Maps to specific namespace and storage class
-- `"shared-nfs:shared/nfs-storage"` - Maps shared storage to NFS storage class
+**Enhanced Examples:**
+- `"datastore1:fast-ssd;volumeMode=Block;accessMode=ReadWriteOnce"` - Block storage with RWO access
+- `"datastore2:standard-hdd;volumeMode=Filesystem;accessMode=ReadWriteMany"` - Filesystem with RWX access  
+- `"fast-datastore:premium-ssd;volumeMode=Block;offloadPlugin=vsphere;offloadVendor=vantara"` - With offload optimization
+- `"secure-datastore:encrypted-ssd;volumeMode=Block;offloadSecret=vsphere-creds;offloadVendor=ontap"` - With secret and vendor
+
+**Supported Parameters:**
+- `volumeMode`: `Block` (raw block device) or `Filesystem` (mounted filesystem)
+- `accessMode`: `ReadWriteOnce`, `ReadWriteMany`, `ReadOnlyMany`
+- `offloadPlugin`: `vsphere` (direct storage access optimization)
+- `offloadSecret`: Kubernetes Secret name for offload plugin authentication
+- `offloadVendor`: Storage vendor (`vantara`, `ontap`, `primera3par`, `pureFlashArray`, `powerflex`, `powermax`)
 
 ### Patch Mappings
 
@@ -616,7 +635,7 @@ kubectl mtv create plan mapped-migration \
 | `--network-mapping` | Network mapping name | `--network-mapping net-map` |
 | `--storage-mapping` | Storage mapping name | `--storage-mapping storage-map` |
 | `--network-pairs` | Inline network mapping pairs | `--network-pairs 'src-net:tgt-net'` |
-| `--storage-pairs` | Inline storage mapping pairs | `--storage-pairs 'src-ds:tgt-sc'` |
+| `--storage-pairs` | Inline storage mapping pairs with enhanced options | `--storage-pairs 'src-ds:tgt-sc;volumeMode=Block;accessMode=ReadWriteOnce'` |
 | `--description` | Plan description | `--description "Migrate web servers"` |
 | `--target-namespace` | Target Kubernetes namespace | `--target-namespace production` |
 | `--transfer-network` | Network to use for disk transfer | `--transfer-network my-nad` |
@@ -640,6 +659,13 @@ kubectl mtv create plan mapped-migration \
 | `--target-labels`, `-L` | Labels to add to the migrated VM | `-L app=web,tier=frontend` |
 | `--target-node-selector` | Node selector for the migrated VM | `--target-node-selector 'disktype=ssd'` |
 | `--target-affinity` | Constrain VM scheduling using KARL syntax | `--target-affinity 'REQUIRE pods(app=db)'` |
+| `--target-power-state` | Target power state for VMs after migration | `--target-power-state on\|off\|auto` |
+| `--default-volume-mode` | Default volume mode for storage pairs | `--default-volume-mode Block\|Filesystem` |
+| `--default-access-mode` | Default access mode for storage pairs | `--default-access-mode ReadWriteOnce` |
+| `--default-offload-plugin` | Default offload plugin for storage pairs | `--default-offload-plugin vsphere` |
+| `--default-offload-secret` | Default offload plugin secret name | `--default-offload-secret my-secret` |
+| `--default-offload-vendor` | Default offload plugin vendor | `--default-offload-vendor vantara\|ontap` |
+| `--delete-vm-on-fail-migration` | Delete target VM when migration fails | `--delete-vm-on-fail-migration` |
 
 For advanced scheduling, see the [Target Affinity Guide](README_target_affinity.md).
 

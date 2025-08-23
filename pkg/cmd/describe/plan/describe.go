@@ -56,7 +56,8 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 	// Display enhanced mappings section
 	networkMapping, _, _ := unstructured.NestedString(plan.Object, "spec", "map", "network", "name")
 	storageMapping, _, _ := unstructured.NestedString(plan.Object, "spec", "map", "storage", "name")
-	displayPlanMappings(networkMapping, storageMapping)
+	migrationType, _, _ := unstructured.NestedString(plan.Object, "spec", "type")
+	displayPlanMappings(networkMapping, storageMapping, migrationType)
 
 	// Running Migration
 	if planDetails.RunningMigration != nil {
@@ -224,7 +225,7 @@ func displayPlanSpec(plan *unstructured.Unstructured) {
 }
 
 // displayPlanMappings displays the mapping references in a beautified format
-func displayPlanMappings(networkMapping, storageMapping string) {
+func displayPlanMappings(networkMapping, storageMapping, migrationType string) {
 	fmt.Printf("\n%s\n", output.Cyan("MAPPINGS"))
 
 	if networkMapping != "" {
@@ -236,7 +237,12 @@ func displayPlanMappings(networkMapping, storageMapping string) {
 	if storageMapping != "" {
 		fmt.Printf("%s %s\n", output.Bold("Storage Mapping:"), output.Yellow(storageMapping))
 	} else {
-		fmt.Printf("%s %s\n", output.Bold("Storage Mapping:"), output.Red("Not specified"))
+		// Special message for conversion-only migrations
+		if migrationType == "conversion" {
+			fmt.Printf("%s %s\n", output.Bold("Storage Mapping:"), output.Green("Not required (conversion-only)"))
+		} else {
+			fmt.Printf("%s %s\n", output.Bold("Storage Mapping:"), output.Red("Not specified"))
+		}
 	}
 }
 

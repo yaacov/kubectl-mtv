@@ -43,6 +43,8 @@ kubectl-mtv patch plan PLAN_NAME [flags]
 | `--delete-guest-conversion-pod` | Delete conversion pod after migration | `true`, `false` |
 | `--skip-guest-conversion` | Skip guest conversion process | `true`, `false` |
 | `--warm` | Enable warm migration (legacy flag) | `true`, `false` |
+| `--target-power-state` | Target power state for VMs after migration | `on`, `off`, `auto` |
+| `--delete-vm-on-fail-migration` | Delete target VM when migration fails | `true`, `false` |
 
 ### Usage Examples
 
@@ -142,6 +144,12 @@ kubectl-mtv patch plan storage-migration \
 kubectl-mtv patch plan completed-migration \
   --archived=true \
   --description "Completed migration - archived for records"
+
+# Configure power management and failure handling
+kubectl-mtv patch plan production-migration \
+  --target-power-state on \
+  --delete-vm-on-fail-migration=true \
+  --description "Production migration with automatic cleanup on failure"
 ```
 
 ## Patch Plan VMs Command
@@ -167,6 +175,8 @@ kubectl-mtv patch planvm PLAN_NAME VM_NAME [flags]
 | `--add-post-hook` | Add a post-migration hook | `cleanup-hook` |
 | `--remove-hook` | Remove a hook by name | `old-hook-name` |
 | `--clear-hooks` | Remove all hooks from VM | `true`, `false` |
+| `--target-power-state` | Target power state for this VM after migration | `on`, `off`, `auto` |
+| `--delete-vm-on-fail-migration` | Delete target VM when migration fails (overrides plan-level) | `true`, `false` |
 
 ### Template Variables
 
@@ -240,6 +250,12 @@ kubectl-mtv patch planvm enterprise-migration critical-app-vm \
   --root-disk "disk-0" \
   --pvc-name-template "{{.VmName}}-disk{{.DiskIndex}}-storage" \
   --luks-secret app-encryption-keys
+
+# Configure power management and failure handling for specific VM
+kubectl-mtv patch planvm production-migration critical-database \
+  --target-name prod-db-primary \
+  --target-power-state on \
+  --delete-vm-on-fail-migration=false
 ```
 
 #### Manage VM Hooks

@@ -95,6 +95,16 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				return fmt.Errorf("cannot use both --storage-mapping and --storage-pairs flags")
 			}
 
+			// Validate that conversion-only migrations don't use storage mappings
+			if migrationTypeFlag.GetValue() == "conversion" {
+				if storageMapping != "" {
+					return fmt.Errorf("cannot use --storage-mapping with migration type 'conversion'. Conversion-only migrations require empty storage mapping")
+				}
+				if storagePairs != "" {
+					return fmt.Errorf("cannot use --storage-pairs with migration type 'conversion'. Conversion-only migrations require empty storage mapping")
+				}
+			}
+
 			var vmList []planv1beta1.VM
 
 			if strings.HasPrefix(vmNamesOrFile, "@") {
