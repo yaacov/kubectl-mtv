@@ -40,10 +40,11 @@ kubectl mtv create mapping network prod-net \
   --source vsphere-01 --target openshift \
   --network-pairs "VM Network:default,Management:openshift-sdn/mgmt"
 
-# Storage mapping  
+# Storage mapping with enhanced features
 kubectl mtv create mapping storage prod-storage \
   --source vsphere-01 --target openshift \
-  --storage-pairs "datastore1:standard,datastore2:fast"
+  --storage-pairs "datastore1:standard;volumeMode=Block;accessMode=ReadWriteOnce,datastore2:fast;volumeMode=Filesystem" \
+  --default-offload-plugin vsphere --default-offload-vendor vantara
 ```
 
 ### 3. Create Migration Plan
@@ -61,11 +62,12 @@ kubectl mtv create plan migration-1 \
   --storage-mapping prod-storage \
   --vms vm1,vm2,vm3
 
-# Or using inline mappings
+# Or using inline mappings with enhanced storage options
 kubectl mtv create plan migration-2 \
   --source vsphere-01 \
   --network-pairs "VM Network:default" \
-  --storage-pairs "datastore1:standard" \
+  --storage-pairs "datastore1:standard;volumeMode=Block;accessMode=ReadWriteOnce" \
+  --default-volume-mode Block \
   --vms vm1,vm2,vm3
 ```
 

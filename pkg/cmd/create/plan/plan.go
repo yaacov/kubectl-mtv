@@ -40,6 +40,13 @@ type CreatePlanOptions struct {
 	ConfigFlags               *genericclioptions.ConfigFlags
 	NetworkPairs              string
 	StoragePairs              string
+
+	// Storage enhancement options
+	DefaultVolumeMode    string
+	DefaultAccessMode    string
+	DefaultOffloadPlugin string
+	DefaultOffloadSecret string
+	DefaultOffloadVendor string
 }
 
 // Create creates a new migration plan
@@ -120,7 +127,7 @@ func Create(opts CreatePlanOptions) error {
 		if opts.StoragePairs != "" {
 			// Create storage mapping from pairs
 			storageMapName := fmt.Sprintf("%s-storage", opts.Name)
-			err := mapping.CreateStorage(opts.ConfigFlags, storageMapName, opts.Namespace, opts.SourceProvider, opts.TargetProvider, opts.StoragePairs, opts.InventoryURL)
+			err := mapping.CreateStorageWithOptions(opts.ConfigFlags, storageMapName, opts.Namespace, opts.SourceProvider, opts.TargetProvider, opts.StoragePairs, opts.InventoryURL, opts.DefaultVolumeMode, opts.DefaultAccessMode, opts.DefaultOffloadPlugin, opts.DefaultOffloadSecret, opts.DefaultOffloadVendor)
 			if err != nil {
 				// Clean up the network map if we created it
 				if createdNetworkMap {

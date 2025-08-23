@@ -17,10 +17,70 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 
-// parseStoragePairs parses storage pairs in format "source1:target-storage-class,source2:target-storage-class"
-// The format "source:namespace/storage-class" is also supported for consistency with network mappings,
-// but the namespace part is ignored since storage classes are cluster-scoped resources
-func parseStoragePairs(pairStr, defaultNamespace string, configFlags *genericclioptions.ConfigFlags, sourceProvider, inventoryURL string) ([]forkliftv1beta1.StoragePair, error) {
+// validateVolumeMode validates volume mode values
+func validateVolumeMode(mode string) error {
+	switch mode {
+	case "Filesystem", "Block":
+		return nil
+	default:
+		return fmt.Errorf("must be one of: Filesystem, Block")
+	}
+}
+
+// validateAccessMode validates access mode values
+func validateAccessMode(mode string) error {
+	switch mode {
+	case "ReadWriteOnce", "ReadWriteMany", "ReadOnlyMany":
+		return nil
+	default:
+		return fmt.Errorf("must be one of: ReadWriteOnce, ReadWriteMany, ReadOnlyMany")
+	}
+}
+
+// validateOffloadPlugin validates offload plugin values
+func validateOffloadPlugin(plugin string) error {
+	switch plugin {
+	case "vsphere":
+		return nil
+	default:
+		return fmt.Errorf("must be one of: vsphere")
+	}
+}
+
+// validateOffloadVendor validates offload vendor values
+func validateOffloadVendor(vendor string) error {
+	switch vendor {
+	case "vantara", "ontap", "primera3par", "pureFlashArray", "powerflex", "powermax":
+		return nil
+	default:
+		return fmt.Errorf("must be one of: vantara, ontap, primera3par, pureFlashArray, powerflex, powermax")
+	}
+}
+
+// StoragePairOptions holds options for parsing storage pairs
+type StoragePairOptions struct {
+	DefaultVolumeMode    string
+	DefaultAccessMode    string
+	DefaultOffloadPlugin string
+	DefaultOffloadSecret string
+	DefaultOffloadVendor string
+}
+
+// parseStoragePairsWithOptions parses storage pairs with additional options for VolumeMode, AccessMode, and OffloadPlugin
+func parseStoragePairsWithOptions(pairStr, defaultNamespace string, configFlags *genericclioptions.ConfigFlags, sourceProvider, inventoryURL string, defaultVolumeMode, defaultAccessMode, defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor string) ([]forkliftv1beta1.StoragePair, error) {
+	options := StoragePairOptions{
+		DefaultVolumeMode:    defaultVolumeMode,
+		DefaultAccessMode:    defaultAccessMode,
+		DefaultOffloadPlugin: defaultOffloadPlugin,
+		DefaultOffloadSecret: defaultOffloadSecret,
+		DefaultOffloadVendor: defaultOffloadVendor,
+	}
+
+	return parseStoragePairsInternal(pairStr, defaultNamespace, configFlags, sourceProvider, inventoryURL, &options)
+}
+
+// parseStoragePairsInternal is the internal implementation that handles the parsing logic
+func parseStoragePairsInternal(pairStr, defaultNamespace string, configFlags *genericclioptions.ConfigFlags, sourceProvider, inventoryURL string, options *StoragePairOptions) ([]forkliftv1beta1.StoragePair, error) {
 	if pairStr == "" {
 		return nil, nil
 	}
@@ -34,19 +94,21 @@ func parseStoragePairs(pairStr, defaultNamespace string, configFlags *genericcli
 			continue
 		}
 
-		parts := strings.SplitN(pairStr, ":", 2)
+		// Parse the enhanced format: "source:storage-class;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadSecret=secret-name;offloadVendor=vantara"
+		pairParts := strings.Split(pairStr, ";")
+		if len(pairParts) == 0 {
+			continue
+		}
+
+		// First part should be source:storage-class
+		mainPart := strings.TrimSpace(pairParts[0])
+		parts := strings.SplitN(mainPart, ":", 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid storage pair format '%s': expected 'source:storage-class' or 'source:namespace/storage-class'", pairStr)
+			return nil, fmt.Errorf("invalid storage pair format '%s': expected 'source:storage-class' or 'source:namespace/storage-class'", mainPart)
 		}
 
 		sourceName := strings.TrimSpace(parts[0])
 		targetPart := strings.TrimSpace(parts[1])
-
-		// Resolve source storage name to ID
-		sourceStorageRefs, err := resolveStorageNameToID(configFlags, sourceProvider, defaultNamespace, inventoryURL, sourceName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve source storage '%s': %v", sourceName, err)
-		}
 
 		// Parse target part which can be namespace/storage-class or just storage-class
 		// Note: namespace is ignored since storage classes are cluster-scoped
@@ -64,13 +126,90 @@ func parseStoragePairs(pairStr, defaultNamespace string, configFlags *genericcli
 			return nil, fmt.Errorf("invalid target format '%s': storage class must be specified", targetPart)
 		}
 
+		// Parse additional options from remaining parts
+		volumeMode := options.DefaultVolumeMode
+		accessMode := options.DefaultAccessMode
+		offloadPlugin := options.DefaultOffloadPlugin
+		offloadSecret := options.DefaultOffloadSecret
+		offloadVendor := options.DefaultOffloadVendor
+
+		for i := 1; i < len(pairParts); i++ {
+			optionPart := strings.TrimSpace(pairParts[i])
+			if optionPart == "" {
+				continue
+			}
+
+			optionParts := strings.SplitN(optionPart, "=", 2)
+			if len(optionParts) != 2 {
+				return nil, fmt.Errorf("invalid option format '%s': expected 'key=value'", optionPart)
+			}
+
+			key := strings.TrimSpace(optionParts[0])
+			value := strings.TrimSpace(optionParts[1])
+
+			switch key {
+			case "volumeMode":
+				if err := validateVolumeMode(value); err != nil {
+					return nil, fmt.Errorf("invalid volumeMode '%s': %v", value, err)
+				}
+				volumeMode = value
+			case "accessMode":
+				if err := validateAccessMode(value); err != nil {
+					return nil, fmt.Errorf("invalid accessMode '%s': %v", value, err)
+				}
+				accessMode = value
+			case "offloadPlugin":
+				if err := validateOffloadPlugin(value); err != nil {
+					return nil, fmt.Errorf("invalid offloadPlugin '%s': %v", value, err)
+				}
+				offloadPlugin = value
+			case "offloadSecret":
+				offloadSecret = value
+			case "offloadVendor":
+				if err := validateOffloadVendor(value); err != nil {
+					return nil, fmt.Errorf("invalid offloadVendor '%s': %v", value, err)
+				}
+				offloadVendor = value
+			default:
+				return nil, fmt.Errorf("unknown option '%s' in storage pair", key)
+			}
+		}
+
+		// Resolve source storage name to ID
+		sourceStorageRefs, err := resolveStorageNameToID(configFlags, sourceProvider, defaultNamespace, inventoryURL, sourceName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve source storage '%s': %v", sourceName, err)
+		}
+
 		// Create a pair for each matching source storage resource
 		for _, sourceStorageRef := range sourceStorageRefs {
+			destination := forkliftv1beta1.DestinationStorage{
+				StorageClass: targetStorageClass,
+			}
+
+			// Set volume mode if specified
+			if volumeMode != "" {
+				destination.VolumeMode = corev1.PersistentVolumeMode(volumeMode)
+			}
+
+			// Set access mode if specified
+			if accessMode != "" {
+				destination.AccessMode = corev1.PersistentVolumeAccessMode(accessMode)
+			}
+
 			pair := forkliftv1beta1.StoragePair{
-				Source: sourceStorageRef,
-				Destination: forkliftv1beta1.DestinationStorage{
-					StorageClass: targetStorageClass,
-				},
+				Source:      sourceStorageRef,
+				Destination: destination,
+			}
+
+			// Set offload plugin if specified
+			if offloadPlugin != "" && offloadVendor != "" {
+				pair.OffloadPlugin = &forkliftv1beta1.OffloadPlugin{
+					VSphereXcopyPluginConfig: &forkliftv1beta1.VSphereXcopyPluginConfig{
+						SecretRef:            offloadSecret,
+						StorageVendorProduct: forkliftv1beta1.StorageVendorProduct(offloadVendor),
+					},
+				}
 			}
 
 			pairs = append(pairs, pair)
@@ -80,8 +219,8 @@ func parseStoragePairs(pairStr, defaultNamespace string, configFlags *genericcli
 	return pairs, nil
 }
 
-// createStorageMapping creates a new storage mapping
-func createStorageMapping(configFlags *genericclioptions.ConfigFlags, name, namespace, sourceProvider, targetProvider, storagePairs, inventoryURL string) error {
+// createStorageMappingWithOptions creates a new storage mapping with additional options for VolumeMode, AccessMode, and OffloadPlugin
+func createStorageMappingWithOptions(configFlags *genericclioptions.ConfigFlags, name, namespace, sourceProvider, targetProvider, storagePairs, inventoryURL string, defaultVolumeMode, defaultAccessMode, defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor string) error {
 	dynamicClient, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -90,7 +229,7 @@ func createStorageMapping(configFlags *genericclioptions.ConfigFlags, name, name
 	// Parse storage pairs if provided
 	var mappingPairs []forkliftv1beta1.StoragePair
 	if storagePairs != "" {
-		mappingPairs, err = parseStoragePairs(storagePairs, namespace, configFlags, sourceProvider, inventoryURL)
+		mappingPairs, err = parseStoragePairsWithOptions(storagePairs, namespace, configFlags, sourceProvider, inventoryURL, defaultVolumeMode, defaultAccessMode, defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor)
 		if err != nil {
 			return fmt.Errorf("failed to parse storage pairs: %v", err)
 		}

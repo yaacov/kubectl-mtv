@@ -67,6 +67,11 @@ func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra
 	var sourceProvider, targetProvider string
 	var storagePairs string
 	var inventoryURL string
+	var defaultVolumeMode string
+	var defaultAccessMode string
+	var defaultOffloadPlugin string
+	var defaultOffloadSecret string
+	var defaultOffloadVendor string
 
 	cmd := &cobra.Command{
 		Use:          "storage NAME",
@@ -86,14 +91,49 @@ func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra
 				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
 			}
 
-			return mapping.CreateStorage(kubeConfigFlags, name, namespace, sourceProvider, targetProvider, storagePairs, inventoryURL)
+			return mapping.CreateStorageWithOptions(kubeConfigFlags, name, namespace, sourceProvider, targetProvider,
+				storagePairs, inventoryURL, defaultVolumeMode, defaultAccessMode,
+				defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor)
 		},
 	}
 
 	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
 	cmd.Flags().StringVarP(&targetProvider, "target", "T", "", "Target provider name")
-	cmd.Flags().StringVar(&storagePairs, "storage-pairs", "", "Storage mapping pairs in format 'source:storage-class' (comma-separated). Note: storage classes are cluster-scoped")
+	cmd.Flags().StringVar(&storagePairs, "storage-pairs", "", "Storage mapping pairs in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)")
+	cmd.Flags().StringVar(&defaultVolumeMode, "default-volume-mode", "", "Default volume mode for all storage pairs (Filesystem|Block)")
+	cmd.Flags().StringVar(&defaultAccessMode, "default-access-mode", "", "Default access mode for all storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany)")
+	cmd.Flags().StringVar(&defaultOffloadPlugin, "default-offload-plugin", "", "Default offload plugin type for all storage pairs (vsphere)")
+	cmd.Flags().StringVar(&defaultOffloadSecret, "default-offload-secret", "", "Default offload plugin secret name for all storage pairs")
+	cmd.Flags().StringVar(&defaultOffloadVendor, "default-offload-vendor", "", "Default offload plugin vendor for all storage pairs (vantara|ontap|primera3par|pureFlashArray|powerflex|powermax)")
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
+
+	// Add completion for volume mode flag
+	if err := cmd.RegisterFlagCompletionFunc("default-volume-mode", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"Filesystem", "Block"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	// Add completion for access mode flag
+	if err := cmd.RegisterFlagCompletionFunc("default-access-mode", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"ReadWriteOnce", "ReadWriteMany", "ReadOnlyMany"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	// Add completion for offload plugin flag
+	if err := cmd.RegisterFlagCompletionFunc("default-offload-plugin", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"vsphere"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	// Add completion for offload vendor flag
+	if err := cmd.RegisterFlagCompletionFunc("default-offload-vendor", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"vantara", "ontap", "primera3par", "pureFlashArray", "powerflex", "powermax"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }

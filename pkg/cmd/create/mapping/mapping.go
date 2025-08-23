@@ -10,9 +10,9 @@ func CreateNetwork(configFlags *genericclioptions.ConfigFlags, name, namespace, 
 	return createNetworkMapping(configFlags, name, namespace, sourceProvider, targetProvider, networkPairs, inventoryURL)
 }
 
-// CreateStorage creates a new storage mapping
-func CreateStorage(configFlags *genericclioptions.ConfigFlags, name, namespace, sourceProvider, targetProvider, storagePairs, inventoryURL string) error {
-	return createStorageMapping(configFlags, name, namespace, sourceProvider, targetProvider, storagePairs, inventoryURL)
+// CreateStorageWithOptions creates a new storage mapping with additional options for VolumeMode, AccessMode, and OffloadPlugin
+func CreateStorageWithOptions(configFlags *genericclioptions.ConfigFlags, name, namespace, sourceProvider, targetProvider, storagePairs, inventoryURL string, defaultVolumeMode, defaultAccessMode, defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor string) error {
+	return createStorageMappingWithOptions(configFlags, name, namespace, sourceProvider, targetProvider, storagePairs, inventoryURL, defaultVolumeMode, defaultAccessMode, defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor)
 }
 
 // ParseNetworkPairs parses network pairs and returns the parsed pairs (exported for patch functionality)
@@ -20,7 +20,7 @@ func ParseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericcli
 	return parseNetworkPairs(pairStr, defaultNamespace, configFlags, sourceProvider, inventoryURL)
 }
 
-// ParseStoragePairs parses storage pairs and returns the parsed pairs (exported for patch functionality)
-func ParseStoragePairs(pairStr, defaultNamespace string, configFlags *genericclioptions.ConfigFlags, sourceProvider, inventoryURL string) ([]forkliftv1beta1.StoragePair, error) {
-	return parseStoragePairs(pairStr, defaultNamespace, configFlags, sourceProvider, inventoryURL)
+// ParseStoragePairsWithOptions parses storage pairs with additional options for VolumeMode, AccessMode, and OffloadPlugin (exported for patch functionality)
+func ParseStoragePairsWithOptions(pairStr, defaultNamespace string, configFlags *genericclioptions.ConfigFlags, sourceProvider, inventoryURL string, defaultVolumeMode, defaultAccessMode, defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor string) ([]forkliftv1beta1.StoragePair, error) {
+	return parseStoragePairsWithOptions(pairStr, defaultNamespace, configFlags, sourceProvider, inventoryURL, defaultVolumeMode, defaultAccessMode, defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor)
 }
