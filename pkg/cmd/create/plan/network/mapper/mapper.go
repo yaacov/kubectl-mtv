@@ -68,19 +68,21 @@ func parseDefaultNetwork(defaultTargetNetwork, namespace string) forkliftv1beta1
 			Type: "multus",
 			Name: parts[1],
 		}
-		// Only set namespace if it's not empty and different from the plan namespace
-		if parts[0] != "" && parts[0] != namespace {
+		// Always set namespace, use plan namespace if empty
+		if parts[0] != "" {
 			destNetwork.Namespace = parts[0]
+		} else {
+			destNetwork.Namespace = namespace
 		}
 		return destNetwork
 	}
 
-	// Just a name, use the provided namespace (but only if not the same as plan namespace)
+	// Just a name, use the plan namespace
 	destNetwork := forkliftv1beta1.DestinationNetwork{
-		Type: "multus",
-		Name: defaultTargetNetwork,
+		Type:      "multus",
+		Name:      defaultTargetNetwork,
+		Namespace: namespace,
 	}
-	// Since we're using the provided namespace and it's the same as plan namespace, don't set it
 	return destNetwork
 }
 
