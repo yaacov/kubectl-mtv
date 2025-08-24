@@ -12,7 +12,11 @@ from e2e.utils import (
     generate_provider_name,
     get_or_create_provider,
 )
-from e2e.test_constants import TARGET_PROVIDER_NAME, VSPHERE_NETWORKS, VSPHERE_DATASTORES
+from e2e.test_constants import (
+    TARGET_PROVIDER_NAME,
+    VSPHERE_NETWORKS,
+    VSPHERE_DATASTORES,
+)
 
 
 @pytest.mark.patch
@@ -25,7 +29,7 @@ class TestVSphereMappingPatch:
     def vsphere_source_provider(self, test_namespace, provider_credentials):
         """Create a VSphere source provider for mapping testing."""
         creds = provider_credentials["vsphere"]
-        
+
         # Skip if credentials are not available
         if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
             pytest.skip("VSphere credentials not available in environment")
@@ -71,7 +75,9 @@ class TestVSphereMappingPatch:
         test_namespace.track_resource("networkmap", mapping_name)
 
         # Verify mapping was created
-        get_result = test_namespace.run_mtv_command(f"get mapping network {mapping_name} -o yaml")
+        get_result = test_namespace.run_mtv_command(
+            f"get mapping network {mapping_name} -o yaml"
+        )
         assert get_result.returncode == 0
 
         return mapping_name
@@ -102,7 +108,9 @@ class TestVSphereMappingPatch:
         test_namespace.track_resource("storagemap", mapping_name)
 
         # Verify mapping was created
-        get_result = test_namespace.run_mtv_command(f"get mapping storage {mapping_name} -o yaml")
+        get_result = test_namespace.run_mtv_command(
+            f"get mapping storage {mapping_name} -o yaml"
+        )
         assert get_result.returncode == 0
 
         return mapping_name
@@ -112,17 +120,21 @@ class TestVSphereMappingPatch:
         # Add new network pairs if we have enough networks
         if len(VSPHERE_NETWORKS) >= 4:
             new_pairs = f"{VSPHERE_NETWORKS[2]}:{VSPHERE_NETWORKS[3]}"
-            
-            patch_cmd = f"patch mapping network {network_mapping} --add-pairs '{new_pairs}'"
-            
+
+            patch_cmd = (
+                f"patch mapping network {network_mapping} --add-pairs '{new_pairs}'"
+            )
+
             result = test_namespace.run_mtv_command(patch_cmd)
             assert result.returncode == 0
-            
+
             # Verify the new pairs were added to the mapping
-            get_result = test_namespace.run_mtv_command(f"get mapping network {network_mapping} -o yaml")
+            get_result = test_namespace.run_mtv_command(
+                f"get mapping network {network_mapping} -o yaml"
+            )
             assert get_result.returncode == 0
-            assert VSPHERE_NETWORKS[2]['source'] in get_result.stdout
-            assert VSPHERE_NETWORKS[3]['target'] in get_result.stdout
+            assert VSPHERE_NETWORKS[2]["source"] in get_result.stdout
+            assert VSPHERE_NETWORKS[3]["target"] in get_result.stdout
         else:
             pytest.skip("Not enough VSphere networks available for add pairs test")
 
@@ -130,18 +142,22 @@ class TestVSphereMappingPatch:
         """Test updating existing network pairs in a VSphere mapping."""
         # Update existing pairs if we have enough networks
         if len(VSPHERE_NETWORKS) >= 3:
-            updated_pairs = f"{VSPHERE_NETWORKS[0]['source']}:{VSPHERE_NETWORKS[2]['target']}"
-            
+            updated_pairs = (
+                f"{VSPHERE_NETWORKS[0]['source']}:{VSPHERE_NETWORKS[2]['target']}"
+            )
+
             patch_cmd = f"patch mapping network {network_mapping} --update-pairs '{updated_pairs}'"
-            
+
             result = test_namespace.run_mtv_command(patch_cmd)
             assert result.returncode == 0
-            
+
             # Verify the pairs were updated in the mapping
-            get_result = test_namespace.run_mtv_command(f"get mapping network {network_mapping} -o yaml")
+            get_result = test_namespace.run_mtv_command(
+                f"get mapping network {network_mapping} -o yaml"
+            )
             assert get_result.returncode == 0
-            assert VSPHERE_NETWORKS[0]['source'] in get_result.stdout
-            assert VSPHERE_NETWORKS[2]['target'] in get_result.stdout
+            assert VSPHERE_NETWORKS[0]["source"] in get_result.stdout
+            assert VSPHERE_NETWORKS[2]["target"] in get_result.stdout
         else:
             pytest.skip("Not enough VSphere networks available for update pairs test")
 
@@ -149,32 +165,42 @@ class TestVSphereMappingPatch:
         """Test removing network pairs from a VSphere mapping."""
         # Remove pairs by source name
         remove_sources = VSPHERE_NETWORKS[0]["source"]
-        
-        patch_cmd = f"patch mapping network {network_mapping} --remove-pairs '{remove_sources}'"
-        
+
+        patch_cmd = (
+            f"patch mapping network {network_mapping} --remove-pairs '{remove_sources}'"
+        )
+
         result = test_namespace.run_mtv_command(patch_cmd)
         assert result.returncode == 0
-        
+
         # Verify the patch command succeeded (removal verification would require YAML parsing)
-        get_result = test_namespace.run_mtv_command(f"get mapping network {network_mapping} -o yaml")
+        get_result = test_namespace.run_mtv_command(
+            f"get mapping network {network_mapping} -o yaml"
+        )
         assert get_result.returncode == 0
 
     def test_patch_storage_mapping_add_pairs(self, test_namespace, storage_mapping):
         """Test adding storage pairs to an existing VSphere mapping."""
         # Add new storage pairs if we have enough datastores
         if len(VSPHERE_DATASTORES) >= 4:
-            new_pairs = f"{VSPHERE_DATASTORES[2]['source']}:{VSPHERE_DATASTORES[3]['target']}"
-            
-            patch_cmd = f"patch mapping storage {storage_mapping} --add-pairs '{new_pairs}'"
-            
+            new_pairs = (
+                f"{VSPHERE_DATASTORES[2]['source']}:{VSPHERE_DATASTORES[3]['target']}"
+            )
+
+            patch_cmd = (
+                f"patch mapping storage {storage_mapping} --add-pairs '{new_pairs}'"
+            )
+
             result = test_namespace.run_mtv_command(patch_cmd)
             assert result.returncode == 0
-            
+
             # Verify the new pairs were added to the mapping
-            get_result = test_namespace.run_mtv_command(f"get mapping storage {storage_mapping} -o yaml")
+            get_result = test_namespace.run_mtv_command(
+                f"get mapping storage {storage_mapping} -o yaml"
+            )
             assert get_result.returncode == 0
-            assert VSPHERE_DATASTORES[2]['source'] in get_result.stdout
-            assert VSPHERE_DATASTORES[3]['target'] in get_result.stdout
+            assert VSPHERE_DATASTORES[2]["source"] in get_result.stdout
+            assert VSPHERE_DATASTORES[3]["target"] in get_result.stdout
         else:
             pytest.skip("Not enough VSphere datastores available for add pairs test")
 
@@ -182,18 +208,22 @@ class TestVSphereMappingPatch:
         """Test updating existing storage pairs in a VSphere mapping."""
         # Update existing pairs if we have enough datastores
         if len(VSPHERE_DATASTORES) >= 3:
-            updated_pairs = f"{VSPHERE_DATASTORES[0]['source']}:{VSPHERE_DATASTORES[2]['target']}"
-            
+            updated_pairs = (
+                f"{VSPHERE_DATASTORES[0]['source']}:{VSPHERE_DATASTORES[2]['target']}"
+            )
+
             patch_cmd = f"patch mapping storage {storage_mapping} --update-pairs '{updated_pairs}'"
-            
+
             result = test_namespace.run_mtv_command(patch_cmd)
             assert result.returncode == 0
-            
+
             # Verify the pairs were updated in the mapping
-            get_result = test_namespace.run_mtv_command(f"get mapping storage {storage_mapping} -o yaml")
+            get_result = test_namespace.run_mtv_command(
+                f"get mapping storage {storage_mapping} -o yaml"
+            )
             assert get_result.returncode == 0
-            assert VSPHERE_DATASTORES[0]['source'] in get_result.stdout
-            assert VSPHERE_DATASTORES[2]['target'] in get_result.stdout
+            assert VSPHERE_DATASTORES[0]["source"] in get_result.stdout
+            assert VSPHERE_DATASTORES[2]["target"] in get_result.stdout
         else:
             pytest.skip("Not enough VSphere datastores available for update pairs test")
 
@@ -201,48 +231,60 @@ class TestVSphereMappingPatch:
         """Test removing storage pairs from a VSphere mapping."""
         # Remove pairs by source name
         remove_sources = VSPHERE_DATASTORES[0]["source"]
-        
-        patch_cmd = f"patch mapping storage {storage_mapping} --remove-pairs '{remove_sources}'"
-        
+
+        patch_cmd = (
+            f"patch mapping storage {storage_mapping} --remove-pairs '{remove_sources}'"
+        )
+
         result = test_namespace.run_mtv_command(patch_cmd)
         assert result.returncode == 0
-        
+
         # Verify the patch command succeeded (removal verification would require YAML parsing)
-        get_result = test_namespace.run_mtv_command(f"get mapping storage {storage_mapping} -o yaml")
+        get_result = test_namespace.run_mtv_command(
+            f"get mapping storage {storage_mapping} -o yaml"
+        )
         assert get_result.returncode == 0
 
-    def test_patch_network_mapping_with_inventory_url(self, test_namespace, network_mapping, vsphere_source_provider):
+    def test_patch_network_mapping_with_inventory_url(
+        self, test_namespace, network_mapping, vsphere_source_provider
+    ):
         """Test patching network mapping with inventory URL for pair resolution."""
         # Add new pairs using inventory URL
         if len(VSPHERE_NETWORKS) >= 4:
             new_pairs = f"{VSPHERE_NETWORKS[2]}:{VSPHERE_NETWORKS[3]}"
-            
+
             # Construct inventory URL based on provider
             inventory_url = f"provider/{vsphere_source_provider}"
-            
+
             patch_cmd = f"patch mapping network {network_mapping} --add-pairs '{new_pairs}' --inventory '{inventory_url}'"
-            
+
             result = test_namespace.run_mtv_command(patch_cmd)
             assert result.returncode == 0
-            
+
             # Verify the new pairs were added to the mapping
-            get_result = test_namespace.run_mtv_command(f"get mapping network {network_mapping} -o yaml")
+            get_result = test_namespace.run_mtv_command(
+                f"get mapping network {network_mapping} -o yaml"
+            )
             assert get_result.returncode == 0
-            assert VSPHERE_NETWORKS[2]['source'] in get_result.stdout
-            assert VSPHERE_NETWORKS[3]['target'] in get_result.stdout
+            assert VSPHERE_NETWORKS[2]["source"] in get_result.stdout
+            assert VSPHERE_NETWORKS[3]["target"] in get_result.stdout
         else:
             pytest.skip("Not enough VSphere networks available for inventory URL test")
 
-    def test_patch_storage_mapping_multiple_operations(self, test_namespace, vsphere_source_provider):
+    def test_patch_storage_mapping_multiple_operations(
+        self, test_namespace, vsphere_source_provider
+    ):
         """Test performing multiple patch operations on a VSphere storage mapping."""
         # Create a temporary mapping for this test
         mapping_name = f"test-storage-map-vsphere-multi-patch-{int(time.time())}"
-        
+
         # Build initial storage pairs string
         if len(VSPHERE_DATASTORES) >= 4:
             initial_pairs = f"{VSPHERE_DATASTORES[0]['source']}:{VSPHERE_DATASTORES[0]['target']},{VSPHERE_DATASTORES[1]['source']}:{VSPHERE_DATASTORES[1]['target']}"
         else:
-            pytest.skip("Not enough VSphere datastores available for multi-operation test")
+            pytest.skip(
+                "Not enough VSphere datastores available for multi-operation test"
+            )
 
         cmd_parts = [
             "create mapping storage",
@@ -262,20 +304,26 @@ class TestVSphereMappingPatch:
         test_namespace.track_resource("storagemap", mapping_name)
 
         # Verify mapping was created
-        get_result = test_namespace.run_mtv_command(f"get mapping storage {mapping_name} -o yaml")
+        get_result = test_namespace.run_mtv_command(
+            f"get mapping storage {mapping_name} -o yaml"
+        )
         assert get_result.returncode == 0
 
         # Perform multiple operations: remove one pair and update another
-        remove_sources = VSPHERE_DATASTORES[0]['source']
-        update_pairs = f"{VSPHERE_DATASTORES[2]['source']}:{VSPHERE_DATASTORES[1]['target']}"
-        
+        remove_sources = VSPHERE_DATASTORES[0]["source"]
+        update_pairs = (
+            f"{VSPHERE_DATASTORES[2]['source']}:{VSPHERE_DATASTORES[1]['target']}"
+        )
+
         patch_cmd = f"patch mapping storage {mapping_name} --remove-pairs '{remove_sources}' --update-pairs '{update_pairs}'"
-        
+
         result = test_namespace.run_mtv_command(patch_cmd)
         assert result.returncode == 0
-        
+
         # Verify the mapping was updated with both operations
-        get_result = test_namespace.run_mtv_command(f"get mapping storage {mapping_name} -o yaml")
+        get_result = test_namespace.run_mtv_command(
+            f"get mapping storage {mapping_name} -o yaml"
+        )
         assert get_result.returncode == 0
-        assert VSPHERE_DATASTORES[2]['source'] in get_result.stdout
-        assert VSPHERE_DATASTORES[1]['target'] in get_result.stdout
+        assert VSPHERE_DATASTORES[2]["source"] in get_result.stdout
+        assert VSPHERE_DATASTORES[1]["target"] in get_result.stdout

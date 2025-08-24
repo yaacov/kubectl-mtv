@@ -9,7 +9,6 @@ import os
 import subprocess
 import sys
 import tempfile
-import uuid
 from pathlib import Path
 from typing import Any, Dict, Generator
 
@@ -29,7 +28,7 @@ def pytest_addoption(parser):
         "--namespace-suffix",
         action="store",
         default=None,
-        help="Custom suffix for the test namespace (will be used as kubectl-mtv-shared-<suffix>)",
+        help="Custom suffix for the test namespace (will be used as kubectl-mtv-<suffix>)",
     )
 
 
@@ -205,15 +204,17 @@ def test_namespace(
         namespace_suffix = request.config.getoption("--namespace-suffix")
 
         if namespace_suffix:
-            # Use custom suffix
-            namespace_name = f"kubectl-mtv-shared-{namespace_suffix}"
+            # Use custom suffix with kubectl-mtv prefix
+            namespace_name = f"kubectl-mtv-{namespace_suffix}"
         else:
-            # Generate random suffix
-            namespace_name = f"kubectl-mtv-shared-{uuid.uuid4().hex[:8]}"
+            # Use default 'kubectl-mtv-tests' namespace
+            namespace_name = "kubectl-mtv-tests"
 
         # Create namespace
         subprocess.run(
-            f"kubectl create namespace {namespace_name}", shell=True, check=True
+            f"kubectl create namespace {namespace_name} --dry-run=client -o yaml | kubectl apply -f -",
+            shell=True,
+            check=True,
         )
 
         # Create and store shared context
@@ -285,6 +286,104 @@ def provider_credentials() -> Dict[str, Any]:
             == "true",
         },
     }
+
+
+@pytest.fixture(scope="session")
+def vsphere_provider(test_namespace, provider_credentials):
+    """Create a vSphere provider for testing (session-scoped)."""
+    creds = provider_credentials.get("vsphere", {})
+    if not creds.get("url"):
+        pytest.skip("vSphere credentials not configured")
+
+    from . import utils
+
+    provider_name = utils.generate_provider_name("vsphere", creds["url"], skip_tls=True)
+    create_cmd = f"create provider {provider_name} --type vsphere --url {creds['url']} --username {creds['username']} --password {creds['password']} --provider-insecure-skip-tls"
+
+    return utils.get_or_create_provider(test_namespace, provider_name, create_cmd)
+
+
+@pytest.fixture(scope="session")
+def esxi_provider(test_namespace, provider_credentials):
+    """Create an ESXi provider for testing (session-scoped)."""
+    creds = provider_credentials.get("esxi", {})
+    if not creds.get("url"):
+        pytest.skip("ESXi credentials not configured")
+
+    from . import utils
+
+    provider_name = utils.generate_provider_name(
+        "vsphere", creds["url"], sdk_endpoint="esxi", skip_tls=True
+    )
+    create_cmd = f"create provider {provider_name} --type vsphere --url {creds['url']} --username {creds['username']} --password {creds['password']} --provider-insecure-skip-tls --sdk-endpoint esxi"
+
+    return utils.get_or_create_provider(test_namespace, provider_name, create_cmd)
+
+
+@pytest.fixture(scope="session")
+def ovirt_provider(test_namespace, provider_credentials):
+    """Create an oVirt provider for testing (session-scoped)."""
+    creds = provider_credentials.get("ovirt", {})
+    if not creds.get("url"):
+        pytest.skip("oVirt credentials not configured")
+
+    from . import utils
+
+    provider_name = utils.generate_provider_name("ovirt", creds["url"], skip_tls=True)
+    create_cmd = f"create provider {provider_name} --type ovirt --url {creds['url']} --username {creds['username']} --password {creds['password']} --provider-insecure-skip-tls"
+
+    return utils.get_or_create_provider(test_namespace, provider_name, create_cmd)
+
+
+@pytest.fixture(scope="session")
+def openstack_provider(test_namespace, provider_credentials):
+    """Create an OpenStack provider for testing (session-scoped)."""
+    creds = provider_credentials.get("openstack", {})
+    if not creds.get("url"):
+        pytest.skip("OpenStack credentials not configured")
+
+    from . import utils
+
+    provider_name = utils.generate_provider_name(
+        "openstack", creds["url"], skip_tls=True
+    )
+    create_cmd = (
+        f"create provider {provider_name} --type openstack --url {creds['url']} "
+        f"--username {creds['username']} --password {creds['password']} "
+        f"--provider-domain-name {creds['domain_name']} "
+        f"--provider-project-name {creds['project_name']} "
+        f"--provider-region-name {creds['region_name']} --provider-insecure-skip-tls"
+    )
+
+    return utils.get_or_create_provider(test_namespace, provider_name, create_cmd)
+
+
+@pytest.fixture(scope="session")
+def ova_provider(test_namespace, provider_credentials):
+    """Create an OVA provider for testing (session-scoped)."""
+    creds = provider_credentials.get("ova", {})
+    if not creds.get("url"):
+        pytest.skip("OVA URL not configured")
+
+    from . import utils
+
+    provider_name = utils.generate_provider_name("ova", creds["url"])
+    create_cmd = f"create provider {provider_name} --type ova --url {creds['url']}"
+
+    return utils.get_or_create_provider(test_namespace, provider_name, create_cmd)
+
+
+@pytest.fixture(scope="session")
+def openshift_provider(test_namespace):
+    """Create an OpenShift provider for testing (session-scoped)."""
+    from . import utils
+
+    provider_name = utils.generate_provider_name(
+        "openshift", "localhost", skip_tls=True
+    )
+    create_cmd = f"create provider {provider_name} --type openshift"
+
+    return utils.get_or_create_provider(test_namespace, provider_name, create_cmd)
 
 
 @pytest.fixture

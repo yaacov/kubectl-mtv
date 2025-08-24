@@ -193,14 +193,14 @@ test-ova: setup check-binary
 .PHONY: clean-test-namespaces
 clean-test-namespaces:
 	@echo "Cleaning up test namespaces..."
-	@kubectl get namespaces -o name | grep "namespace/kubectl-mtv-shared-" | xargs -r kubectl delete --ignore-not-found=true
+	@kubectl get namespaces -o name | grep "namespace/kubectl-mtv-" | xargs -r kubectl delete --ignore-not-found=true
 	@echo "Test namespaces cleaned up."
 
 # List current test namespaces
 .PHONY: list-ns
 list-ns:
 	@echo "Current test namespaces:"
-	@kubectl get namespaces -o name | grep "kubectl-mtv-shared-" | sed 's/namespace\///' || echo "No test namespaces found."
+	@kubectl get namespaces -o name | grep "kubectl-mtv-" | sed 's/namespace\///' || echo "No test namespaces found."
 
 # Clean test artifacts
 .PHONY: clean

@@ -143,10 +143,14 @@ class TestVSpherePlanCreationWithPairs:
         selected_vm = VSPHERE_TEST_VMS[1]
         plan_name = f"test-plan-vsphere-pod-pairs-{int(time.time())}"
 
-        # Use pod network for all networks
-        network_pairs = ",".join(
-            [f"{n['source']}:default" for n in VSPHERE_NETWORK_PAIRS]
-        )
+        # Use pod network for first network only, ignore the rest (complies with pod network uniqueness constraint)
+        network_pairs = f"{VSPHERE_NETWORK_PAIRS[0]['source']}:default"
+        if len(VSPHERE_NETWORK_PAIRS) > 1:
+            # Map additional networks to ignored to comply with constraint requirements
+            ignored_pairs = ",".join(
+                [f"{n['source']}:ignored" for n in VSPHERE_NETWORK_PAIRS[1:]]
+            )
+            network_pairs = f"{network_pairs},{ignored_pairs}"
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in VSPHERE_STORAGE_PAIRS]
         )

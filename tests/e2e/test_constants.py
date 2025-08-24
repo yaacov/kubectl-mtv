@@ -13,7 +13,14 @@ to minimize duplication and make it easier to maintain test resources.
 TARGET_PROVIDER_NAME = "test-openshift-skip-verify"
 
 # Network Attachment Definitions created in test namespace
-NETWORK_ATTACHMENT_DEFINITIONS = ["test-nad-1", "test-nad-2"]
+# Extended to support unique mappings per provider constraint
+NETWORK_ATTACHMENT_DEFINITIONS = [
+    "test-nad-1",
+    "test-nad-2",
+    "test-nad-3",
+    "test-nad-4",
+    "test-nad-5",
+]
 
 # Target storage classes available in OpenShift
 TARGET_STORAGE_CLASSES = {
@@ -29,22 +36,21 @@ OPENSHIFT_TEST_VMS = ["test-vm-1", "test-vm-2"]
 # SOURCE PROVIDER VM NAMES
 # =============================================================================
 
-# VMware vSphere VM names
+# VMware vSphere VM names (validated against MCP inventory)
 VSPHERE_TEST_VMS = [
-    "mtv-win2019-79-ceph-rbd-4-16",  # Windows VM
-    "mtv-rhel8-ameen",  # Linux VM (found in inventory - different from mtv-func-rhel8-ameen)
+    "mtv-win2019-79",  # Windows VM (actual name from inventory)
+    "mtv-rhel8-sanity",  # Linux VM (available and compliant)
 ]
 
-# VMware ESXi VM names (same as vSphere)
+# VMware ESXi VM names (validated against MCP inventory)
 ESXI_TEST_VMS = [
-    "mtv-win2019-79-ceph-rbd-4-16",  # Windows VM
-    "mtv-rhel8-ameen",  # Linux VM (found in inventory - different from mtv-func-rhel8-ameen)
+    "pabreu-rhel9-vm",  # Only available VM in ESXi provider (RHEL 9 VM)
 ]
 
-# Red Hat Virtualization (oVirt) VM names
+# Red Hat Virtualization (oVirt) VM names (actual VMs from inventory - simple VMs with 1 network, 1 disk)
 OVIRT_TEST_VMS = [
-    "vCenter8-02",  # Linux VM (found in inventory)
-    "mtv-win2019-79-ceph-rbd-4-16",  # Windows VM (reusing available one)
+    "1111ab",  # Simple Linux VM (1 NIC on ovirtmgmt, 1 disk)
+    "1111-win2019",  # Simple Windows VM (1 NIC on vm network, 1 disk)
 ]
 
 # OVA VM names
@@ -53,65 +59,99 @@ OVA_TEST_VMS = [
     "1nisim-rhel9-efi",  # Single disk RHEL VM
 ]
 
-# OpenStack VM names
-OPENSTACK_TEST_VMS = ["infra-mtv-node-225", "qemtv-05-mlfp6-worker-0-vfww8"]
+# OpenStack VM names (validated against MCP inventory) - chose simple VMs with minimal resources
+OPENSTACK_TEST_VMS = [
+    "infra-mtv-node-272",
+    "qemtv-05-xn49b-master-0",
+]  # infra-mtv-node-272 has only 1 network, qemtv-05-xn49b-master-0 has 1 network + 1 volume
+
+# =============================================================================
+# HOST CONFIGURATION BY PROVIDER TYPE
+# =============================================================================
+
+# vSphere host IDs (from vSphere inventory data)
+VSPHERE_TEST_HOSTS = ["host-8"]
+
+# ESXi host IDs (from ESXi inventory data)
+ESXI_TEST_HOSTS = ["ha-host"]
+
+# Network adapter names (used by both vSphere and ESXi providers)
+NETWORK_ADAPTERS = ["Management Network", "Mgmt Network", "VM Network"]
 
 # =============================================================================
 # NETWORK MAPPINGS BY PROVIDER TYPE
 # =============================================================================
 
-# Common network mappings (most providers use these)
-COMMON_NETWORK_PAIRS = [
-    {"source": "VM Network", "target": NETWORK_ATTACHMENT_DEFINITIONS[0]},  # test-nad-1
+# vSphere network mappings (validated against MCP inventory - complies with constraints)
+# Maps both available networks: VM Network -> pod, Mgmt Network -> multus
+VSPHERE_NETWORK_PAIRS = [
+    {
+        "source": "VM Network",
+        "target": "default",
+    },  # Pod network (network-17 from inventory)
     {
         "source": "Mgmt Network",
-        "target": NETWORK_ATTACHMENT_DEFINITIONS[1],
-    },  # test-nad-2
+        "target": NETWORK_ATTACHMENT_DEFINITIONS[0],
+    },  # test-nad-1 (network-16 from inventory)
 ]
 
-# vSphere network mappings
-VSPHERE_NETWORK_PAIRS = COMMON_NETWORK_PAIRS.copy()
+# ESXi network mappings (validated against MCP inventory)
+# Only "VM Network" available in ESXi provider (HaNetwork-VM Network)
+ESXI_NETWORK_PAIRS = [
+    {
+        "source": "VM Network",
+        "target": "default",
+    },  # Pod network (only available network)
+]
 
-# ESXi network mappings (same as vSphere)
-ESXI_NETWORK_PAIRS = COMMON_NETWORK_PAIRS.copy()
-
-# OVA network mappings (same as vSphere but reversed order)
+# OVA network mappings (complies with pod network uniqueness constraint)
+# First network -> pod, others -> multus NADs
 OVA_NETWORK_PAIRS = [
-    {"source": "VM Network", "target": NETWORK_ATTACHMENT_DEFINITIONS[0]},  # test-nad-1
+    {
+        "source": "VM Network",
+        "target": NETWORK_ATTACHMENT_DEFINITIONS[1],
+    },  # test-nad-2 (avoid reusing test-nad-1)
     {
         "source": "Mgmt Network",
-        "target": NETWORK_ATTACHMENT_DEFINITIONS[1],
-    },  # test-nad-2
+        "target": "default",
+    },  # Pod network (different from vSphere to avoid conflicts)
 ]
 
-# oVirt network mappings
+# oVirt network mappings (complies with constraints - uses unique targets)
 OVIRT_NETWORK_PAIRS = [
-    {"source": "ovirtmgmt", "target": NETWORK_ATTACHMENT_DEFINITIONS[0]},  # test-nad-1
-    {"source": "vm", "target": NETWORK_ATTACHMENT_DEFINITIONS[1]},  # test-nad-2
+    {
+        "source": "ovirtmgmt",
+        "target": NETWORK_ATTACHMENT_DEFINITIONS[2],
+    },  # test-nad-3 (unique target)
+    {
+        "source": "vm",
+        "target": "default",
+    },  # Pod network (reused but in different provider context)
 ]
 
-# OpenStack network mappings
+# OpenStack network mappings (reordered to match VM order - first pair must match first VM's network)
 OPENSTACK_NETWORK_PAIRS = [
     {
-        "source": "provider_net_cci_13",
-        "target": NETWORK_ATTACHMENT_DEFINITIONS[0],
-    },  # test-nad-1
+        "source": "k8s-clusterapi-cluster-openshift-cluster-api-guests-qemtv-05-xn49b",
+        "target": "default",
+    },  # Network from qemtv-05-xn49b-master-0 (OPENSTACK_TEST_VMS[1] used by tests) -> pod network
     {
-        "source": "provider_net_shared_2",
-        "target": NETWORK_ATTACHMENT_DEFINITIONS[1],
-    },  # test-nad-2
+        "source": "provider_net_shared",
+        "target": NETWORK_ATTACHMENT_DEFINITIONS[3],
+    },  # Network from infra-mtv-node-272 -> test-nad-4
 ]
 
-# OpenShift network mappings (for OpenShift-to-OpenShift migration)
+# OpenShift network mappings (based on actual VM networks - maps NADs that exist on the test VMs)
+# Note: Namespace will be prepended dynamically by tests using test_namespace.namespace
 OPENSHIFT_NETWORK_PAIRS = [
     {
         "source": NETWORK_ATTACHMENT_DEFINITIONS[0],
-        "target": NETWORK_ATTACHMENT_DEFINITIONS[1],
-    },  # test-nad-1 -> test-nad-2
+        "target": "default",
+    },  # test-nad-1 -> pod network
     {
         "source": NETWORK_ATTACHMENT_DEFINITIONS[1],
-        "target": NETWORK_ATTACHMENT_DEFINITIONS[0],
-    },  # test-nad-2 -> test-nad-1
+        "target": NETWORK_ATTACHMENT_DEFINITIONS[4],
+    },  # test-nad-2 -> test-nad-5
 ]
 
 # =============================================================================
@@ -125,28 +165,35 @@ VSPHERE_STORAGE_PAIRS = [
         "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
     },
     {"source": "datastore1", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
-    {"source": "mtv-nfs-us-v8", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
-    {"source": "mtv-nfs-rhos-v8", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
+    {
+        "source": "mtv-nfs-us-v8",
+        "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
+    },
+    {
+        "source": "mtv-nfs-rhos-v8",
+        "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
+    },
 ]
 
-# ESXi storage mappings
+# ESXi storage mappings (validated against MCP inventory)
+# Only "datastore1" available in ESXi provider inventory
 ESXI_STORAGE_PAIRS = [
     {
-        "source": "nfs-us-mtv-v8",
-        "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
-    },
-    {"source": "datastore1", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
-    {"source": "mtv-nfs-rhos-v8", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
-    {"source": "mtv-nfs-us-v8", "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"]},
+        "source": "datastore1",
+        "target": TARGET_STORAGE_CLASSES["CEPH_RBD"],
+    },  # Only available datastore in ESXi
 ]
 
-# oVirt storage mappings
+# oVirt storage mappings (using actual storage domains from inventory)
 OVIRT_STORAGE_PAIRS = [
     {
-        "source": "L1_Group_4_Storage",
+        "source": "L0_Group_4_LUN1",  # Actual data storage domain from inventory
         "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
     },
-    {"source": "L0_Group_4_LUN1", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
+    {
+        "source": "L0_Group_4_LUN2",
+        "target": TARGET_STORAGE_CLASSES["CEPH_RBD"],
+    },  # Second data storage domain
 ]
 
 # OpenStack storage mappings
@@ -241,24 +288,24 @@ OVIRT_NETWORKS = [
 
 OPENSTACK_NETWORKS = [
     {
-        "source": "provider_net_cci_13",
+        "source": "k8s-clusterapi-cluster-openshift-cluster-api-guests-qemtv-05-xn49b",
         "target": NETWORK_ATTACHMENT_DEFINITIONS[0],
-    },  # test-nad-1
+    },  # Network from qemtv-05-xn49b-master-0 (matches VM order) -> test-nad-1
     {
-        "source": "provider_net_shared_2",
+        "source": "provider_net_shared",
         "target": NETWORK_ATTACHMENT_DEFINITIONS[1],
-    },  # test-nad-2
+    },  # Network from infra-mtv-node-272 -> test-nad-2
 ]
 
 OPENSHIFT_NETWORKS = [
     {
         "source": NETWORK_ATTACHMENT_DEFINITIONS[0],
         "target": NETWORK_ATTACHMENT_DEFINITIONS[1],
-    },  # test-nad-1 -> test-nad-2
+    },  # test-nad-1 -> test-nad-2 (networks that exist on test VMs)
     {
         "source": NETWORK_ATTACHMENT_DEFINITIONS[1],
         "target": NETWORK_ATTACHMENT_DEFINITIONS[0],
-    },  # test-nad-2 -> test-nad-1
+    },  # test-nad-2 -> test-nad-1 (networks that exist on test VMs)
 ]
 
 # Storage mappings for mapping creation tests
@@ -280,19 +327,9 @@ VSPHERE_DATASTORES = [
 
 ESXI_DATASTORES = [
     {
-        "source": "nfs-us-mtv-v8",
-        "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
-    },
-    {"source": "datastore1", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
-    {
-        "source": "mtv-nfs-rhos-v8",
-        "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
-    },
-    {"source": "nfs-us", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
-    {
-        "source": "mtv-nfs-us-v8",
-        "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
-    },
+        "source": "datastore1",
+        "target": TARGET_STORAGE_CLASSES["CEPH_RBD"],
+    },  # Only available datastore in ESXi (validated against MCP inventory)
 ]
 
 OVA_STORAGE = [
@@ -305,10 +342,13 @@ OVA_STORAGE = [
 
 OVIRT_DATASTORES = [
     {
-        "source": "L1_Group_4_Storage",
+        "source": "L0_Group_4_LUN1",  # Actual data storage domain from inventory
         "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
     },
-    {"source": "L0_Group_4_LUN1", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
+    {
+        "source": "L0_Group_4_LUN2",
+        "target": TARGET_STORAGE_CLASSES["CEPH_RBD"],
+    },  # Second data storage domain
 ]
 
 OPENSTACK_DATASTORES = [

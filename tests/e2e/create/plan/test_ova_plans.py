@@ -11,19 +11,12 @@ import pytest
 
 from e2e.utils import (
     wait_for_plan_ready,
-    generate_provider_name,
-    get_or_create_provider,
 )
+from ...test_constants import OVA_TEST_VMS
 
 
-# Hardcoded VM names from OVA inventory data
-OVA_TEST_VMS = [
-    "mtv-2disks",
-    "1nisim-rhel9-efi",
-    "mtv-func-WIN2019",
-    "SHAICTDOET005-Test_rhel9",
-    "mtv-func.RHEL8_8 _TE_ST _ _1 _2",
-]
+# Use centralized constants from test_constants.py
+# VM names are imported via: from ...test_constants import OVA_TEST_VMS
 
 
 @pytest.mark.create
@@ -33,40 +26,11 @@ OVA_TEST_VMS = [
 class TestOVAPlanCreation:
     """Test cases for migration plan creation from OVA providers."""
 
-    @pytest.fixture(scope="class")
-    def ova_provider(self, test_namespace, provider_credentials):
-        """Create an OVA provider for plan testing."""
-        creds = provider_credentials["ova"]
+    # Provider fixtures are now session-scoped in conftest.py
 
-        # Generate provider name based on type and configuration
-        provider_name = generate_provider_name("ova", creds["url"], skip_tls=True)
-
-        # Create command
-        cmd_parts = [
-            "create provider",
-            provider_name,
-            "--type ova",
-            f"--url '{creds['url']}'",
-        ]
-
-        create_cmd = " ".join(cmd_parts)
-
-        # Create provider if it doesn't already exist
-        return get_or_create_provider(test_namespace, provider_name, create_cmd)
-
-    @pytest.fixture(scope="class")
-    def target_provider(self, test_namespace):
-        """Ensure the target OpenShift provider exists for plan testing."""
-        # Generate provider name based on type and configuration
-        provider_name = generate_provider_name("openshift", "localhost", skip_tls=True)
-
-        # Create command for OpenShift target provider
-        create_cmd = f"create provider {provider_name} --type openshift"
-
-        # Create provider if it doesn't already exist
-        return get_or_create_provider(test_namespace, provider_name, create_cmd)
-
-    def test_create_plan_from_ova(self, test_namespace, ova_provider, target_provider):
+    def test_create_plan_from_ova(
+        self, test_namespace, ova_provider, openshift_provider
+    ):
         """Test creating a migration plan from OVA provider."""
         # Use the first available VM as comma-separated string
         selected_vm = OVA_TEST_VMS[0]
@@ -77,7 +41,7 @@ class TestOVAPlanCreation:
             "create plan",
             plan_name,
             f"--source {ova_provider}",
-            f"--target {target_provider}",
+            f"--target {openshift_provider}",
             f"--vms '{selected_vm}'",
         ]
 
@@ -94,7 +58,7 @@ class TestOVAPlanCreation:
         wait_for_plan_ready(test_namespace, plan_name)
 
     def test_create_multi_vm_plan_from_ova(
-        self, test_namespace, ova_provider, target_provider
+        self, test_namespace, ova_provider, openshift_provider
     ):
         """Test creating a migration plan with multiple VMs from OVA provider."""
         # Use multiple VMs from the inventory dump data
@@ -110,7 +74,7 @@ class TestOVAPlanCreation:
             "create plan",
             plan_name,
             f"--source {ova_provider}",
-            f"--target {target_provider}",
+            f"--target {openshift_provider}",
             f"--vms '{selected_vms}'",
         ]
 

@@ -12,10 +12,8 @@ import pytest
 
 from e2e.utils import (
     wait_for_plan_ready,
-    generate_provider_name,
-    get_or_create_provider,
 )
-from e2e.test_constants import TARGET_PROVIDER_NAME, ESXI_TEST_VMS
+from e2e.test_constants import ESXI_TEST_VMS
 
 
 @pytest.mark.create
@@ -25,38 +23,11 @@ from e2e.test_constants import TARGET_PROVIDER_NAME, ESXI_TEST_VMS
 class TestESXiPlanCreation:
     """Test cases for migration plan creation from ESXi providers."""
 
-    @pytest.fixture(scope="class")
-    def esxi_provider(self, test_namespace, provider_credentials):
-        """Create an ESXi provider for plan testing."""
-        creds = provider_credentials["esxi"]
+    # Provider fixtures are now session-scoped in conftest.py
 
-        # Skip if credentials are not available
-        if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
-            pytest.skip("VMware ESXi credentials not available in environment")
-
-        # Generate provider name based on type and configuration
-        provider_name = generate_provider_name(
-            "vsphere", creds["url"], sdk_endpoint="esxi", skip_tls=True
-        )
-
-        # Create command with insecure skip TLS and ESXi SDK endpoint
-        cmd_parts = [
-            "create provider",
-            provider_name,
-            "--type vsphere",
-            f"--url '{creds['url']}'",
-            f"--username '{creds['username']}'",
-            f"--password '{creds['password']}'",
-            "--provider-insecure-skip-tls",
-            "--sdk-endpoint esxi",
-        ]
-
-        create_cmd = " ".join(cmd_parts)
-
-        # Create provider if it doesn't already exist
-        return get_or_create_provider(test_namespace, provider_name, create_cmd)
-
-    def test_create_plan_from_esxi(self, test_namespace, esxi_provider):
+    def test_create_plan_from_esxi(
+        self, test_namespace, esxi_provider, openshift_provider
+    ):
         """Test creating a migration plan from ESXi provider."""
         # Use the first available VM as comma-separated string
         selected_vm = ESXI_TEST_VMS[0]
@@ -67,7 +38,7 @@ class TestESXiPlanCreation:
             "create plan",
             plan_name,
             f"--source {esxi_provider}",
-            f"--target {TARGET_PROVIDER_NAME}",
+            f"--target {openshift_provider}",
             f"--vms '{selected_vm}'",
         ]
 
@@ -83,7 +54,9 @@ class TestESXiPlanCreation:
         # Wait for plan to be ready
         wait_for_plan_ready(test_namespace, plan_name)
 
-    def test_create_multi_vm_plan_from_esxi(self, test_namespace, esxi_provider):
+    def test_create_multi_vm_plan_from_esxi(
+        self, test_namespace, esxi_provider, openshift_provider
+    ):
         """Test creating a migration plan with multiple VMs from ESXi provider."""
         # Use first 3 VMs for multi-VM test as comma-separated string
         selected_vms = ",".join(ESXI_TEST_VMS[:3])
@@ -93,7 +66,7 @@ class TestESXiPlanCreation:
             "create plan",
             plan_name,
             f"--source {esxi_provider}",
-            f"--target {TARGET_PROVIDER_NAME}",
+            f"--target {openshift_provider}",
             f"--vms '{selected_vms}'",
         ]
 
