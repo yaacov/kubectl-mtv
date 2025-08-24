@@ -146,7 +146,17 @@ class TestOVAPlanCreationWithPairs:
         vm_storage = OVA_VM_STORAGE_MAPPINGS[selected_vm]
 
         # Use pod network for all networks
-        network_pairs = ",".join([f"{n['source']}:default" for n in vm_networks])
+        # Use pod network for first network only, ignore the rest (complies with pod network uniqueness constraint)
+        if vm_networks:
+            network_pairs = f"{vm_networks[0]['source']}:default"
+            if len(vm_networks) > 1:
+                # Map additional networks to ignored to comply with constraint requirements
+                ignored_pairs = ",".join(
+                    [f"{n['source']}:ignored" for n in vm_networks[1:]]
+                )
+                network_pairs = f"{network_pairs},{ignored_pairs}"
+        else:
+            network_pairs = ""
         storage_pairs = ",".join([f"{s['source']}:{s['target']}" for s in vm_storage])
 
         # Create plan command with pod network mapping

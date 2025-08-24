@@ -10,16 +10,11 @@ import pytest
 from ...utils import (
     wait_for_host_ready,
     delete_hosts_by_spec_id,
-    generate_provider_name,
-    get_or_create_provider,
 )
 
 
-# Hardcoded host IDs from vSphere inventory data (from hosts.json file)
-VSPHERE_TEST_HOSTS = ["host-8"]
-
-# Hardcoded network adapter names from vSphere inventory data (from hosts.json file)
-VSPHERE_NETWORK_ADAPTERS = ["Management Network", "Mgmt Network", "VM Network"]
+# Use centralized constants from test_constants.py
+from ...test_constants import VSPHERE_TEST_HOSTS, NETWORK_ADAPTERS
 
 
 @pytest.mark.create
@@ -30,34 +25,7 @@ VSPHERE_NETWORK_ADAPTERS = ["Management Network", "Mgmt Network", "VM Network"]
 class TestVSphereHosts:
     """Test cases for vSphere migration host creation."""
 
-    @pytest.fixture(scope="class")
-    def vsphere_provider(self, test_namespace, provider_credentials):
-        """Create a vSphere provider for host testing."""
-        creds = provider_credentials["vsphere"]
-
-        # Skip if vSphere credentials are not available
-        if not all([creds.get("url"), creds.get("username"), creds.get("password")]):
-            pytest.skip("VMware vSphere credentials not available in environment")
-
-        # Generate provider name based on type and configuration
-        provider_name = generate_provider_name("vsphere", creds["url"], skip_tls=True)
-
-        cmd_parts = [
-            "create provider",
-            provider_name,
-            "--type vsphere",
-            f"--url '{creds['url']}'",
-            f"--username '{creds['username']}'",
-            f"--password '{creds['password']}'",
-            "--provider-insecure-skip-tls",
-        ]
-
-        create_provider_cmd = " ".join(cmd_parts)
-
-        # Create provider if it doesn't already exist
-        return get_or_create_provider(
-            test_namespace, provider_name, create_provider_cmd
-        )
+    # Provider fixtures are now session-scoped in conftest.py
 
     def test_create_host_with_ip_address(
         self, test_namespace, vsphere_provider, provider_credentials
@@ -103,7 +71,7 @@ class TestVSphereHosts:
 
         # Use the single available host with network adapter resolution
         host_id = VSPHERE_TEST_HOSTS[0]  # host-8
-        adapter_name = VSPHERE_NETWORK_ADAPTERS[0]  # Management Network
+        adapter_name = NETWORK_ADAPTERS[0]  # Management Network
 
         # Delete host if it exists from previous test
         delete_hosts_by_spec_id(test_namespace, host_id)

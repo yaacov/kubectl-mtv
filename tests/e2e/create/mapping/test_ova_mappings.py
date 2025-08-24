@@ -11,8 +11,6 @@ import pytest
 from e2e.utils import (
     wait_for_network_mapping_ready,
     wait_for_storage_mapping_ready,
-    generate_provider_name,
-    get_or_create_provider,
 )
 from e2e.test_constants import TARGET_PROVIDER_NAME, OVA_NETWORKS, OVA_STORAGE
 
@@ -24,25 +22,7 @@ from e2e.test_constants import TARGET_PROVIDER_NAME, OVA_NETWORKS, OVA_STORAGE
 class TestOVAMappingCreation:
     """Test cases for network and storage mapping creation from OVA providers."""
 
-    @pytest.fixture(scope="class")
-    def ova_provider(self, test_namespace, provider_credentials):
-        """Create an OVA provider for mapping testing."""
-        creds = provider_credentials.get("ova", {})
-
-        # Skip if OVA URL is not available
-        if not creds.get("url"):
-            pytest.skip("OVA URL not available in environment")
-
-        # Generate provider name based on type and configuration
-        provider_name = generate_provider_name("ova", creds["url"], skip_tls=True)
-
-        # Create command for OVA provider with URL
-        create_cmd = (
-            f"create provider {provider_name} --type ova --url '{creds['url']}'"
-        )
-
-        # Create provider if it doesn't already exist
-        return get_or_create_provider(test_namespace, provider_name, create_cmd)
+    # Provider fixtures are now session-scoped in conftest.py
 
     def test_create_network_mapping_from_ova(self, test_namespace, ova_provider):
         """Test creating a network mapping from OVA provider."""
@@ -84,7 +64,7 @@ class TestOVAMappingCreation:
             mapping_name,
             f"--source {ova_provider}",
             f"--target {TARGET_PROVIDER_NAME}",
-            "--network-pairs 'VM Network:default'",
+            "--network-pairs 'VM Network:default'",  # Single network to default is OK
         ]
 
         create_cmd = " ".join(cmd_parts)
@@ -104,7 +84,11 @@ class TestOVAMappingCreation:
             f"get networkmap {mapping_name} -o yaml"
         )
         assert result.returncode == 0
-        assert "VM Network" in result.stdout
+        # Verify network mapping contains expected source network from constants
+        from ...test_constants import OVA_NETWORK_PAIRS
+
+        expected_network = OVA_NETWORK_PAIRS[0]["source"]
+        assert expected_network in result.stdout
 
     def test_create_storage_mapping_from_ova(self, test_namespace, ova_provider):
         """Test creating a storage mapping from OVA provider."""

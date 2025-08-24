@@ -144,11 +144,20 @@ class TestESXiPlanCreationWithPairs:
     def test_create_plan_with_pod_network_pairs(self, test_namespace, esxi_provider):
         """Test creating a migration plan with pod network mapping pairs."""
         # Use a single VM
+        if len(ESXI_TEST_VMS) < 2:
+            pytest.skip("Need at least 2 VMs for this test")
         selected_vm = ESXI_TEST_VMS[1]
         plan_name = f"test-plan-esxi-pod-pairs-{int(time.time())}"
 
         # Use pod network for all networks
-        network_pairs = ",".join([f"{n['source']}:default" for n in ESXI_NETWORK_PAIRS])
+        # Use pod network for first network only, ignore the rest (complies with pod network uniqueness constraint)
+        network_pairs = f"{ESXI_NETWORK_PAIRS[0]['source']}:default"
+        if len(ESXI_NETWORK_PAIRS) > 1:
+            # Map additional networks to ignored to comply with constraint requirements
+            ignored_pairs = ",".join(
+                [f"{n['source']}:ignored" for n in ESXI_NETWORK_PAIRS[1:]]
+            )
+            network_pairs = f"{network_pairs},{ignored_pairs}"
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in ESXI_STORAGE_PAIRS]
         )
@@ -181,11 +190,13 @@ class TestESXiPlanCreationWithPairs:
     def test_create_plan_with_vddk_and_pairs(self, test_namespace, esxi_provider):
         """Test creating a migration plan with mapping pairs and VDDK option."""
         # Use a single VM
+        if len(ESXI_TEST_VMS) < 3:
+            pytest.skip("Need at least 3 VMs for this test")
         selected_vm = ESXI_TEST_VMS[2]
         plan_name = f"test-plan-esxi-vddk-pairs-{int(time.time())}"
 
         # Use simple mapping pairs
-        network_pairs = "VM Network:default"
+        network_pairs = "VM Network:default"  # Single network to default is OK
         # Include all ESXi datastores to ensure nothing is unmapped
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in ESXI_STORAGE_PAIRS]

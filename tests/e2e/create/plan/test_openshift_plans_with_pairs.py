@@ -54,9 +54,12 @@ class TestOpenShiftPlanCreationWithPairs:
         selected_vm = OPENSHIFT_TEST_VMS[0]
         plan_name = f"test-plan-openshift-pairs-{int(time.time())}"
 
-        # Build network and storage pairs strings
+        # Build network and storage pairs strings with dynamic namespace
         network_pairs = ",".join(
-            [f"{n['source']}:{n['target']}" for n in OPENSHIFT_NETWORK_PAIRS]
+            [
+                f"{test_namespace.namespace}/{n['source']}:{n['target'] if n['target'] == 'default' else test_namespace.namespace + '/' + n['target']}"
+                for n in OPENSHIFT_NETWORK_PAIRS
+            ]
         )
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in OPENSHIFT_STORAGE_PAIRS]
@@ -96,9 +99,12 @@ class TestOpenShiftPlanCreationWithPairs:
         selected_vms = ",".join(OPENSHIFT_TEST_VMS)
         plan_name = f"test-multi-plan-openshift-pairs-{int(time.time())}"
 
-        # Build network and storage pairs strings
+        # Build network and storage pairs strings with dynamic namespace
         network_pairs = ",".join(
-            [f"{n['source']}:{n['target']}" for n in OPENSHIFT_NETWORK_PAIRS]
+            [
+                f"{test_namespace.namespace}/{n['source']}:{n['target'] if n['target'] == 'default' else test_namespace.namespace + '/' + n['target']}"
+                for n in OPENSHIFT_NETWORK_PAIRS
+            ]
         )
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in OPENSHIFT_STORAGE_PAIRS]
@@ -138,10 +144,19 @@ class TestOpenShiftPlanCreationWithPairs:
         selected_vm = OPENSHIFT_TEST_VMS[0]
         plan_name = f"test-plan-openshift-pod-pairs-{int(time.time())}"
 
-        # Use pod network for all networks
-        network_pairs = ",".join(
-            [f"{n['source']}:default" for n in OPENSHIFT_NETWORK_PAIRS]
+        # Use pod network for first network only, ignore the rest (complies with pod network uniqueness constraint)
+        network_pairs = (
+            f"{test_namespace.namespace}/{OPENSHIFT_NETWORK_PAIRS[0]['source']}:default"
         )
+        if len(OPENSHIFT_NETWORK_PAIRS) > 1:
+            # Map additional networks to ignored to comply with constraint requirements
+            ignored_pairs = ",".join(
+                [
+                    f"{test_namespace.namespace}/{n['source']}:ignored"
+                    for n in OPENSHIFT_NETWORK_PAIRS[1:]
+                ]
+            )
+            network_pairs = f"{network_pairs},{ignored_pairs}"
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in OPENSHIFT_STORAGE_PAIRS]
         )
@@ -181,7 +196,11 @@ class TestOpenShiftPlanCreationWithPairs:
         plan_name = f"test-plan-openshift-ns-pairs-{int(time.time())}"
 
         # Use namespace-qualified network targets
-        network_pairs = f"{NETWORK_ATTACHMENT_DEFINITIONS[0]}:{test_namespace.namespace}/{NETWORK_ATTACHMENT_DEFINITIONS[1]},{NETWORK_ATTACHMENT_DEFINITIONS[1]}:{test_namespace.namespace}/{NETWORK_ATTACHMENT_DEFINITIONS[0]}"
+        network_pairs = (
+            f"{NETWORK_ATTACHMENT_DEFINITIONS[0]}:{test_namespace.namespace}/"
+            f"{NETWORK_ATTACHMENT_DEFINITIONS[1]},{NETWORK_ATTACHMENT_DEFINITIONS[1]}:"
+            f"{test_namespace.namespace}/{NETWORK_ATTACHMENT_DEFINITIONS[0]}"
+        )
         storage_pairs = ",".join(
             [f"{s['source']}:{s['target']}" for s in OPENSHIFT_STORAGE_PAIRS]
         )

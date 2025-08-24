@@ -123,7 +123,7 @@ class TestESXiMappingCreation:
             network_map_name,
             f"--source {esxi_provider}",
             f"--target {TARGET_PROVIDER_NAME}",
-            "--network-pairs 'VM Network:default'",
+            "--network-pairs 'VM Network:default'",  # Single network to default is OK
         ]
 
         create_cmd = " ".join(cmd_parts)

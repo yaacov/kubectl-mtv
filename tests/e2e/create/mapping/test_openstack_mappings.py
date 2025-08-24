@@ -14,7 +14,11 @@ from e2e.utils import (
     generate_provider_name,
     get_or_create_provider,
 )
-from e2e.test_constants import TARGET_PROVIDER_NAME, OPENSTACK_NETWORKS, OPENSTACK_DATASTORES
+from e2e.test_constants import (
+    TARGET_PROVIDER_NAME,
+    OPENSTACK_NETWORKS,
+    OPENSTACK_DATASTORES,
+)
 
 
 @pytest.mark.create
@@ -139,7 +143,7 @@ class TestOpenStackMappingCreation:
             mapping_name,
             f"--source {openstack_provider}",
             f"--target {TARGET_PROVIDER_NAME}",
-            "--network-pairs 'provider_net_shared:default'",
+            "--network-pairs 'provider_net_shared:default'",  # Single network to default is OK
         ]
 
         create_cmd = " ".join(cmd_parts)

@@ -17,7 +17,8 @@ from e2e.utils import (
 from e2e.test_constants import TARGET_PROVIDER_NAME
 
 
-OPENSTACK_TEST_VMS = ["infra-mtv-node-207", "infra-mtv-node-18"]
+# Import VM names from centralized constants
+from ...test_constants import OPENSTACK_TEST_VMS
 
 
 @pytest.mark.create
@@ -66,13 +67,45 @@ class TestOpenStackPlanCreation:
         selected_vm = OPENSTACK_TEST_VMS[0]
         plan_name = f"test-plan-openstack-{int(time.time())}"
 
-        # Create plan command
+        # Import storage pairs and create storage mapping first to avoid unmapped storage
+        from e2e.test_constants import OPENSTACK_STORAGE_PAIRS
+
+        # Create storage mapping to ensure all VM storage is mapped
+        storage_mapping_name = f"test-storage-mapping-{plan_name}"
+        storage_pairs = ",".join(
+            [f"{s['source']}:{s['target']}" for s in OPENSTACK_STORAGE_PAIRS]
+        )
+
+        storage_cmd_parts = [
+            "create mapping storage",
+            storage_mapping_name,
+            f"--source {openstack_provider}",
+            f"--target {TARGET_PROVIDER_NAME}",
+            f"--storage-pairs '{storage_pairs}'",
+        ]
+
+        storage_cmd = " ".join(storage_cmd_parts)
+
+        # Create storage mapping
+        result = test_namespace.run_mtv_command(storage_cmd)
+        assert result.returncode == 0
+
+        # Track storage mapping for cleanup
+        test_namespace.track_resource("storagemap", storage_mapping_name)
+
+        # Wait for storage mapping to be ready
+        from e2e.utils import wait_for_storage_mapping_ready
+
+        wait_for_storage_mapping_ready(test_namespace, storage_mapping_name)
+
+        # Create plan command with storage mapping
         cmd_parts = [
             "create plan",
             plan_name,
             f"--source {openstack_provider}",
             f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vm}'",
+            f"--storage-mapping {storage_mapping_name}",
         ]
 
         create_cmd = " ".join(cmd_parts)
@@ -94,13 +127,46 @@ class TestOpenStackPlanCreation:
         # Use first 3 VMs for multi-VM test as comma-separated string
         selected_vms = ",".join(OPENSTACK_TEST_VMS[:3])
         plan_name = f"test-multi-plan-openstack-{int(time.time())}"
-        # Create plan command with multiple VMs
+
+        # Import storage pairs and create storage mapping first
+        from e2e.test_constants import OPENSTACK_STORAGE_PAIRS
+
+        # Create storage mapping to ensure all VM storage is mapped
+        storage_mapping_name = f"test-storage-mapping-{plan_name}"
+        storage_pairs = ",".join(
+            [f"{s['source']}:{s['target']}" for s in OPENSTACK_STORAGE_PAIRS]
+        )
+
+        storage_cmd_parts = [
+            "create mapping storage",
+            storage_mapping_name,
+            f"--source {openstack_provider}",
+            f"--target {TARGET_PROVIDER_NAME}",
+            f"--storage-pairs '{storage_pairs}'",
+        ]
+
+        storage_cmd = " ".join(storage_cmd_parts)
+
+        # Create storage mapping
+        result = test_namespace.run_mtv_command(storage_cmd)
+        assert result.returncode == 0
+
+        # Track storage mapping for cleanup
+        test_namespace.track_resource("storagemap", storage_mapping_name)
+
+        # Wait for storage mapping to be ready
+        from e2e.utils import wait_for_storage_mapping_ready
+
+        wait_for_storage_mapping_ready(test_namespace, storage_mapping_name)
+
+        # Create plan command with multiple VMs and the storage mapping
         cmd_parts = [
             "create plan",
             plan_name,
             f"--source {openstack_provider}",
             f"--target {TARGET_PROVIDER_NAME}",
             f"--vms '{selected_vms}'",
+            f"--storage-mapping {storage_mapping_name}",
         ]
 
         create_cmd = " ".join(cmd_parts)
