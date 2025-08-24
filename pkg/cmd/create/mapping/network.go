@@ -76,7 +76,8 @@ func parseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericcli
 		if targetName != "" {
 			destinationNetwork.Name = targetName
 		}
-		if targetNamespace != "" {
+		// Only set namespace if it's different from the default namespace (plan namespace)
+		if targetNamespace != "" && targetNamespace != defaultNamespace {
 			destinationNetwork.Namespace = targetNamespace
 		}
 

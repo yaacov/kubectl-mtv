@@ -64,19 +64,24 @@ func parseDefaultNetwork(defaultTargetNetwork, namespace string) forkliftv1beta1
 
 	// Handle "namespace/name" format for multus networks
 	if parts := strings.Split(defaultTargetNetwork, "/"); len(parts) == 2 {
-		return forkliftv1beta1.DestinationNetwork{
-			Type:      "multus",
-			Name:      parts[1],
-			Namespace: parts[0],
+		destNetwork := forkliftv1beta1.DestinationNetwork{
+			Type: "multus",
+			Name: parts[1],
 		}
+		// Only set namespace if it's not empty and different from the plan namespace
+		if parts[0] != "" && parts[0] != namespace {
+			destNetwork.Namespace = parts[0]
+		}
+		return destNetwork
 	}
 
-	// Just a name, use the provided namespace
-	return forkliftv1beta1.DestinationNetwork{
-		Type:      "multus",
-		Name:      defaultTargetNetwork,
-		Namespace: namespace,
+	// Just a name, use the provided namespace (but only if not the same as plan namespace)
+	destNetwork := forkliftv1beta1.DestinationNetwork{
+		Type: "multus",
+		Name: defaultTargetNetwork,
 	}
+	// Since we're using the provided namespace and it's the same as plan namespace, don't set it
+	return destNetwork
 }
 
 // findDefaultTargetNetwork finds the default target network:
