@@ -206,15 +206,17 @@ func (f *OpenShiftNetworkFetcher) FetchTargetNetworks(configFlags *genericcliopt
 		}
 
 		// For OpenShift targets, create Multus network reference
-		// Only include namespace if it's different from the current namespace (plan namespace)
+		// Always set namespace, use plan namespace if empty
 		klog.V(4).Infof("Creating multus network reference for: %s/%s", networkNamespace, networkName)
 		destNetwork := forkliftv1beta1.DestinationNetwork{
 			Type: "multus",
 			Name: networkName,
 		}
-		// Only set namespace if it's not empty and different from the current namespace (plan namespace)
-		if networkNamespace != "" && networkNamespace != namespace {
+		// Always set namespace, use plan namespace if empty
+		if networkNamespace != "" {
 			destNetwork.Namespace = networkNamespace
+		} else {
+			destNetwork.Namespace = namespace
 		}
 		targetNetworks = append(targetNetworks, destNetwork)
 	}

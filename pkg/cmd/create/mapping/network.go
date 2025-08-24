@@ -76,9 +76,13 @@ func parseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericcli
 		if targetName != "" {
 			destinationNetwork.Name = targetName
 		}
-		// Only set namespace if it's different from the default namespace (plan namespace)
-		if targetNamespace != "" && targetNamespace != defaultNamespace {
-			destinationNetwork.Namespace = targetNamespace
+		// Always set namespace for multus networks, use plan namespace if empty
+		if targetType == "multus" {
+			if targetNamespace != "" {
+				destinationNetwork.Namespace = targetNamespace
+			} else {
+				destinationNetwork.Namespace = defaultNamespace
+			}
 		}
 
 		// Create a pair for each matching source network resource
