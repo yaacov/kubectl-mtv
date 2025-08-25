@@ -2,6 +2,11 @@
 
 Model Context Protocol (MCP) servers that provide AI assistants with tools to interact with Migration Toolkit for Virtualization (MTV) through kubectl-mtv commands.
 
+mtv-mcp-ocp.png
+<p align="center">
+  <img src="mtv-mcp-ocp.png" alt="AI generated mtv mcp ocp ilustration" width="300">
+</p>
+
 ## What it does
 
 These MCP servers enable AI assistants to help with MTV operations by providing:
