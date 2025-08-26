@@ -58,7 +58,7 @@ kubectl-mtv patch plan my-migration-plan \
 
 # Enable compatibility mode
 kubectl-mtv patch plan legacy-systems \
-  --use-compatibility-mode=true \
+  --use-compatibility-mode \
   --install-legacy-drivers=true
 ```
 
@@ -116,20 +116,20 @@ kubectl-mtv patch plan production-migration \
 
 # Configure vSphere-specific settings
 kubectl-mtv patch plan vsphere-migration \
-  --preserve-static-ips=true \
-  --preserve-cluster-cpu-model=true
+  --preserve-static-ips \
+  --preserve-cluster-cpu-model
 
 # Configure oVirt-specific settings  
 kubectl-mtv patch plan ovirt-migration \
-  --preserve-cluster-cpu-model=true \
+  --preserve-cluster-cpu-model \
   --migrate-shared-disks=false
 
 # Set plan metadata and behavior
 kubectl-mtv patch plan legacy-app-migration \
   --description "Legacy application migration - batch 2" \
-  --skip-guest-conversion=true \
-  --use-compatibility-mode=true \
-  --delete-guest-conversion-pod=true
+  --skip-guest-conversion \
+  --use-compatibility-mode \
+  --delete-guest-conversion-pod
 ```
 
 #### Configure PVC and Storage Settings
@@ -142,13 +142,13 @@ kubectl-mtv patch plan storage-migration \
 
 # Archive completed plans
 kubectl-mtv patch plan completed-migration \
-  --archived=true \
+  --archived \
   --description "Completed migration - archived for records"
 
 # Configure power management and failure handling
 kubectl-mtv patch plan production-migration \
   --target-power-state on \
-  --delete-vm-on-fail-migration=true \
+  --delete-vm-on-fail-migration \
   --description "Production migration with automatic cleanup on failure"
 ```
 
@@ -468,6 +468,11 @@ kubectl-mtv patch planvm active-migration problematic-vm \
 kubectl-mtv patch plan next-batch \
   --target-labels "env=production,migration-batch=2,validated=true" \
   --use-compatibility-mode=false
+
+# Disable compatibility mode for modern VMs that don't need it
+kubectl-mtv patch plan modern-migration \
+  --use-compatibility-mode=false \
+  --description "Modern VMs with native drivers"
 ```
 
 ## Troubleshooting

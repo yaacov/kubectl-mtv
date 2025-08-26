@@ -174,7 +174,7 @@ kubectl mtv patch provider openshift-provider \
 # Update VDDK settings for vSphere
 kubectl mtv patch provider vsphere-provider \
   --vddk-init-image registry.example.com/vddk:v8.0.2 \
-  --use-vddk-aio-optimization=true
+  --use-vddk-aio-optimization
 
 # Update OpenStack credentials
 kubectl mtv patch provider openstack-provider \
@@ -206,7 +206,11 @@ Update migration plan configuration without changing providers, mappings, or VMs
 kubectl mtv patch plan my-migration-plan \
   --migration-type warm \
   --target-namespace production \
-  --use-compatibility-mode=true
+  --use-compatibility-mode
+
+# Disable compatibility mode for modern VMs with native drivers
+kubectl mtv patch plan modern-migration \
+  --use-compatibility-mode=false
 
 # Configure transfer network (supports namespace/name syntax)
 kubectl mtv patch plan my-plan \
@@ -229,7 +233,7 @@ kubectl mtv patch plan my-plan \
 kubectl mtv patch plan production-plan \
   --description "Production migration batch 1" \
   --pvc-name-template "prod-{{.VmName}}-disk{{.DiskIndex}}" \
-  --preserve-static-ips=true
+  --preserve-static-ips
 ```
 
 #### Patch Individual VMs
