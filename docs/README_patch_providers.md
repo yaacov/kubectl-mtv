@@ -89,7 +89,7 @@ kubectl-mtv patch provider openstack-provider \
 # Update vSphere provider VDDK configuration
 kubectl-mtv patch provider vsphere-provider \
   --vddk-init-image registry.example.com/vddk:v8.0.2 \
-  --use-vddk-aio-optimization=true
+  --use-vddk-aio-optimization
 
 # Update VDDK buffer settings for performance tuning
 kubectl-mtv patch provider vsphere-provider \
@@ -106,7 +106,7 @@ kubectl-mtv patch provider vsphere-provider \
   --username newadmin@vsphere.local \
   --password newpassword \
   --vddk-init-image registry.example.com/vddk:latest \
-  --use-vddk-aio-optimization=true
+  --use-vddk-aio-optimization
 ```
 
 ## Secret Ownership and Security
@@ -198,7 +198,7 @@ The patch command respects the same environment variables as create:
 ```bash
 # Set default VDDK init image
 export MTV_VDDK_INIT_IMAGE=registry.example.com/vddk:v8.0.2
-kubectl-mtv patch provider vsphere-provider --use-vddk-aio-optimization=true
+kubectl-mtv patch provider vsphere-provider --use-vddk-aio-optimization
 ```
 
 ## Best Practices

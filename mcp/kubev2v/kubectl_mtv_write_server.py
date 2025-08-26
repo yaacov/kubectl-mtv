@@ -91,6 +91,22 @@ async def run_kubectl_mtv_command(args: list[str]) -> str:
         return json.dumps(response, indent=2)
 
 
+def _add_boolean_flag(args: list[str], flag_name: str, value: bool | None) -> None:
+    """Helper method to handle boolean fields with None/True/False state.
+    
+    Args:
+        args: The command arguments list to modify
+        flag_name: The flag name (without dashes, e.g., 'insecure-skip-tls')
+        value: The boolean value (None, True, or False)
+    """
+    if value is not None:
+        # User explicitly set the boolean value
+        if value:
+            args.append(f"--{flag_name}")
+        else:
+            args.append(f"--{flag_name}=false")
+
+
 # Sub-action methods for plan lifecycle
 async def _start_plan(plan_name: str, namespace: str, cutover: str) -> str:
     """Start plan implementation."""
@@ -216,12 +232,14 @@ async def ManagePlanLifecycle(
         # Perform cutover
         ManagePlanLifecycle("cutover", "production-migration")
 
-        # Note: To archive/unarchive plans, use PatchPlan:
-        # PatchPlan("production-migration", archived=True)   # Archive
-        # PatchPlan("production-migration", archived=False)  # Unarchive
+        # Archive plan
+        ManagePlanLifecycle("archive", "production-migration")
+
+        # Unarchive plan
+        ManagePlanLifecycle("unarchive", "production-migration")
     """
     # Validate action
-    valid_actions = ["start", "cancel", "cutover"]
+    valid_actions = ["start", "cancel", "cutover", "archive", "unarchive"]
     if action not in valid_actions:
         raise KubectlMTVError(
             f"Invalid action '{action}'. Valid actions: {', '.join(valid_actions)}"
@@ -238,6 +256,10 @@ async def ManagePlanLifecycle(
         return await _cancel_plan(plan_name, namespace, vms)
     elif action == "cutover":
         return await _cutover_plan(plan_name, namespace)
+    elif action == "archive":
+        return await _archive_plan(plan_name, namespace)
+    elif action == "unarchive":
+        return await _unarchive_plan(plan_name, namespace)
 
 
 # Resource Creation Operations
@@ -251,11 +273,11 @@ async def CreateProvider(
     username: str = "",
     password: str = "",
     cacert: str = "",
-    insecure_skip_tls: bool = False,
+    insecure_skip_tls: bool | None = None,
     token: str = "",
     vddk_init_image: str = "",
     sdk_endpoint: str = "",
-    use_vddk_aio_optimization: bool = False,
+    use_vddk_aio_optimization: bool | None = None,
     vddk_buf_size_in_64k: int = 0,
     vddk_buf_count: int = 0,
     provider_domain_name: str = "",
@@ -343,8 +365,7 @@ async def CreateProvider(
         args.extend(["--password", password])
     if cacert:
         args.extend(["--cacert", cacert])
-    if insecure_skip_tls:
-        args.append("--provider-insecure-skip-tls")
+    _add_boolean_flag(args, "provider-insecure-skip-tls", insecure_skip_tls)
     if token:
         args.extend(["--token", token])
 
@@ -353,8 +374,7 @@ async def CreateProvider(
         args.extend(["--vddk-init-image", vddk_init_image])
     if sdk_endpoint:
         args.extend(["--sdk-endpoint", sdk_endpoint])
-    if use_vddk_aio_optimization:
-        args.append("--use-vddk-aio-optimization")
+    _add_boolean_flag(args, "use-vddk-aio-optimization", use_vddk_aio_optimization)
     if vddk_buf_size_in_64k > 0:
         args.extend(["--vddk-buf-size-in-64k", str(vddk_buf_size_in_64k)])
     if vddk_buf_count > 0:
@@ -739,25 +759,25 @@ async def CreatePlan(
     description: str = "",
     target_namespace: str = "",
     transfer_network: str = "",
-    preserve_cluster_cpu_model: bool = False,
-    preserve_static_ips: bool = False,
+    preserve_cluster_cpu_model: bool | None = None,
+    preserve_static_ips: bool | None = None,
     pvc_name_template: str = "",
     volume_name_template: str = "",
     network_name_template: str = "",
-    migrate_shared_disks: bool = True,
-    archived: bool = False,
-    pvc_name_template_use_generate_name: bool = True,
-    delete_guest_conversion_pod: bool = False,
-    delete_vm_on_fail_migration: bool = False,
-    skip_guest_conversion: bool = False,
+    migrate_shared_disks: bool | None = None,
+    archived: bool | None = None,
+    pvc_name_template_use_generate_name: bool | None = None,
+    delete_guest_conversion_pod: bool | None = None,
+    delete_vm_on_fail_migration: bool | None = None,
+    skip_guest_conversion: bool | None = None,
     install_legacy_drivers: str = "",
     migration_type: str = "",
     default_target_network: str = "",
     default_target_storage_class: str = "",
-    use_compatibility_mode: bool = True,
+    use_compatibility_mode: bool | None = None,
     target_labels: str = "",
     target_node_selector: str = "",
-    warm: bool = False,
+    warm: bool | None = None,
     target_affinity: str = "",
     target_power_state: str = "",
     inventory_url: str = "",
@@ -1076,28 +1096,20 @@ async def CreatePlan(
         args.extend(["--target-namespace", target_namespace])
     if transfer_network:
         args.extend(["--transfer-network", transfer_network])
-    if preserve_cluster_cpu_model:
-        args.append("--preserve-cluster-cpu-model")
-    if preserve_static_ips:
-        args.append("--preserve-static-ips")
+    _add_boolean_flag(args, "preserve-cluster-cpu-model", preserve_cluster_cpu_model)
+    _add_boolean_flag(args, "preserve-static-ips", preserve_static_ips)
     if pvc_name_template:
         args.extend(["--pvc-name-template", pvc_name_template])
     if volume_name_template:
         args.extend(["--volume-name-template", volume_name_template])
     if network_name_template:
         args.extend(["--network-name-template", network_name_template])
-    if not migrate_shared_disks:
-        args.append("--migrate-shared-disks=false")
-    if archived:
-        args.append("--archived")
-    if not pvc_name_template_use_generate_name:
-        args.append("--pvc-name-template-use-generate-name=false")
-    if delete_guest_conversion_pod:
-        args.append("--delete-guest-conversion-pod")
-    if delete_vm_on_fail_migration:
-        args.append("--delete-vm-on-fail-migration")
-    if skip_guest_conversion:
-        args.append("--skip-guest-conversion")
+    _add_boolean_flag(args, "migrate-shared-disks", migrate_shared_disks)
+    _add_boolean_flag(args, "archived", archived)
+    _add_boolean_flag(args, "pvc-name-template-use-generate-name", pvc_name_template_use_generate_name)
+    _add_boolean_flag(args, "delete-guest-conversion-pod", delete_guest_conversion_pod)
+    _add_boolean_flag(args, "delete-vm-on-fail-migration", delete_vm_on_fail_migration)
+    _add_boolean_flag(args, "skip-guest-conversion", skip_guest_conversion)
     if install_legacy_drivers:
         args.extend(["--install-legacy-drivers", install_legacy_drivers])
     if migration_type:
@@ -1106,14 +1118,13 @@ async def CreatePlan(
         args.extend(["--default-target-network", default_target_network])
     if default_target_storage_class:
         args.extend(["--default-target-storage-class", default_target_storage_class])
-    if not use_compatibility_mode:
-        args.append("--use-compatibility-mode=false")
+    _add_boolean_flag(args, "use-compatibility-mode", use_compatibility_mode)
     if target_labels:
         args.extend(["--target-labels", target_labels])
     if target_node_selector:
         args.extend(["--target-node-selector", target_node_selector])
-    if warm:
-        args.append("--warm")
+    if not migration_type:
+        _add_boolean_flag(args, "warm", warm)
     if target_affinity:
         args.extend(["--target-affinity", target_affinity])
     if target_power_state:
@@ -1134,7 +1145,7 @@ async def CreateHost(
     existing_secret: str = "",
     ip_address: str = "",
     network_adapter: str = "",
-    host_insecure_skip_tls: bool = False,
+    host_insecure_skip_tls: bool | None = None,
     cacert: str = "",
     inventory_url: str = "",
 ) -> str:
@@ -1202,8 +1213,7 @@ async def CreateHost(
         args.extend(["--ip-address", ip_address])
     if network_adapter:
         args.extend(["--network-adapter", network_adapter])
-    if host_insecure_skip_tls:
-        args.append("--host-insecure-skip-tls")
+    _add_boolean_flag(args, "host-insecure-skip-tls", host_insecure_skip_tls)
     if cacert:
         args.extend(["--cacert", cacert])
     if inventory_url:
@@ -1462,10 +1472,10 @@ async def PatchProvider(
     username: str = "",
     password: str = "",
     cacert: str = "",
-    insecure_skip_tls: bool = None,
+    insecure_skip_tls: bool | None = None,
     token: str = "",
     vddk_init_image: str = "",
-    use_vddk_aio_optimization: bool = None,
+    use_vddk_aio_optimization: bool | None = None,
     vddk_buf_size_in_64k: int = 0,
     vddk_buf_count: int = 0,
     provider_domain_name: str = "",
@@ -1542,18 +1552,12 @@ async def PatchProvider(
         args.extend(["--token", token])
 
     # Add security parameters (only if explicitly set)
-    if insecure_skip_tls is not None:
-        if insecure_skip_tls:
-            args.append("--provider-insecure-skip-tls")
-        # Note: There's no --provider-insecure-skip-tls=false flag, omitting sets to false
+    _add_boolean_flag(args, "provider-insecure-skip-tls", insecure_skip_tls)
 
     # vSphere-specific parameters
     if vddk_init_image:
         args.extend(["--vddk-init-image", vddk_init_image])
-    if use_vddk_aio_optimization is not None:
-        if use_vddk_aio_optimization:
-            args.append("--use-vddk-aio-optimization")
-        # Note: There's no --use-vddk-aio-optimization=false flag, omitting sets to false
+    _add_boolean_flag(args, "use-vddk-aio-optimization", use_vddk_aio_optimization)
     if vddk_buf_size_in_64k > 0:
         args.extend(["--vddk-buf-size-in-64k", str(vddk_buf_size_in_64k)])
     if vddk_buf_count > 0:
@@ -1579,23 +1583,23 @@ async def PatchPlan(
     migration_type: str = "",
     target_labels: str = "",
     target_node_selector: str = "",
-    use_compatibility_mode: bool = None,
+    use_compatibility_mode: bool | None = None,
     target_affinity: str = "",
     target_namespace: str = "",
     target_power_state: str = "",
     description: str = "",
-    preserve_cluster_cpu_model: bool = None,
-    preserve_static_ips: bool = None,
+    preserve_cluster_cpu_model: bool | None = None,
+    preserve_static_ips: bool | None = None,
     pvc_name_template: str = "",
     volume_name_template: str = "",
     network_name_template: str = "",
-    migrate_shared_disks: bool = None,
-    archived: bool = None,
-    pvc_name_template_use_generate_name: bool = None,
-    delete_guest_conversion_pod: bool = None,
-    delete_vm_on_fail_migration: bool = None,
-    skip_guest_conversion: bool = None,
-    warm: bool = None,
+    migrate_shared_disks: bool | None = None,
+    archived: bool | None = None,
+    pvc_name_template_use_generate_name: bool | None = None,
+    delete_guest_conversion_pod: bool | None = None,
+    delete_vm_on_fail_migration: bool | None = None,
+    skip_guest_conversion: bool | None = None,
+    warm: bool | None = None,
 ) -> str:
     """Patch/modify various fields of an existing migration plan without modifying its VMs.
 
@@ -1713,37 +1717,17 @@ async def PatchPlan(
         args.extend(["--network-name-template", network_name_template])
 
     # Add boolean parameters only if explicitly set (not None)
-    if use_compatibility_mode is not None:
-        args.extend(["--use-compatibility-mode", str(use_compatibility_mode).lower()])
-    if preserve_cluster_cpu_model is not None:
-        args.extend(
-            ["--preserve-cluster-cpu-model", str(preserve_cluster_cpu_model).lower()]
-        )
-    if preserve_static_ips is not None:
-        args.extend(["--preserve-static-ips", str(preserve_static_ips).lower()])
-    if migrate_shared_disks is not None:
-        args.extend(["--migrate-shared-disks", str(migrate_shared_disks).lower()])
-    if archived is not None:
-        args.extend(["--archived", str(archived).lower()])
-    if pvc_name_template_use_generate_name is not None:
-        args.extend(
-            [
-                "--pvc-name-template-use-generate-name",
-                str(pvc_name_template_use_generate_name).lower(),
-            ]
-        )
-    if delete_guest_conversion_pod is not None:
-        args.extend(
-            ["--delete-guest-conversion-pod", str(delete_guest_conversion_pod).lower()]
-        )
-    if delete_vm_on_fail_migration is not None:
-        args.extend(
-            ["--delete-vm-on-fail-migration", str(delete_vm_on_fail_migration).lower()]
-        )
-    if skip_guest_conversion is not None:
-        args.extend(["--skip-guest-conversion", str(skip_guest_conversion).lower()])
-    if warm is not None:
-        args.extend(["--warm", str(warm).lower()])
+    _add_boolean_flag(args, "use-compatibility-mode", use_compatibility_mode)
+    _add_boolean_flag(args, "preserve-cluster-cpu-model", preserve_cluster_cpu_model)
+    _add_boolean_flag(args, "preserve-static-ips", preserve_static_ips)
+    _add_boolean_flag(args, "migrate-shared-disks", migrate_shared_disks)
+    _add_boolean_flag(args, "archived", archived)
+    _add_boolean_flag(args, "pvc-name-template-use-generate-name", pvc_name_template_use_generate_name)
+    _add_boolean_flag(args, "delete-guest-conversion-pod", delete_guest_conversion_pod)
+    _add_boolean_flag(args, "delete-vm-on-fail-migration", delete_vm_on_fail_migration)
+    _add_boolean_flag(args, "skip-guest-conversion", skip_guest_conversion)
+    if not migration_type:
+        _add_boolean_flag(args, "warm", warm)
 
     return await run_kubectl_mtv_command(args)
 
@@ -1765,7 +1749,7 @@ async def PatchPlanVm(
     add_post_hook: str = "",
     remove_hook: str = "",
     clear_hooks: bool = False,
-    delete_vm_on_fail_migration: bool = None,
+    delete_vm_on_fail_migration: bool | None = None,
 ) -> str:
     """Patch VM-specific fields for a VM within a migration plan's VM list.
 
@@ -1895,10 +1879,7 @@ async def PatchPlanVm(
         args.extend(["--target-power-state", target_power_state])
 
     # VM-level options
-    if delete_vm_on_fail_migration is not None:
-        args.extend(
-            ["--delete-vm-on-fail-migration", str(delete_vm_on_fail_migration).lower()]
-        )
+    _add_boolean_flag(args, "delete-vm-on-fail-migration", delete_vm_on_fail_migration)
 
     # Hook management
     if add_pre_hook:
