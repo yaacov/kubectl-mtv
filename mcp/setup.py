@@ -17,8 +17,8 @@ setup(
     python_requires=">=3.10",
     entry_points={
         "console_scripts": [
-            "kubectl-mtv-mcp=kubev2v.kubectl_mtv_server:mcp.run",
-            "kubectl-mtv-write-mcp=kubev2v.kubectl_mtv_write_server:mcp.run",
+            "kubectl-mtv-mcp=kubev2v.kubectl_mtv_server:main",
+            "kubectl-mtv-write-mcp=kubev2v.kubectl_mtv_write_server:main",
         ],
     },
     classifiers=[

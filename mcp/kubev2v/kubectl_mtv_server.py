@@ -43,6 +43,7 @@ import os
 import subprocess
 import json
 import shlex
+import argparse
 from typing import Any
 
 from fastmcp import FastMCP
@@ -62,11 +63,27 @@ def get_package_version():
         return "dev-version"
 
 
-# Initialize the FastMCP server
-mcp = FastMCP(
-    name="kubectl-mtv",
-    version=get_package_version(),
-)
+# MCP server instance (will be initialized in create_mcp_server)
+mcp = None
+
+
+def create_mcp_server(name: str = "kubectl-mtv", version: str = None, **config_kwargs) -> FastMCP:
+    """Create and configure the FastMCP server."""
+    if version is None:
+        version = get_package_version()
+    
+    # Create the server with provided configuration
+    server = FastMCP(
+        name=name,
+        version=version,
+        **config_kwargs
+    )
+    
+    return server
+
+
+# Initialize the default MCP server
+mcp = create_mcp_server()
 
 
 class KubectlMTVError(Exception):
@@ -1053,6 +1070,76 @@ def print_startup_banner():
     )
 
 
+def parse_args():
+    """Parse command-line arguments for MCP server configuration."""
+    parser = argparse.ArgumentParser(
+        description="kubectl-mtv MCP Server (Read-Only Operations)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                          # Run with default stdio transport
+  %(prog)s --transport sse           # Run with SSE transport on default port 8080
+  %(prog)s --transport sse --port 9000  # Run with SSE transport on custom port
+  %(prog)s --listen 0.0.0.0 --port 3000 # Listen on all interfaces, port 3000
+        """,
+    )
+    
+    parser.add_argument(
+        "--transport",
+        type=str,
+        choices=["stdio", "sse"],
+        default="stdio",
+        help="MCP transport type (default: stdio)",
+    )
+    
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Port to listen on (default: 8080)",
+    )
+    
+    parser.add_argument(
+        "--listen",
+        "--host",
+        type=str,
+        default="localhost",
+        help="Host/address to listen on (default: localhost)",
+    )
+    
+    parser.add_argument(
+        "--no-banner",
+        action="store_false",
+        dest="show_banner",
+        default=True,
+        help="Hide startup banner (default: show banner)",
+    )
+    
+    return parser.parse_args()
+
+
+def main():
+    """Main function that can be called with configuration options."""
+    args = parse_args()
+    
+    # Show banner if requested
+    if args.show_banner:
+        print_startup_banner()
+    
+    # No validation needed since port has a default value now
+    
+    # Prepare MCP run configuration
+    run_config = {}
+    
+    if args.transport == "sse":
+        run_config["transport"] = "sse"
+        run_config["port"] = args.port
+        run_config["host"] = args.listen
+    # stdio is the default, no additional config needed
+    
+    # Run the server with configuration
+    mcp.run(**run_config)
+
+
 if __name__ == "__main__":
-    print_startup_banner()
-    mcp.run()
+    main()
