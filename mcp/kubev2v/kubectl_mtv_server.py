@@ -49,8 +49,25 @@ from fastmcp import FastMCP
 # Get the directory containing this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Initialize the FastMCP server
-mcp = FastMCP("kubectl-mtv")
+def get_package_version():
+    """Get version from installed package metadata."""
+    try:
+        from importlib import metadata
+        return metadata.version("mtv-mcp")
+    except Exception:
+        # Fallback if package metadata unavailable
+        return "dev-version"
+
+# Initialize the FastMCP server with version and project information
+mcp = FastMCP(
+    name="kubectl-mtv",
+    version=get_package_version(),
+    description="MCP Server for kubectl-mtv - Migration Toolkit for Virtualization",
+    author="kubectl-mtv MCP Server",
+    license="Apache-2.0",
+    homepage="https://github.com/yaacov/kubectl-mtv",
+    issues="https://github.com/yaacov/kubectl-mtv/issues",
+)
 
 
 class KubectlMTVError(Exception):
