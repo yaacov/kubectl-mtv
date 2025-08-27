@@ -61,15 +61,10 @@ def get_package_version():
         # Fallback if package metadata unavailable
         return "dev-version"
 
-# Initialize the FastMCP server with version and project information
+# Initialize the FastMCP server
 mcp = FastMCP(
     name="kubectl-mtv-write",
     version=get_package_version(),
-    description="MCP Write Server for kubectl-mtv - Migration Toolkit for Virtualization",
-    author="kubectl-mtv MCP Server",
-    license="Apache-2.0",
-    homepage="https://github.com/yaacov/kubectl-mtv",
-    issues="https://github.com/yaacov/kubectl-mtv/issues",
 )
 
 
@@ -1924,5 +1919,31 @@ async def PatchPlanVm(
     return await run_kubectl_mtv_command(args)
 
 
+def print_startup_banner():
+    """Print a colorful startup banner with server information."""
+    version = get_package_version()
+
+    # ANSI color codes
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    CYAN = "\033[96m"
+    RED = "\033[91m"
+    LIGHT_GRAY = "\033[37m"
+    BOLD = "\033[1m"
+    RESET = "\033[0m"
+
+    print(f"""
+{BLUE}{'='*60}{RESET}
+{BOLD}{GREEN}🚀 kubectl-mtv Write MCP Server{RESET}
+{BLUE}{'='*60}{RESET}
+
+{CYAN}📦 Server:{RESET}      {LIGHT_GRAY}kubectl-mtv-write (read/write operations){RESET}
+{CYAN}🏷️  Version:{RESET}     {LIGHT_GRAY}{version}{RESET}
+{CYAN}🌐 Homepage:{RESET}    {LIGHT_GRAY}https://github.com/yaacov/kubectl-mtv{RESET}
+{CYAN}📋 Description:{RESET} {LIGHT_GRAY}MCP Write Server for Migration Toolkit for Virtualization{RESET}
+{RED}⚠️  Warning:{RESET}     {LIGHT_GRAY}This server can modify your cluster resources!{RESET}
+""")
+
 if __name__ == "__main__":
+    print_startup_banner()
     mcp.run()
