@@ -23,7 +23,7 @@ Let the user edit the plan if needed.
 Tool Categories:
 - Provider Management: list_providers
 - Migration Planning: list_plans, list_mappings, list_hosts, list_hooks, get_plan_vms
-- Inventory Discovery: list_inventory_* tools for exploring source environments
+- Inventory Discovery: list_inventory_* tools for exploring source environments (includes provider inventory via ListInventory("provider"))
 - Version Information: get_version for deployment details
 - Debugging: get_logs for troubleshooting MTV controller and importer pod issues
 - Storage Debugging: get_migration_pvcs, get_migration_datavolumes, get_migration_storage for tracking VM migration storage with detailed diagnostics
@@ -31,6 +31,7 @@ Tool Categories:
 Integration with Write Tools:
 Use these read tools to discover and prepare data, then use write tools to create/modify resources:
 - ListInventory("vm", "provider", output_format="planvms") output can be used directly with create_plan(vms="@file.yaml")
+- ListInventory("provider") helps identify available providers and their resource counts before creating plans
 - get_plan_vms() shows migration status for troubleshooting with cancel_plan()
 - list_inventory_networks/storage() help identify mappings for create_*_mapping() tools
 - Network mappings require: all sources mapped, no duplicate pod/multus targets, use 'ignored' for unmappable networks
@@ -49,14 +50,17 @@ from fastmcp import FastMCP
 # Get the directory containing this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
 def get_package_version():
     """Get version from installed package metadata."""
     try:
         from importlib import metadata
+
         return metadata.version("mtv-mcp")
     except Exception:
         # Fallback if package metadata unavailable
         return "dev-version"
+
 
 # Initialize the FastMCP server
 mcp = FastMCP(
@@ -73,10 +77,10 @@ class KubectlMTVError(Exception):
 
 def _format_shell_command(cmd: list[str]) -> str:
     """Format a command list as a properly quoted shell command string.
-    
+
     Args:
         cmd: List of command arguments
-    
+
     Returns:
         Properly shell-quoted command string suitable for copy-paste
     """
@@ -242,9 +246,20 @@ async def _list_inventory_generic(arguments: dict[str, Any]) -> str:
     """List any inventory resource type from a provider."""
     resource_type = arguments["resource_type"]
     provider_name = arguments["provider_name"]
-    args = ["get", "inventory", resource_type, provider_name]
 
-    if "namespace" in arguments and arguments["namespace"]:
+    # Special handling for provider resource type
+    if resource_type == "provider":
+        args = ["get", "inventory", "provider"]
+        # For provider resource type, provider_name is optional
+        if provider_name:
+            args.append(provider_name)
+    else:
+        # Normal resource types require provider_name
+        args = ["get", "inventory", resource_type, provider_name]
+
+    if "all_namespaces" in arguments and arguments["all_namespaces"]:
+        args.extend(["-A"])
+    elif "namespace" in arguments and arguments["namespace"]:
         args.extend(["-n", arguments["namespace"]])
 
     if "query" in arguments and arguments["query"]:
@@ -366,8 +381,9 @@ async def ListResources(
 @mcp.tool()
 async def ListInventory(
     resource_type: str,
-    provider_name: str,
+    provider_name: str = "",
     namespace: str = "",
+    all_namespaces: bool = False,
     query: str = "",
     output_format: str = "json",
     inventory_url: str = "",
@@ -383,6 +399,13 @@ async def ListInventory(
     OpenStack: vm, network, storage, flavor, image, instance, project, subnet, port, volumetype
     OpenShift: vm, network, storage, namespace, pvc, data-volume
     OVA: vm, network, storage
+
+    SPECIAL RESOURCE TYPES:
+    provider: Get provider inventory information including status, resource counts, and full CRD objects
+             - provider_name is optional (omit to get all providers)
+             - Includes: vmCount, hostCount, datastoreCount, networkCount, clusterCount, datacenterCount
+             - Contains full provider CRD object with status conditions and configuration
+             - Supports all standard TSL queries for filtering and selection
 
     QUERY SYNTAX:
     All inventory tools support SQL-like queries with Tree Search Language (TSL):
@@ -449,6 +472,13 @@ async def ListInventory(
     - "WHERE object.status.phase = 'Bound'"
     - "SELECT name, namespace, object.spec.storageClassName, object.status.capacity.storage ORDER BY name"
 
+    Providers (Special):
+    - "WHERE name ~= 'chho'" - Find providers with names matching regex pattern
+    - "WHERE object.status.phase = 'Ready' AND vmCount > 0" - Ready providers with VMs
+    - "SELECT name, type, object.status.phase, vmCount, hostCount ORDER BY vmCount DESC" - Provider overview sorted by VM count
+    - "WHERE type = 'vsphere' AND vmCount > 10" - vSphere providers with more than 10 VMs
+    - "SELECT name, type, apiVersion, product, vmCount, datastoreCount, networkCount WHERE type = 'vsphere'" - vSphere provider details
+
     Output Formats:
     - 'json': Full inventory data with all fields (default)
     - 'planvms': Plan-compatible VM structures for use with create_plan(vms="@file.yaml")
@@ -460,20 +490,38 @@ async def ListInventory(
 
     Args:
         resource_type: Type of inventory resource to list
-        provider_name: Name of the provider to query
+        provider_name: Name of the provider to query (required for most resource types, optional for 'provider' type)
         namespace: Kubernetes namespace containing the provider (optional)
+        all_namespaces: Search across all namespaces (optional, only applicable for 'provider' resource type)
         query: Optional filter query using SQL-like syntax with WHERE/SELECT/ORDER BY/LIMIT
         output_format: Output format - 'json' for full data or 'planvms' for plan-compatible VM structures (default 'json')
         inventory_url: Base URL for inventory service (optional, auto-discovered if not provided)
 
     Returns:
         JSON formatted inventory or plan-compatible VM structures (planvms format)
+
+    Examples:
+        # Get VMs from a specific provider
+        ListInventory("vm", "vsphere-provider", namespace="demo")
+
+        # Get storage inventory with filtering
+        ListInventory("storage", "openstack-provider", query="WHERE capacity > 100000000000")
+
+        # Get provider inventory for all providers
+        ListInventory("provider")
+
+        # Get provider inventory across all namespaces
+        ListInventory("provider", all_namespaces=True)
+
+        # Get VMs in planvms format for migration planning
+        ListInventory("vm", "vsphere-provider", output_format="planvms")
     """
     return await _list_inventory_generic(
         {
             "resource_type": resource_type,
             "provider_name": provider_name,
             "namespace": namespace,
+            "all_namespaces": all_namespaces,
             "query": query,
             "output_format": output_format,
             "inventory_url": inventory_url,
@@ -991,7 +1039,8 @@ def print_startup_banner():
     BOLD = "\033[1m"
     RESET = "\033[0m"
 
-    print(f"""
+    print(
+        f"""
 {BLUE}{'='*60}{RESET}
 {BOLD}{GREEN}🚀 kubectl-mtv MCP Server{RESET}
 {BLUE}{'='*60}{RESET}
@@ -1000,7 +1049,9 @@ def print_startup_banner():
 {CYAN}🏷️  Version:{RESET}     {LIGHT_GRAY}{version}{RESET}
 {CYAN}🌐 Homepage:{RESET}    {LIGHT_GRAY}https://github.com/yaacov/kubectl-mtv{RESET}
 {CYAN}📋 Description:{RESET} {LIGHT_GRAY}MCP Server for Migration Toolkit for Virtualization{RESET}
-""")
+"""
+    )
+
 
 if __name__ == "__main__":
     print_startup_banner()

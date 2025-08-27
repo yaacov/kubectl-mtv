@@ -52,14 +52,17 @@ from fastmcp import FastMCP
 # Get the directory containing this script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
 def get_package_version():
     """Get version from installed package metadata."""
     try:
         from importlib import metadata
+
         return metadata.version("mtv-mcp")
     except Exception:
         # Fallback if package metadata unavailable
         return "dev-version"
+
 
 # Initialize the FastMCP server
 mcp = FastMCP(
@@ -76,10 +79,10 @@ class KubectlMTVError(Exception):
 
 def _format_shell_command(cmd: list[str]) -> str:
     """Format a command list as a properly quoted shell command string.
-    
+
     Args:
         cmd: List of command arguments
-    
+
     Returns:
         Properly shell-quoted command string suitable for copy-paste
     """
@@ -118,7 +121,7 @@ async def run_kubectl_mtv_command(args: list[str]) -> str:
 
 def _add_boolean_flag(args: list[str], flag_name: str, value: bool | None) -> None:
     """Helper method to handle boolean fields with None/True/False state.
-    
+
     Args:
         args: The command arguments list to modify
         flag_name: The flag name (without dashes, e.g., 'insecure-skip-tls')
@@ -1131,7 +1134,9 @@ async def CreatePlan(
         args.extend(["--network-name-template", network_name_template])
     _add_boolean_flag(args, "migrate-shared-disks", migrate_shared_disks)
     _add_boolean_flag(args, "archived", archived)
-    _add_boolean_flag(args, "pvc-name-template-use-generate-name", pvc_name_template_use_generate_name)
+    _add_boolean_flag(
+        args, "pvc-name-template-use-generate-name", pvc_name_template_use_generate_name
+    )
     _add_boolean_flag(args, "delete-guest-conversion-pod", delete_guest_conversion_pod)
     _add_boolean_flag(args, "delete-vm-on-fail-migration", delete_vm_on_fail_migration)
     _add_boolean_flag(args, "skip-guest-conversion", skip_guest_conversion)
@@ -1747,7 +1752,9 @@ async def PatchPlan(
     _add_boolean_flag(args, "preserve-static-ips", preserve_static_ips)
     _add_boolean_flag(args, "migrate-shared-disks", migrate_shared_disks)
     _add_boolean_flag(args, "archived", archived)
-    _add_boolean_flag(args, "pvc-name-template-use-generate-name", pvc_name_template_use_generate_name)
+    _add_boolean_flag(
+        args, "pvc-name-template-use-generate-name", pvc_name_template_use_generate_name
+    )
     _add_boolean_flag(args, "delete-guest-conversion-pod", delete_guest_conversion_pod)
     _add_boolean_flag(args, "delete-vm-on-fail-migration", delete_vm_on_fail_migration)
     _add_boolean_flag(args, "skip-guest-conversion", skip_guest_conversion)
@@ -1932,7 +1939,8 @@ def print_startup_banner():
     BOLD = "\033[1m"
     RESET = "\033[0m"
 
-    print(f"""
+    print(
+        f"""
 {BLUE}{'='*60}{RESET}
 {BOLD}{GREEN}🚀 kubectl-mtv Write MCP Server{RESET}
 {BLUE}{'='*60}{RESET}
@@ -1942,7 +1950,9 @@ def print_startup_banner():
 {CYAN}🌐 Homepage:{RESET}    {LIGHT_GRAY}https://github.com/yaacov/kubectl-mtv{RESET}
 {CYAN}📋 Description:{RESET} {LIGHT_GRAY}MCP Write Server for Migration Toolkit for Virtualization{RESET}
 {RED}⚠️  Warning:{RESET}     {LIGHT_GRAY}This server can modify your cluster resources!{RESET}
-""")
+"""
+    )
+
 
 if __name__ == "__main__":
     print_startup_banner()
