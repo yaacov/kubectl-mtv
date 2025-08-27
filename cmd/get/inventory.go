@@ -95,5 +95,10 @@ func NewInventoryCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalCo
 	dataVolumeCmd.Aliases = []string{"datavolumes", "data-volumes"}
 	cmd.AddCommand(dataVolumeCmd)
 
+	// Add provider inventory
+	providerCmd := NewInventoryProviderCmd(kubeConfigFlags, getGlobalConfig)
+	providerCmd.Aliases = []string{"providers"}
+	cmd.AddCommand(providerCmd)
+
 	return cmd
 }
