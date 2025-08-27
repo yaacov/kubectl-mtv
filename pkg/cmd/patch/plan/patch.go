@@ -2,6 +2,7 @@ package plan
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -177,9 +178,33 @@ func PatchPlan(opts PatchPlanOptions) error {
 		if err != nil {
 			return fmt.Errorf("failed to convert affinity to unstructured: %v", err)
 		}
-		patchSpec["targetAffinity"] = affinityObj
+
+		// JSON Patch: upsert spec.targetAffinity without merging subfields
+		patchOps := []map[string]interface{}{
+			{
+				"op":    "add", // On objects, "add" replaces the key if it already exists
+				"path":  "/spec/targetAffinity",
+				"value": affinityObj,
+			},
+		}
+		patchBytes, err := json.Marshal(patchOps)
+		if err != nil {
+			return fmt.Errorf("failed to marshal JSON patch: %v", err)
+		}
+
+		_, err = dynamicClient.Resource(client.PlansGVR).Namespace(opts.Namespace).Patch(
+			context.TODO(),
+			opts.Name,
+			types.JSONPatchType,
+			patchBytes,
+			metav1.PatchOptions{},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to set target affinity: %v", err)
+		}
+
 		klog.V(2).Infof("Updated target affinity configuration")
-		planUpdated = true
+		planUpdated = true // Mark plan as updated since we've applied a patch
 	}
 
 	// Update target namespace if provided
@@ -287,14 +312,20 @@ func PatchPlan(opts PatchPlanOptions) error {
 		planUpdated = true
 	}
 
-	// Apply the patch if any changes were made
-	if planUpdated {
+	// Early return if no changes were made
+	if !planUpdated {
+		fmt.Printf("plan/%s unchanged (no updates specified)\n", opts.Name)
+		return nil
+	}
+
+	// Apply merge patch if there are spec fields to patch
+	if len(patchSpec) > 0 {
 		// Patch the changed spec fields
 		patchData := map[string]interface{}{
 			"spec": patchSpec,
 		}
 
-		patchBytes, err := runtime.Encode(unstructured.UnstructuredJSONScheme, &unstructured.Unstructured{Object: patchData})
+		patchBytes, err := json.Marshal(patchData)
 		if err != nil {
 			return fmt.Errorf("failed to encode patch data: %v", err)
 		}
@@ -310,10 +341,10 @@ func PatchPlan(opts PatchPlanOptions) error {
 		if err != nil {
 			return fmt.Errorf("failed to patch plan: %v", err)
 		}
-		fmt.Printf("plan/%s patched\n", opts.Name)
-	} else {
-		fmt.Printf("plan/%s unchanged (no updates specified)\n", opts.Name)
 	}
+
+	// Print success message since we know planUpdated is true
+	fmt.Printf("plan/%s patched\n", opts.Name)
 
 	return nil
 }
