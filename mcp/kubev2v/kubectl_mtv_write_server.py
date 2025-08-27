@@ -45,6 +45,7 @@ Storage Mapping Important Notes:
 import os
 import subprocess
 import json
+import shlex
 
 from fastmcp import FastMCP
 
@@ -61,13 +62,25 @@ class KubectlMTVError(Exception):
     pass
 
 
+def _format_shell_command(cmd: list[str]) -> str:
+    """Format a command list as a properly quoted shell command string.
+    
+    Args:
+        cmd: List of command arguments
+    
+    Returns:
+        Properly shell-quoted command string suitable for copy-paste
+    """
+    return " ".join(shlex.quote(arg) for arg in cmd)
+
+
 async def run_kubectl_mtv_command(args: list[str]) -> str:
     """Run a kubectl-mtv command and return structured JSON with command info."""
     cmd = ["kubectl-mtv"] + args
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         response = {
-            "command": " ".join(cmd),
+            "command": _format_shell_command(cmd),
             "return_value": 0,
             "stdout": result.stdout,
             "stderr": result.stderr,
@@ -75,7 +88,7 @@ async def run_kubectl_mtv_command(args: list[str]) -> str:
         return json.dumps(response, indent=2)
     except subprocess.CalledProcessError as e:
         response = {
-            "command": " ".join(cmd),
+            "command": _format_shell_command(cmd),
             "return_value": e.returncode,
             "stdout": e.stdout if e.stdout else "",
             "stderr": e.stderr if e.stderr else "",
@@ -83,7 +96,7 @@ async def run_kubectl_mtv_command(args: list[str]) -> str:
         return json.dumps(response, indent=2)
     except FileNotFoundError:
         response = {
-            "command": " ".join(cmd),
+            "command": _format_shell_command(cmd),
             "return_value": -1,
             "stdout": "",
             "stderr": "kubectl-mtv not found in PATH",
