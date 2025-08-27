@@ -11,6 +11,7 @@ The `kubectl mtv get inventory` command allows you to query and explore resource
 - Storage
 - Hosts (vSphere providers)
 - Namespaces (Kubernetes/Openshift providers)
+- Providers (get information ABOUT providers including status and resource counts)
 
 ## General Syntax
 
@@ -532,3 +533,77 @@ kubectl mtv inventory vms vsphere-01 -q "SELECT name, disks[*].shared WHERE any 
 - `freeHuman`: Formatted available space
 - `maintenance`: Maintenance status
 - `path`: Storage path in the inventory
+
+### Provider Fields
+
+- `name`: Provider name
+- `type`: Provider type (vsphere, ovirt, openstack, openshift, ova)
+- `namespace`: Kubernetes namespace containing the provider
+- `apiVersion`: Provider API version  
+- `product`: Product name (e.g., "VMware VirtualCenter Server")
+- `vmCount`: Number of VMs in provider inventory
+- `hostCount`: Number of hosts in provider inventory
+- `networkCount`: Number of networks in provider inventory
+- `datastoreCount`: Number of datastores in provider inventory (vSphere)
+- `clusterCount`: Number of clusters in provider inventory
+- `datacenterCount`: Number of datacenters in provider inventory
+- `object.status.phase`: Provider status (Ready, NotReady, etc.)
+- `object.status.conditions`: Detailed provider condition information
+
+## Querying Provider Inventory
+
+The `get inventory provider` command provides information **about** providers themselves, including their status, resource counts, and configuration. This is different from other inventory commands that get resources **from** providers.
+
+### Get all providers
+
+```bash
+kubectl mtv get inventory provider
+```
+
+### Get specific provider with details
+
+```bash
+kubectl mtv get inventory provider my-vsphere-provider
+```
+
+### Find providers by name pattern
+
+```bash
+kubectl mtv get inventory provider -q "WHERE name ~= 'prod.*'"
+```
+
+### Get ready providers with VMs
+
+```bash
+kubectl mtv get inventory provider -q "WHERE object.status.phase = 'Ready' AND vmCount > 0"
+```
+
+### Get vSphere providers sorted by VM count
+
+```bash
+kubectl mtv get inventory provider -q "WHERE type = 'vsphere' ORDER BY vmCount DESC"
+```
+
+### Get provider summary with resource counts
+
+```bash
+kubectl mtv get inventory provider -q "SELECT name, type, apiVersion, vmCount, hostCount, networkCount WHERE vmCount > 5"
+```
+
+### Find providers with issues
+
+```bash
+kubectl mtv get inventory provider -q "WHERE object.status.phase != 'Ready'"
+```
+
+### Get provider details in JSON format
+
+```bash
+kubectl mtv get inventory provider my-provider -o json
+```
+
+This will show the complete provider information including:
+- Provider CRD object with full status conditions
+- Resource counts from inventory
+- Provider configuration and settings
+- Connection status and certificates
