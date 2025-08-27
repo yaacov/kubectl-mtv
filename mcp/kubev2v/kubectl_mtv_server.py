@@ -23,7 +23,7 @@ Let the user edit the plan if needed.
 Tool Categories:
 - Provider Management: list_providers
 - Migration Planning: list_plans, list_mappings, list_hosts, list_hooks, get_plan_vms
-- Inventory Discovery: list_inventory_* tools for exploring source environments (includes provider inventory via ListInventory("provider"))
+- Inventory Discovery: list_inventory_* tools for exploring source environments
 - Version Information: get_version for deployment details
 - Debugging: get_logs for troubleshooting MTV controller and importer pod issues
 - Storage Debugging: get_migration_pvcs, get_migration_datavolumes, get_migration_storage for tracking VM migration storage with detailed diagnostics
