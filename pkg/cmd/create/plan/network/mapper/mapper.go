@@ -62,6 +62,10 @@ func parseDefaultNetwork(defaultTargetNetwork, namespace string) forkliftv1beta1
 		return forkliftv1beta1.DestinationNetwork{Type: "pod"}
 	}
 
+	if defaultTargetNetwork == "ignored" {
+		return forkliftv1beta1.DestinationNetwork{Type: "ignored"}
+	}
+
 	// Handle "namespace/name" format for multus networks
 	if parts := strings.Split(defaultTargetNetwork, "/"); len(parts) == 2 {
 		destNetwork := forkliftv1beta1.DestinationNetwork{
