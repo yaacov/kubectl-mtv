@@ -17,12 +17,77 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// validateNetworkPairs validates network mapping pairs for duplicate targets.
+// Network mapping constraints:
+// - Pod networking ("default") can only be mapped once
+// - Specific NADs (Network Attachment Definitions) can only be mapped once
+// - "ignored" targets can be used multiple times (valid for unused networks)
+func validateNetworkPairs(pairStr, defaultNamespace string) error {
+	if pairStr == "" {
+		return nil
+	}
+
+	// Track target networks to detect duplicates
+	targetsSeen := make(map[string]bool)
+	pairList := strings.Split(pairStr, ",")
+
+	for _, pairStr := range pairList {
+		pairStr = strings.TrimSpace(pairStr)
+		if pairStr == "" {
+			continue
+		}
+
+		parts := strings.SplitN(pairStr, ":", 2)
+		if len(parts) != 2 {
+			continue // Skip malformed pairs, let parseNetworkPairs handle the error
+		}
+
+		targetPart := strings.TrimSpace(parts[1])
+
+		// Skip validation for ignored targets (they can be used multiple times)
+		if strings.ToLower(targetPart) == "ignored" {
+			continue
+		}
+
+		// Normalize target name for comparison
+		var normalizedTarget string
+		if strings.Contains(targetPart, "/") {
+			// namespace/name format - use as-is but normalize to lowercase
+			normalizedTarget = strings.ToLower(targetPart)
+		} else if targetPart == "default" {
+			// Pod networking
+			normalizedTarget = "default"
+		} else {
+			// Name-only format, normalize with default namespace
+			normalizedTarget = strings.ToLower(fmt.Sprintf("%s/%s", defaultNamespace, targetPart))
+		}
+
+		// Check for duplicate targets
+		if targetsSeen[normalizedTarget] {
+			// Provide specific error messages for common cases
+			if targetPart == "default" {
+				return fmt.Errorf("invalid network mapping: Pod network ('default') can only be mapped once. Found duplicate mapping to 'default' in '%s'. Use 'source:ignored' for additional sources that don't need network access", pairStr)
+			}
+			return fmt.Errorf("invalid network mapping: Target network '%s' can only be mapped once. Found duplicate mapping to '%s' in '%s'. Use 'source:ignored' for sources that don't need this network or map to different targets", targetPart, targetPart, pairStr)
+		}
+
+		targetsSeen[normalizedTarget] = true
+	}
+
+	return nil
+}
+
 // parseNetworkPairs parses network pairs in format "source1:namespace/target1,source2:namespace/target2"
 // If namespace is omitted, the provided defaultNamespace will be used
 // Special target values: "default" for pod networking, "ignored" to ignore the source network
 func parseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericclioptions.ConfigFlags, sourceProvider, inventoryURL string) ([]forkliftv1beta1.NetworkPair, error) {
 	if pairStr == "" {
 		return nil, nil
+	}
+
+	// Validate network pairs for duplicate targets before processing
+	if err := validateNetworkPairs(pairStr, defaultNamespace); err != nil {
+		return nil, err
 	}
 
 	var pairs []forkliftv1beta1.NetworkPair
