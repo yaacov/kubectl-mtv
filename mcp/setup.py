@@ -7,7 +7,7 @@ from setuptools import setup, find_namespace_packages
 
 setup(
     name="mtv-mcp",
-    version="1.0.14",
+    version="1.0.15",
     description="MCP Servers for kubectl-mtv - Migration Toolkit for Virtualization",
     author="kubectl-mtv MCP Server",
     packages=find_namespace_packages(include=["kubev2v*"]),
