@@ -147,6 +147,9 @@ func (f *OpenShiftNetworkFetcher) FetchSourceNetworks(configFlags *genericcliopt
 			if name, ok := networkItem["name"].(string); ok {
 				sourceNetwork.Name = name
 			}
+			if namespace, ok := networkItem["namespace"].(string); ok {
+				sourceNetwork.Namespace = namespace
+			}
 			sourceNetworks = append(sourceNetworks, sourceNetwork)
 		}
 	}
