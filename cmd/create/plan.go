@@ -210,6 +210,11 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				}
 
 				planSpec.Type = migrationTypeFlag.GetValue()
+
+				// Also set the warm field for backward compatibility when migration type is warm
+				if migrationTypeFlag.GetValue() == "warm" {
+					planSpec.Warm = true
+				}
 			}
 
 			// Handle target labels (convert from key=value slice to map)
