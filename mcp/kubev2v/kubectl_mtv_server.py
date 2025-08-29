@@ -67,18 +67,16 @@ def get_package_version():
 mcp = None
 
 
-def create_mcp_server(name: str = "kubectl-mtv", version: str = None, **config_kwargs) -> FastMCP:
+def create_mcp_server(
+    name: str = "kubectl-mtv", version: str = None, **config_kwargs
+) -> FastMCP:
     """Create and configure the FastMCP server."""
     if version is None:
         version = get_package_version()
-    
+
     # Create the server with provided configuration
-    server = FastMCP(
-        name=name,
-        version=version,
-        **config_kwargs
-    )
-    
+    server = FastMCP(name=name, version=version, **config_kwargs)
+
     return server
 
 
@@ -108,7 +106,9 @@ async def run_kubectl_mtv_command(args: list[str]) -> str:
     """Run a kubectl-mtv command and return structured JSON with command info."""
     cmd = ["kubectl-mtv"] + args
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=True, timeout=120
+        )
         response = {
             "command": _format_shell_command(cmd),
             "return_value": 0,
@@ -138,7 +138,9 @@ async def run_kubectl_command(args: list[str]) -> str:
     """Run a kubectl command and return structured JSON with command info."""
     cmd = ["kubectl"] + args
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=True, timeout=120
+        )
         response = {
             "command": _format_shell_command(cmd),
             "return_value": 0,
@@ -1083,7 +1085,7 @@ Examples:
   %(prog)s --listen 0.0.0.0 --port 3000 # Listen on all interfaces, port 3000
         """,
     )
-    
+
     parser.add_argument(
         "--transport",
         type=str,
@@ -1091,14 +1093,14 @@ Examples:
         default="stdio",
         help="MCP transport type (default: stdio)",
     )
-    
+
     parser.add_argument(
         "--port",
         type=int,
         default=8080,
         help="Port to listen on (default: 8080)",
     )
-    
+
     parser.add_argument(
         "--listen",
         "--host",
@@ -1106,7 +1108,7 @@ Examples:
         default="localhost",
         help="Host/address to listen on (default: localhost)",
     )
-    
+
     parser.add_argument(
         "--no-banner",
         action="store_false",
@@ -1114,29 +1116,29 @@ Examples:
         default=True,
         help="Hide startup banner (default: show banner)",
     )
-    
+
     return parser.parse_args()
 
 
 def main():
     """Main function that can be called with configuration options."""
     args = parse_args()
-    
+
     # Show banner if requested
     if args.show_banner:
         print_startup_banner()
-    
+
     # No validation needed since port has a default value now
-    
+
     # Prepare MCP run configuration
     run_config = {}
-    
+
     if args.transport == "sse":
         run_config["transport"] = "sse"
         run_config["port"] = args.port
         run_config["host"] = args.listen
     # stdio is the default, no additional config needed
-    
+
     # Run the server with configuration
     mcp.run(**run_config)
 

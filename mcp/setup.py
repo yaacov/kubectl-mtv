@@ -19,6 +19,7 @@ setup(
         "console_scripts": [
             "kubectl-mtv-mcp=kubev2v.kubectl_mtv_server:main",
             "kubectl-mtv-write-mcp=kubev2v.kubectl_mtv_write_server:main",
+            "kubevirt-mcp=kubev2v.kubevirt_server:main",
         ],
     },
     classifiers=[
