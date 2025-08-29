@@ -135,6 +135,69 @@ def _add_boolean_flag(args: list[str], flag_name: str, value: bool | None) -> No
             args.append(f"--{flag_name}=false")
 
 
+def _validate_network_pairs(network_pairs: str) -> None:
+    """Validate network mapping pairs for duplicate targets.
+
+    Network mapping constraints:
+    - Pod networking ("default") can only be mapped once
+    - Specific NADs (Network Attachment Definitions) can only be mapped once
+    - "ignored" targets can be used multiple times (valid for unused networks)
+
+    Args:
+        network_pairs: Comma-separated network pairs in format 'source:target'
+
+    Raises:
+        KubectlMTVError: If duplicate targets are found (excluding 'ignored')
+
+    Examples:
+        Valid: "source1:default,source2:ignored,source3:nad1"
+        Valid: "source1:nad1,source2:nad2,source3:ignored,source4:ignored"
+        Invalid: "source1:default,source2:default" (pod network mapped twice)
+        Invalid: "source1:nad1,source2:nad1" (same NAD mapped twice)
+    """
+    if not network_pairs or not network_pairs.strip():
+        return
+
+    # Parse pairs and track targets
+    targets_seen = set()
+    pairs = network_pairs.split(",")
+
+    for pair in pairs:
+        pair = pair.strip()
+        if ":" not in pair:
+            continue  # Skip malformed pairs, let kubectl-mtv handle the error
+
+        source, target = pair.split(":", 1)
+        source = source.strip()
+        target = target.strip()
+
+        # Skip validation for ignored targets (they can be used multiple times)
+        if target.lower() == "ignored":
+            continue
+
+        # Normalize target names for comparison
+        # Handle namespace/name format vs name-only format
+        normalized_target = target.lower()
+
+        # Check for duplicate targets
+        if normalized_target in targets_seen:
+            # Provide specific error messages for common cases
+            if target.lower() == "default":
+                raise KubectlMTVError(
+                    f"Invalid network mapping: Pod network ('default') can only be mapped once. "
+                    f"Found duplicate mapping to 'default' in '{network_pairs}'. "
+                    f"Use 'source:ignored' for additional sources that don't need network access."
+                )
+            else:
+                raise KubectlMTVError(
+                    f"Invalid network mapping: Target network '{target}' can only be mapped once. "
+                    f"Found duplicate mapping to '{target}' in '{network_pairs}'. "
+                    f"Use 'source:ignored' for sources that don't need this network or map to different targets."
+                )
+
+        targets_seen.add(normalized_target)
+
+
 # Sub-action methods for plan lifecycle
 async def _start_plan(plan_name: str, namespace: str, cutover: str) -> str:
     """Start plan implementation."""
@@ -625,10 +688,16 @@ async def ManageMapping(
     Special values: 'source:default' (pod networking), 'source:ignored' (skip network)
     Multiple pairs: comma-separated 'pair1,pair2,pair3'
 
-    Network Mapping Constraints:
+    Network Mapping Constraints (VALIDATED by MCP):
     - All source networks must be mapped (no source networks can be left unmapped)
-    - Pod networking and specific multus targets can only be mapped once (no duplicate targets)
-    - Use 'source:ignored' to map networks that don't have suitable targets or are not needed
+    - Pod networking ('default') can only be mapped ONCE across all sources
+    - Each specific NAD can only be mapped ONCE across all sources
+    - 'ignored' can be used multiple times for sources that don't need network access
+    - VALIDATION EXAMPLES:
+      • INVALID: "source1:default,source2:default" (pod network mapped twice)
+      • INVALID: "source1:nad1,source2:nad1" (same NAD mapped twice)
+      • VALID: "source1:default,source2:ignored,source3:nad1"
+      • VALID: "source1:nad1,source2:nad2,source3:ignored,source4:ignored"
 
     Storage Mapping Constraints:
     - All source storages must be mapped (no source storages can be left unmapped)
@@ -712,11 +781,20 @@ async def ManageMapping(
             raise KubectlMTVError(
                 "source_provider and target_provider are required for create action"
             )
+        # Validate network pairs for duplicate targets on create
+        if mapping_type == "network" and pairs:
+            _validate_network_pairs(pairs)
     elif action == "patch":
         if not (add_pairs or update_pairs or remove_pairs):
             raise KubectlMTVError(
                 "At least one of add_pairs, update_pairs, or remove_pairs is required for patch action"
             )
+        # Validate network pairs for duplicate targets on patch
+        if mapping_type == "network":
+            if add_pairs:
+                _validate_network_pairs(add_pairs)
+            if update_pairs:
+                _validate_network_pairs(update_pairs)
 
     # Route to appropriate sub-action method
     if action == "create" and mapping_type == "network":
@@ -966,8 +1044,18 @@ async def CreatePlan(
             • 'source:target-namespace/target-network' - explicit namespace/name format
             • 'source:target-network' - uses plan namespace if no namespace specified
             • 'source:default' - maps to pod networking
-            • 'source:ignored' - ignores the source network
-            Note: All source networks must be mapped, pod/multus targets can only be used once
+            • 'source:ignored' - ignores the source network (can be used multiple times)
+
+            VALIDATION RULES (enforced by MCP):
+            • Pod networking ('default') can only be mapped ONCE across all sources
+            • Each specific NAD can only be mapped ONCE across all sources
+            • 'ignored' can be used multiple times for sources that don't need network access
+            • INVALID: "source1:default,source2:default" (pod network mapped twice)
+            • INVALID: "source1:nad1,source2:nad1" (same NAD mapped twice)
+            • VALID: "source1:default,source2:ignored,source3:nad1"
+            • VALID: "source1:nad1,source2:nad2,source3:ignored,source4:ignored"
+
+            Note: All source networks must be mapped, validation prevents duplicate targets
         storage_pairs: Storage mapping pairs (optional, creates mapping if provided) - enhanced format with optional parameters:
             • Basic: 'source:storage-class' - simple storage class mapping
             • Enhanced: 'source:storage-class;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadSecret=secret;offloadVendor=vantara'
@@ -1083,6 +1171,10 @@ async def CreatePlan(
                 "Cannot use storage_pairs with migration_type 'conversion'. "
                 "Conversion-only migrations require empty storage mapping."
             )
+
+    # Validate network pairs for duplicate targets
+    if network_pairs:
+        _validate_network_pairs(network_pairs)
 
     args = ["create", "plan", plan_name]
 

@@ -2188,7 +2188,9 @@ Examples:
     )
 
     # Keep legacy args for backward compatibility
-    parser.add_argument("--name", default="kubevirt", help="Server name (legacy, ignored)")
+    parser.add_argument(
+        "--name", default="kubevirt", help="Server name (legacy, ignored)"
+    )
     parser.add_argument("--version", help="Server version (legacy, ignored)")
 
     return parser.parse_args()
