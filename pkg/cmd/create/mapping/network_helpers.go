@@ -2,6 +2,7 @@ package mapping
 
 import (
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -25,6 +26,18 @@ func resolveOpenShiftNetworkNameToID(configFlags *genericclioptions.ConfigFlags,
 		}}, nil
 	}
 
+	// Parse namespace/name format
+	var targetNamespace, targetName string
+	if strings.Contains(networkName, "/") {
+		parts := strings.SplitN(networkName, "/", 2)
+		targetNamespace = strings.TrimSpace(parts[0])
+		targetName = strings.TrimSpace(parts[1])
+	} else {
+		// If no namespace specified, assume "default"
+		targetNamespace = "default"
+		targetName = strings.TrimSpace(networkName)
+	}
+
 	// Fetch NetworkAttachmentDefinitions from OpenShift
 	networksInventory, err := client.FetchProviderInventory(configFlags, inventoryURL, provider, "networkattachmentdefinitions?detail=4")
 	if err != nil {
@@ -36,7 +49,7 @@ func resolveOpenShiftNetworkNameToID(configFlags *genericclioptions.ConfigFlags,
 		return nil, fmt.Errorf("unexpected data format: expected array for networks inventory")
 	}
 
-	// Search for all networks matching the name
+	// Search for all networks matching the name and namespace
 	var matchingRefs []ref.Ref
 	for _, item := range networksArray {
 		network, ok := item.(map[string]interface{})
@@ -53,7 +66,8 @@ func resolveOpenShiftNetworkNameToID(configFlags *genericclioptions.ConfigFlags,
 						ns, _ := metadataMap["namespace"].(string)
 						id, _ := metadataMap["uid"].(string)
 
-						if name == networkName {
+						// Match both name and namespace
+						if name == targetName && ns == targetNamespace {
 							matchingRefs = append(matchingRefs, ref.Ref{
 								ID:        id,
 								Name:      name,
@@ -68,7 +82,7 @@ func resolveOpenShiftNetworkNameToID(configFlags *genericclioptions.ConfigFlags,
 	}
 
 	if len(matchingRefs) == 0 {
-		return nil, fmt.Errorf("network '%s' not found in OpenShift provider inventory", networkName)
+		return nil, fmt.Errorf("network '%s' in namespace '%s' not found in OpenShift provider inventory", targetName, targetNamespace)
 	}
 
 	return matchingRefs, nil
