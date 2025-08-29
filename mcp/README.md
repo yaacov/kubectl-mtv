@@ -9,15 +9,17 @@ mtv-mcp-ocp.png
 
 ## What it does
 
-These MCP servers enable AI assistants to help with MTV operations by providing:
+These MCP servers enable AI assistants to help with MTV and KubeVirt operations by providing:
 
-- **Read-Only Server** (`kubectl_mtv_server.py`): Safe operations for monitoring, troubleshooting, and discovering MTV resources and provider inventories
-- **Write Server** (`kubectl_mtv_write_server.py`): **USE WITH CAUTION** - Full lifecycle management including creating, modifying, and deleting MTV resources
+- **MTV Read-Only Server** (`kubectl_mtv_server.py`): Safe operations for monitoring, troubleshooting, and discovering MTV resources and provider inventories
+- **MTV Write Server** (`kubectl_mtv_write_server.py`): **USE WITH CAUTION** - Full lifecycle management including creating, modifying, and deleting MTV resources
+- **KubeVirt Server** (`kubevirt_server.py`): Comprehensive virtual machine management through virtctl commands including VM lifecycle, volume management, image operations, diagnostics, and cluster resource discovery
 
 ## Prerequisites
 
-- `kubectl-mtv` binary installed and available in PATH
-- Access to a Kubernetes cluster with MTV deployed
+- `kubectl-mtv` binary installed and available in PATH (for MTV operations)
+- `virtctl` binary installed and available in PATH (for KubeVirt operations)  
+- Access to a Kubernetes cluster with MTV and/or KubeVirt deployed
 - Python 3.8+
 
 ## Quick Installation
@@ -38,11 +40,14 @@ For detailed setup instructions with MCP clients like Cursor and Claude Desktop,
 If you're using Claude Code, you can install directly:
 
 ```bash
-# Read-only server (recommended for most users)
+# MTV read-only server (recommended for most users)
 claude mcp add kubectl-mtv-mcp
 
-# Write server (USE WITH CAUTION - can modify/delete resources)
+# MTV write server (USE WITH CAUTION - can modify/delete resources)
 claude mcp add kubectl-mtv-write-mcp
+
+# KubeVirt server (VM management through virtctl commands)
+claude mcp add kubevirt-mcp
 ```
 
 ## Development
@@ -62,11 +67,14 @@ pip install -r requirements-dev.txt
 For development or when you need direct control, you can use the servers directly:
 
 ```bash
-# Read-only server (recommended for most users)
+# MTV read-only server (recommended for most users)
 claude mcp add python /full/path/to/kubectl-mtv/mcp/kubev2v/kubectl_mtv_server.py
 
-# Write server (USE WITH CAUTION - can modify/delete resources)
+# MTV write server (USE WITH CAUTION - can modify/delete resources)
 claude mcp add python /full/path/to/kubectl-mtv/mcp/kubev2v/kubectl_mtv_write_server.py
+
+# KubeVirt server (VM management through virtctl commands)
+claude mcp add python /full/path/to/kubectl-mtv/mcp/kubev2v/kubevirt_server.py
 ```
 
 ### Important Make Targets

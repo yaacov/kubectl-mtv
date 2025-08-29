@@ -6,10 +6,11 @@ This guide explains how to set up and use the kubectl-mtv MCP server with variou
 
 Before setting up the MCP server, ensure you have:
 
-1. **kubectl-mtv installed** and available in your PATH
-2. **Kubernetes cluster access** with MTV (Migration Toolkit for Virtualization) deployed
-3. **Python 3.8+** installed
-4. **MCP-compatible client** (Cursor, Claude Desktop, etc.)
+1. **kubectl-mtv installed** and available in your PATH (for MTV operations)
+2. **virtctl installed** and available in your PATH (for KubeVirt operations)
+3. **Kubernetes cluster access** with MTV and/or KubeVirt deployed
+4. **Python 3.8+** installed
+5. **MCP-compatible client** (Cursor, Claude Desktop, etc.)
 
 ## Quick Setup
 
@@ -36,6 +37,16 @@ Before setting up the MCP server, ensure you have:
          "command": "kubectl-mtv-mcp",
          "args": [],
          "env": {}
+       },
+       "kubectl-mtv-write": {
+         "command": "kubectl-mtv-write-mcp",
+         "args": [],
+         "env": {}
+       },
+       "kubevirt": {
+         "command": "kubevirt-mcp",
+         "args": [],
+         "env": {}
        }
      }
    }
@@ -58,6 +69,16 @@ Before setting up the MCP server, ensure you have:
          "command": "kubectl-mtv-mcp",
          "args": [],
          "env": {}
+       },
+       "kubectl-mtv-write": {
+         "command": "kubectl-mtv-write-mcp",
+         "args": [],
+         "env": {}
+       },
+       "kubevirt": {
+         "command": "kubevirt-mcp",
+         "args": [],
+         "env": {}
        }
      }
    }
@@ -69,22 +90,23 @@ Before setting up the MCP server, ensure you have:
 
 For Claude Code users, you can use the built-in `mcp install` command for the easiest setup:
 
-1. **Install the MCP server directly**:
+1. **Install the MCP servers directly**:
    ```bash
+   # MTV read-only server (recommended for most users)
    claude mcp add kubectl-mtv-mcp
+   
+   # MTV write server (USE WITH CAUTION - can modify/delete resources)  
+   claude mcp add kubectl-mtv-write-mcp
+   
+   # KubeVirt server (VM management through virtctl commands)
+   claude mcp add kubevirt-mcp
    ```
 
 2. **Verify the installation**:
    ```bash
    claude mcp list
    ```
-   You should see `kubectl-mtv` in the list of installed servers.
-
-3. **Optional: Install the write server** for destructive operations:
-   ```bash
-   # Only install if you need write/modify capabilities
-   claude mcp add kubectl-mtv-write-mcp
-   ```
+   You should see `kubectl-mtv`, `kubectl-mtv-write`, and `kubevirt` in the list of installed servers.
 
 5. **The server(s) are now available** - Claude Code will automatically load and use the servers.
 
@@ -112,12 +134,26 @@ By default, Claude CLI may prompt for user consent before executing MCP tool ope
            "autoExecute": true,
            "confirmBeforeExecution": false,
            "trusted": true
+         },
+         "kubectl-mtv-write": {
+           "command": "kubectl-mtv-write-mcp",
+           "args": [],
+           "autoExecute": true,
+           "confirmBeforeExecution": false,
+           "trusted": true
+         },
+         "kubevirt": {
+           "command": "kubevirt-mcp",
+           "args": [],
+           "autoExecute": true,
+           "confirmBeforeExecution": false,
+           "trusted": true
          }
        }
      },
      "execution": {
        "autoExecute": true,
-       "trustedServers": ["kubectl-mtv"]
+       "trustedServers": ["kubectl-mtv", "kubectl-mtv-write", "kubevirt"]
      }
    }
    ```
@@ -126,14 +162,14 @@ By default, Claude CLI may prompt for user consent before executing MCP tool ope
    ```bash
    # Add to your ~/.bashrc or ~/.zshrc
    export CLAUDE_MCP_AUTO_EXECUTE=true
-   export CLAUDE_MCP_TRUSTED_SERVERS="kubectl-mtv"
+   export CLAUDE_MCP_TRUSTED_SERVERS="kubectl-mtv,kubectl-mtv-write,kubevirt"
    export CLAUDE_MCP_CONFIRM_EXECUTION=false
    ```
 
 4. **Command-line flags** (temporary override):
    ```bash
-   # Run Claude CLI with auto-execution enabled
-   claude --mcp-auto-execute --mcp-trusted-server kubectl-mtv
+   # Run Claude CLI with auto-execution enabled for all servers
+   claude --mcp-auto-execute --mcp-trusted-server kubectl-mtv --mcp-trusted-server kubectl-mtv-write --mcp-trusted-server kubevirt
    ```
 
 ### Generic MCP Client
@@ -145,6 +181,16 @@ For other MCP-compatible applications, use this general configuration format:
   "servers": {
     "kubectl-mtv": {
       "command": "kubectl-mtv-mcp",
+      "args": [],
+      "env": {}
+    },
+    "kubectl-mtv-write": {
+      "command": "kubectl-mtv-write-mcp",
+      "args": [],
+      "env": {}
+    },
+    "kubevirt": {
+      "command": "kubevirt-mcp",
       "args": [],
       "env": {}
     }

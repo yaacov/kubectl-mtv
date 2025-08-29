@@ -139,25 +139,8 @@ def get_package_version():
         return "dev-version"
 
 
-# MCP server instance (will be initialized in create_mcp_server)
-mcp = None
-
-
-def create_mcp_server(
-    name: str = "kubevirt", version: str = None, **config_kwargs
-) -> FastMCP:
-    """Create and configure the FastMCP server."""
-    if version is None:
-        version = get_package_version()
-
-    # Create the server with provided configuration
-    server = FastMCP(name=name, version=version, **config_kwargs)
-
-    return server
-
-
-# Initialize the default MCP server
-mcp = create_mcp_server()
+# Initialize the MCP server instance immediately
+mcp = FastMCP(name="kubevirt", version=get_package_version())
 
 
 class VirtctlError(Exception):
@@ -2133,19 +2116,104 @@ def virtctl_cluster_resources(
     return "\n\n".join(results)
 
 
+def print_startup_banner():
+    """Print a colorful startup banner with server information."""
+    version = get_package_version()
+
+    # ANSI color codes
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    CYAN = "\033[96m"
+    LIGHT_GRAY = "\033[37m"
+    BOLD = "\033[1m"
+    RESET = "\033[0m"
+
+    print(
+        f"""
+{BLUE}{'='*60}{RESET}
+{BOLD}{GREEN}🚀 KubeVirt MCP Server{RESET}
+{BLUE}{'='*60}{RESET}
+
+{CYAN}📦 Server:{RESET}      {LIGHT_GRAY}kubevirt (VM management through virtctl){RESET}
+{CYAN}🏷️  Version:{RESET}     {LIGHT_GRAY}{version}{RESET}
+{CYAN}🌐 Homepage:{RESET}    {LIGHT_GRAY}https://github.com/yaacov/kubectl-mtv{RESET}
+{CYAN}📋 Description:{RESET} {LIGHT_GRAY}MCP Server for KubeVirt Virtual Machine Management{RESET}
+"""
+    )
+
+
+def parse_args():
+    """Parse command-line arguments for MCP server configuration."""
+    parser = argparse.ArgumentParser(
+        description="KubeVirt MCP Server (VM Management Operations)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s                          # Run with default stdio transport
+  %(prog)s --transport sse           # Run with SSE transport on default port 8080
+  %(prog)s --transport sse --port 9000  # Run with SSE transport on custom port
+  %(prog)s --listen 0.0.0.0 --port 3000 # Listen on all interfaces, port 3000
+        """,
+    )
+
+    parser.add_argument(
+        "--transport",
+        type=str,
+        choices=["stdio", "sse"],
+        default="stdio",
+        help="MCP transport type (default: stdio)",
+    )
+
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="Port to listen on (default: 8080)",
+    )
+
+    parser.add_argument(
+        "--listen",
+        "--host",
+        type=str,
+        default="localhost",
+        help="Host/address to listen on (default: localhost)",
+    )
+
+    parser.add_argument(
+        "--no-banner",
+        action="store_false",
+        dest="show_banner",
+        default=True,
+        help="Hide startup banner (default: show banner)",
+    )
+
+    # Keep legacy args for backward compatibility
+    parser.add_argument("--name", default="kubevirt", help="Server name (legacy, ignored)")
+    parser.add_argument("--version", help="Server version (legacy, ignored)")
+
+    return parser.parse_args()
+
+
 def main():
     """Main entry point for the virtctl MCP server."""
-    parser = argparse.ArgumentParser(description="FastMCP Server for virtctl")
-    parser.add_argument("--name", default="kubevirt", help="Server name")
-    parser.add_argument("--version", help="Server version")
+    args = parse_args()
 
-    args = parser.parse_args()
+    # Show banner if requested
+    if args.show_banner:
+        print_startup_banner()
 
-    # Create server with command line arguments
-    server = create_mcp_server(name=args.name, version=args.version)
+    # Prepare MCP run configuration
+    run_config = {}
 
-    # Run the server
-    server.run()
+    if args.transport == "sse":
+        run_config["transport"] = "sse"
+        run_config["port"] = args.port
+        run_config["host"] = args.listen
+    # stdio is the default, no additional config needed
+
+    # Use the global mcp instance that has the tools registered
+    # (Don't create a new server instance as that would be empty)
+    mcp.run(**run_config)
 
 
 if __name__ == "__main__":

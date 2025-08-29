@@ -65,25 +65,8 @@ def get_package_version():
         return "dev-version"
 
 
-# MCP server instance (will be initialized in create_mcp_server)
-mcp = None
-
-
-def create_mcp_server(
-    name: str = "kubectl-mtv-write", version: str = None, **config_kwargs
-) -> FastMCP:
-    """Create and configure the FastMCP server."""
-    if version is None:
-        version = get_package_version()
-
-    # Create the server with provided configuration
-    server = FastMCP(name=name, version=version, **config_kwargs)
-
-    return server
-
-
-# Initialize the default MCP server
-mcp = create_mcp_server()
+# Initialize the MCP server instance immediately
+mcp = FastMCP(name="kubectl-mtv-write", version=get_package_version())
 
 
 class KubectlMTVError(Exception):
