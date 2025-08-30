@@ -128,6 +128,29 @@ from fastmcp import FastMCP
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+def get_current_namespace():
+    """Get the current Kubernetes namespace from kubectl context."""
+    try:
+        result = subprocess.run(
+            [
+                "kubectl",
+                "config",
+                "view",
+                "--minify",
+                "--output",
+                "jsonpath={..namespace}",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        namespace = result.stdout.strip()
+        return namespace if namespace else "default"
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Fallback to default if kubectl is not available or context is not set
+        return "default"
+
+
 def get_package_version():
     """Get version from installed package metadata."""
     try:
@@ -251,29 +274,12 @@ def _parse_json_output(output: str) -> Any:
         raise VirtctlError(f"Failed to parse JSON output: {str(e)}")
 
 
-def _build_output_format_args(output_format: str = "json") -> list[str]:
-    """Build output format arguments.
-
-    Args:
-        output_format: Output format (json only)
-
-    Returns:
-        List of output format arguments
-    """
-    if output_format in ["json", "yaml"]:
-        return ["-o", output_format]
-    elif output_format == "table":
-        return []  # Default table format
-    else:
-        return ["-o", output_format]
-
-
 # VM Lifecycle Management Tools
 @mcp.tool()
 def virtctl_vm_lifecycle(
     vm_name: str,
     operation: str,
-    namespace: str = "",
+    namespace: str = None,
     grace_period: int = 0,
     force: bool = False,
     dry_run: bool = False,
@@ -394,6 +400,10 @@ def virtctl_vm_lifecycle(
     args.append(operation_map[operation])
     args.append(vm_name)
 
+    # Use current namespace if none provided
+    if namespace is None:
+        namespace = get_current_namespace()
+
     # Add namespace
     if namespace:
         args.extend(["-n", namespace])
@@ -431,33 +441,29 @@ def virtctl_vm_lifecycle(
 @mcp.tool()
 def virtctl_create_vm_advanced(
     name: str = "",
-    namespace: str = "",
+    namespace: str = None,
     instancetype: str = "",
     preference: str = "",
     run_strategy: str = "",
     volumes: Dict[str, Any] = None,
     cloud_init: Dict[str, Any] = None,
     resource_requirements: Dict[str, str] = None,
-    labels: Dict[str, str] = None,
-    annotations: Dict[str, str] = None,
     infer_instancetype: bool = False,
     infer_preference: bool = False,
     infer_instancetype_from: str = "",
     infer_preference_from: str = "",
-    output_format: str = "json",
     access_credentials: List[Dict[str, Any]] = None,
     termination_grace_period: int = 0,
     generate_name: bool = False,
 ) -> str:
     """Comprehensive VM creation with full configuration support.
 
-    This advanced tool supports all virtctl create vm capabilities:
+    This advanced tool supports most virtctl create vm capabilities:
     - Instance types and preferences with automatic inference
     - Multiple volume sources (PVCs, DataVolumes, container disks, blank volumes)
     - Complete cloud-init integration with user data, SSH keys, passwords
     - Resource requirements and limits
     - Access credentials for SSH and password injection
-    - Annotations and labels for metadata
 
     Args:
         name: VM name (optional, random if not specified)
@@ -468,27 +474,24 @@ def virtctl_create_vm_advanced(
         volumes: Volume configuration dictionary with volume types (optional)
         cloud_init: Cloud-init configuration (optional)
         resource_requirements: CPU/memory requirements (optional)
-        labels: Metadata labels (optional)
-        annotations: Metadata annotations (optional)
         infer_instancetype: Infer instance type from boot volume (optional)
         infer_preference: Infer preference from boot volume (optional)
         infer_instancetype_from: Volume name to infer instance type from (optional)
         infer_preference_from: Volume name to infer preference from (optional)
-        output_format: Output format (json only) (optional, default json)
         access_credentials: List of access credential configurations (optional)
         termination_grace_period: Grace period for VM termination in seconds (optional)
         generate_name: Use generateName instead of name (optional)
 
     Returns:
-        Generated VM manifest in specified format
+        Raw YAML manifest from virtctl create vm command
 
     Volume Configuration Format:
         volumes = {
             "volume_import": [{
-                "type": "pvc",  # pvc, dv, ds (DataSource)
-                "src": "fedora-base",  # Source name/path
+                "type": "pvc",  # pvc, dv, ds (DataSource), blank
+                "src": "fedora-base",  # Source name/path (not needed for blank)
                 "name": "rootdisk",  # Volume name
-                "size": "20Gi",  # Volume size (optional)
+                "size": "20Gi",  # Volume size (required for blank, optional for others)
                 "storage_class": "fast-ssd",  # Storage class (optional)
                 "namespace": "default",  # Source namespace (optional)
                 "bootorder": 1  # Boot order (optional)
@@ -498,11 +501,7 @@ def virtctl_create_vm_advanced(
                 "name": "containerdisk",
                 "bootorder": 2
             }],
-            "volume_blank": [{
-                "name": "data-disk",
-                "size": "100Gi",
-                "storage_class": "standard"
-            }],
+
             "volume_pvc": [{
                 "src": "existing-pvc",
                 "name": "mounted-disk"
@@ -560,7 +559,6 @@ def virtctl_create_vm_advanced(
         # Basic VM with DataSource inference
         virtctl_create_vm_advanced(
             name="fedora-vm",
-            namespace="default",
             volumes={
                 "volume_import": [{
                     "type": "ds",
@@ -574,6 +572,21 @@ def virtctl_create_vm_advanced(
             cloud_init={
                 "user": "fedora",
                 "ssh_key": "ssh-rsa AAAA..."
+            }
+        )
+
+        # Basic VM with container disk
+        virtctl_create_vm_advanced(
+            name="fedora-vm-container",
+            instancetype="u1.medium",
+            volumes={
+                "volume_containerdisk": [{
+                    "src": "quay.io/containerdisks/fedora:42",
+                    "name": "containerdisk"
+                }]
+            },
+            cloud_init={
+                "user": "fedora"
             }
         )
 
@@ -592,11 +605,7 @@ def virtctl_create_vm_advanced(
                     "size": "60Gi",
                     "storage_class": "fast-ssd"
                 }],
-                "volume_blank": [{
-                    "name": "data-disk",
-                    "size": "100Gi",
-                    "storage_class": "standard"
-                }],
+
                 "volume_sysprep": [{
                     "name": "sysprep-config",
                     "src": "windows-config",
@@ -606,15 +615,6 @@ def virtctl_create_vm_advanced(
             resource_requirements={
                 "memory": "8Gi",
                 "cpu": "4"
-            },
-            labels={
-                "environment": "production",
-                "application": "database",
-                "os": "windows"
-            },
-            annotations={
-                "description": "Production Windows Server with database",
-                "contact": "team@company.com"
             },
             termination_grace_period=300,  # 5 minutes for graceful shutdown
             access_credentials=[{
@@ -640,12 +640,13 @@ def virtctl_create_vm_advanced(
                     "size": "50Gi",
                     "storage_class": "fast-ssd"
                 }],
-                "volume_blank": [{
+                "volume_import": [{
+                    "type": "blank",
                     "name": "app-data",
                     "size": "500Gi",
                     "storage_class": "standard"
-                }],
-                "volume_blank": [{
+                }, {
+                    "type": "blank",
                     "name": "logs",
                     "size": "100Gi",
                     "storage_class": "fast-ssd"
@@ -662,20 +663,15 @@ def virtctl_create_vm_advanced(
                 "src": "enterprise-ssh-keys",
                 "method": "qemu-guest-agent"
             }],
-            labels={
-                "environment": "production",
-                "tier": "application",
-                "backup": "required"
-            },
-            annotations={
-                "backup.company.com/schedule": "daily",
-                "monitoring.company.com/enabled": "true"
-            },
             termination_grace_period=180  # 3 minutes for app shutdown
         )
     """
     # Build virtctl create vm command
     args = ["create", "vm"]
+
+    # Use current namespace if none provided
+    if namespace is None:
+        namespace = get_current_namespace()
 
     # Add name or generate name
     if name:
@@ -699,14 +695,26 @@ def virtctl_create_vm_advanced(
         args.extend(["--run-strategy", run_strategy])
 
     # Add inference options
-    if infer_instancetype:
-        args.append("--infer-instancetype")
-    if infer_preference:
-        args.append("--infer-preference")
-    if infer_instancetype_from:
-        args.extend(["--infer-instancetype-from", infer_instancetype_from])
-    if infer_preference_from:
-        args.extend(["--infer-preference-from", infer_preference_from])
+    has_inference_compatible_volumes = False
+    if volumes:
+        # Check for DataSources, DataVolumes, or PVCs
+        if "volume_import" in volumes and any(
+            vol.get("type") in ["pvc", "dv", "ds"] for vol in volumes["volume_import"]
+        ):
+            has_inference_compatible_volumes = True
+        elif "volume_pvc" in volumes:
+            has_inference_compatible_volumes = True
+
+    # Add inference flags for compatible volumes
+    if has_inference_compatible_volumes:
+        if infer_instancetype:
+            args.append("--infer-instancetype")
+        if infer_preference:
+            args.append("--infer-preference")
+        if infer_instancetype_from:
+            args.extend(["--infer-instancetype-from", infer_instancetype_from])
+        if infer_preference_from:
+            args.extend(["--infer-preference-from", infer_preference_from])
 
     # Add volume configurations
     if volumes:
@@ -719,7 +727,7 @@ def virtctl_create_vm_advanced(
                 if "size" in vol:
                     vol_spec += f",size:{vol['size']}"
                 if "storage_class" in vol:
-                    vol_spec += f",storageclass:{vol['storage_class']}"
+                    vol_spec += f",storageClass:{vol['storage_class']}"
                 if "namespace" in vol:
                     vol_spec += f",namespace:{vol['namespace']}"
                 if "bootorder" in vol:
@@ -736,13 +744,7 @@ def virtctl_create_vm_advanced(
                     vol_spec += f",bootorder:{vol['bootorder']}"
                 args.extend(["--volume-containerdisk", vol_spec])
 
-        # Handle blank volumes
-        if "volume_blank" in volumes:
-            for vol in volumes["volume_blank"]:
-                vol_spec = f"name:{vol['name']},size:{vol['size']}"
-                if "storage_class" in vol:
-                    vol_spec += f",storageclass:{vol['storage_class']}"
-                args.extend(["--volume-blank", vol_spec])
+
 
         # Handle existing PVCs
         if "volume_pvc" in volumes:
@@ -798,29 +800,8 @@ def virtctl_create_vm_advanced(
     if termination_grace_period > 0:
         args.extend(["--termination-grace-period", str(termination_grace_period)])
 
-    # Add labels
-    if labels:
-        for key, value in labels.items():
-            args.extend(["--label", f"{key}={value}"])
-
-    # Add annotations
-    if annotations:
-        for key, value in annotations.items():
-            args.extend(["--annotation", f"{key}={value}"])
-
-    # Add output format
-    args.extend(_build_output_format_args(output_format))
-
     result = _run_virtctl_command(args)
-
-    # Parse output based on format
-    if output_format == "json":
-        manifest = _parse_json_output(result.stdout)
-        return json.dumps(manifest, indent=2)
-    elif output_format == "yaml":
-        return result.stdout
-    else:
-        return result.stdout
+    return result.stdout
 
 
 # Volume Management Tools
@@ -828,7 +809,7 @@ def virtctl_create_vm_advanced(
 def virtctl_volume_management(
     vm_name: str,
     operation: str,
-    namespace: str = "",
+    namespace: str = None,
     volume_name: str = "",
     source: str = "",
     disk_config: Dict[str, Any] = None,
@@ -960,6 +941,10 @@ def virtctl_volume_management(
         virtctl_volume_management("database-vm", "list", "production")
     """
     if operation == "list":
+        # Use current namespace if none provided
+        if namespace is None:
+            namespace = get_current_namespace()
+
         # For list operation, we'll use kubectl to get VM volumes info
         args = ["get", "vm", vm_name]
         if namespace:
@@ -1008,7 +993,7 @@ def virtctl_volume_management(
                 args.extend(["--volume-source", f"blank:{vol_name}"])
                 args.extend(["--size", size])
                 if storage_class:
-                    args.extend(["--storage-class", storage_class])
+                    args.extend(["--storageclass", storage_class])
             elif source.startswith("registry:"):
                 image_url = source[9:]  # Remove "registry:" prefix
                 args.extend(["--volume-source", f"registry:{image_url}"])
@@ -1043,6 +1028,10 @@ def virtctl_volume_management(
             f"Invalid operation: {operation}. Valid operations: add, remove, list"
         )
 
+    # Use current namespace if none provided
+    if namespace is None:
+        namespace = get_current_namespace()
+
     # Add common arguments
     if namespace:
         args.extend(["-n", namespace])
@@ -1060,7 +1049,7 @@ def virtctl_volume_management(
 def virtctl_image_operations(
     operation: str,
     vm_name: str = "",
-    namespace: str = "",
+    namespace: str = None,
     image_path: str = "",
     pvc_name: str = "",
     size: str = "",
@@ -1105,7 +1094,7 @@ def virtctl_image_operations(
         if size:
             args.extend(["--size", size])
         if storage_class:
-            args.extend(["--storage-class", storage_class])
+            args.extend(["--storageclass", storage_class])
 
         if upload_config:
             if upload_config.get("insecure", False):
@@ -1152,6 +1141,10 @@ def virtctl_image_operations(
     else:
         raise VirtctlError(f"Invalid operation: {operation}")
 
+    # Use current namespace if none provided
+    if namespace is None:
+        namespace = get_current_namespace()
+
     if namespace:
         args.extend(["-n", namespace])
 
@@ -1165,7 +1158,7 @@ def virtctl_service_management(
     operation: str,
     resource_name: str,
     resource_type: str = "vm",
-    namespace: str = "",
+    namespace: str = None,
     expose_config: Dict[str, Any] = None,
     service_name: str = "",
 ) -> str:
@@ -1284,7 +1277,7 @@ def virtctl_service_management(
                                  })
 
         # Expose internal API service
-        virtctl_service_management("expose", "api-server", "vm", "default",
+        virtctl_service_management("expose", "api-server", "vm",
                                  expose_config={
                                      "port": 8080,
                                      "target_port": 8080,
@@ -1314,6 +1307,10 @@ def virtctl_service_management(
         if not service_name:
             service_name = f"{resource_name}-service"
 
+        # Use current namespace if none provided
+        if namespace is None:
+            namespace = get_current_namespace()
+
         kubectl_args = ["delete", "service", service_name]
         if namespace:
             kubectl_args.extend(["-n", namespace])
@@ -1330,6 +1327,10 @@ def virtctl_service_management(
         except subprocess.CalledProcessError as e:
             raise VirtctlError(f"Failed to unexpose service: {e.stderr}")
 
+    # Use current namespace if none provided (for expose operation)
+    if namespace is None:
+        namespace = get_current_namespace()
+
     if namespace:
         args.extend(["-n", namespace])
 
@@ -1342,8 +1343,7 @@ def virtctl_service_management(
 def virtctl_diagnostics(
     diagnostic_type: str,
     vm_name: str = "",
-    namespace: str = "",
-    output_format: str = "table",
+    namespace: str = None,
 ) -> str:
     """Comprehensive VM diagnostics and monitoring capabilities.
 
@@ -1438,7 +1438,7 @@ def virtctl_diagnostics(
         virtctl_diagnostics("guestosinfo", "prod-vm", "production")
 
         # Storage investigation
-        virtctl_diagnostics("fslist", "db-vm", "production", "table")
+        virtctl_diagnostics("fslist", "db-vm", "production")
 
         # Security audit
         virtctl_diagnostics("userlist", "web-vm", "production")
@@ -1459,22 +1459,15 @@ def virtctl_diagnostics(
     else:
         raise VirtctlError(f"Invalid diagnostic type: {diagnostic_type}")
 
+    # Use current namespace if none provided
+    if namespace is None:
+        namespace = get_current_namespace()
+
     if namespace:
         args.extend(["-n", namespace])
 
-    if diagnostic_type != "version":
-        args.extend(_build_output_format_args(output_format))
-
     result = _run_virtctl_command(args)
-
-    if output_format == "json" and diagnostic_type != "version":
-        try:
-            data = _parse_json_output(result.stdout)
-            return json.dumps(data, indent=2)
-        except Exception:
-            return result.stdout
-    else:
-        return result.stdout
+    return result.stdout
 
 
 # Resource Creation Tools
@@ -1483,10 +1476,9 @@ def virtctl_create_resources(
     resource_type: str,
     name: str,
     namespaced: bool = False,
-    namespace: str = "",
+    namespace: str = None,
     instancetype_config: Dict[str, Any] = None,
     preference_config: Dict[str, Any] = None,
-    output_format: str = "json",
 ) -> str:
     """Advanced resource template creation for instance types and preferences.
 
@@ -1733,8 +1725,6 @@ def virtctl_create_resources(
         if "machine_type" in preference_config:
             args.extend(["--machine-type", preference_config["machine_type"]])
 
-    args.extend(_build_output_format_args(output_format))
-
     result = _run_virtctl_command(args)
     return result.stdout
 
@@ -1744,7 +1734,7 @@ def virtctl_create_resources(
 def virtctl_datasource_management(
     operation: str,
     name: str = "",
-    namespace: str = "",
+    namespace: str = None,
     source_config: Dict[str, Any] = None,
     storage_config: Dict[str, Any] = None,
     metadata: Dict[str, Any] = None,
@@ -1868,7 +1858,7 @@ def virtctl_datasource_management(
     Examples:
         # Create Fedora DataSource
         virtctl_datasource_management(
-            "create", "fedora-42-cloud", "default",
+            "create", "fedora-42-cloud",
             source_config={
                 "source_type": "http",
                 "url": "https://download.fedoraproject.org/pub/fedora/linux/releases/42/Cloud/x86_64/images/Fedora-Cloud-Base-42-1.6.x86_64.qcow2"
@@ -1885,7 +1875,7 @@ def virtctl_datasource_management(
 
         # Create Ubuntu from container registry
         virtctl_datasource_management(
-            "create", "ubuntu-22-04", "default",
+            "create", "ubuntu-22-04",
             source_config={
                 "source_type": "registry",
                 "registry_config": {"url": "docker://quay.io/containerdisks/ubuntu:22.04"}
@@ -1908,14 +1898,17 @@ def virtctl_datasource_management(
         )
     """
     if operation == "list":
+        # Use current namespace if none provided
+        if namespace is None:
+            namespace = get_current_namespace()
+
         args = ["get", "datasources"]
         if namespace:
             args.extend(["-n", namespace])
         else:
             args.append("--all-namespaces")
 
-        if output_format in ["json", "yaml"]:
-            args.extend(["-o", output_format])
+        args.extend(["-o", "json"])
 
         try:
             result = subprocess.run(
@@ -1938,10 +1931,14 @@ def virtctl_datasource_management(
             )
 
         # Build DataSource manifest
+        # Use current namespace if none provided
+        if namespace is None:
+            namespace = get_current_namespace()
+
         datasource = {
             "apiVersion": "cdi.kubevirt.io/v1beta1",
             "kind": "DataSource",
-            "metadata": {"name": name, "namespace": namespace or "default"},
+            "metadata": {"name": name, "namespace": namespace},
             "spec": {"source": {}},
         }
 
@@ -1974,9 +1971,7 @@ def virtctl_datasource_management(
 def virtctl_cluster_resources(
     resource_type: str,
     scope: str = "all",
-    namespace: str = "",
-    output_format: str = "table",
-    include_details: bool = False,
+    namespace: str = None,
     label_selector: str = "",
     show_labels: bool = False,
 ) -> str:
@@ -2017,8 +2012,6 @@ def virtctl_cluster_resources(
         resource_type: Type of resource (instancetypes, preferences, datasources, storageclasses, all)
         scope: Resource scope (all, cluster, namespaced) (optional)
         namespace: Kubernetes namespace for namespaced resources (optional)
-        output_format: Output format (json only) (optional)
-        include_details: Include detailed resource information (optional)
         label_selector: Label selector for filtering (e.g., "os=linux,version=22.04") (optional)
         show_labels: Show resource labels (optional)
 
@@ -2026,22 +2019,27 @@ def virtctl_cluster_resources(
         Available cluster resources information with discovery hints
 
     Examples:
-        # Discover all available instance types with details
-        virtctl_cluster_resources("instancetypes", "all", output_format="table", include_details=True)
+        # Discover all available instance types
+        virtctl_cluster_resources("instancetypes", "all")
 
         # Find Linux DataSources only
         virtctl_cluster_resources("datasources", "cluster", label_selector="os=linux", show_labels=True)
 
         # Get detailed preference information
-        virtctl_cluster_resources("preferences", "all", output_format="yaml")
+        virtctl_cluster_resources("preferences", "all")
 
         # Find virtualization-optimized storage classes
-        virtctl_cluster_resources("storageclasses", output_format="json", show_labels=True)
+        virtctl_cluster_resources("storageclasses", show_labels=True)
     """
     results = []
 
     def get_resources(resource_name: str, namespaced: bool = True):
         args = ["get", resource_name]
+
+        # Use current namespace if none provided
+        nonlocal namespace
+        if namespace is None:
+            namespace = get_current_namespace()
 
         if namespaced:
             if namespace:
@@ -2055,10 +2053,7 @@ def virtctl_cluster_resources(
         if show_labels:
             args.append("--show-labels")
 
-        if output_format in ["json", "yaml"]:
-            args.extend(["-o", output_format])
-        elif include_details:
-            args.extend(["-o", "wide"])
+        args.extend(["-o", "json"])
 
         try:
             result = subprocess.run(
