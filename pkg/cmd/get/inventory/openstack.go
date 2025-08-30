@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -12,19 +13,19 @@ import (
 )
 
 // ListInstances queries the provider's instance inventory and displays the results
-func ListInstances(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+func ListInstances(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listInstancesOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+			return listInstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 		}, 10*time.Second)
 	}
 
-	return listInstancesOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+	return listInstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 }
 
-func listInstancesOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func listInstancesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// Get the provider object
-	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
 	if err != nil {
 		return err
 	}
@@ -91,19 +92,19 @@ func listInstancesOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerN
 }
 
 // ListImages queries the provider's image inventory and displays the results
-func ListImages(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+func ListImages(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listImagesOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+			return listImagesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 		}, 10*time.Second)
 	}
 
-	return listImagesOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+	return listImagesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 }
 
-func listImagesOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func listImagesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// Get the provider object
-	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
 	if err != nil {
 		return err
 	}
@@ -172,19 +173,19 @@ func listImagesOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName
 }
 
 // ListFlavors queries the provider's flavor inventory and displays the results
-func ListFlavors(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+func ListFlavors(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listFlavorsOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+			return listFlavorsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 		}, 10*time.Second)
 	}
 
-	return listFlavorsOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+	return listFlavorsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 }
 
-func listFlavorsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func listFlavorsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// Get the provider object
-	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
 	if err != nil {
 		return err
 	}
@@ -254,19 +255,19 @@ func listFlavorsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerNam
 }
 
 // ListProjects queries the provider's project inventory and displays the results
-func ListProjects(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+func ListProjects(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listProjectsOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+			return listProjectsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 		}, 10*time.Second)
 	}
 
-	return listProjectsOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+	return listProjectsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 }
 
-func listProjectsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func listProjectsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// Get the provider object
-	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
 	if err != nil {
 		return err
 	}

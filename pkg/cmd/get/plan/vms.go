@@ -49,25 +49,25 @@ func getVMCompletionStatus(vm map[string]interface{}) string {
 }
 
 // ListVMs lists all VMs in a migration plan
-func ListVMs(configFlags *genericclioptions.ConfigFlags, name, namespace string, watchMode bool) error {
+func ListVMs(ctx context.Context, configFlags *genericclioptions.ConfigFlags, name, namespace string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listVMsOnce(configFlags, name, namespace)
+			return listVMsOnce(ctx, configFlags, name, namespace)
 		}, 20*time.Second)
 	}
 
-	return listVMsOnce(configFlags, name, namespace)
+	return listVMsOnce(ctx, configFlags, name, namespace)
 }
 
 // listVMsOnce lists VMs in a migration plan once (helper function for ListVMs)
-func listVMsOnce(configFlags *genericclioptions.ConfigFlags, name, namespace string) error {
+func listVMsOnce(ctx context.Context, configFlags *genericclioptions.ConfigFlags, name, namespace string) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
 	}
 
 	// Get the plan
-	plan, err := c.Resource(client.PlansGVR).Namespace(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	plan, err := c.Resource(client.PlansGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get plan: %v", err)
 	}

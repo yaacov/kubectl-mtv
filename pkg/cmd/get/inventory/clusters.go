@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -12,19 +13,19 @@ import (
 )
 
 // ListClusters queries the provider's cluster inventory and displays the results
-func ListClusters(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+func ListClusters(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listClustersOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+			return listClustersOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 		}, 10*time.Second)
 	}
 
-	return listClustersOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+	return listClustersOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 }
 
-func listClustersOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func listClustersOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// Get the provider object
-	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
 	if err != nil {
 		return err
 	}

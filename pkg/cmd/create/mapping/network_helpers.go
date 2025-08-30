@@ -1,6 +1,7 @@
 package mapping
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -128,9 +129,9 @@ func resolveVirtualizationNetworkNameToID(configFlags *genericclioptions.ConfigF
 }
 
 // resolveNetworkNameToID resolves a network name to its ref.Ref by querying the provider inventory
-func resolveNetworkNameToID(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL, networkName string) ([]ref.Ref, error) {
+func resolveNetworkNameToID(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL, networkName string) ([]ref.Ref, error) {
 	// Get source provider
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider '%s': %v", providerName, err)
 	}

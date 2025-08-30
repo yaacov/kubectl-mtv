@@ -1,6 +1,9 @@
 package get
 
 import (
+	"context"
+	"time"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -22,6 +25,10 @@ func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.HookResourceNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Create context with 30s timeout
+			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+			defer cancel()
+
 			// Get the global configuration
 			config := getGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
@@ -40,7 +47,7 @@ func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return hook.List(config.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hookName, config.GetUseUTC())
+			return hook.List(ctx, config.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hookName, config.GetUseUTC())
 		},
 	}
 

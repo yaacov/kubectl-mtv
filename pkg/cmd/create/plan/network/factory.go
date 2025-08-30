@@ -53,9 +53,9 @@ type NetworkMapperOptions struct {
 }
 
 // GetSourceNetworkFetcher returns the appropriate source network fetcher based on provider type
-func GetSourceNetworkFetcher(configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.SourceNetworkFetcher, error) {
+func GetSourceNetworkFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.SourceNetworkFetcher, error) {
 	// Get the provider object to determine its type
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider: %v", err)
 	}
@@ -92,9 +92,9 @@ func GetSourceNetworkFetcher(configFlags *genericclioptions.ConfigFlags, provide
 }
 
 // GetTargetNetworkFetcher returns the appropriate target network fetcher based on provider type
-func GetTargetNetworkFetcher(configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.TargetNetworkFetcher, error) {
+func GetTargetNetworkFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.TargetNetworkFetcher, error) {
 	// Get the provider object to determine its type
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider: %v", err)
 	}
@@ -131,7 +131,7 @@ func GetTargetNetworkFetcher(configFlags *genericclioptions.ConfigFlags, provide
 }
 
 // CreateNetworkMap creates a network map using the new fetcher-based architecture
-func CreateNetworkMap(opts NetworkMapperOptions) (string, error) {
+func CreateNetworkMap(ctx context.Context, opts NetworkMapperOptions) (string, error) {
 	klog.V(4).Infof("DEBUG: Creating network map - Source: %s, Target: %s, DefaultTargetNetwork: '%s'",
 		opts.SourceProvider, opts.TargetProvider, opts.DefaultTargetNetwork)
 
@@ -140,7 +140,7 @@ func CreateNetworkMap(opts NetworkMapperOptions) (string, error) {
 	if sourceProviderNamespace == "" {
 		sourceProviderNamespace = opts.Namespace
 	}
-	sourceFetcher, err := GetSourceNetworkFetcher(opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace)
+	sourceFetcher, err := GetSourceNetworkFetcher(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace)
 	if err != nil {
 		return "", fmt.Errorf("failed to get source network fetcher: %v", err)
 	}
@@ -151,14 +151,14 @@ func CreateNetworkMap(opts NetworkMapperOptions) (string, error) {
 	if targetProviderNamespace == "" {
 		targetProviderNamespace = opts.Namespace
 	}
-	targetFetcher, err := GetTargetNetworkFetcher(opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace)
+	targetFetcher, err := GetTargetNetworkFetcher(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace)
 	if err != nil {
 		return "", fmt.Errorf("failed to get target network fetcher: %v", err)
 	}
 	klog.V(4).Infof("DEBUG: Target fetcher created for provider: %s", opts.TargetProvider)
 
 	// Fetch source networks
-	sourceNetworks, err := sourceFetcher.FetchSourceNetworks(opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.InventoryURL, opts.PlanVMNames)
+	sourceNetworks, err := sourceFetcher.FetchSourceNetworks(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.InventoryURL, opts.PlanVMNames)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch source networks: %v", err)
 	}
@@ -168,7 +168,7 @@ func CreateNetworkMap(opts NetworkMapperOptions) (string, error) {
 	var targetNetworks []forkliftv1beta1.DestinationNetwork
 	if opts.DefaultTargetNetwork == "" || (opts.DefaultTargetNetwork != "default" && opts.DefaultTargetNetwork != "") {
 		klog.V(4).Infof("DEBUG: Fetching target networks from target provider: %s", opts.TargetProvider)
-		targetNetworks, err = targetFetcher.FetchTargetNetworks(opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace, opts.InventoryURL)
+		targetNetworks, err = targetFetcher.FetchTargetNetworks(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace, opts.InventoryURL)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch target networks: %v", err)
 		}

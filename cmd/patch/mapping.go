@@ -52,7 +52,7 @@ func newPatchNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *
 
 			// If inventoryURL is empty, try to discover it
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+				inventoryURL = client.DiscoverInventoryURL(cmd.Context(), kubeConfigFlags, namespace)
 			}
 
 			return mapping.PatchNetwork(kubeConfigFlags, name, namespace, addPairs, updatePairs, removePairs, inventoryURL)
@@ -93,7 +93,7 @@ func newPatchStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *
 
 			// If inventoryURL is empty, try to discover it
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+				inventoryURL = client.DiscoverInventoryURL(cmd.Context(), kubeConfigFlags, namespace)
 			}
 
 			return mapping.PatchStorageWithOptions(kubeConfigFlags, name, namespace, addPairs, updatePairs,

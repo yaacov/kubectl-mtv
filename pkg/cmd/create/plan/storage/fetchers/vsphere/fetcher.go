@@ -1,5 +1,7 @@
 package vsphere
 
+import "context"
+
 import (
 	"fmt"
 
@@ -22,11 +24,11 @@ func NewVSphereStorageFetcher() *VSphereStorageFetcher {
 }
 
 // FetchSourceStorages extracts storage references from VSphere VMs
-func (f *VSphereStorageFetcher) FetchSourceStorages(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string, planVMNames []string) ([]ref.Ref, error) {
+func (f *VSphereStorageFetcher) FetchSourceStorages(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string, planVMNames []string) ([]ref.Ref, error) {
 	klog.V(4).Infof("VSphere storage fetcher - extracting source storages for provider: %s", providerName)
 
 	// Get the provider object
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get source provider: %v", err)
 	}
@@ -139,7 +141,7 @@ func (f *VSphereStorageFetcher) FetchSourceStorages(configFlags *genericclioptio
 }
 
 // FetchTargetStorages is not supported for VSphere as target - only OpenShift is supported as target
-func (f *VSphereStorageFetcher) FetchTargetStorages(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]forkliftv1beta1.DestinationStorage, error) {
+func (f *VSphereStorageFetcher) FetchTargetStorages(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]forkliftv1beta1.DestinationStorage, error) {
 	klog.V(4).Infof("VSphere provider does not support target storage fetching - only OpenShift is supported as target")
 	return nil, fmt.Errorf("VSphere provider does not support target storage fetching - only OpenShift is supported as migration target")
 }

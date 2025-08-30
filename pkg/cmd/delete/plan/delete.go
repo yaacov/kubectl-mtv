@@ -17,7 +17,7 @@ import (
 )
 
 // Delete removes a plan by name from the cluster
-func Delete(configFlags *genericclioptions.ConfigFlags, name, namespace string, skipArchive, cleanAll bool) error {
+func Delete(ctx context.Context, configFlags *genericclioptions.ConfigFlags, name, namespace string, skipArchive, cleanAll bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -29,7 +29,7 @@ func Delete(configFlags *genericclioptions.ConfigFlags, name, namespace string, 
 
 		// Patch the plan to add deleteVmOnFailMigration=true
 		fmt.Printf("Patching plan '%s' to enable VM deletion on failed migration...\n", name)
-		err = patchPlanDeleteVmOnFailMigration(c, name, namespace)
+		err = patchPlanDeleteVmOnFailMigration(ctx, c, name, namespace)
 		if err != nil {
 			return fmt.Errorf("failed to patch plan: %v", err)
 		}
@@ -42,14 +42,14 @@ func Delete(configFlags *genericclioptions.ConfigFlags, name, namespace string, 
 		fmt.Printf("Skipping archive and deleting plan '%s' immediately...\n", name)
 	} else {
 		// Archive the plan
-		err = plan.Archive(configFlags, name, namespace, true)
+		err = plan.Archive(ctx, configFlags, name, namespace, true)
 		if err != nil {
 			return fmt.Errorf("failed to archive plan: %v", err)
 		}
 
 		// Wait for the Archived condition to be true
 		fmt.Printf("Waiting for plan '%s' to be archived...\n", name)
-		err = waitForArchivedCondition(c, name, namespace, 60)
+		err = waitForArchivedCondition(ctx, c, name, namespace, 60)
 		if err != nil {
 			return err
 		}
@@ -57,7 +57,7 @@ func Delete(configFlags *genericclioptions.ConfigFlags, name, namespace string, 
 	}
 
 	// Delete the plan
-	err = c.Resource(client.PlansGVR).Namespace(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{})
+	err = c.Resource(client.PlansGVR).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to delete plan: %v", err)
 	}
@@ -67,7 +67,7 @@ func Delete(configFlags *genericclioptions.ConfigFlags, name, namespace string, 
 }
 
 // waitForArchivedCondition waits for a plan to reach the Archived condition with a timeout
-func waitForArchivedCondition(c dynamic.Interface, name, namespace string, timeoutSec int) error {
+func waitForArchivedCondition(ctx context.Context, c dynamic.Interface, name, namespace string, timeoutSec int) error {
 	// Set timeout based on provided seconds
 	timeout := time.Duration(timeoutSec) * time.Second
 	startTime := time.Now()
@@ -78,7 +78,7 @@ func waitForArchivedCondition(c dynamic.Interface, name, namespace string, timeo
 			return fmt.Errorf("timeout waiting for plan '%s' to be archived after %v", name, timeout)
 		}
 
-		plan, err := c.Resource(client.PlansGVR).Namespace(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		plan, err := c.Resource(client.PlansGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to get plan: %v", err)
 		}
@@ -115,7 +115,7 @@ func waitForArchivedCondition(c dynamic.Interface, name, namespace string, timeo
 }
 
 // patchPlanDeleteVmOnFailMigration patches a plan to add deleteVmOnFailMigration=true
-func patchPlanDeleteVmOnFailMigration(c dynamic.Interface, name, namespace string) error {
+func patchPlanDeleteVmOnFailMigration(ctx context.Context, c dynamic.Interface, name, namespace string) error {
 	// Create patch data
 	patchSpec := map[string]interface{}{
 		"deleteVmOnFailMigration": true,
@@ -132,7 +132,7 @@ func patchPlanDeleteVmOnFailMigration(c dynamic.Interface, name, namespace strin
 
 	// Apply the patch
 	_, err = c.Resource(client.PlansGVR).Namespace(namespace).Patch(
-		context.TODO(),
+		ctx,
 		name,
 		types.MergePatchType,
 		patchBytes,

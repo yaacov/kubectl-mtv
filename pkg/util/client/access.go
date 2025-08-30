@@ -10,7 +10,7 @@ import (
 )
 
 // CanAccessResource checks if the user has permissions to perform the specified verb on the given resource in the namespace
-func CanAccessResource(configFlags *genericclioptions.ConfigFlags, namespace string, gvr schema.GroupVersionResource, verb string) bool {
+func CanAccessResource(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, gvr schema.GroupVersionResource, verb string) bool {
 	// Get clientset
 	clientset, err := GetKubernetesClientset(configFlags)
 	if err != nil {
@@ -31,7 +31,7 @@ func CanAccessResource(configFlags *genericclioptions.ConfigFlags, namespace str
 
 	// Submit the access review
 	result, err := clientset.AuthorizationV1().SelfSubjectAccessReviews().Create(
-		context.TODO(),
+		ctx,
 		accessReview,
 		metav1.CreateOptions{},
 	)

@@ -1,6 +1,8 @@
 package mapping
 
 import (
+	"context"
+
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
@@ -42,15 +44,15 @@ func CreateNetwork(configFlags *genericclioptions.ConfigFlags, name, namespace, 
 
 // CreateStorageWithOptions creates a new storage mapping with additional options for VolumeMode, AccessMode, and OffloadPlugin
 func CreateStorageWithOptions(opts StorageCreateOptions) error {
-	return createStorageMappingWithOptions(opts.ConfigFlags, opts.Name, opts.Namespace, opts.SourceProvider, opts.TargetProvider, opts.StoragePairs, opts.InventoryURL, opts.DefaultVolumeMode, opts.DefaultAccessMode, opts.DefaultOffloadPlugin, opts.DefaultOffloadSecret, opts.DefaultOffloadVendor)
+	return createStorageMappingWithOptions(context.TODO(), opts.ConfigFlags, opts.Name, opts.Namespace, opts.SourceProvider, opts.TargetProvider, opts.StoragePairs, opts.InventoryURL, opts.DefaultVolumeMode, opts.DefaultAccessMode, opts.DefaultOffloadPlugin, opts.DefaultOffloadSecret, opts.DefaultOffloadVendor)
 }
 
 // ParseNetworkPairs parses network pairs and returns the parsed pairs (exported for patch functionality)
 func ParseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericclioptions.ConfigFlags, sourceProvider, inventoryURL string) ([]forkliftv1beta1.NetworkPair, error) {
-	return parseNetworkPairs(pairStr, defaultNamespace, configFlags, sourceProvider, inventoryURL)
+	return parseNetworkPairs(context.TODO(), pairStr, defaultNamespace, configFlags, sourceProvider, inventoryURL)
 }
 
 // ParseStoragePairsWithOptions parses storage pairs with additional options for VolumeMode, AccessMode, and OffloadPlugin (exported for patch functionality)
 func ParseStoragePairsWithOptions(opts StorageParseOptions) ([]forkliftv1beta1.StoragePair, error) {
-	return parseStoragePairsWithOptions(opts.PairStr, opts.DefaultNamespace, opts.ConfigFlags, opts.SourceProvider, opts.InventoryURL, opts.DefaultVolumeMode, opts.DefaultAccessMode, opts.DefaultOffloadPlugin, opts.DefaultOffloadSecret, opts.DefaultOffloadVendor)
+	return parseStoragePairsWithOptions(context.TODO(), opts.PairStr, opts.DefaultNamespace, opts.ConfigFlags, opts.SourceProvider, opts.InventoryURL, opts.DefaultVolumeMode, opts.DefaultAccessMode, opts.DefaultOffloadPlugin, opts.DefaultOffloadSecret, opts.DefaultOffloadVendor)
 }

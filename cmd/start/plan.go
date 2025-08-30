@@ -46,7 +46,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 			if all {
 				// Get all plan names from the namespace
 				var err error
-				planNames, err = client.GetAllPlanNames(config.GetKubeConfigFlags(), namespace)
+				planNames, err = client.GetAllPlanNames(cmd.Context(), config.GetKubeConfigFlags(), namespace)
 				if err != nil {
 					return fmt.Errorf("failed to get all plan names: %v", err)
 				}

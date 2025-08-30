@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -14,20 +15,20 @@ import (
 )
 
 // ListProviders queries the providers and displays their inventory information
-func ListProviders(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+func ListProviders(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listProvidersOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+			return listProvidersOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 		}, 10*time.Second)
 	}
 
-	return listProvidersOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+	return listProvidersOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 }
 
-func listProvidersOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func listProvidersOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// If inventoryURL is empty, try to discover it from an OpenShift Route
 	if inventoryURL == "" {
-		inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+		inventoryURL = client.DiscoverInventoryURL(ctx, kubeConfigFlags, namespace)
 	}
 
 	if inventoryURL == "" {
@@ -40,7 +41,7 @@ func listProvidersOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerN
 
 	if providerName != "" {
 		// Get specific provider by name with detail=4
-		providersData, err = client.FetchSpecificProviderWithDetail(kubeConfigFlags, inventoryURL, providerName, 4)
+		providersData, err = client.FetchSpecificProviderWithDetail(ctx, kubeConfigFlags, inventoryURL, providerName, 4)
 		if err != nil {
 			return fmt.Errorf("failed to get provider inventory: %v", err)
 		}

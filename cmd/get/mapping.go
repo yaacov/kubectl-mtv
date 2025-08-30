@@ -1,6 +1,9 @@
 package get
 
 import (
+	"context"
+	"time"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -61,7 +64,9 @@ func newGetNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, get
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return mapping.List(config.GetKubeConfigFlags(), "network", namespace, outputFormatFlag.GetValue(), mappingName, config.GetUseUTC())
+			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+			defer cancel()
+			return mapping.List(ctx, config.GetKubeConfigFlags(), "network", namespace, outputFormatFlag.GetValue(), mappingName, config.GetUseUTC())
 		},
 	}
 
@@ -108,7 +113,9 @@ func newGetStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, get
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return mapping.List(config.GetKubeConfigFlags(), "storage", namespace, outputFormatFlag.GetValue(), mappingName, config.GetUseUTC())
+			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+			defer cancel()
+			return mapping.List(ctx, config.GetKubeConfigFlags(), "storage", namespace, outputFormatFlag.GetValue(), mappingName, config.GetUseUTC())
 		},
 	}
 

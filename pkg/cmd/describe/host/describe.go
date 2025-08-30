@@ -14,14 +14,14 @@ import (
 )
 
 // Describe describes a migration host
-func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string, useUTC bool) error {
+func Describe(ctx context.Context, configFlags *genericclioptions.ConfigFlags, name, namespace string, useUTC bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
 	}
 
 	// Get the host
-	host, err := c.Resource(client.HostsGVR).Namespace(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	host, err := c.Resource(client.HostsGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get host: %v", err)
 	}
@@ -75,7 +75,7 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 	}
 
 	// Network Adapters Information from Provider Inventory
-	if err := displayNetworkAdapters(configFlags, host, namespace); err != nil {
+	if err := displayNetworkAdapters(ctx, configFlags, host, namespace); err != nil {
 		// Log the error but don't fail the command - network adapter info is supplementary
 		fmt.Printf("\n%s: %v\n", output.Bold("Network Adapters Info"), output.Red("Failed to fetch"))
 	}
@@ -138,7 +138,7 @@ func Describe(configFlags *genericclioptions.ConfigFlags, name, namespace string
 }
 
 // displayNetworkAdapters fetches and displays network adapter information from provider inventory
-func displayNetworkAdapters(configFlags *genericclioptions.ConfigFlags, host *unstructured.Unstructured, namespace string) error {
+func displayNetworkAdapters(ctx context.Context, configFlags *genericclioptions.ConfigFlags, host *unstructured.Unstructured, namespace string) error {
 	// Extract host ID and provider name from host resource
 	hostID, found, _ := unstructured.NestedString(host.Object, "spec", "id")
 	if !found || hostID == "" {
@@ -156,13 +156,13 @@ func displayNetworkAdapters(configFlags *genericclioptions.ConfigFlags, host *un
 	}
 
 	// Get the provider object
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return fmt.Errorf("failed to get provider: %v", err)
 	}
 
 	// Create provider client with inventory URL discovery
-	inventoryURL := client.DiscoverInventoryURL(configFlags, namespace)
+	inventoryURL := client.DiscoverInventoryURL(ctx, configFlags, namespace)
 	providerClient := inventory.NewProviderClient(configFlags, provider, inventoryURL)
 
 	// Get provider type to verify host support

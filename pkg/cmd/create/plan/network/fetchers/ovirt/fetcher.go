@@ -1,5 +1,7 @@
 package ovirt
 
+import "context"
+
 import (
 	"fmt"
 
@@ -21,11 +23,11 @@ func NewOvirtNetworkFetcher() *OvirtNetworkFetcher {
 }
 
 // FetchSourceNetworks extracts network references from oVirt VMs
-func (f *OvirtNetworkFetcher) FetchSourceNetworks(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string, planVMNames []string) ([]ref.Ref, error) {
+func (f *OvirtNetworkFetcher) FetchSourceNetworks(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string, planVMNames []string) ([]ref.Ref, error) {
 	klog.V(4).Infof("oVirt fetcher - extracting source networks for provider: %s", providerName)
 
 	// Get the provider object
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get source provider: %v", err)
 	}
@@ -144,7 +146,7 @@ func (f *OvirtNetworkFetcher) FetchSourceNetworks(configFlags *genericclioptions
 }
 
 // FetchTargetNetworks is not supported for oVirt as target - only OpenShift is supported as target
-func (f *OvirtNetworkFetcher) FetchTargetNetworks(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]forkliftv1beta1.DestinationNetwork, error) {
+func (f *OvirtNetworkFetcher) FetchTargetNetworks(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]forkliftv1beta1.DestinationNetwork, error) {
 	klog.V(4).Infof("oVirt provider does not support target network fetching - only OpenShift is supported as target")
 	return nil, fmt.Errorf("oVirt provider does not support target network fetching - only OpenShift is supported as migration target")
 }

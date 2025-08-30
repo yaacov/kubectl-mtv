@@ -100,7 +100,7 @@ func createHostItem(host unstructured.Unstructured, useUTC bool) map[string]inte
 }
 
 // List lists hosts
-func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat string, hostName string, useUTC bool) error {
+func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace, outputFormat string, hostName string, useUTC bool) error {
 	dynamicClient, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -116,10 +116,10 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat st
 
 	// If hostName is specified, get that specific host
 	if hostName != "" {
-		allItems, err = getSpecificHost(dynamicClient, namespace, hostName, useUTC)
+		allItems, err = getSpecificHost(ctx, dynamicClient, namespace, hostName, useUTC)
 	} else {
 		// Get all hosts
-		allItems, err = getAllHosts(dynamicClient, namespace, useUTC)
+		allItems, err = getAllHosts(ctx, dynamicClient, namespace, useUTC)
 	}
 
 	// Handle error if no items found
@@ -139,8 +139,8 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat st
 }
 
 // getAllHosts retrieves all hosts from the given namespace
-func getAllHosts(dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
-	hosts, err := dynamicClient.Resource(client.HostsGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+func getAllHosts(ctx context.Context, dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
+	hosts, err := dynamicClient.Resource(client.HostsGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list hosts: %v", err)
 	}
@@ -154,8 +154,8 @@ func getAllHosts(dynamicClient dynamic.Interface, namespace string, useUTC bool)
 }
 
 // getSpecificHost retrieves a specific host by name
-func getSpecificHost(dynamicClient dynamic.Interface, namespace string, hostName string, useUTC bool) ([]map[string]interface{}, error) {
-	host, err := dynamicClient.Resource(client.HostsGVR).Namespace(namespace).Get(context.TODO(), hostName, metav1.GetOptions{})
+func getSpecificHost(ctx context.Context, dynamicClient dynamic.Interface, namespace string, hostName string, useUTC bool) ([]map[string]interface{}, error) {
+	host, err := dynamicClient.Resource(client.HostsGVR).Namespace(namespace).Get(ctx, hostName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get host '%s': %v", hostName, err)
 	}

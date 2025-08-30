@@ -1,6 +1,7 @@
 package mapping
 
 import (
+	"context"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -175,9 +176,9 @@ func resolveOVAStorageNameToID(configFlags *genericclioptions.ConfigFlags, inven
 }
 
 // resolveStorageNameToID resolves a storage name to its ref.Ref by querying the provider inventory
-func resolveStorageNameToID(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL, storageName string) ([]ref.Ref, error) {
+func resolveStorageNameToID(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL, storageName string) ([]ref.Ref, error) {
 	// Get source provider
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider '%s': %v", providerName, err)
 	}

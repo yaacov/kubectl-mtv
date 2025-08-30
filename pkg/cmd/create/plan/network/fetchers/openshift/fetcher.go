@@ -1,5 +1,7 @@
 package openshift
 
+import "context"
+
 import (
 	"fmt"
 	"strings"
@@ -23,11 +25,11 @@ func NewOpenShiftNetworkFetcher() *OpenShiftNetworkFetcher {
 }
 
 // FetchSourceNetworks extracts network references from OpenShift VMs
-func (f *OpenShiftNetworkFetcher) FetchSourceNetworks(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string, planVMNames []string) ([]ref.Ref, error) {
+func (f *OpenShiftNetworkFetcher) FetchSourceNetworks(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string, planVMNames []string) ([]ref.Ref, error) {
 	klog.V(4).Infof("OpenShift fetcher - extracting source networks for provider: %s", providerName)
 
 	// Get the provider object
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get source provider: %v", err)
 	}
@@ -159,11 +161,11 @@ func (f *OpenShiftNetworkFetcher) FetchSourceNetworks(configFlags *genericcliopt
 }
 
 // FetchTargetNetworks extracts available destination networks from target provider
-func (f *OpenShiftNetworkFetcher) FetchTargetNetworks(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]forkliftv1beta1.DestinationNetwork, error) {
+func (f *OpenShiftNetworkFetcher) FetchTargetNetworks(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]forkliftv1beta1.DestinationNetwork, error) {
 	klog.V(4).Infof("OpenShift fetcher - extracting target networks for provider: %s", providerName)
 
 	// Get the target provider
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get target provider: %v", err)
 	}

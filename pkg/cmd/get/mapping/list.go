@@ -50,19 +50,19 @@ func createMappingItem(mapping unstructured.Unstructured, mappingType string, us
 }
 
 // List lists network and storage mappings
-func List(configFlags *genericclioptions.ConfigFlags, mappingType, namespace, outputFormat string, mappingName string, useUTC bool) error {
-	return listMappings(configFlags, mappingType, namespace, outputFormat, mappingName, useUTC)
+func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, mappingType, namespace, outputFormat string, mappingName string, useUTC bool) error {
+	return listMappings(ctx, configFlags, mappingType, namespace, outputFormat, mappingName, useUTC)
 }
 
 // getNetworkMappings retrieves all network mappings from the given namespace
-func getNetworkMappings(dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
+func getNetworkMappings(ctx context.Context, dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
 	var networks *unstructured.UnstructuredList
 	var err error
 
 	if namespace != "" {
-		networks, err = dynamicClient.Resource(client.NetworkMapGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+		networks, err = dynamicClient.Resource(client.NetworkMapGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	} else {
-		networks, err = dynamicClient.Resource(client.NetworkMapGVR).List(context.TODO(), metav1.ListOptions{})
+		networks, err = dynamicClient.Resource(client.NetworkMapGVR).Namespace(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	}
 
 	if err != nil {
@@ -79,14 +79,14 @@ func getNetworkMappings(dynamicClient dynamic.Interface, namespace string, useUT
 }
 
 // getStorageMappings retrieves all storage mappings from the given namespace
-func getStorageMappings(dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
+func getStorageMappings(ctx context.Context, dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
 	var storage *unstructured.UnstructuredList
 	var err error
 
 	if namespace != "" {
-		storage, err = dynamicClient.Resource(client.StorageMapGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+		storage, err = dynamicClient.Resource(client.StorageMapGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	} else {
-		storage, err = dynamicClient.Resource(client.StorageMapGVR).List(context.TODO(), metav1.ListOptions{})
+		storage, err = dynamicClient.Resource(client.StorageMapGVR).Namespace(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	}
 
 	if err != nil {
@@ -103,10 +103,10 @@ func getStorageMappings(dynamicClient dynamic.Interface, namespace string, useUT
 }
 
 // getSpecificNetworkMapping retrieves a specific network mapping by name
-func getSpecificNetworkMapping(dynamicClient dynamic.Interface, namespace, mappingName string, useUTC bool) ([]map[string]interface{}, error) {
+func getSpecificNetworkMapping(ctx context.Context, dynamicClient dynamic.Interface, namespace, mappingName string, useUTC bool) ([]map[string]interface{}, error) {
 	if namespace != "" {
 		// If namespace is specified, get the specific resource
-		networkMap, err := dynamicClient.Resource(client.NetworkMapGVR).Namespace(namespace).Get(context.TODO(), mappingName, metav1.GetOptions{})
+		networkMap, err := dynamicClient.Resource(client.NetworkMapGVR).Namespace(namespace).Get(ctx, mappingName, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +115,7 @@ func getSpecificNetworkMapping(dynamicClient dynamic.Interface, namespace, mappi
 		return []map[string]interface{}{item}, nil
 	} else {
 		// If no namespace specified, list all and filter by name
-		networks, err := dynamicClient.Resource(client.NetworkMapGVR).List(context.TODO(), metav1.ListOptions{})
+		networks, err := dynamicClient.Resource(client.NetworkMapGVR).Namespace(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to list network mappings: %v", err)
 		}
@@ -137,10 +137,10 @@ func getSpecificNetworkMapping(dynamicClient dynamic.Interface, namespace, mappi
 }
 
 // getSpecificStorageMapping retrieves a specific storage mapping by name
-func getSpecificStorageMapping(dynamicClient dynamic.Interface, namespace, mappingName string, useUTC bool) ([]map[string]interface{}, error) {
+func getSpecificStorageMapping(ctx context.Context, dynamicClient dynamic.Interface, namespace, mappingName string, useUTC bool) ([]map[string]interface{}, error) {
 	if namespace != "" {
 		// If namespace is specified, get the specific resource
-		storageMap, err := dynamicClient.Resource(client.StorageMapGVR).Namespace(namespace).Get(context.TODO(), mappingName, metav1.GetOptions{})
+		storageMap, err := dynamicClient.Resource(client.StorageMapGVR).Namespace(namespace).Get(ctx, mappingName, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +149,7 @@ func getSpecificStorageMapping(dynamicClient dynamic.Interface, namespace, mappi
 		return []map[string]interface{}{item}, nil
 	} else {
 		// If no namespace specified, list all and filter by name
-		storage, err := dynamicClient.Resource(client.StorageMapGVR).List(context.TODO(), metav1.ListOptions{})
+		storage, err := dynamicClient.Resource(client.StorageMapGVR).Namespace(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to list storage mappings: %v", err)
 		}
@@ -171,18 +171,18 @@ func getSpecificStorageMapping(dynamicClient dynamic.Interface, namespace, mappi
 }
 
 // getSpecificAllMappings retrieves a specific mapping by name from both network and storage mappings
-func getSpecificAllMappings(dynamicClient dynamic.Interface, namespace, mappingName string, useUTC bool) ([]map[string]interface{}, error) {
+func getSpecificAllMappings(ctx context.Context, dynamicClient dynamic.Interface, namespace, mappingName string, useUTC bool) ([]map[string]interface{}, error) {
 	var allItems []map[string]interface{}
 
 	// Try both types if no specific type is specified
 	// First try network mapping
-	networkItems, err := getSpecificNetworkMapping(dynamicClient, namespace, mappingName, useUTC)
+	networkItems, err := getSpecificNetworkMapping(ctx, dynamicClient, namespace, mappingName, useUTC)
 	if err == nil && len(networkItems) > 0 {
 		allItems = append(allItems, networkItems...)
 	}
 
 	// Then try storage mapping
-	storageItems, err := getSpecificStorageMapping(dynamicClient, namespace, mappingName, useUTC)
+	storageItems, err := getSpecificStorageMapping(ctx, dynamicClient, namespace, mappingName, useUTC)
 	if err == nil && len(storageItems) > 0 {
 		allItems = append(allItems, storageItems...)
 	}
@@ -196,16 +196,16 @@ func getSpecificAllMappings(dynamicClient dynamic.Interface, namespace, mappingN
 }
 
 // getAllMappings retrieves all mappings (network and storage) from the given namespace
-func getAllMappings(dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
+func getAllMappings(ctx context.Context, dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
 	var allItems []map[string]interface{}
 
-	networkItems, err := getNetworkMappings(dynamicClient, namespace, useUTC)
+	networkItems, err := getNetworkMappings(ctx, dynamicClient, namespace, useUTC)
 	if err != nil {
 		return nil, err
 	}
 	allItems = append(allItems, networkItems...)
 
-	storageItems, err := getStorageMappings(dynamicClient, namespace, useUTC)
+	storageItems, err := getStorageMappings(ctx, dynamicClient, namespace, useUTC)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func getAllMappings(dynamicClient dynamic.Interface, namespace string, useUTC bo
 }
 
 // listMappings lists network and storage mappings
-func listMappings(configFlags *genericclioptions.ConfigFlags, mappingType, namespace, outputFormat string, mappingName string, useUTC bool) error {
+func listMappings(ctx context.Context, configFlags *genericclioptions.ConfigFlags, mappingType, namespace, outputFormat string, mappingName string, useUTC bool) error {
 	dynamicClient, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -234,11 +234,11 @@ func listMappings(configFlags *genericclioptions.ConfigFlags, mappingType, names
 		// Get specific mapping based on type
 		switch mappingType {
 		case "", "all":
-			allItems, err = getSpecificAllMappings(dynamicClient, namespace, mappingName, useUTC)
+			allItems, err = getSpecificAllMappings(ctx, dynamicClient, namespace, mappingName, useUTC)
 		case "network":
-			allItems, err = getSpecificNetworkMapping(dynamicClient, namespace, mappingName, useUTC)
+			allItems, err = getSpecificNetworkMapping(ctx, dynamicClient, namespace, mappingName, useUTC)
 		case "storage":
-			allItems, err = getSpecificStorageMapping(dynamicClient, namespace, mappingName, useUTC)
+			allItems, err = getSpecificStorageMapping(ctx, dynamicClient, namespace, mappingName, useUTC)
 		default:
 			return fmt.Errorf("unsupported mapping type: %s. Supported types: network, storage, all", mappingType)
 		}
@@ -246,11 +246,11 @@ func listMappings(configFlags *genericclioptions.ConfigFlags, mappingType, names
 		// Get mappings based on the requested type
 		switch mappingType {
 		case "network":
-			allItems, err = getNetworkMappings(dynamicClient, namespace, useUTC)
+			allItems, err = getNetworkMappings(ctx, dynamicClient, namespace, useUTC)
 		case "storage":
-			allItems, err = getStorageMappings(dynamicClient, namespace, useUTC)
+			allItems, err = getStorageMappings(ctx, dynamicClient, namespace, useUTC)
 		case "", "all":
-			allItems, err = getAllMappings(dynamicClient, namespace, useUTC)
+			allItems, err = getAllMappings(ctx, dynamicClient, namespace, useUTC)
 		default:
 			return fmt.Errorf("unsupported mapping type: %s. Supported types: network, storage, all", mappingType)
 		}

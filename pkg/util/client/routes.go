@@ -10,12 +10,12 @@ import (
 )
 
 // CanAccessRoutesInNamespace checks if the user has permissions to list routes in the given namespace
-func CanAccessRoutesInNamespace(configFlags *genericclioptions.ConfigFlags, namespace string) bool {
-	return CanAccessResource(configFlags, namespace, RouteGVR, "list")
+func CanAccessRoutesInNamespace(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string) bool {
+	return CanAccessResource(ctx, configFlags, namespace, RouteGVR, "list")
 }
 
 // GetForkliftInventoryRoute attempts to find a route with the forklift inventory service labels
-func GetForkliftInventoryRoute(configFlags *genericclioptions.ConfigFlags, namespace string) (*unstructured.Unstructured, error) {
+func GetForkliftInventoryRoute(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string) (*unstructured.Unstructured, error) {
 	// Get dynamic client
 	c, err := GetDynamicClient(configFlags)
 	if err != nil {
@@ -26,9 +26,9 @@ func GetForkliftInventoryRoute(configFlags *genericclioptions.ConfigFlags, names
 	labelSelector := "app=forklift,service=forklift-inventory"
 
 	// Check if we have access to the openshift-mtv namespace
-	if CanAccessRoutesInNamespace(configFlags, OpenShiftMTVNamespace) {
+	if CanAccessRoutesInNamespace(ctx, configFlags, OpenShiftMTVNamespace) {
 		// Try to find the route in the openshift-mtv namespace
-		routes, err := c.Resource(RouteGVR).Namespace(OpenShiftMTVNamespace).List(context.TODO(), metav1.ListOptions{
+		routes, err := c.Resource(RouteGVR).Namespace(OpenShiftMTVNamespace).List(ctx, metav1.ListOptions{
 			LabelSelector: labelSelector,
 		})
 
@@ -40,7 +40,7 @@ func GetForkliftInventoryRoute(configFlags *genericclioptions.ConfigFlags, names
 
 	// If we couldn't find the route in openshift-mtv or didn't have permissions,
 	// try the provided namespace
-	routes, err := c.Resource(RouteGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{
+	routes, err := c.Resource(RouteGVR).Namespace(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	if err != nil {

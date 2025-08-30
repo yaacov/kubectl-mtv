@@ -47,7 +47,7 @@ func newNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra
 
 			// If inventoryURL is empty, try to discover it
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+				inventoryURL = client.DiscoverInventoryURL(cmd.Context(), kubeConfigFlags, namespace)
 			}
 
 			return mapping.CreateNetwork(kubeConfigFlags, name, namespace, sourceProvider, targetProvider, networkPairs, inventoryURL)
@@ -88,7 +88,7 @@ func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra
 
 			// If inventoryURL is empty, try to discover it
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+				inventoryURL = client.DiscoverInventoryURL(cmd.Context(), kubeConfigFlags, namespace)
 			}
 
 			return mapping.CreateStorageWithOptions(mapping.StorageCreateOptions{

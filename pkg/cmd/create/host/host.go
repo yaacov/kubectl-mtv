@@ -42,17 +42,17 @@ type CreateHostOptions struct {
 // It validates the provider, handles authentication (existing secret, provider secret, or new secret),
 // resolves IP addresses from network adapters or direct input, creates the host resources,
 // and establishes proper ownership relationships between providers, hosts, and secrets.
-func Create(opts CreateHostOptions) error {
+func Create(ctx context.Context, opts CreateHostOptions) error {
 	// Get the provider object and validate it's a vSphere provider
 	// Only vSphere providers support host creation
-	_, err := validateAndGetProvider(opts.ConfigFlags, opts.Provider, opts.Namespace)
+	_, err := validateAndGetProvider(ctx, opts.ConfigFlags, opts.Provider, opts.Namespace)
 	if err != nil {
 		return err
 	}
 
 	// Fetch available hosts from provider inventory to validate requested host names
 	// and extract network adapter information for IP resolution
-	availableHosts, err := getProviderHosts(opts.ConfigFlags, opts.Provider, opts.Namespace, opts.InventoryURL)
+	availableHosts, err := getProviderHosts(ctx, opts.ConfigFlags, opts.Provider, opts.Namespace, opts.InventoryURL)
 	if err != nil {
 		return fmt.Errorf("failed to get provider hosts: %v", err)
 	}
@@ -68,7 +68,7 @@ func Create(opts CreateHostOptions) error {
 
 	// Determine authentication strategy: ESXi endpoints can reuse provider secrets,
 	// otherwise use existing secret or create new one
-	providerHasESXIEndpoint, providerSecret, err := CheckProviderESXIEndpoint(opts.ConfigFlags, opts.Provider, opts.Namespace)
+	providerHasESXIEndpoint, providerSecret, err := CheckProviderESXIEndpoint(ctx, opts.ConfigFlags, opts.Provider, opts.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to check provider endpoint type: %v", err)
 	}
@@ -107,7 +107,7 @@ func Create(opts CreateHostOptions) error {
 		}
 
 		// Create the host resource with provider ownership
-		hostObj, err := createSingleHost(opts.ConfigFlags, opts.Namespace, hostID, opts.Provider, hostIP, secret, availableHosts)
+		hostObj, err := createSingleHost(ctx, opts.ConfigFlags, opts.Namespace, hostID, opts.Provider, hostIP, secret, availableHosts)
 		if err != nil {
 			return fmt.Errorf("failed to create host %s: %v", hostID, err)
 		}
@@ -136,8 +136,8 @@ func Create(opts CreateHostOptions) error {
 
 // validateAndGetProvider validates that the specified provider exists and is a vSphere provider.
 // Only vSphere providers support host creation since hosts represent ESXi servers.
-func validateAndGetProvider(configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (*unstructured.Unstructured, error) {
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+func validateAndGetProvider(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (*unstructured.Unstructured, error) {
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider: %v", err)
 	}
@@ -157,8 +157,8 @@ func validateAndGetProvider(configFlags *genericclioptions.ConfigFlags, provider
 
 // getProviderHosts retrieves the list of available ESXi hosts from the provider's inventory.
 // This information is used to validate host names and extract network adapter details.
-func getProviderHosts(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]map[string]interface{}, error) {
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+func getProviderHosts(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]map[string]interface{}, error) {
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -243,8 +243,8 @@ func resolveHostIPAddress(directIP, networkAdapterName, hostID string, available
 // createSingleHost creates a single Host resource with proper ownership by the provider.
 // It extracts the host ID from inventory, sets up owner references, and creates the Kubernetes resource.
 // Returns the created host object for use in establishing secret ownership.
-func createSingleHost(configFlags *genericclioptions.ConfigFlags, namespace, hostID, providerName, ipAddress string, secret *corev1.ObjectReference, availableHosts []map[string]interface{}) (*forkliftv1beta1.Host, error) {
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+func createSingleHost(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace, hostID, providerName, ipAddress string, secret *corev1.ObjectReference, availableHosts []map[string]interface{}) (*forkliftv1beta1.Host, error) {
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider for ownership: %v", err)
 	}
@@ -414,8 +414,8 @@ func addHostAsSecretOwner(configFlags *genericclioptions.ConfigFlags, namespace,
 // CheckProviderESXIEndpoint determines if a provider is configured with ESXi endpoint type
 // and returns its secret reference. ESXi endpoints allow hosts to reuse the provider's
 // authentication credentials for efficiency.
-func CheckProviderESXIEndpoint(configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (bool, *corev1.ObjectReference, error) {
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+func CheckProviderESXIEndpoint(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (bool, *corev1.ObjectReference, error) {
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return false, nil, err
 	}
