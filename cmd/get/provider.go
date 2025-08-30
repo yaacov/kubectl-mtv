@@ -1,7 +1,9 @@
 package get
 
 import (
+	"context"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -25,6 +27,10 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalCon
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Create context with 30s timeout
+			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+			defer cancel()
+
 			config := getGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
 
@@ -36,7 +42,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalCon
 
 			// If inventoryURL is empty, try to discover it
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(config.GetKubeConfigFlags(), namespace)
+				inventoryURL = client.DiscoverInventoryURL(ctx, config.GetKubeConfigFlags(), namespace)
 			}
 
 			// Log the operation being performed
@@ -47,7 +53,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalCon
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return provider.List(config.GetKubeConfigFlags(), namespace, inventoryURL, outputFormatFlag.GetValue(), providerName, config.GetUseUTC())
+			return provider.List(ctx, config.GetKubeConfigFlags(), namespace, inventoryURL, outputFormatFlag.GetValue(), providerName, config.GetUseUTC())
 		},
 	}
 

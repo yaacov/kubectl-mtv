@@ -53,7 +53,7 @@ type StorageMapperOptions struct {
 }
 
 // CreateStorageMap creates a storage map using the new fetcher-based architecture
-func CreateStorageMap(opts StorageMapperOptions) (string, error) {
+func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (string, error) {
 	klog.V(4).Infof("DEBUG: Creating storage map - Source: %s, Target: %s, DefaultTargetStorageClass: '%s'",
 		opts.SourceProvider, opts.TargetProvider, opts.DefaultTargetStorageClass)
 
@@ -62,7 +62,7 @@ func CreateStorageMap(opts StorageMapperOptions) (string, error) {
 	if sourceProviderNamespace == "" {
 		sourceProviderNamespace = opts.Namespace
 	}
-	sourceFetcher, err := GetSourceStorageFetcher(opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace)
+	sourceFetcher, err := GetSourceStorageFetcher(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace)
 	if err != nil {
 		return "", fmt.Errorf("failed to get source storage fetcher: %v", err)
 	}
@@ -73,14 +73,14 @@ func CreateStorageMap(opts StorageMapperOptions) (string, error) {
 	if targetProviderNamespace == "" {
 		targetProviderNamespace = opts.Namespace
 	}
-	targetFetcher, err := GetTargetStorageFetcher(opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace)
+	targetFetcher, err := GetTargetStorageFetcher(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace)
 	if err != nil {
 		return "", fmt.Errorf("failed to get target storage fetcher: %v", err)
 	}
 	klog.V(4).Infof("DEBUG: Target storage fetcher created for provider: %s", opts.TargetProvider)
 
 	// Fetch source storages
-	sourceStorages, err := sourceFetcher.FetchSourceStorages(opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.InventoryURL, opts.PlanVMNames)
+	sourceStorages, err := sourceFetcher.FetchSourceStorages(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.InventoryURL, opts.PlanVMNames)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch source storages: %v", err)
 	}
@@ -90,7 +90,7 @@ func CreateStorageMap(opts StorageMapperOptions) (string, error) {
 	var targetStorages []forkliftv1beta1.DestinationStorage
 	if opts.DefaultTargetStorageClass == "" {
 		klog.V(4).Infof("DEBUG: Fetching target storages from target provider: %s", opts.TargetProvider)
-		targetStorages, err = targetFetcher.FetchTargetStorages(opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace, opts.InventoryURL)
+		targetStorages, err = targetFetcher.FetchTargetStorages(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace, opts.InventoryURL)
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch target storages: %v", err)
 		}
@@ -183,9 +183,9 @@ func createStorageMap(opts StorageMapperOptions, storagePairs []forkliftv1beta1.
 }
 
 // GetSourceStorageFetcher returns the appropriate source storage fetcher based on provider type
-func GetSourceStorageFetcher(configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.SourceStorageFetcher, error) {
+func GetSourceStorageFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.SourceStorageFetcher, error) {
 	// Get the provider object to determine its type
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider: %v", err)
 	}
@@ -222,9 +222,9 @@ func GetSourceStorageFetcher(configFlags *genericclioptions.ConfigFlags, provide
 }
 
 // GetTargetStorageFetcher returns the appropriate target storage fetcher based on provider type
-func GetTargetStorageFetcher(configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.TargetStorageFetcher, error) {
+func GetTargetStorageFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.TargetStorageFetcher, error) {
 	// Get the provider object to determine its type
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider: %v", err)
 	}

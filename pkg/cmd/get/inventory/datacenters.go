@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -12,19 +13,19 @@ import (
 )
 
 // ListDataCenters queries the provider's datacenter inventory and displays the results
-func ListDataCenters(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+func ListDataCenters(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listDataCentersOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+			return listDataCentersOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 		}, 10*time.Second)
 	}
 
-	return listDataCentersOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+	return listDataCentersOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 }
 
-func listDataCentersOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func listDataCentersOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// Get the provider object
-	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
 	if err != nil {
 		return err
 	}

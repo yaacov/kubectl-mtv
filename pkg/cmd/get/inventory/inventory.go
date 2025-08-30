@@ -12,13 +12,13 @@ import (
 )
 
 // GetProviderByName fetches a provider by name from the specified namespace
-func GetProviderByName(configFlags *genericclioptions.ConfigFlags, name, namespace string) (*unstructured.Unstructured, error) {
+func GetProviderByName(ctx context.Context, configFlags *genericclioptions.ConfigFlags, name, namespace string) (*unstructured.Unstructured, error) {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get client: %v", err)
 	}
 
-	provider, err := c.Resource(client.ProvidersGVR).Namespace(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	provider, err := c.Resource(client.ProvidersGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider '%s': %v", name, err)
 	}

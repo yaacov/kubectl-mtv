@@ -92,13 +92,13 @@ func FetchProviderInventory(configFlags *genericclioptions.ConfigFlags, baseURL 
 }
 
 // FetchSpecificProvider fetches inventory for a specific provider by name (detail level 1 for backward compatibility)
-func FetchSpecificProvider(configFlags *genericclioptions.ConfigFlags, baseURL string, providerName string) (interface{}, error) {
-	return FetchSpecificProviderWithDetail(configFlags, baseURL, providerName, 1)
+func FetchSpecificProvider(ctx context.Context, configFlags *genericclioptions.ConfigFlags, baseURL string, providerName string) (interface{}, error) {
+	return FetchSpecificProviderWithDetail(ctx, configFlags, baseURL, providerName, 1)
 }
 
 // FetchSpecificProviderWithDetail fetches inventory for a specific provider by name with specified detail level
 // This function uses direct URL access: /providers/<type>/<uid>?detail=N
-func FetchSpecificProviderWithDetail(configFlags *genericclioptions.ConfigFlags, baseURL string, providerName string, detail int) (interface{}, error) {
+func FetchSpecificProviderWithDetail(ctx context.Context, configFlags *genericclioptions.ConfigFlags, baseURL string, providerName string, detail int) (interface{}, error) {
 	// We need to determine the namespace to look for the provider CRD
 	// Try to get it from configFlags or use empty string for all namespaces
 	namespace := ""
@@ -115,13 +115,13 @@ func FetchSpecificProviderWithDetail(configFlags *genericclioptions.ConfigFlags,
 	var provider *unstructured.Unstructured
 	if namespace != "" {
 		// Get from specific namespace
-		provider, err = c.Resource(ProvidersGVR).Namespace(namespace).Get(context.TODO(), providerName, metav1.GetOptions{})
+		provider, err = c.Resource(ProvidersGVR).Namespace(namespace).Get(ctx, providerName, metav1.GetOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to get provider '%s' in namespace '%s': %v", providerName, namespace, err)
 		}
 	} else {
 		// Search all namespaces
-		providersList, err := c.Resource(ProvidersGVR).List(context.TODO(), metav1.ListOptions{})
+		providersList, err := c.Resource(ProvidersGVR).Namespace(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to list providers: %v", err)
 		}
@@ -179,8 +179,8 @@ func FetchSpecificProviderWithDetail(configFlags *genericclioptions.ConfigFlags,
 }
 
 // DiscoverInventoryURL tries to discover the inventory URL from an OpenShift Route
-func DiscoverInventoryURL(configFlags *genericclioptions.ConfigFlags, namespace string) string {
-	route, err := GetForkliftInventoryRoute(configFlags, namespace)
+func DiscoverInventoryURL(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string) string {
+	route, err := GetForkliftInventoryRoute(ctx, configFlags, namespace)
 	if err == nil && route != nil {
 		host, found, _ := unstructured.NestedString(route.Object, "spec", "host")
 		if found && host != "" {

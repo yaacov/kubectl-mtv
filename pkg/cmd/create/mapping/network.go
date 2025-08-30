@@ -80,7 +80,7 @@ func validateNetworkPairs(pairStr, defaultNamespace string) error {
 // parseNetworkPairs parses network pairs in format "source1:namespace/target1,source2:namespace/target2"
 // If namespace is omitted, the provided defaultNamespace will be used
 // Special target values: "default" for pod networking, "ignored" to ignore the source network
-func parseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericclioptions.ConfigFlags, sourceProvider, inventoryURL string) ([]forkliftv1beta1.NetworkPair, error) {
+func parseNetworkPairs(ctx context.Context, pairStr, defaultNamespace string, configFlags *genericclioptions.ConfigFlags, sourceProvider, inventoryURL string) ([]forkliftv1beta1.NetworkPair, error) {
 	if pairStr == "" {
 		return nil, nil
 	}
@@ -108,7 +108,7 @@ func parseNetworkPairs(pairStr, defaultNamespace string, configFlags *genericcli
 		targetPart := strings.TrimSpace(parts[1])
 
 		// Resolve source network name to ID
-		sourceNetworkRefs, err := resolveNetworkNameToID(configFlags, sourceProvider, defaultNamespace, inventoryURL, sourceName)
+		sourceNetworkRefs, err := resolveNetworkNameToID(ctx, configFlags, sourceProvider, defaultNamespace, inventoryURL, sourceName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve source network '%s': %v", sourceName, err)
 		}
@@ -174,7 +174,7 @@ func createNetworkMapping(configFlags *genericclioptions.ConfigFlags, name, name
 	// Parse network pairs if provided
 	var mappingPairs []forkliftv1beta1.NetworkPair
 	if networkPairs != "" {
-		mappingPairs, err = parseNetworkPairs(networkPairs, namespace, configFlags, sourceProvider, inventoryURL)
+		mappingPairs, err = parseNetworkPairs(context.TODO(), networkPairs, namespace, configFlags, sourceProvider, inventoryURL)
 		if err != nil {
 			return fmt.Errorf("failed to parse network pairs: %v", err)
 		}

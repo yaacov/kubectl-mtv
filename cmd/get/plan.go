@@ -1,7 +1,9 @@
 package get
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -26,6 +28,13 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			if !watch {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+				defer cancel()
+			}
+
 			config := getGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
 
@@ -44,7 +53,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 				logNamespaceOperation("Getting plan VMs", namespace, config.GetAllNamespaces())
 				logOutputFormat(outputFormatFlag.GetValue())
 
-				return plan.ListVMs(config.GetKubeConfigFlags(), planName, namespace, watch)
+				return plan.ListVMs(ctx, config.GetKubeConfigFlags(), planName, namespace, watch)
 			}
 
 			// Default behavior: list plans
@@ -57,7 +66,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return plan.List(config.GetKubeConfigFlags(), namespace, watch, outputFormatFlag.GetValue(), planName, config.GetUseUTC())
+			return plan.List(ctx, config.GetKubeConfigFlags(), namespace, watch, outputFormatFlag.GetValue(), planName, config.GetUseUTC())
 		},
 	}
 

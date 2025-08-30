@@ -17,19 +17,19 @@ import (
 )
 
 // getProviders retrieves all providers from the given namespace
-func getProviders(dynamicClient dynamic.Interface, namespace string) (*unstructured.UnstructuredList, error) {
+func getProviders(ctx context.Context, dynamicClient dynamic.Interface, namespace string) (*unstructured.UnstructuredList, error) {
 	if namespace != "" {
-		return dynamicClient.Resource(client.ProvidersGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+		return dynamicClient.Resource(client.ProvidersGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	} else {
-		return dynamicClient.Resource(client.ProvidersGVR).List(context.TODO(), metav1.ListOptions{})
+		return dynamicClient.Resource(client.ProvidersGVR).Namespace(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	}
 }
 
 // getSpecificProvider retrieves a specific provider by name
-func getSpecificProvider(dynamicClient dynamic.Interface, namespace, providerName string) (*unstructured.UnstructuredList, error) {
+func getSpecificProvider(ctx context.Context, dynamicClient dynamic.Interface, namespace, providerName string) (*unstructured.UnstructuredList, error) {
 	if namespace != "" {
 		// If namespace is specified, get the specific resource
-		provider, err := dynamicClient.Resource(client.ProvidersGVR).Namespace(namespace).Get(context.TODO(), providerName, metav1.GetOptions{})
+		provider, err := dynamicClient.Resource(client.ProvidersGVR).Namespace(namespace).Get(ctx, providerName, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -40,7 +40,7 @@ func getSpecificProvider(dynamicClient dynamic.Interface, namespace, providerNam
 		}, nil
 	} else {
 		// If no namespace specified, list all and filter by name
-		providers, err := dynamicClient.Resource(client.ProvidersGVR).List(context.TODO(), metav1.ListOptions{})
+		providers, err := dynamicClient.Resource(client.ProvidersGVR).Namespace(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to list providers: %v", err)
 		}
@@ -63,7 +63,7 @@ func getSpecificProvider(dynamicClient dynamic.Interface, namespace, providerNam
 }
 
 // List lists providers
-func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string, useUTC bool) error {
+func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string, useUTC bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -72,13 +72,13 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 	var providers *unstructured.UnstructuredList
 	if providerName != "" {
 		// Get specific provider by name
-		providers, err = getSpecificProvider(c, namespace, providerName)
+		providers, err = getSpecificProvider(ctx, c, namespace, providerName)
 		if err != nil {
 			return fmt.Errorf("failed to get provider: %v", err)
 		}
 	} else {
 		// Get all providers
-		providers, err = getProviders(c, namespace)
+		providers, err = getProviders(ctx, c, namespace)
 		if err != nil {
 			return fmt.Errorf("failed to list providers: %v", err)
 		}
@@ -92,7 +92,7 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace string, baseURL 
 
 	// If baseURL is empty, try to discover it from an OpenShift Route
 	if baseURL == "" {
-		route, err := client.GetForkliftInventoryRoute(configFlags, namespace)
+		route, err := client.GetForkliftInventoryRoute(ctx, configFlags, namespace)
 		if err == nil && route != nil {
 			host, found, _ := unstructured.NestedString(route.Object, "spec", "host")
 			if found && host != "" {

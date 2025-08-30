@@ -52,7 +52,7 @@ func newDeleteNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) 
 			if all {
 				// Get all network mapping names from the namespace
 				var err error
-				mappingNames, err = client.GetAllNetworkMappingNames(kubeConfigFlags, namespace)
+				mappingNames, err = client.GetAllNetworkMappingNames(cmd.Context(), kubeConfigFlags, namespace)
 				if err != nil {
 					return fmt.Errorf("failed to get all network mapping names: %v", err)
 				}
@@ -100,7 +100,7 @@ func newDeleteStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) 
 			if all {
 				// Get all storage mapping names from the namespace
 				var err error
-				mappingNames, err = client.GetAllStorageMappingNames(kubeConfigFlags, namespace)
+				mappingNames, err = client.GetAllStorageMappingNames(cmd.Context(), kubeConfigFlags, namespace)
 				if err != nil {
 					return fmt.Errorf("failed to get all storage mapping names: %v", err)
 				}

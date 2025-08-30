@@ -30,7 +30,7 @@ func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 			if all {
 				// Get all hook names from the namespace
 				var err error
-				hookNames, err = client.GetAllHookNames(kubeConfigFlags, namespace)
+				hookNames, err = client.GetAllHookNames(cmd.Context(), kubeConfigFlags, namespace)
 				if err != nil {
 					return fmt.Errorf("failed to get all hook names: %v", err)
 				}

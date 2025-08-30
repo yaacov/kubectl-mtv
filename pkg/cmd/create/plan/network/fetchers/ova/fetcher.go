@@ -1,5 +1,7 @@
 package ova
 
+import "context"
+
 import (
 	"fmt"
 
@@ -22,11 +24,11 @@ func NewOVANetworkFetcher() *OVANetworkFetcher {
 }
 
 // FetchSourceNetworks extracts network references from OVA VMs
-func (f *OVANetworkFetcher) FetchSourceNetworks(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string, planVMNames []string) ([]ref.Ref, error) {
+func (f *OVANetworkFetcher) FetchSourceNetworks(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string, planVMNames []string) ([]ref.Ref, error) {
 	klog.V(4).Infof("OVA fetcher - extracting source networks for provider: %s", providerName)
 
 	// Get the provider object
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get source provider: %v", err)
 	}
@@ -137,7 +139,7 @@ func (f *OVANetworkFetcher) FetchSourceNetworks(configFlags *genericclioptions.C
 }
 
 // FetchTargetNetworks is not supported for OVA as target - only OpenShift is supported as target
-func (f *OVANetworkFetcher) FetchTargetNetworks(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]forkliftv1beta1.DestinationNetwork, error) {
+func (f *OVANetworkFetcher) FetchTargetNetworks(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]forkliftv1beta1.DestinationNetwork, error) {
 	klog.V(4).Infof("OVA provider does not support target network fetching - only OpenShift is supported as target")
 	return nil, fmt.Errorf("OVA provider does not support target network fetching - only OpenShift is supported as migration target")
 }

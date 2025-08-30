@@ -1,6 +1,9 @@
 package get
 
 import (
+	"context"
+	"time"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -25,6 +28,13 @@ func NewInventoryNetworkCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getG
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			if !watch {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
+				defer cancel()
+			}
+
 			provider := args[0]
 			config := getGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
@@ -33,10 +43,10 @@ func NewInventoryNetworkCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getG
 			logOutputFormat(outputFormatFlag.GetValue())
 
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(config.GetKubeConfigFlags(), namespace)
+				inventoryURL = client.DiscoverInventoryURL(ctx, config.GetKubeConfigFlags(), namespace)
 			}
 
-			return inventory.ListNetworks(config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch)
+			return inventory.ListNetworks(ctx, config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch)
 		},
 	}
 
@@ -70,6 +80,13 @@ func NewInventoryStorageCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getG
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			if !watch {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
+				defer cancel()
+			}
+
 			provider := args[0]
 			config := getGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
@@ -78,10 +95,10 @@ func NewInventoryStorageCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getG
 			logOutputFormat(outputFormatFlag.GetValue())
 
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(config.GetKubeConfigFlags(), namespace)
+				inventoryURL = client.DiscoverInventoryURL(ctx, config.GetKubeConfigFlags(), namespace)
 			}
 
-			return inventory.ListStorage(config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch)
+			return inventory.ListStorage(ctx, config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch)
 		},
 	}
 
@@ -116,6 +133,13 @@ func NewInventoryVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobal
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			if !watch {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
+				defer cancel()
+			}
+
 			provider := args[0]
 			config := getGlobalConfig()
 			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
@@ -124,10 +148,10 @@ func NewInventoryVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobal
 			logOutputFormat(outputFormatFlag.GetValue())
 
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(config.GetKubeConfigFlags(), namespace)
+				inventoryURL = client.DiscoverInventoryURL(ctx, config.GetKubeConfigFlags(), namespace)
 			}
 
-			return inventory.ListVMs(config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), extendedOutput, query, watch)
+			return inventory.ListVMs(ctx, config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), extendedOutput, query, watch)
 		},
 	}
 

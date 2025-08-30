@@ -13,14 +13,14 @@ import (
 )
 
 // Archive sets the archived flag on a plan
-func Archive(configFlags *genericclioptions.ConfigFlags, planName, namespace string, archived bool) error {
+func Archive(ctx context.Context, configFlags *genericclioptions.ConfigFlags, planName, namespace string, archived bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
 	}
 
 	// Get the plan
-	_, err = c.Resource(client.PlansGVR).Namespace(namespace).Get(context.TODO(), planName, metav1.GetOptions{})
+	_, err = c.Resource(client.PlansGVR).Namespace(namespace).Get(ctx, planName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get plan '%s': %v", planName, err)
 	}
@@ -39,7 +39,7 @@ func Archive(configFlags *genericclioptions.ConfigFlags, planName, namespace str
 
 	// Apply the patch
 	_, err = c.Resource(client.PlansGVR).Namespace(namespace).Patch(
-		context.TODO(),
+		ctx,
 		planName,
 		types.MergePatchType,
 		patchBytes,

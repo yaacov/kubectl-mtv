@@ -65,10 +65,10 @@ Examples:
 
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+				inventoryURL = client.DiscoverInventoryURL(cmd.Context(), kubeConfigFlags, namespace)
 			}
 
-			providerHasESXIEndpoint, _, err := host.CheckProviderESXIEndpoint(kubeConfigFlags, provider, namespace)
+			providerHasESXIEndpoint, _, err := host.CheckProviderESXIEndpoint(cmd.Context(), kubeConfigFlags, provider, namespace)
 			if err != nil {
 				return fmt.Errorf("failed to check provider endpoint type: %v", err)
 			}
@@ -117,7 +117,7 @@ Examples:
 				HostSpec:            hostSpec,
 			}
 
-			return host.Create(opts)
+			return host.Create(cmd.Context(), opts)
 		},
 	}
 

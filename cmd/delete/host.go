@@ -30,7 +30,7 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 			if all {
 				// Get all host names from the namespace
 				var err error
-				hostNames, err = client.GetAllHostNames(kubeConfigFlags, namespace)
+				hostNames, err = client.GetAllHostNames(cmd.Context(), kubeConfigFlags, namespace)
 				if err != nil {
 					return fmt.Errorf("failed to get all host names: %v", err)
 				}

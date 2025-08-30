@@ -22,11 +22,11 @@ type Info struct {
 }
 
 // GetInventoryInfo returns information about the MTV inventory service
-func GetInventoryInfo(kubeConfigFlags *genericclioptions.ConfigFlags) (string, string) {
+func GetInventoryInfo(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags) (string, string) {
 	namespace := client.ResolveNamespace(kubeConfigFlags)
 
 	// Try to discover inventory URL
-	inventoryURL := client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+	inventoryURL := client.DiscoverInventoryURL(ctx, kubeConfigFlags, namespace)
 	if inventoryURL != "" {
 		return inventoryURL, "available"
 	}
@@ -35,7 +35,7 @@ func GetInventoryInfo(kubeConfigFlags *genericclioptions.ConfigFlags) (string, s
 }
 
 // GetMTVControllerInfo returns information about the MTV Operator
-func GetMTVControllerInfo(kubeConfigFlags *genericclioptions.ConfigFlags) (string, string, string) {
+func GetMTVControllerInfo(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags) (string, string, string) {
 	// Try to get dynamic client
 	dynamicClient, err := client.GetDynamicClient(kubeConfigFlags)
 	if err != nil {
@@ -49,7 +49,7 @@ func GetMTVControllerInfo(kubeConfigFlags *genericclioptions.ConfigFlags) (strin
 		Resource: "customresourcedefinitions",
 	}
 
-	crd, err := dynamicClient.Resource(crdGVR).Get(context.TODO(), "providers.forklift.konveyor.io", metav1.GetOptions{})
+	crd, err := dynamicClient.Resource(crdGVR).Get(ctx, "providers.forklift.konveyor.io", metav1.GetOptions{})
 	if err != nil {
 		return "not found", "not available", ""
 	}
@@ -81,12 +81,12 @@ func GetMTVControllerInfo(kubeConfigFlags *genericclioptions.ConfigFlags) (strin
 }
 
 // GetVersionInfo gathers all version information
-func GetVersionInfo(clientVersion string, kubeConfigFlags *genericclioptions.ConfigFlags) Info {
+func GetVersionInfo(ctx context.Context, clientVersion string, kubeConfigFlags *genericclioptions.ConfigFlags) Info {
 	// Get MTV Operator information
-	controllerVersion, controllerStatus, controllerNamespace := GetMTVControllerInfo(kubeConfigFlags)
+	controllerVersion, controllerStatus, controllerNamespace := GetMTVControllerInfo(ctx, kubeConfigFlags)
 
 	// Get inventory information
-	inventoryURL, inventoryStatus := GetInventoryInfo(kubeConfigFlags)
+	inventoryURL, inventoryStatus := GetInventoryInfo(ctx, kubeConfigFlags)
 
 	return Info{
 		ClientVersion:     clientVersion,

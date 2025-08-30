@@ -18,19 +18,19 @@ import (
 )
 
 // getPlans retrieves all plans from the given namespace
-func getPlans(dynamicClient dynamic.Interface, namespace string) (*unstructured.UnstructuredList, error) {
+func getPlans(ctx context.Context, dynamicClient dynamic.Interface, namespace string) (*unstructured.UnstructuredList, error) {
 	if namespace != "" {
-		return dynamicClient.Resource(client.PlansGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+		return dynamicClient.Resource(client.PlansGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	} else {
-		return dynamicClient.Resource(client.PlansGVR).List(context.TODO(), metav1.ListOptions{})
+		return dynamicClient.Resource(client.PlansGVR).Namespace(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 	}
 }
 
 // getSpecificPlan retrieves a specific plan by name
-func getSpecificPlan(dynamicClient dynamic.Interface, namespace, planName string) (*unstructured.UnstructuredList, error) {
+func getSpecificPlan(ctx context.Context, dynamicClient dynamic.Interface, namespace, planName string) (*unstructured.UnstructuredList, error) {
 	if namespace != "" {
 		// If namespace is specified, get the specific resource
-		plan, err := dynamicClient.Resource(client.PlansGVR).Namespace(namespace).Get(context.TODO(), planName, metav1.GetOptions{})
+		plan, err := dynamicClient.Resource(client.PlansGVR).Namespace(namespace).Get(ctx, planName, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -41,7 +41,7 @@ func getSpecificPlan(dynamicClient dynamic.Interface, namespace, planName string
 		}, nil
 	} else {
 		// If no namespace specified, list all and filter by name
-		plans, err := dynamicClient.Resource(client.PlansGVR).List(context.TODO(), metav1.ListOptions{})
+		plans, err := dynamicClient.Resource(client.PlansGVR).Namespace(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to list plans: %v", err)
 		}
@@ -64,7 +64,7 @@ func getSpecificPlan(dynamicClient dynamic.Interface, namespace, planName string
 }
 
 // ListPlans lists migration plans without watch functionality
-func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, outputFormat string, planName string, useUTC bool) error {
+func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, outputFormat string, planName string, useUTC bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -73,13 +73,13 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 	var plans *unstructured.UnstructuredList
 	if planName != "" {
 		// Get specific plan by name
-		plans, err = getSpecificPlan(c, namespace, planName)
+		plans, err = getSpecificPlan(ctx, c, namespace, planName)
 		if err != nil {
 			return fmt.Errorf("failed to get plan: %v", err)
 		}
 	} else {
 		// Get all plans
-		plans, err = getPlans(c, namespace)
+		plans, err = getPlans(ctx, c, namespace)
 		if err != nil {
 			return fmt.Errorf("failed to list plans: %v", err)
 		}
@@ -245,15 +245,15 @@ func ListPlans(configFlags *genericclioptions.ConfigFlags, namespace string, out
 }
 
 // List lists migration plans with optional watch mode
-func List(configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool, outputFormat string, planName string, useUTC bool) error {
+func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool, outputFormat string, planName string, useUTC bool) error {
 	if watchMode {
 		if outputFormat != "table" {
 			return fmt.Errorf("watch mode only supports table output format")
 		}
 		return watch.Watch(func() error {
-			return ListPlans(configFlags, namespace, outputFormat, planName, useUTC)
+			return ListPlans(ctx, configFlags, namespace, outputFormat, planName, useUTC)
 		}, 15*time.Second)
 	}
 
-	return ListPlans(configFlags, namespace, outputFormat, planName, useUTC)
+	return ListPlans(ctx, configFlags, namespace, outputFormat, planName, useUTC)
 }

@@ -30,7 +30,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 			if all {
 				// Get all provider names from the namespace
 				var err error
-				providerNames, err = client.GetAllProviderNames(kubeConfigFlags, namespace)
+				providerNames, err = client.GetAllProviderNames(cmd.Context(), kubeConfigFlags, namespace)
 				if err != nil {
 					return fmt.Errorf("failed to get all provider names: %v", err)
 				}

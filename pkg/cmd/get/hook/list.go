@@ -92,7 +92,7 @@ func createHookItem(hook unstructured.Unstructured, useUTC bool) map[string]inte
 }
 
 // List lists hooks
-func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat string, hookName string, useUTC bool) error {
+func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace, outputFormat string, hookName string, useUTC bool) error {
 	dynamicClient, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -108,10 +108,10 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat st
 
 	// If hookName is specified, get that specific hook
 	if hookName != "" {
-		allItems, err = getSpecificHook(dynamicClient, namespace, hookName, useUTC)
+		allItems, err = getSpecificHook(ctx, dynamicClient, namespace, hookName, useUTC)
 	} else {
 		// Get all hooks
-		allItems, err = getAllHooks(dynamicClient, namespace, useUTC)
+		allItems, err = getAllHooks(ctx, dynamicClient, namespace, useUTC)
 	}
 
 	// Handle error if no items found
@@ -131,8 +131,8 @@ func List(configFlags *genericclioptions.ConfigFlags, namespace, outputFormat st
 }
 
 // getAllHooks retrieves all hooks from the given namespace
-func getAllHooks(dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
-	hooks, err := dynamicClient.Resource(client.HooksGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+func getAllHooks(ctx context.Context, dynamicClient dynamic.Interface, namespace string, useUTC bool) ([]map[string]interface{}, error) {
+	hooks, err := dynamicClient.Resource(client.HooksGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list hooks: %v", err)
 	}
@@ -146,8 +146,8 @@ func getAllHooks(dynamicClient dynamic.Interface, namespace string, useUTC bool)
 }
 
 // getSpecificHook retrieves a specific hook by name
-func getSpecificHook(dynamicClient dynamic.Interface, namespace string, hookName string, useUTC bool) ([]map[string]interface{}, error) {
-	hook, err := dynamicClient.Resource(client.HooksGVR).Namespace(namespace).Get(context.TODO(), hookName, metav1.GetOptions{})
+func getSpecificHook(ctx context.Context, dynamicClient dynamic.Interface, namespace string, hookName string, useUTC bool) ([]map[string]interface{}, error) {
+	hook, err := dynamicClient.Resource(client.HooksGVR).Namespace(namespace).Get(ctx, hookName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get hook '%s': %v", hookName, err)
 	}

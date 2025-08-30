@@ -33,7 +33,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 			if all {
 				// Get all plan names from the namespace
 				var err error
-				planNames, err = client.GetAllPlanNames(kubeConfigFlags, namespace)
+				planNames, err = client.GetAllPlanNames(cmd.Context(), kubeConfigFlags, namespace)
 				if err != nil {
 					return fmt.Errorf("failed to get all plan names: %v", err)
 				}
@@ -47,7 +47,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 
 			// Loop over each plan name and delete it
 			for _, name := range planNames {
-				err := plan.Delete(kubeConfigFlags, name, namespace, skipArchive, cleanAll)
+				err := plan.Delete(cmd.Context(), kubeConfigFlags, name, namespace, skipArchive, cleanAll)
 				if err != nil {
 					return err
 				}

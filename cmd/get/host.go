@@ -1,6 +1,9 @@
 package get
 
 import (
+	"context"
+	"time"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -40,7 +43,9 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return host.List(config.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hostName, config.GetUseUTC())
+			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+			defer cancel()
+			return host.List(ctx, config.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hostName, config.GetUseUTC())
 		},
 	}
 

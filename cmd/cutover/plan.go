@@ -42,7 +42,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 			if all {
 				// Get all plan names from the namespace
 				var err error
-				planNames, err = client.GetAllPlanNames(kubeConfigFlags, namespace)
+				planNames, err = client.GetAllPlanNames(cmd.Context(), kubeConfigFlags, namespace)
 				if err != nil {
 					return fmt.Errorf("failed to get all plan names: %v", err)
 				}

@@ -1,6 +1,9 @@
 package get
 
 import (
+	"context"
+	"time"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -25,6 +28,13 @@ func NewInventoryProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, get
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			if !watch {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
+				defer cancel()
+			}
+
 			var providerName string
 			if len(args) > 0 {
 				providerName = args[0]
@@ -41,10 +51,10 @@ func NewInventoryProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, get
 			logOutputFormat(outputFormatFlag.GetValue())
 
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(config.GetKubeConfigFlags(), namespace)
+				inventoryURL = client.DiscoverInventoryURL(ctx, config.GetKubeConfigFlags(), namespace)
 			}
 
-			return inventory.ListProviders(config.GetKubeConfigFlags(), providerName, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch)
+			return inventory.ListProviders(ctx, config.GetKubeConfigFlags(), providerName, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch)
 		},
 	}
 

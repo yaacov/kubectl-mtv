@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -133,19 +134,19 @@ func calculateTotalDiskCapacity(vm map[string]interface{}) float64 {
 }
 
 // ListVMs queries the provider's VM inventory and displays the results
-func ListVMs(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string, watchMode bool) error {
+func ListVMs(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listVMsOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, query)
+			return listVMsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, query)
 		}, 10*time.Second)
 	}
 
-	return listVMsOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, query)
+	return listVMsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, query)
 }
 
-func listVMsOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string) error {
+func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string) error {
 	// Get the provider object
-	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
 	if err != nil {
 		return err
 	}

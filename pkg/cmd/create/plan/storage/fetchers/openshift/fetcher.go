@@ -1,5 +1,7 @@
 package openshift
 
+import "context"
+
 import (
 	"fmt"
 	"strings"
@@ -23,11 +25,11 @@ func NewOpenShiftStorageFetcher() *OpenShiftStorageFetcher {
 }
 
 // FetchSourceStorages extracts storage references from OpenShift VMs
-func (f *OpenShiftStorageFetcher) FetchSourceStorages(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string, planVMNames []string) ([]ref.Ref, error) {
+func (f *OpenShiftStorageFetcher) FetchSourceStorages(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string, planVMNames []string) ([]ref.Ref, error) {
 	klog.V(4).Infof("OpenShift storage fetcher - extracting source storages for provider: %s", providerName)
 
 	// Get the provider object
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get source provider: %v", err)
 	}
@@ -198,11 +200,11 @@ func (f *OpenShiftStorageFetcher) FetchSourceStorages(configFlags *genericcliopt
 }
 
 // FetchTargetStorages extracts available destination storages from target provider
-func (f *OpenShiftStorageFetcher) FetchTargetStorages(configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]forkliftv1beta1.DestinationStorage, error) {
+func (f *OpenShiftStorageFetcher) FetchTargetStorages(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL string) ([]forkliftv1beta1.DestinationStorage, error) {
 	klog.V(4).Infof("OpenShift storage fetcher - extracting target storages for provider: %s", providerName)
 
 	// Get the target provider
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get target provider: %v", err)
 	}

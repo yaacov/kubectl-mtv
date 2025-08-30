@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -12,19 +13,19 @@ import (
 )
 
 // ListDiskProfiles queries the provider's disk profile inventory and displays the results
-func ListDiskProfiles(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+func ListDiskProfiles(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listDiskProfilesOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+			return listDiskProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 		}, 10*time.Second)
 	}
 
-	return listDiskProfilesOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+	return listDiskProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 }
 
-func listDiskProfilesOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func listDiskProfilesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// Get the provider object
-	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
 	if err != nil {
 		return err
 	}
@@ -89,19 +90,19 @@ func listDiskProfilesOnce(kubeConfigFlags *genericclioptions.ConfigFlags, provid
 }
 
 // ListNICProfiles queries the provider's NIC profile inventory and displays the results
-func ListNICProfiles(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+func ListNICProfiles(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listNICProfilesOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+			return listNICProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 		}, 10*time.Second)
 	}
 
-	return listNICProfilesOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+	return listNICProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 }
 
-func listNICProfilesOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func listNICProfilesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// Get the provider object
-	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
 	if err != nil {
 		return err
 	}

@@ -27,7 +27,7 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(config.GetKubeConfigFlags())
-			return host.Describe(config.GetKubeConfigFlags(), name, namespace, config.GetUseUTC())
+			return host.Describe(cmd.Context(), config.GetKubeConfigFlags(), name, namespace, config.GetUseUTC())
 		},
 	}
 

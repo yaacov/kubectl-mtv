@@ -67,7 +67,7 @@ func parseProviderName(providerName, defaultNamespace string) (name, namespace s
 }
 
 // Create creates a new migration plan
-func Create(opts CreatePlanOptions) error {
+func Create(ctx context.Context, opts CreatePlanOptions) error {
 	c, err := client.GetDynamicClient(opts.ConfigFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -102,7 +102,7 @@ func Create(opts CreatePlanOptions) error {
 	opts.TargetProviderNamespace = targetProviderNamespace
 
 	// Validate that VMs exist in the source provider
-	err = validateVMs(opts.ConfigFlags, &opts)
+	err = validateVMs(ctx, opts.ConfigFlags, &opts)
 	if err != nil {
 		return fmt.Errorf("VM validation failed: %v", err)
 	}
@@ -140,7 +140,7 @@ func Create(opts CreatePlanOptions) error {
 			fmt.Printf("Created network mapping '%s' from provided pairs\n", networkMapName)
 		} else {
 			// Create default network mapping using existing logic
-			networkMapName, err := network.CreateNetworkMap(network.NetworkMapperOptions{
+			networkMapName, err := network.CreateNetworkMap(ctx, network.NetworkMapperOptions{
 				Name:                    opts.Name,
 				Namespace:               opts.Namespace,
 				SourceProvider:          opts.SourceProvider,
@@ -203,7 +203,7 @@ func Create(opts CreatePlanOptions) error {
 			fmt.Printf("Created storage mapping '%s' from provided pairs\n", storageMapName)
 		} else {
 			// Create default storage mapping using existing logic
-			storageMapName, err := storage.CreateStorageMap(storage.StorageMapperOptions{
+			storageMapName, err := storage.CreateStorageMap(ctx, storage.StorageMapperOptions{
 				Name:                      opts.Name,
 				Namespace:                 opts.Namespace,
 				SourceProvider:            opts.SourceProvider,
@@ -420,9 +420,9 @@ func Create(opts CreatePlanOptions) error {
 // validateVMs validates that all VMs in the VMList exist in the source provider,
 // sets their IDs based on the names, and removes any that don't exist.
 // Returns an error if no valid VMs remain.
-func validateVMs(configFlags *genericclioptions.ConfigFlags, opts *CreatePlanOptions) error {
+func validateVMs(ctx context.Context, configFlags *genericclioptions.ConfigFlags, opts *CreatePlanOptions) error {
 	// Fetch source provider using the parsed namespace
-	sourceProvider, err := inventory.GetProviderByName(configFlags, opts.SourceProvider, opts.SourceProviderNamespace)
+	sourceProvider, err := inventory.GetProviderByName(ctx, configFlags, opts.SourceProvider, opts.SourceProviderNamespace)
 	if err != nil {
 		return fmt.Errorf("failed to get source provider: %v", err)
 	}

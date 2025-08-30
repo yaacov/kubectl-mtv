@@ -84,7 +84,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 
 			// If inventoryURL is empty, try to discover it
 			if inventoryURL == "" {
-				inventoryURL = client.DiscoverInventoryURL(kubeConfigFlags, namespace)
+				inventoryURL = client.DiscoverInventoryURL(cmd.Context(), kubeConfigFlags, namespace)
 			}
 
 			// Validate that existing mapping flags and mapping pair flags are not used together
@@ -282,7 +282,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				DefaultOffloadVendor:      defaultOffloadVendor,
 			}
 
-			err := plan.Create(opts)
+			err := plan.Create(cmd.Context(), opts)
 			return err
 		},
 	}

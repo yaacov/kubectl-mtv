@@ -16,7 +16,7 @@ import (
 )
 
 // getResourceNames fetches resource names for completion
-func getResourceNames(configFlags *genericclioptions.ConfigFlags, gvr schema.GroupVersionResource, namespace string) ([]string, error) {
+func getResourceNames(ctx context.Context, configFlags *genericclioptions.ConfigFlags, gvr schema.GroupVersionResource, namespace string) ([]string, error) {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return nil, err
@@ -26,7 +26,7 @@ func getResourceNames(configFlags *genericclioptions.ConfigFlags, gvr schema.Gro
 
 	// List resources
 	if namespace != "" {
-		resources, err := c.Resource(gvr).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+		resources, err := c.Resource(gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -34,7 +34,7 @@ func getResourceNames(configFlags *genericclioptions.ConfigFlags, gvr schema.Gro
 			list = append(list, resource.GetName())
 		}
 	} else {
-		resources, err := c.Resource(gvr).List(context.TODO(), metav1.ListOptions{})
+		resources, err := c.Resource(gvr).Namespace(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +51,7 @@ func PlanNameCompletion(configFlags *genericclioptions.ConfigFlags) func(cmd *co
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		namespace := client.ResolveNamespace(configFlags)
 
-		names, err := getResourceNames(configFlags, client.PlansGVR, namespace)
+		names, err := getResourceNames(context.Background(), configFlags, client.PlansGVR, namespace)
 		if err != nil {
 			return []string{fmt.Sprintf("Error fetching plans: %v", err)}, cobra.ShellCompDirectiveError
 		}
@@ -97,7 +97,7 @@ func ProviderNameCompletionByType(configFlags *genericclioptions.ConfigFlags, pr
 			return []string{fmt.Sprintf("Error getting client: %v", err)}, cobra.ShellCompDirectiveError
 		}
 
-		resources, err := c.Resource(client.ProvidersGVR).Namespace(namespace).List(context.TODO(), metav1.ListOptions{})
+		resources, err := c.Resource(client.ProvidersGVR).Namespace(namespace).List(context.Background(), metav1.ListOptions{})
 		if err != nil {
 			return []string{fmt.Sprintf("Error fetching providers: %v", err)}, cobra.ShellCompDirectiveError
 		}
@@ -165,7 +165,7 @@ func MappingNameCompletion(configFlags *genericclioptions.ConfigFlags, mappingTy
 			resourceType = "network mappings"
 		}
 
-		names, err := getResourceNames(configFlags, gvr, namespace)
+		names, err := getResourceNames(context.Background(), configFlags, gvr, namespace)
 		if err != nil {
 			return []string{fmt.Sprintf("Error fetching %s: %v", resourceType, err)}, cobra.ShellCompDirectiveError
 		}
@@ -201,10 +201,10 @@ func HostNameCompletion(configFlags *genericclioptions.ConfigFlags, providerName
 	}
 
 	namespace := client.ResolveNamespace(configFlags)
-	inventoryURL := client.DiscoverInventoryURL(configFlags, namespace)
+	inventoryURL := client.DiscoverInventoryURL(context.Background(), configFlags, namespace)
 
 	// Validate provider is vSphere
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(context.Background(), configFlags, providerName, namespace)
 	if err != nil {
 		return []string{fmt.Sprintf("Error getting provider: %v", err)}, cobra.ShellCompDirectiveError
 	}
@@ -265,10 +265,10 @@ func HostIPAddressCompletion(configFlags *genericclioptions.ConfigFlags, provide
 	}
 
 	namespace := client.ResolveNamespace(configFlags)
-	inventoryURL := client.DiscoverInventoryURL(configFlags, namespace)
+	inventoryURL := client.DiscoverInventoryURL(context.Background(), configFlags, namespace)
 
 	// Get provider
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(context.Background(), configFlags, providerName, namespace)
 	if err != nil {
 		return []string{fmt.Sprintf("Error getting provider: %v", err)}, cobra.ShellCompDirectiveError
 	}
@@ -342,10 +342,10 @@ func HostNetworkAdapterCompletion(configFlags *genericclioptions.ConfigFlags, pr
 	}
 
 	namespace := client.ResolveNamespace(configFlags)
-	inventoryURL := client.DiscoverInventoryURL(configFlags, namespace)
+	inventoryURL := client.DiscoverInventoryURL(context.Background(), configFlags, namespace)
 
 	// Get provider
-	provider, err := inventory.GetProviderByName(configFlags, providerName, namespace)
+	provider, err := inventory.GetProviderByName(context.Background(), configFlags, providerName, namespace)
 	if err != nil {
 		return []string{fmt.Sprintf("Error getting provider: %v", err)}, cobra.ShellCompDirectiveError
 	}
@@ -413,7 +413,7 @@ func MigrationNameCompletion(configFlags *genericclioptions.ConfigFlags) func(cm
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		namespace := client.ResolveNamespace(configFlags)
 
-		names, err := getResourceNames(configFlags, client.MigrationsGVR, namespace)
+		names, err := getResourceNames(context.Background(), configFlags, client.MigrationsGVR, namespace)
 		if err != nil {
 			return []string{fmt.Sprintf("Error fetching migrations: %v", err)}, cobra.ShellCompDirectiveError
 		}
@@ -447,7 +447,7 @@ func HookResourceNameCompletion(configFlags *genericclioptions.ConfigFlags) func
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		namespace := client.ResolveNamespace(configFlags)
 
-		names, err := getResourceNames(configFlags, client.HooksGVR, namespace)
+		names, err := getResourceNames(context.Background(), configFlags, client.HooksGVR, namespace)
 		if err != nil {
 			return []string{fmt.Sprintf("Error fetching hooks: %v", err)}, cobra.ShellCompDirectiveError
 		}
@@ -477,7 +477,7 @@ func HostResourceNameCompletion(configFlags *genericclioptions.ConfigFlags) func
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		namespace := client.ResolveNamespace(configFlags)
 
-		names, err := getResourceNames(configFlags, client.HostsGVR, namespace)
+		names, err := getResourceNames(context.Background(), configFlags, client.HostsGVR, namespace)
 		if err != nil {
 			return []string{fmt.Sprintf("Error fetching hosts: %v", err)}, cobra.ShellCompDirectiveError
 		}

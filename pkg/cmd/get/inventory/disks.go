@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -12,19 +13,19 @@ import (
 )
 
 // ListDisks queries the provider's disk inventory and displays the results
-func ListDisks(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+func ListDisks(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
 	if watchMode {
 		return watch.Watch(func() error {
-			return listDisksOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+			return listDisksOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 		}, 10*time.Second)
 	}
 
-	return listDisksOnce(kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+	return listDisksOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
 }
 
-func listDisksOnce(kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+func listDisksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
 	// Get the provider object
-	provider, err := GetProviderByName(kubeConfigFlags, providerName, namespace)
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
 	if err != nil {
 		return err
 	}
