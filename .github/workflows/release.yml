@@ -21,18 +21,35 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.23'
-          
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Install musl-gcc
         run: |
           sudo apt-get update
           sudo apt-get install -y musl-tools
 
-      - name: Build and package
+      - name: Install Python dependencies
+        run: |
+          cd mcp
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build and package Go binary
         run: |
           make kubectl-mtv-static
           make dist
         env:
           VERSION: ${{ github.event.release.tag_name }}
+
+      - name: Build and package MCP servers
+        run: |
+          cd mcp
+          make dist-servers
 
       - name: Release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631
@@ -40,3 +57,5 @@ jobs:
           files: |
             kubectl-mtv.tar.gz.sha256sum
             kubectl-mtv.tar.gz
+            mcp/kubectl-mtv-mcp-servers.tar.gz.sha256sum
+            mcp/kubectl-mtv-mcp-servers.tar.gz
