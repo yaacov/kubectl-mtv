@@ -193,3 +193,10 @@ cursor-mcp-config-generated.json
 claude-desktop-config-generated.json
 generic-mcp-config-generated.json
 http-server-config-generated.json
+
+# Release artifacts
+kubectl-mtv.tar.gz
+kubectl-mtv.tar.gz.sha256sum
+mcp/kubectl-mtv-mcp-servers.tar.gz
+mcp/kubectl-mtv-mcp-servers.tar.gz.sha256sum
+mcp/servers-release/

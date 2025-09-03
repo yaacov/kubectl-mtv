@@ -54,10 +54,50 @@ upload-test: build
 upload: build
 	twine upload $(DIST_DIR)/*
 
+# Pyinstaller executable builds
+MCP_SERVERS := kubectl-mtv-mcp kubectl-mtv-write-mcp kubevirt-mcp
+
+# Individual MCP server targets
+.PHONY: kubectl-mtv-mcp
+kubectl-mtv-mcp: $(SRC_DIR)/kubectl_mtv_server.py hook-fastmcp.py
+	@echo "Building kubectl-mtv-mcp server..."
+	pyinstaller --onefile --additional-hooks-dir=. --hidden-import=fastmcp --strip --name kubectl-mtv-mcp $(SRC_DIR)/kubectl_mtv_server.py
+
+.PHONY: kubectl-mtv-write-mcp
+kubectl-mtv-write-mcp: $(SRC_DIR)/kubectl_mtv_write_server.py hook-fastmcp.py
+	@echo "Building kubectl-mtv-write-mcp server..."
+	pyinstaller --onefile --additional-hooks-dir=. --hidden-import=fastmcp --strip --name kubectl-mtv-write-mcp $(SRC_DIR)/kubectl_mtv_write_server.py
+
+.PHONY: kubevirt-mcp
+kubevirt-mcp: $(SRC_DIR)/kubevirt_server.py hook-fastmcp.py
+	@echo "Building kubevirt-mcp server..."
+	pyinstaller --onefile --additional-hooks-dir=. --hidden-import=fastmcp --strip --name kubevirt-mcp $(SRC_DIR)/kubevirt_server.py
+
+# Build all MCP servers
+.PHONY: build-servers
+build-servers: kubectl-mtv-mcp kubectl-mtv-write-mcp kubevirt-mcp
+
+# Package all MCP servers with LICENSE
+.PHONY: dist-servers
+dist-servers: build-servers
+	@echo "Packaging MCP servers..."
+	@mkdir -p servers-release
+	@cp ../LICENSE servers-release/
+	@cp $(DIST_DIR)/kubectl-mtv-mcp servers-release/
+	@cp $(DIST_DIR)/kubectl-mtv-write-mcp servers-release/
+	@cp $(DIST_DIR)/kubevirt-mcp servers-release/
+	tar -zcvf kubectl-mtv-mcp-servers.tar.gz -C servers-release .
+	sha256sum kubectl-mtv-mcp-servers.tar.gz > kubectl-mtv-mcp-servers.tar.gz.sha256sum
+	@rm -rf servers-release
+
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)/
 	rm -rf $(DIST_DIR)/
 	rm -rf *.egg-info/
+	rm -f kubectl-mtv-mcp-servers.tar.gz
+	rm -f kubectl-mtv-mcp-servers.tar.gz.sha256sum
+	rm -rf servers-release
+	rm -f *.spec
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
