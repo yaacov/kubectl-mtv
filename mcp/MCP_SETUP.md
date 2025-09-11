@@ -57,8 +57,6 @@ Before setting up the MCP server, ensure you have:
 ### Claude Desktop
 
 1. **Locate the configuration file**:
-   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
    - **Linux**: `~/.config/claude/claude_desktop_config.json`
 
 2. **Add the server configuration**:
