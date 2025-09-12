@@ -17,13 +17,36 @@ Before setting up the MCP server, ensure you have:
 5. **MCP-compatible client** (Cursor, Claude Desktop, etc.)
 
 ## Quick Setup
-
-1. **Install the MTV MCP package**:
+   
+   **Option A: Using pip**
    ```bash
    pip install mtv-mcp
    ```
-
-2. **Configure your MCP client** (see client-specific instructions below)
+   
+   **Option B: Download from GitHub releases**
+   ```bash
+   # Download the server executables
+   curl -LO https://github.com/yaacov/kubectl-mtv/releases/latest/download/kubectl-mtv-mcp-servers-linux-amd64.tar.gz
+   
+   # Download the checksum file
+   curl -LO https://github.com/yaacov/kubectl-mtv/releases/latest/download/kubectl-mtv-mcp-servers-linux-amd64.tar.gz.sha256sum
+   
+   # Verify the download (compare output with the content of the .sha256sum file)
+   sha256sum kubectl-mtv-mcp-servers-linux-amd64.tar.gz
+   
+   # Extract the executables
+   tar -xzf kubectl-mtv-mcp-servers-linux-amd64.tar.gz
+   
+   # Move the executables to a directory in your PATH
+   # (assuming ~/.local/bin is in your PATH)
+   mkdir -p ~/.local/bin
+   mv kubectl-mtv-mcp kubectl-mtv-write-mcp kubevirt-mcp ~/.local/bin/
+   
+   # Clean up downloaded files
+   rm kubectl-mtv-mcp-servers-linux-amd64.tar.gz kubectl-mtv-mcp-servers-linux-amd64.tar.gz.sha256sum
+   ```
+   
+   Note: If ~/.local/bin is not in your PATH, either add it or use another directory that is (like /usr/local/bin, which may require sudo).
 
 ## Client Configuration
 
