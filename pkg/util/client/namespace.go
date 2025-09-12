@@ -39,3 +39,13 @@ func ResolveNamespaceWithAllFlag(configFlags *genericclioptions.ConfigFlags, all
 	}
 	return ResolveNamespace(configFlags)
 }
+
+// GetProviderNamespace returns the provider namespace, falling back to default if empty.
+// This is commonly used when provider namespaces may be unspecified and should default
+// to the same namespace as the resource being created.
+func GetProviderNamespace(providerNamespace, defaultNamespace string) string {
+	if providerNamespace != "" {
+		return providerNamespace
+	}
+	return defaultNamespace
+}

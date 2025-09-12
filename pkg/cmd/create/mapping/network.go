@@ -17,6 +17,20 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// parseProviderReference parses a provider reference that might contain namespace/name pattern
+// Returns the name and namespace separately. If no namespace is specified, returns the default namespace.
+func parseProviderReference(providerRef, defaultNamespace string) (name, namespace string) {
+	if strings.Contains(providerRef, "/") {
+		parts := strings.SplitN(providerRef, "/", 2)
+		namespace = strings.TrimSpace(parts[0])
+		name = strings.TrimSpace(parts[1])
+	} else {
+		name = strings.TrimSpace(providerRef)
+		namespace = defaultNamespace
+	}
+	return name, namespace
+}
+
 // validateNetworkPairs validates network mapping pairs for duplicate targets.
 // Network mapping constraints:
 // - Pod networking ("default") can only be mapped once
@@ -171,6 +185,10 @@ func createNetworkMapping(configFlags *genericclioptions.ConfigFlags, name, name
 		return fmt.Errorf("failed to get client: %v", err)
 	}
 
+	// Parse provider references to extract names and namespaces
+	sourceProviderName, sourceProviderNamespace := parseProviderReference(sourceProvider, namespace)
+	targetProviderName, targetProviderNamespace := parseProviderReference(targetProvider, namespace)
+
 	// Parse network pairs if provided
 	var mappingPairs []forkliftv1beta1.NetworkPair
 	if networkPairs != "" {
@@ -189,12 +207,12 @@ func createNetworkMapping(configFlags *genericclioptions.ConfigFlags, name, name
 		Spec: forkliftv1beta1.NetworkMapSpec{
 			Provider: provider.Pair{
 				Source: corev1.ObjectReference{
-					Name:      sourceProvider,
-					Namespace: namespace,
+					Name:      sourceProviderName,
+					Namespace: sourceProviderNamespace,
 				},
 				Destination: corev1.ObjectReference{
-					Name:      targetProvider,
-					Namespace: namespace,
+					Name:      targetProviderName,
+					Namespace: targetProviderNamespace,
 				},
 			},
 			Map: mappingPairs,

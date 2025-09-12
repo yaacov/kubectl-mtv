@@ -238,6 +238,10 @@ func createStorageMappingWithOptions(ctx context.Context, configFlags *genericcl
 		return fmt.Errorf("failed to get client: %v", err)
 	}
 
+	// Parse provider references to extract names and namespaces
+	sourceProviderName, sourceProviderNamespace := parseProviderReference(sourceProvider, namespace)
+	targetProviderName, targetProviderNamespace := parseProviderReference(targetProvider, namespace)
+
 	// Parse storage pairs if provided
 	var mappingPairs []forkliftv1beta1.StoragePair
 	if storagePairs != "" {
@@ -256,12 +260,12 @@ func createStorageMappingWithOptions(ctx context.Context, configFlags *genericcl
 		Spec: forkliftv1beta1.StorageMapSpec{
 			Provider: provider.Pair{
 				Source: corev1.ObjectReference{
-					Name:      sourceProvider,
-					Namespace: namespace,
+					Name:      sourceProviderName,
+					Namespace: sourceProviderNamespace,
 				},
 				Destination: corev1.ObjectReference{
-					Name:      targetProvider,
-					Namespace: namespace,
+					Name:      targetProviderName,
+					Namespace: targetProviderNamespace,
 				},
 			},
 			Map: mappingPairs,

@@ -58,10 +58,7 @@ func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (string, e
 		opts.SourceProvider, opts.TargetProvider, opts.DefaultTargetStorageClass)
 
 	// Get source storage fetcher using the provider's namespace
-	sourceProviderNamespace := opts.SourceProviderNamespace
-	if sourceProviderNamespace == "" {
-		sourceProviderNamespace = opts.Namespace
-	}
+	sourceProviderNamespace := client.GetProviderNamespace(opts.SourceProviderNamespace, opts.Namespace)
 	sourceFetcher, err := GetSourceStorageFetcher(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace)
 	if err != nil {
 		return "", fmt.Errorf("failed to get source storage fetcher: %v", err)
@@ -69,10 +66,7 @@ func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (string, e
 	klog.V(4).Infof("DEBUG: Source storage fetcher created for provider: %s", opts.SourceProvider)
 
 	// Get target storage fetcher using the provider's namespace
-	targetProviderNamespace := opts.TargetProviderNamespace
-	if targetProviderNamespace == "" {
-		targetProviderNamespace = opts.Namespace
-	}
+	targetProviderNamespace := client.GetProviderNamespace(opts.TargetProviderNamespace, opts.Namespace)
 	targetFetcher, err := GetTargetStorageFetcher(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace)
 	if err != nil {
 		return "", fmt.Errorf("failed to get target storage fetcher: %v", err)
@@ -144,13 +138,13 @@ func createStorageMap(opts StorageMapperOptions, storagePairs []forkliftv1beta1.
 					Kind:       "Provider",
 					APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
 					Name:       opts.SourceProvider,
-					Namespace:  opts.Namespace,
+					Namespace:  client.GetProviderNamespace(opts.SourceProviderNamespace, opts.Namespace),
 				},
 				Destination: corev1.ObjectReference{
 					Kind:       "Provider",
 					APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
 					Name:       opts.TargetProvider,
-					Namespace:  opts.Namespace,
+					Namespace:  client.GetProviderNamespace(opts.TargetProviderNamespace, opts.Namespace),
 				},
 			},
 			Map: storagePairs,
