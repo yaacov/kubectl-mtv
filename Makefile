@@ -16,8 +16,6 @@
 # Prerequisites:
 #   - go 1.23 or higher
 #   - curl or wget
-#   - CGO enabled
-#   - musl-gcc package installed for static binary compilation
 #
 # Run `make install-tools` to install required development tools
 
@@ -38,14 +36,7 @@ GOARCH := $(shell go env GOARCH)
 
 kubectl-mtv: clean $(kubemtv_cmd) $(kubemtv_pkg)
 	@echo "Building for ${GOOS}/${GOARCH}"
-	go build -ldflags='-X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' -o kubectl-mtv $(kubemtv_cmd)
-
-kubectl-mtv-static: $(kubemtv_cmd) $(kubemtv_pkg)
-	CGO_ENABLED=1 CC=musl-gcc go build \
-		-tags netgo \
-		-ldflags '-linkmode external -extldflags "-static" -X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' \
-		-o kubectl-mtv \
-		$(kubemtv_cmd)
+	CGO_ENABLED=0 go build -ldflags='-X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' -o kubectl-mtv $(kubemtv_cmd)
 
 .PHONY: lint
 lint:

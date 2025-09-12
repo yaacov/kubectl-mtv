@@ -27,11 +27,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install musl-gcc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools
-
       - name: Install Python dependencies
         run: |
           cd mcp
@@ -41,7 +36,7 @@ jobs:
 
       - name: Build and package Go binary
         run: |
-          make kubectl-mtv-static
+          make kubectl-mtv
           make dist
         env:
           VERSION: ${{ github.event.release.tag_name }}
