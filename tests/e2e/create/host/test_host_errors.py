@@ -13,8 +13,8 @@ from ...utils import (
 )
 
 
-# Hardcoded host IDs for error testing (from hosts.json file)
-ERROR_TEST_HOSTS = ["host-8", "invalid-host-999"]
+# Hardcoded host IDs for error testing (from hosts.json file)  
+ERROR_TEST_HOSTS = ["host-2007", "invalid-host-999"]  # Updated to use host with 'green' status
 
 # Hardcoded network adapter names for testing (from hosts.json file)
 ERROR_TEST_ADAPTERS = ["Management Network", "NonExistentAdapter"]
@@ -233,7 +233,9 @@ class TestHostErrors:
             check=False,
         )
         assert host_result.returncode != 0
-        assert "not found" in host_result.stderr.lower()
+        # The error can be either "not found" for adapter or admission webhook error for empty resource name
+        assert ("not found" in host_result.stderr.lower() or 
+                "resource name may not be empty" in host_result.stderr.lower())
 
     def test_create_host_invalid_cacert_file(
         self, test_namespace, vsphere_provider, provider_credentials

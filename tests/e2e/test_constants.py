@@ -38,7 +38,7 @@ OPENSHIFT_TEST_VMS = ["test-vm-1", "test-vm-2"]
 
 # VMware vSphere VM names (validated against MCP inventory)
 VSPHERE_TEST_VMS = [
-    "mtv-win2019-79",  # Windows VM (actual name from inventory)
+    "mtv-func-win2019-test",  # Windows VM (actual name from inventory)
     "mtv-rhel8-sanity",  # Linux VM (available and compliant)
 ]
 
@@ -61,16 +61,16 @@ OVA_TEST_VMS = [
 
 # OpenStack VM names (validated against MCP inventory) - chose simple VMs with minimal resources
 OPENSTACK_TEST_VMS = [
-    "infra-mtv-node-272",
-    "qemtv-05-xn49b-master-0",
-]  # infra-mtv-node-272 has only 1 network, qemtv-05-xn49b-master-0 has 1 network + 1 volume
+    "infra-mtv-node-331",
+    "mtv-test",
+]  # infra-mtv-node-331 has only 1 network, mtv-test is a simple test VM
 
 # =============================================================================
 # HOST CONFIGURATION BY PROVIDER TYPE
 # =============================================================================
 
 # vSphere host IDs (from vSphere inventory data)
-VSPHERE_TEST_HOSTS = ["host-8"]
+VSPHERE_TEST_HOSTS = ["host-2007"]  # host-2007 has 'green' status, host-8 has 'yellow' status
 
 # ESXi host IDs (from ESXi inventory data)
 ESXI_TEST_HOSTS = ["ha-host"]
@@ -132,13 +132,13 @@ OVIRT_NETWORK_PAIRS = [
 # OpenStack network mappings (reordered to match VM order - first pair must match first VM's network)
 OPENSTACK_NETWORK_PAIRS = [
     {
-        "source": "k8s-clusterapi-cluster-openshift-cluster-api-guests-qemtv-05-xn49b",
-        "target": "default",
-    },  # Network from qemtv-05-xn49b-master-0 (OPENSTACK_TEST_VMS[1] used by tests) -> pod network
-    {
         "source": "provider_net_shared",
+        "target": "default",
+    },  # Network from infra-mtv-node-331 (OPENSTACK_TEST_VMS[0]) -> pod network
+    {
+        "source": "provider_net_shared_2",
         "target": NETWORK_ATTACHMENT_DEFINITIONS[3],
-    },  # Network from infra-mtv-node-272 -> test-nad-4
+    },  # Network for mtv-test (OPENSTACK_TEST_VMS[1]) -> test-nad-4
 ]
 
 # OpenShift network mappings (based on actual VM networks - maps NADs that exist on the test VMs)
@@ -160,10 +160,6 @@ OPENSHIFT_NETWORK_PAIRS = [
 
 # vSphere storage mappings
 VSPHERE_STORAGE_PAIRS = [
-    {
-        "source": "nfs-us-mtv-v8",
-        "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
-    },
     {"source": "datastore1", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
     {
         "source": "mtv-nfs-us-v8",
@@ -288,13 +284,13 @@ OVIRT_NETWORKS = [
 
 OPENSTACK_NETWORKS = [
     {
-        "source": "k8s-clusterapi-cluster-openshift-cluster-api-guests-qemtv-05-xn49b",
-        "target": NETWORK_ATTACHMENT_DEFINITIONS[0],
-    },  # Network from qemtv-05-xn49b-master-0 (matches VM order) -> test-nad-1
-    {
         "source": "provider_net_shared",
+        "target": NETWORK_ATTACHMENT_DEFINITIONS[0],
+    },  # Network from infra-mtv-node-331 (matches VM order) -> test-nad-1
+    {
+        "source": "provider_net_shared_2",
         "target": NETWORK_ATTACHMENT_DEFINITIONS[1],
-    },  # Network from infra-mtv-node-272 -> test-nad-2
+    },  # Network for mtv-test -> test-nad-2
 ]
 
 OPENSHIFT_NETWORKS = [
@@ -310,10 +306,6 @@ OPENSHIFT_NETWORKS = [
 
 # Storage mappings for mapping creation tests
 VSPHERE_DATASTORES = [
-    {
-        "source": "nfs-us-mtv-v8",
-        "target": TARGET_STORAGE_CLASSES["CEPH_RBD_VIRTUALIZATION"],
-    },
     {"source": "datastore1", "target": TARGET_STORAGE_CLASSES["CEPH_RBD"]},
     {
         "source": "mtv-nfs-us-v8",
