@@ -41,7 +41,6 @@ func FilterItemsParallel(items []map[string]interface{}, queryOpts *QueryOptions
 	if err != nil {
 		return nil, err
 	}
-	defer tree.Free()
 
 	effectiveBatchSize := CalculateBatchSize(totalItems, batchSize)
 	numBatches := (totalItems + effectiveBatchSize - 1) / effectiveBatchSize

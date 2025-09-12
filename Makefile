@@ -16,8 +16,6 @@
 # Prerequisites:
 #   - go 1.23 or higher
 #   - curl or wget
-#   - CGO enabled
-#   - musl-gcc package installed for static binary compilation
 #
 # Run `make install-tools` to install required development tools
 
@@ -38,14 +36,7 @@ GOARCH := $(shell go env GOARCH)
 
 kubectl-mtv: clean $(kubemtv_cmd) $(kubemtv_pkg)
 	@echo "Building for ${GOOS}/${GOARCH}"
-	go build -ldflags='-X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' -o kubectl-mtv $(kubemtv_cmd)
-
-kubectl-mtv-static: $(kubemtv_cmd) $(kubemtv_pkg)
-	CGO_ENABLED=1 CC=musl-gcc go build \
-		-tags netgo \
-		-ldflags '-linkmode external -extldflags "-static" -X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' \
-		-o kubectl-mtv \
-		$(kubemtv_cmd)
+	CGO_ENABLED=0 go build -ldflags='-X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' -o kubectl-mtv $(kubemtv_cmd)
 
 .PHONY: lint
 lint:
@@ -56,6 +47,72 @@ lint:
 fmt:
 	go fmt ./pkg/... ./cmd/...
 
+# Cross-compilation targets
+.PHONY: build-linux-amd64
+build-linux-amd64: $(kubemtv_cmd) $(kubemtv_pkg)
+	@echo "Building for linux/amd64"
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+		-a \
+		-ldflags '-s -w -X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' \
+		-o kubectl-mtv-linux-amd64 \
+		$(kubemtv_cmd)
+
+.PHONY: build-linux-arm64
+build-linux-arm64: $(kubemtv_cmd) $(kubemtv_pkg)
+	@echo "Building for linux/arm64"
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build \
+		-a \
+		-ldflags '-s -w -X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' \
+		-o kubectl-mtv-linux-arm64 \
+		$(kubemtv_cmd)
+
+.PHONY: build-darwin-amd64
+build-darwin-amd64: $(kubemtv_cmd) $(kubemtv_pkg)
+	@echo "Building for darwin/amd64"
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build \
+		-a \
+		-ldflags '-s -w -X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' \
+		-o kubectl-mtv-darwin-amd64 \
+		$(kubemtv_cmd)
+
+.PHONY: build-darwin-arm64
+build-darwin-arm64: $(kubemtv_cmd) $(kubemtv_pkg)
+	@echo "Building for darwin/arm64"
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build \
+		-a \
+		-ldflags '-s -w -X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' \
+		-o kubectl-mtv-darwin-arm64 \
+		$(kubemtv_cmd)
+
+.PHONY: build-windows-amd64
+build-windows-amd64: $(kubemtv_cmd) $(kubemtv_pkg)
+	@echo "Building for windows/amd64"
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build \
+		-a \
+		-ldflags '-s -w -X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' \
+		-o kubectl-mtv-windows-amd64.exe \
+		$(kubemtv_cmd)
+
+# Build all platforms
+.PHONY: build-all
+build-all: clean build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64 build-windows-amd64
+
+# Create release archives for all platforms
+.PHONY: dist-all
+dist-all: build-all
+	@echo "Creating release archives..."
+	tar -zcvf kubectl-mtv-${VERSION}-linux-amd64.tar.gz LICENSE kubectl-mtv-linux-amd64
+	tar -zcvf kubectl-mtv-${VERSION}-linux-arm64.tar.gz LICENSE kubectl-mtv-linux-arm64
+	tar -zcvf kubectl-mtv-${VERSION}-darwin-amd64.tar.gz LICENSE kubectl-mtv-darwin-amd64
+	tar -zcvf kubectl-mtv-${VERSION}-darwin-arm64.tar.gz LICENSE kubectl-mtv-darwin-arm64
+	zip kubectl-mtv-${VERSION}-windows-amd64.zip LICENSE kubectl-mtv-windows-amd64.exe
+	@echo "Generating individual checksums..."
+	sha256sum kubectl-mtv-${VERSION}-linux-amd64.tar.gz > kubectl-mtv-${VERSION}-linux-amd64.tar.gz.sha256sum
+	sha256sum kubectl-mtv-${VERSION}-linux-arm64.tar.gz > kubectl-mtv-${VERSION}-linux-arm64.tar.gz.sha256sum
+	sha256sum kubectl-mtv-${VERSION}-darwin-amd64.tar.gz > kubectl-mtv-${VERSION}-darwin-amd64.tar.gz.sha256sum
+	sha256sum kubectl-mtv-${VERSION}-darwin-arm64.tar.gz > kubectl-mtv-${VERSION}-darwin-arm64.tar.gz.sha256sum
+	sha256sum kubectl-mtv-${VERSION}-windows-amd64.zip > kubectl-mtv-${VERSION}-windows-amd64.zip.sha256sum
+
 .PHONY: dist
 dist: kubectl-mtv
 	tar -zcvf kubectl-mtv.tar.gz LICENSE kubectl-mtv
@@ -64,8 +121,17 @@ dist: kubectl-mtv
 .PHONY: clean
 clean:
 	rm -f kubectl-mtv
+	rm -f kubectl-mtv-linux-amd64
+	rm -f kubectl-mtv-linux-arm64
+	rm -f kubectl-mtv-darwin-amd64
+	rm -f kubectl-mtv-darwin-arm64
+	rm -f kubectl-mtv-windows-amd64.exe
 	rm -f kubectl-mtv.tar.gz
 	rm -f kubectl-mtv.tar.gz.sha256sum
+	rm -f kubectl-mtv-*-*.tar.gz
+	rm -f kubectl-mtv-*-*.zip
+	rm -f kubectl-mtv-*-*.tar.gz.sha256sum
+	rm -f kubectl-mtv-*-*.zip.sha256sum
 
 .PHONY: test
 test:
