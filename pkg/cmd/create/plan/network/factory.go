@@ -136,10 +136,7 @@ func CreateNetworkMap(ctx context.Context, opts NetworkMapperOptions) (string, e
 		opts.SourceProvider, opts.TargetProvider, opts.DefaultTargetNetwork)
 
 	// Get source network fetcher using the provider's namespace
-	sourceProviderNamespace := opts.SourceProviderNamespace
-	if sourceProviderNamespace == "" {
-		sourceProviderNamespace = opts.Namespace
-	}
+	sourceProviderNamespace := client.GetProviderNamespace(opts.SourceProviderNamespace, opts.Namespace)
 	sourceFetcher, err := GetSourceNetworkFetcher(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace)
 	if err != nil {
 		return "", fmt.Errorf("failed to get source network fetcher: %v", err)
@@ -147,10 +144,7 @@ func CreateNetworkMap(ctx context.Context, opts NetworkMapperOptions) (string, e
 	klog.V(4).Infof("DEBUG: Source fetcher created for provider: %s", opts.SourceProvider)
 
 	// Get target network fetcher using the provider's namespace
-	targetProviderNamespace := opts.TargetProviderNamespace
-	if targetProviderNamespace == "" {
-		targetProviderNamespace = opts.Namespace
-	}
+	targetProviderNamespace := client.GetProviderNamespace(opts.TargetProviderNamespace, opts.Namespace)
 	targetFetcher, err := GetTargetNetworkFetcher(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace)
 	if err != nil {
 		return "", fmt.Errorf("failed to get target network fetcher: %v", err)
@@ -223,13 +217,13 @@ func createNetworkMap(opts NetworkMapperOptions, networkPairs []forkliftv1beta1.
 					Kind:       "Provider",
 					APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
 					Name:       opts.SourceProvider,
-					Namespace:  opts.Namespace,
+					Namespace:  client.GetProviderNamespace(opts.SourceProviderNamespace, opts.Namespace),
 				},
 				Destination: corev1.ObjectReference{
 					Kind:       "Provider",
 					APIVersion: forkliftv1beta1.SchemeGroupVersion.String(),
 					Name:       opts.TargetProvider,
-					Namespace:  opts.Namespace,
+					Namespace:  client.GetProviderNamespace(opts.TargetProviderNamespace, opts.Namespace),
 				},
 			},
 			Map: networkPairs,
