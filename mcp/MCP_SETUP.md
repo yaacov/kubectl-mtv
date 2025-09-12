@@ -2,6 +2,10 @@
 
 This guide explains how to set up and use the kubectl-mtv MCP server with various MCP-compatible applications like Cursor, Claude Desktop, and other MCP clients.
 
+## What is MCP?
+
+MCP (Model Context Protocol) is an open standard that enables AI assistants to interact directly with tools and services in your local environment. For kubectl-mtv, MCP creates a bridge between AI coding assistants and your Kubernetes clusters, allowing these assistants to execute kubectl-mtv commands, retrieve VM migration information, and manage KubeVirt VMs without requiring you to copy/paste output. When configured, your AI assistant can directly query cluster resources, check migration status, and even help troubleshoot issues by having real-time access to your environment. MCP maintains security by running entirely on your local machine, with the AI only receiving the command results rather than direct cluster access.
+
 ## Prerequisites
 
 Before setting up the MCP server, ensure you have:
