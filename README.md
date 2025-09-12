@@ -29,6 +29,9 @@ It is posible to add kubectl-mtv specific MCP server for AI client that support 
 ```bash
 # Installing the MCP servers
 pip install mtv-mcp
+
+# Or download from releases
+# https://github.com/yaacov/kubectl-mtv/releases
 ```
 
 ```bash
