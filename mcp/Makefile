@@ -86,8 +86,8 @@ dist-servers: build-servers
 	@cp $(DIST_DIR)/kubectl-mtv-mcp servers-release/
 	@cp $(DIST_DIR)/kubectl-mtv-write-mcp servers-release/
 	@cp $(DIST_DIR)/kubevirt-mcp servers-release/
-	tar -zcvf kubectl-mtv-mcp-servers.tar.gz -C servers-release .
-	sha256sum kubectl-mtv-mcp-servers.tar.gz > kubectl-mtv-mcp-servers.tar.gz.sha256sum
+	tar -zcvf kubectl-mtv-mcp-servers-linux-amd64.tar.gz -C servers-release .
+	sha256sum kubectl-mtv-mcp-servers-linux-amd64.tar.gz > kubectl-mtv-mcp-servers-linux-amd64.tar.gz.sha256sum
 	@rm -rf servers-release
 
 .PHONY: clean
@@ -95,8 +95,8 @@ clean:
 	rm -rf $(BUILD_DIR)/
 	rm -rf $(DIST_DIR)/
 	rm -rf *.egg-info/
-	rm -f kubectl-mtv-mcp-servers.tar.gz
-	rm -f kubectl-mtv-mcp-servers.tar.gz.sha256sum
+	rm -f kubectl-mtv-mcp-servers*.tar.gz
+	rm -f kubectl-mtv-mcp-servers*.tar.gz.sha256sum
 	rm -rf servers-release
 	rm -f *.spec
 	find . -type f -name "*.pyc" -delete

@@ -197,6 +197,21 @@ http-server-config-generated.json
 # Release artifacts
 kubectl-mtv.tar.gz
 kubectl-mtv.tar.gz.sha256sum
-mcp/kubectl-mtv-mcp-servers.tar.gz
-mcp/kubectl-mtv-mcp-servers.tar.gz.sha256sum
+
+# Multi-platform build artifacts
+kubectl-mtv-linux-amd64
+kubectl-mtv-linux-arm64
+kubectl-mtv-darwin-amd64
+kubectl-mtv-darwin-arm64
+kubectl-mtv-windows-amd64.exe
+
+# Versioned release archives
+kubectl-mtv-*-*.tar.gz
+kubectl-mtv-*-*.zip
+kubectl-mtv-*-*.tar.gz.sha256sum
+kubectl-mtv-*-*.zip.sha256sum
+
+# MCP release artifacts
+mcp/kubectl-mtv-mcp-servers*.tar.gz
+mcp/kubectl-mtv-mcp-servers*.tar.gz.sha256sum
 mcp/servers-release/
