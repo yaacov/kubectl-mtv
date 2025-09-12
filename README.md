@@ -22,7 +22,7 @@ kubectl krew install mtv
 
 See [Installation Guide](docs/README-install.md) for more options.
 
-## MCP installation
+## MCP support
 
 It is posible to add kubectl-mtv specific MCP server for AI client that support MCP addons, for example cursor IDE and claude desktop.
 
