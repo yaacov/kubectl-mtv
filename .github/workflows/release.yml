@@ -12,38 +12,26 @@ jobs:
       contents: write
       
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.23'
+          go-version: '1.24'
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Python dependencies
-        run: |
-          cd mcp
-          python -m pip install --upgrade pip
-          pip install pyinstaller
-          pip install -r requirements.txt
-
-      - name: Build multi-platform binaries and archives
+      - name: Build kubectl-mtv multi-platform binaries and archives
         run: make dist-all
         env:
           VERSION: ${{ github.event.release.tag_name }}
 
-      - name: Build MCP servers
-        run: |
-          cd mcp
-          make dist-servers
+      - name: Build Go MCP servers and create release archives
+        run: cd mcp-go && make dist-all
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
 
-      - name: Upload release assets
+      - name: Upload kubectl-mtv release assets
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631
         with:
           files: |
@@ -57,8 +45,21 @@ jobs:
             kubectl-mtv-${{ github.event.release.tag_name }}-darwin-arm64.tar.gz.sha256sum
             kubectl-mtv-${{ github.event.release.tag_name }}-windows-amd64.zip
             kubectl-mtv-${{ github.event.release.tag_name }}-windows-amd64.zip.sha256sum
-            mcp/kubectl-mtv-mcp-servers-linux-amd64.tar.gz
-            mcp/kubectl-mtv-mcp-servers-linux-amd64.tar.gz.sha256sum
+
+      - name: Upload Go MCP server release assets
+        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631
+        with:
+          files: |
+            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-linux-amd64.tar.gz
+            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-linux-amd64.tar.gz.sha256sum
+            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-linux-arm64.tar.gz
+            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-linux-arm64.tar.gz.sha256sum
+            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-darwin-amd64.tar.gz
+            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-darwin-amd64.tar.gz.sha256sum
+            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-darwin-arm64.tar.gz
+            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-darwin-arm64.tar.gz.sha256sum
+            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-windows-amd64.zip
+            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-windows-amd64.zip.sha256sum
 
       - name: Wait for assets to be available
         run: |
@@ -74,6 +75,11 @@ jobs:
             "kubectl-mtv-${VERSION}-darwin-amd64.tar.gz"
             "kubectl-mtv-${VERSION}-darwin-arm64.tar.gz"
             "kubectl-mtv-${VERSION}-windows-amd64.zip"
+            "mcp-servers-${VERSION}-linux-amd64.tar.gz"
+            "mcp-servers-${VERSION}-linux-arm64.tar.gz"
+            "mcp-servers-${VERSION}-darwin-amd64.tar.gz"
+            "mcp-servers-${VERSION}-darwin-arm64.tar.gz"
+            "mcp-servers-${VERSION}-windows-amd64.zip"
           )
           
           echo "Verifying release assets are downloadable..."
