@@ -289,6 +289,14 @@ func (pc *ProviderClient) GetProject(id string, detail int) (interface{}, error)
 	return pc.GetResourceByID("projects", id, detail)
 }
 
+func (pc *ProviderClient) GetSnapshots(detail int) (interface{}, error) {
+	return pc.GetResourceCollection("snapshots", detail)
+}
+
+func (pc *ProviderClient) GetSnapshot(id string, detail int) (interface{}, error) {
+	return pc.GetResourceByID("snapshots", id, detail)
+}
+
 // Kubernetes/OpenShift Provider Resources
 func (pc *ProviderClient) GetStorageClasses(detail int) (interface{}, error) {
 	return pc.GetResourceCollection("storageclasses", detail)

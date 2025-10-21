@@ -331,6 +331,326 @@ func listProjectsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 	}
 }
 
+// ListVolumes queries the provider's volume inventory and displays the results
+func ListVolumes(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+	if watchMode {
+		return watch.Watch(func() error {
+			return listVolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+		}, 10*time.Second)
+	}
+
+	return listVolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+}
+
+func listVolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+	// Get the provider object
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
+	if err != nil {
+		return err
+	}
+
+	// Create a new provider client
+	providerClient := NewProviderClient(kubeConfigFlags, provider, inventoryURL)
+
+	// Get provider type to verify volume support
+	providerType, err := providerClient.GetProviderType()
+	if err != nil {
+		return fmt.Errorf("failed to get provider type: %v", err)
+	}
+
+	// Define default headers
+	defaultHeaders := []output.Header{
+		{DisplayName: "NAME", JSONPath: "name"},
+		{DisplayName: "ID", JSONPath: "id"},
+		{DisplayName: "STATUS", JSONPath: "status"},
+		{DisplayName: "SIZE", JSONPath: "sizeHuman"},
+		{DisplayName: "TYPE", JSONPath: "volumeType"},
+		{DisplayName: "BOOTABLE", JSONPath: "bootable"},
+	}
+
+	// Fetch volumes inventory from the provider
+	var data interface{}
+	switch providerType {
+	case "openstack":
+		data, err = providerClient.GetVolumes(4)
+	default:
+		return fmt.Errorf("provider type '%s' does not support volume inventory", providerType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to get volumes from provider: %v", err)
+	}
+
+	// Process data to add human-readable sizes
+	data = addHumanReadableVolumeSizes(data)
+
+	// Parse query options for advanced query features
+	var queryOpts *querypkg.QueryOptions
+	if query != "" {
+		queryOpts, err = querypkg.ParseQueryString(query)
+		if err != nil {
+			return fmt.Errorf("failed to parse query: %v", err)
+		}
+
+		// Apply query filter
+		data, err = querypkg.ApplyQueryInterface(data, query)
+		if err != nil {
+			return fmt.Errorf("failed to apply query: %v", err)
+		}
+	}
+
+	// Format and display the results
+	emptyMessage := fmt.Sprintf("No volumes found for provider %s", providerName)
+	switch outputFormat {
+	case "json":
+		return output.PrintJSONWithEmpty(data, emptyMessage)
+	case "yaml":
+		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "table":
+		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
+	default:
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
+	}
+}
+
+// ListVolumeTypes queries the provider's volume type inventory and displays the results
+func ListVolumeTypes(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+	if watchMode {
+		return watch.Watch(func() error {
+			return listVolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+		}, 10*time.Second)
+	}
+
+	return listVolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+}
+
+func listVolumeTypesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+	// Get the provider object
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
+	if err != nil {
+		return err
+	}
+
+	// Create a new provider client
+	providerClient := NewProviderClient(kubeConfigFlags, provider, inventoryURL)
+
+	// Get provider type to verify volume type support
+	providerType, err := providerClient.GetProviderType()
+	if err != nil {
+		return fmt.Errorf("failed to get provider type: %v", err)
+	}
+
+	// Define default headers
+	defaultHeaders := []output.Header{
+		{DisplayName: "NAME", JSONPath: "name"},
+		{DisplayName: "ID", JSONPath: "id"},
+		{DisplayName: "DESCRIPTION", JSONPath: "description"},
+		{DisplayName: "PUBLIC", JSONPath: "isPublic"},
+	}
+
+	// Fetch volume types inventory from the provider
+	var data interface{}
+	switch providerType {
+	case "openstack":
+		data, err = providerClient.GetVolumeTypes(4)
+	default:
+		return fmt.Errorf("provider type '%s' does not support volume type inventory", providerType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to get volume types from provider: %v", err)
+	}
+
+	// Parse query options for advanced query features
+	var queryOpts *querypkg.QueryOptions
+	if query != "" {
+		queryOpts, err = querypkg.ParseQueryString(query)
+		if err != nil {
+			return fmt.Errorf("failed to parse query: %v", err)
+		}
+
+		// Apply query filter
+		data, err = querypkg.ApplyQueryInterface(data, query)
+		if err != nil {
+			return fmt.Errorf("failed to apply query: %v", err)
+		}
+	}
+
+	// Format and display the results
+	emptyMessage := fmt.Sprintf("No volume types found for provider %s", providerName)
+	switch outputFormat {
+	case "json":
+		return output.PrintJSONWithEmpty(data, emptyMessage)
+	case "yaml":
+		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "table":
+		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
+	default:
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
+	}
+}
+
+// ListSnapshots queries the provider's snapshot inventory and displays the results
+func ListSnapshots(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+	if watchMode {
+		return watch.Watch(func() error {
+			return listSnapshotsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+		}, 10*time.Second)
+	}
+
+	return listSnapshotsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+}
+
+func listSnapshotsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+	// Get the provider object
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
+	if err != nil {
+		return err
+	}
+
+	// Create a new provider client
+	providerClient := NewProviderClient(kubeConfigFlags, provider, inventoryURL)
+
+	// Get provider type to verify snapshot support
+	providerType, err := providerClient.GetProviderType()
+	if err != nil {
+		return fmt.Errorf("failed to get provider type: %v", err)
+	}
+
+	// Define default headers
+	defaultHeaders := []output.Header{
+		{DisplayName: "NAME", JSONPath: "name"},
+		{DisplayName: "ID", JSONPath: "id"},
+		{DisplayName: "STATUS", JSONPath: "status"},
+		{DisplayName: "SIZE", JSONPath: "sizeHuman"},
+		{DisplayName: "VOLUME-ID", JSONPath: "volumeID"},
+	}
+
+	// Fetch snapshots inventory from the provider
+	var data interface{}
+	switch providerType {
+	case "openstack":
+		data, err = providerClient.GetSnapshots(4)
+	default:
+		return fmt.Errorf("provider type '%s' does not support snapshot inventory", providerType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to get snapshots from provider: %v", err)
+	}
+
+	// Process data to add human-readable sizes
+	data = addHumanReadableSnapshotSizes(data)
+
+	// Parse query options for advanced query features
+	var queryOpts *querypkg.QueryOptions
+	if query != "" {
+		queryOpts, err = querypkg.ParseQueryString(query)
+		if err != nil {
+			return fmt.Errorf("failed to parse query: %v", err)
+		}
+
+		// Apply query filter
+		data, err = querypkg.ApplyQueryInterface(data, query)
+		if err != nil {
+			return fmt.Errorf("failed to apply query: %v", err)
+		}
+	}
+
+	// Format and display the results
+	emptyMessage := fmt.Sprintf("No snapshots found for provider %s", providerName)
+	switch outputFormat {
+	case "json":
+		return output.PrintJSONWithEmpty(data, emptyMessage)
+	case "yaml":
+		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "table":
+		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
+	default:
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
+	}
+}
+
+// ListSubnets queries the provider's subnet inventory and displays the results
+func ListSubnets(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
+	if watchMode {
+		return watch.Watch(func() error {
+			return listSubnetsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+		}, 10*time.Second)
+	}
+
+	return listSubnetsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query)
+}
+
+func listSubnetsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string) error {
+	// Get the provider object
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
+	if err != nil {
+		return err
+	}
+
+	// Create a new provider client
+	providerClient := NewProviderClient(kubeConfigFlags, provider, inventoryURL)
+
+	// Get provider type to verify subnet support
+	providerType, err := providerClient.GetProviderType()
+	if err != nil {
+		return fmt.Errorf("failed to get provider type: %v", err)
+	}
+
+	// Define default headers
+	defaultHeaders := []output.Header{
+		{DisplayName: "NAME", JSONPath: "name"},
+		{DisplayName: "ID", JSONPath: "id"},
+		{DisplayName: "NETWORK-ID", JSONPath: "networkID"},
+		{DisplayName: "CIDR", JSONPath: "cidr"},
+		{DisplayName: "IP-VERSION", JSONPath: "ipVersion"},
+		{DisplayName: "GATEWAY", JSONPath: "gatewayIP"},
+		{DisplayName: "DHCP", JSONPath: "enableDHCP"},
+	}
+
+	// Fetch subnets inventory from the provider
+	var data interface{}
+	switch providerType {
+	case "openstack":
+		data, err = providerClient.GetSubnets(4)
+	default:
+		return fmt.Errorf("provider type '%s' does not support subnet inventory", providerType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to get subnets from provider: %v", err)
+	}
+
+	// Parse query options for advanced query features
+	var queryOpts *querypkg.QueryOptions
+	if query != "" {
+		queryOpts, err = querypkg.ParseQueryString(query)
+		if err != nil {
+			return fmt.Errorf("failed to parse query: %v", err)
+		}
+
+		// Apply query filter
+		data, err = querypkg.ApplyQueryInterface(data, query)
+		if err != nil {
+			return fmt.Errorf("failed to apply query: %v", err)
+		}
+	}
+
+	// Format and display the results
+	emptyMessage := fmt.Sprintf("No subnets found for provider %s", providerName)
+	switch outputFormat {
+	case "json":
+		return output.PrintJSONWithEmpty(data, emptyMessage)
+	case "yaml":
+		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "table":
+		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
+	default:
+		return fmt.Errorf("unsupported output format: %s", outputFormat)
+	}
+}
+
 // Helper functions for adding human-readable sizes
 
 // addHumanReadableImageSizes adds human-readable size fields to image data
@@ -393,6 +713,52 @@ func addHumanReadableFlavorSizes(data interface{}) interface{} {
 		if ephemeral, exists := v["ephemeral"]; exists {
 			if ephemeralVal, ok := ephemeral.(float64); ok {
 				v["ephemeralHuman"] = humanizeBytes(ephemeralVal * 1024 * 1024 * 1024) // Ephemeral is in GB
+			}
+		}
+	}
+	return data
+}
+
+// addHumanReadableVolumeSizes adds human-readable size fields to volume data
+func addHumanReadableVolumeSizes(data interface{}) interface{} {
+	switch v := data.(type) {
+	case []interface{}:
+		for _, item := range v {
+			if volume, ok := item.(map[string]interface{}); ok {
+				if size, exists := volume["size"]; exists {
+					if sizeVal, ok := size.(float64); ok {
+						volume["sizeHuman"] = humanizeBytes(sizeVal * 1024 * 1024 * 1024) // Size is in GB
+					}
+				}
+			}
+		}
+	case map[string]interface{}:
+		if size, exists := v["size"]; exists {
+			if sizeVal, ok := size.(float64); ok {
+				v["sizeHuman"] = humanizeBytes(sizeVal * 1024 * 1024 * 1024) // Size is in GB
+			}
+		}
+	}
+	return data
+}
+
+// addHumanReadableSnapshotSizes adds human-readable size fields to snapshot data
+func addHumanReadableSnapshotSizes(data interface{}) interface{} {
+	switch v := data.(type) {
+	case []interface{}:
+		for _, item := range v {
+			if snapshot, ok := item.(map[string]interface{}); ok {
+				if size, exists := snapshot["size"]; exists {
+					if sizeVal, ok := size.(float64); ok {
+						snapshot["sizeHuman"] = humanizeBytes(sizeVal * 1024 * 1024 * 1024) // Size is in GB
+					}
+				}
+			}
+		}
+	case map[string]interface{}:
+		if size, exists := v["size"]; exists {
+			if sizeVal, ok := size.(float64); ok {
+				v["sizeHuman"] = humanizeBytes(sizeVal * 1024 * 1024 * 1024) // Size is in GB
 			}
 		}
 	}

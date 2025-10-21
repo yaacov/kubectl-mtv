@@ -28,6 +28,21 @@ func countNetworkHosts(network map[string]interface{}) int {
 	return len(hostsArray)
 }
 
+// countNetworkSubnets calculates the number of subnets in a network (for OpenStack)
+func countNetworkSubnets(network map[string]interface{}) int {
+	subnets, exists := network["subnets"]
+	if !exists {
+		return 0
+	}
+
+	subnetsArray, ok := subnets.([]interface{})
+	if !ok {
+		return 0
+	}
+
+	return len(subnetsArray)
+}
+
 // ListNetworks queries the provider's network inventory and displays the results
 func ListNetworks(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
 	if watchMode {
@@ -64,6 +79,15 @@ func listNetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 			{DisplayName: "NAMESPACE", JSONPath: "namespace"},
 			{DisplayName: "ID", JSONPath: "id"},
 			{DisplayName: "CREATED", JSONPath: "object.metadata.creationTimestamp"},
+		}
+	case "openstack":
+		defaultHeaders = []output.Header{
+			{DisplayName: "NAME", JSONPath: "name"},
+			{DisplayName: "ID", JSONPath: "id"},
+			{DisplayName: "STATUS", JSONPath: "status"},
+			{DisplayName: "SHARED", JSONPath: "shared"},
+			{DisplayName: "ADMIN-UP", JSONPath: "adminStateUp"},
+			{DisplayName: "SUBNETS", JSONPath: "subnetsCount"},
 		}
 	default:
 		defaultHeaders = []output.Header{
@@ -103,8 +127,13 @@ func listNetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 			// Add provider name to each network
 			network["provider"] = providerName
 
-			// Add host count
+			// Add host count (for ovirt, vsphere, etc.)
 			network["hostCount"] = countNetworkHosts(network)
+
+			// Add subnets count (for OpenStack)
+			if providerType == "openstack" {
+				network["subnetsCount"] = countNetworkSubnets(network)
+			}
 
 			networks = append(networks, network)
 		}
