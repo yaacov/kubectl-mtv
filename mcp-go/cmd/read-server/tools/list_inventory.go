@@ -30,7 +30,7 @@ func GetListInventoryTool() *mcp.Tool {
     AVAILABLE RESOURCE TYPES BY PROVIDER:
     vSphere: vm, network, storage, host, cluster, datacenter, datastore, folder, resource-pool
     oVirt: vm, network, storage, host, cluster, datacenter, disk, disk-profile, nic-profile
-    OpenStack: vm, network, storage, flavor, image, instance, project, subnet, port, volumetype
+    OpenStack: vm, network, storage, flavor, image, instance, project, volume, volumetype, snapshot, subnet
     OpenShift: vm, network, storage, namespace, pvc, data-volume
     OVA: vm, network, storage
 
@@ -98,6 +98,15 @@ func GetListInventoryTool() *mcp.Tool {
     - "WHERE status IN ['active', 'queued', 'saving'] AND visibility = 'public'"
     - "SELECT name, status, visibility, diskFormat, containerFormat, size ORDER BY name"
 
+    Volumes (OpenStack):
+    - "WHERE status = 'available' AND size >= 10"
+    - "SELECT name, id, status, size, volumeType, bootable ORDER BY size DESC"
+    - "WHERE bootable = true ORDER BY name"
+
+    Volume Types (OpenStack):
+    - "WHERE isPublic = true ORDER BY name"
+    - "SELECT name, id, description, isPublic ORDER BY name"
+
     DataVolumes (OpenShift):
     - "WHERE object.status.phase = 'Succeeded'"
     - "SELECT name, namespace, object.spec.source, object.status.phase ORDER BY name"
@@ -148,7 +157,13 @@ func GetListInventoryTool() *mcp.Tool {
         ListInventory(resource_type="provider", all_namespaces=true)
 
         # Get VMs in planvms format for migration planning
-        ListInventory(resource_type="vm", provider_name="vsphere-provider", output_format="planvms")`,
+        ListInventory(resource_type="vm", provider_name="vsphere-provider", output_format="planvms")
+
+        # Get OpenStack volumes with filtering
+        ListInventory(resource_type="volume", provider_name="openstack-provider", query="WHERE status = 'available' AND size >= 10")
+
+        # Get OpenStack volume types
+        ListInventory(resource_type="volumetype", provider_name="openstack-provider")`,
 	}
 }
 

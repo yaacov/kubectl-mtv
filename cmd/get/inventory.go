@@ -73,6 +73,22 @@ func NewInventoryCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalCo
 	projectCmd.Aliases = []string{"projects"}
 	cmd.AddCommand(projectCmd)
 
+	volumeCmd := NewInventoryVolumeCmd(kubeConfigFlags, getGlobalConfig)
+	volumeCmd.Aliases = []string{"volumes"}
+	cmd.AddCommand(volumeCmd)
+
+	volumeTypeCmd := NewInventoryVolumeTypeCmd(kubeConfigFlags, getGlobalConfig)
+	volumeTypeCmd.Aliases = []string{"volumetypes", "volume-types"}
+	cmd.AddCommand(volumeTypeCmd)
+
+	snapshotCmd := NewInventorySnapshotCmd(kubeConfigFlags, getGlobalConfig)
+	snapshotCmd.Aliases = []string{"snapshots"}
+	cmd.AddCommand(snapshotCmd)
+
+	subnetCmd := NewInventorySubnetCmd(kubeConfigFlags, getGlobalConfig)
+	subnetCmd.Aliases = []string{"subnets"}
+	cmd.AddCommand(subnetCmd)
+
 	// Add vSphere-specific resources
 	datastoreCmd := NewInventoryDatastoreCmd(kubeConfigFlags, getGlobalConfig)
 	datastoreCmd.Aliases = []string{"datastores"}
