@@ -2,6 +2,8 @@ module github.com/yaacov/kubectl-mtv
 
 go 1.24.0
 
+toolchain go1.24.7
+
 // Add your other dependencies here
 
 require (

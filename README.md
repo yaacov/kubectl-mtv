@@ -24,13 +24,10 @@ See [Installation Guide](docs/README-install.md) for more options.
 
 ## MCP support
 
-It is posible to add kubectl-mtv specific MCP server for AI client that support MCP addons, for example cursor IDE and claude desktop.
+It is possible to add a kubectl-mtv MCP server for AI agents that support MCP add‑ons, for example Cursor IDE and Claude Desktop.
 
 ```bash
-# Installing the MCP servers
-pip install mtv-mcp
-
-# Or download from releases
+# Download from releases
 # https://github.com/yaacov/kubectl-mtv/releases
 ```
 
@@ -42,7 +39,7 @@ claude mcp add kubectl-mtv-mcp
 claude mcp add kubectl-mtv-write-mcp
 ```
 
-See [MCP Guid](mcp/MCP_SETUP.md)
+See [MCP Guide](mcp-go/MCP_SETUP.md)
 
 ## Quick Start
 

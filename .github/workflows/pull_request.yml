@@ -5,16 +5,17 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    name: Test
+  test-kubectl-mtv:
+    name: Test kubectl-mtv
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version-file: go.mod
+          check-latest: true
 
       - name: Install tools
         run: make install-tools
@@ -25,5 +26,29 @@ jobs:
       - name: Run lint
         run: make lint
 
-      - name: Build
+      - name: Build kubectl-mtv
         run: make
+
+  test-mcp-go:
+    name: Test Go MCP Servers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: mcp-go/go.mod
+          check-latest: true
+
+      - name: Install tools
+        run: cd mcp-go && make install-tools
+
+      - name: Run tests
+        run: cd mcp-go && make test
+
+      - name: Run lint
+        run: cd mcp-go && make lint
+
+      - name: Build MCP servers
+        run: cd mcp-go && make
