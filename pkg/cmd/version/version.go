@@ -2,12 +2,8 @@ package version
 
 import (
 	"context"
-	"strings"
 
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
@@ -36,45 +32,18 @@ func GetInventoryInfo(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 
 // GetMTVControllerInfo returns information about the MTV Operator
 func GetMTVControllerInfo(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags) (string, string, string) {
-	// Try to get dynamic client
-	dynamicClient, err := client.GetDynamicClient(kubeConfigFlags)
-	if err != nil {
-		return "unknown", "error connecting to cluster", ""
-	}
+	operatorInfo := client.GetMTVOperatorInfo(ctx, kubeConfigFlags)
 
-	// Check if MTV is installed by looking for the providers CRD
-	crdGVR := schema.GroupVersionResource{
-		Group:    "apiextensions.k8s.io",
-		Version:  "v1",
-		Resource: "customresourcedefinitions",
-	}
-
-	crd, err := dynamicClient.Resource(crdGVR).Get(ctx, "providers.forklift.konveyor.io", metav1.GetOptions{})
-	if err != nil {
+	if !operatorInfo.Found {
 		return "not found", "not available", ""
 	}
 
-	// Extract version and namespace from annotations
-	version := "unknown"
-	namespace := "unknown"
 	status := "installed"
+	version := operatorInfo.Version
+	namespace := operatorInfo.Namespace
 
-	if crd != nil {
-		// Try to get version from operator annotation
-		if annotations, found, _ := unstructured.NestedStringMap(crd.Object, "metadata", "annotations"); found {
-			// Look for operatorframework.io/installed-alongside annotation
-			for key, value := range annotations {
-				if strings.HasPrefix(key, "operatorframework.io/installed-alongside-") {
-					// Format: namespace/operator-name.version
-					parts := strings.Split(value, "/")
-					if len(parts) == 2 {
-						namespace = parts[0]
-						version = parts[1]
-					}
-					break
-				}
-			}
-		}
+	if namespace == "" {
+		namespace = "unknown"
 	}
 
 	return version, status, namespace

@@ -25,20 +25,23 @@ func GetForkliftInventoryRoute(ctx context.Context, configFlags *genericclioptio
 	// Create label selector for forklift inventory route
 	labelSelector := "app=forklift,service=forklift-inventory"
 
-	// Check if we have access to the openshift-mtv namespace
-	if CanAccessRoutesInNamespace(ctx, configFlags, OpenShiftMTVNamespace) {
-		// Try to find the route in the openshift-mtv namespace
-		routes, err := c.Resource(RouteGVR).Namespace(OpenShiftMTVNamespace).List(ctx, metav1.ListOptions{
+	// Try to discover the MTV operator namespace from CRD annotations
+	mtvNamespace := GetMTVOperatorNamespace(ctx, configFlags)
+
+	// Check if we have access to the discovered MTV namespace
+	if CanAccessRoutesInNamespace(ctx, configFlags, mtvNamespace) {
+		// Try to find the route in the MTV operator namespace
+		routes, err := c.Resource(RouteGVR).Namespace(mtvNamespace).List(ctx, metav1.ListOptions{
 			LabelSelector: labelSelector,
 		})
 
-		// If we find a route in openshift-mtv namespace, return it
+		// If we find a route in MTV operator namespace, return it
 		if err == nil && len(routes.Items) > 0 {
 			return &routes.Items[0], nil
 		}
 	}
 
-	// If we couldn't find the route in openshift-mtv or didn't have permissions,
+	// If we couldn't find the route in MTV operator namespace or didn't have permissions,
 	// try the provided namespace
 	routes, err := c.Resource(RouteGVR).Namespace(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
