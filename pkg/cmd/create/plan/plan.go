@@ -398,6 +398,33 @@ func Create(ctx context.Context, opts CreatePlanOptions) error {
 		}
 	}
 
+	// MTV automatically sets the PreserveStaticIPs field to true, if opts.PlanSpec.PreserveStaticIPs is false
+	// we need to patch the plan to re-set the PreserveStaticIPs field to false.
+	if !opts.PlanSpec.PreserveStaticIPs {
+		patch := map[string]interface{}{
+			"spec": map[string]interface{}{
+				"preserveStaticIPs": false,
+			},
+		}
+		patchBytes, err := json.Marshal(patch)
+		if err != nil {
+			// Ignore error here, we will still create the plan
+			fmt.Printf("Warning: failed to marshal patch for PreserveStaticIPs: %v\n", err)
+		} else {
+			_, err = c.Resource(client.PlansGVR).Namespace(opts.Namespace).Patch(
+				context.TODO(),
+				createdPlan.GetName(),
+				types.MergePatchType,
+				patchBytes,
+				metav1.PatchOptions{},
+			)
+			if err != nil {
+				// Ignore error here, we will still create the plan
+				fmt.Printf("Warning: failed to patch plan for PreserveStaticIPs: %v\n", err)
+			}
+		}
+	}
+
 	// Set ownership of maps if we created them
 	if createdNetworkMap {
 		err = setMapOwnership(opts.ConfigFlags, createdPlan, client.NetworkMapGVR, opts.NetworkMapping, opts.Namespace)

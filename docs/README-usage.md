@@ -648,7 +648,7 @@ kubectl mtv create plan mapped-migration \
 | `--target-namespace` | Target Kubernetes namespace | `--target-namespace production` |
 | `--transfer-network` | Network to use for disk transfer (supports namespace/name) | `--transfer-network sriov-ns/fast-net` |
 | `--preserve-cluster-cpu-model` | Preserve oVirt cluster CPU model | `--preserve-cluster-cpu-model` |
-| `--preserve-static-ips` | Preserve static IPs from vSphere | `--preserve-static-ips` |
+| `--preserve-static-ips` | Preserve static IPs from vSphere (default: true) | `--preserve-static-ips` or `--preserve-static-ips=false` |
 | `--pvc-name-template` | Template for PVC names | `--pvc-name-template "{{.VmName}}-{{.DiskIndex}}"` |
 | `--volume-name-template` | Template for volume names | `--volume-name-template "{{.VmName}}-vol"` |
 | `--network-name-template` | Template for network interface names | `--network-name-template "{{.VmName}}-nic"` |

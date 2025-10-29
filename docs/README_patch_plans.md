@@ -33,7 +33,7 @@ kubectl-mtv patch plan PLAN_NAME [flags]
 | `--target-namespace` | Target namespace for VMs | `production` |
 | `--description` | Plan description | `Production migration batch 1` |
 | `--preserve-cluster-cpu-model` | Preserve CPU model from oVirt cluster | `true`, `false` |
-| `--preserve-static-ips` | Preserve static IPs in vSphere | `true`, `false` |
+| `--preserve-static-ips` | Preserve static IPs in vSphere (default: true) | `true`, `false` |
 | `--pvc-name-template` | Template for PVC names | `{{.VmName}}-disk-{{.DiskIndex}}` |
 | `--volume-name-template` | Template for volume interface names | `{{.PVCName}}-vol{{.VolumeIndex}}` |
 | `--network-name-template` | Template for network interface names | `{{.VmName}}-net{{.NetworkIndex}}` |
@@ -114,10 +114,14 @@ kubectl-mtv patch plan production-migration \
   --volume-name-template "vol-{{.VolumeIndex}}-{{.PVCName}}" \
   --network-name-template "{{.VmName}}-net{{.NetworkIndex}}"
 
-# Configure vSphere-specific settings
+# Configure vSphere-specific settings (enable static IP preservation - on by default)
 kubectl-mtv patch plan vsphere-migration \
   --preserve-static-ips \
   --preserve-cluster-cpu-model
+
+# Disable static IP preservation for vSphere if needed
+kubectl-mtv patch plan vsphere-migration \
+  --preserve-static-ips=false
 
 # Configure oVirt-specific settings  
 kubectl-mtv patch plan ovirt-migration \

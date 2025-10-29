@@ -181,6 +181,22 @@ class TestOpenShiftPlanPatch:
         assert get_result.returncode == 0
         assert "preserveStaticIPs: true" in get_result.stdout
 
+    def test_patch_plan_disable_preserve_static_ips(
+        self, test_namespace, migration_plan
+    ):
+        """Test patching a plan to disable preserve static IPs (default is true)."""
+        patch_cmd = f"patch plan {migration_plan} --preserve-static-ips=false"
+
+        result = test_namespace.run_mtv_command(patch_cmd)
+        assert result.returncode == 0
+
+        # Verify the preserve static IPs setting was set to false in the plan spec
+        get_result = test_namespace.run_mtv_command(
+            f"get plan {migration_plan} -o yaml"
+        )
+        assert get_result.returncode == 0
+        assert "preserveStaticIPs: false" in get_result.stdout
+
     def test_patch_plan_preserve_cluster_cpu_model(
         self, test_namespace, migration_plan
     ):
