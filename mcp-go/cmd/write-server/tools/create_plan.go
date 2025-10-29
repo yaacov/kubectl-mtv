@@ -235,7 +235,7 @@ func GetCreatePlanTool() *mcp.Tool {
         target_namespace: Target namespace for migrated VMs (optional, defaults to plan namespace)
         transfer_network: Network attachment definition for VM data transfer - supports 'namespace/network-name' or just 'network-name' (uses plan namespace) (optional)
         preserve_cluster_cpu_model: Preserve CPU model and flags from oVirt cluster (optional, default False)
-        preserve_static_ips: Preserve static IPs of vSphere VMs (optional, default False)
+        preserve_static_ips: Preserve static IPs of vSphere VMs (optional, default True, auto-patched if False)
         pvc_name_template: Template for generating PVC names for VM disks (optional)
         volume_name_template: Template for generating volume interface names (optional)
         network_name_template: Template for generating network interface names (optional)
