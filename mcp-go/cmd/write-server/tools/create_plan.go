@@ -71,12 +71,16 @@ func GetCreatePlanTool() *mcp.Tool {
     - Missing VM handling: VMs not found in provider are automatically removed with warnings
 
     VM Selection Options:
-    - vms: Comma-separated VM names OR @filename for YAML/JSON file with VM structures
-    - Both approaches support automatic ID resolution from provider inventory
+    - vms: Three methods supported:
+      1. Comma-separated VM names
+      2. @filename for YAML/JSON file with VM structures
+      3. Query string (prefix with "where ") for dynamic VM selection from inventory
+    - All approaches support automatic ID resolution from provider inventory
 
     VM Selection Examples:
     - Comma-separated: "web-server-01,database-02,cache-03"
     - File-based: "@vm-list.yaml" or "@vm-list.json"
+    - Query-based: "where name like 'prod%'" or "where powerState = 'On' and cpuCount >= 4"
 
     File Format (@filename):
     Files can contain VM structures in YAML or JSON format. VM IDs are optional and will be
@@ -106,6 +110,35 @@ func GetCreatePlanTool() *mcp.Tool {
     4. Use file: vms="@vm-list.yaml"
 
     Alternative: Create minimal files with just VM names, IDs will be auto-resolved
+
+    Query Format (where ...):
+    Query strings enable dynamic VM selection from inventory at plan creation time.
+    The query must start with "where " and uses the same query language as ListInventory.
+
+    Query syntax is validated before fetching inventory (fast failure for invalid queries).
+    
+    Query Language Support:
+    - Filtering: where <condition>
+    - Logical operators: and, or
+    - Comparison: =, !=, <, >, <=, >=, like, not like
+    - Limiting: limit <number>
+    
+    Common Query Fields:
+    - name: VM name
+    - powerState: Power state (On, Off, etc.)
+    - cpuCount: Number of CPUs
+    - memoryMB / memoryGB: Memory
+    - guestId: Guest OS identifier
+    - criticalConcerns / warningConcerns / infoConcerns: Migration concerns
+    
+    Query Examples:
+    - "where name like 'prod%'" - All VMs starting with 'prod'
+    - "where powerState = 'Off'" - All powered-off VMs
+    - "where cpuCount >= 4 and memoryMB > 8192" - VMs with 4+ CPUs and >8GB RAM
+    - "where criticalConcerns = 0 order by name limit 10" - First 10 VMs with no critical issues
+    
+    Testing Queries:
+    Use ListInventory("vm", "provider-name", query="where ...") to test queries before creating plans
 
     Migration Types:
     - cold: VMs are shut down during migration (default, most reliable)
@@ -228,7 +261,7 @@ func GetCreatePlanTool() *mcp.Tool {
             Note: All source storages must be mapped, auto-selection uses
             storageclass.kubevirt.io/is-default-virt-class > storageclass.kubernetes.io/is-default-class >
             name with "virtualization"
-        vms: VM names (comma-separated) or @filename for YAML/JSON file with VM structures (optional)
+        vms: VM selection - comma-separated names, @filename for YAML/JSON file, or query string with "where " prefix (optional)
         pre_hook: Pre-migration hook to add to all VMs (optional)
         post_hook: Post-migration hook to add to all VMs (optional)
         description: Plan description (optional)
@@ -322,7 +355,19 @@ func GetCreatePlanTool() *mcp.Tool {
         create_plan("db-plan", "vsphere-provider",
                    vms="database-vm",
                    target_affinity="REQUIRE pods(app=database) on node",
-                   description="Co-locate with existing database pods")`,
+                   description="Co-locate with existing database pods")
+
+        # Plan with query-based VM selection (dynamic)
+        create_plan("prod-migration", "vsphere-provider",
+                   vms="where name like 'prod%' and powerState = 'On'",
+                   migration_type="warm",
+                   description="Migrate all running production VMs")
+
+        # Plan with query - powered-off VMs for cold migration
+        create_plan("cold-batch", "vsphere-provider",
+                   vms="where powerState = 'Off' limit 10",
+                   migration_type="cold",
+                   description="Cold migration of first 10 powered-off VMs")`,
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
@@ -49,7 +50,7 @@ func parseKeyValuePairs(pairs []string, fieldName string) (map[string]string, er
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var name, sourceProvider, targetProvider string
 	var networkMapping, storageMapping string
-	var vmNamesOrFile string
+	var vmNamesQuaryOrFile string
 	var inventoryURL string
 	var defaultTargetNetwork, defaultTargetStorageClass string
 	var networkPairs, storagePairs string
@@ -107,9 +108,35 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 
 			var vmList []planv1beta1.VM
 
-			if strings.HasPrefix(vmNamesOrFile, "@") {
+			if strings.HasPrefix(vmNamesQuaryOrFile, "where ") {
+				// It's a query string - fetch VMs from inventory
+				query := vmNamesQuaryOrFile // The full string including "where "
+
+				// Parse source provider to extract name and namespace
+				sourceProviderName := sourceProvider
+				sourceProviderNamespace := namespace
+				if strings.Contains(sourceProvider, "/") {
+					parts := strings.SplitN(sourceProvider, "/", 2)
+					sourceProviderNamespace = strings.TrimSpace(parts[0])
+					sourceProviderName = strings.TrimSpace(parts[1])
+				}
+
+				fmt.Printf("Fetching VMs from provider '%s' using query: %s\n", sourceProviderName, query)
+
+				var err error
+				vmList, err = inventory.FetchVMsByQuery(cmd.Context(), kubeConfigFlags, sourceProviderName, sourceProviderNamespace, inventoryURL, query)
+				if err != nil {
+					return fmt.Errorf("failed to fetch VMs using query: %v", err)
+				}
+
+				if len(vmList) == 0 {
+					return fmt.Errorf("no VMs found matching the query")
+				}
+
+				fmt.Printf("Found %d VM(s) matching the query\n", len(vmList))
+			} else if strings.HasPrefix(vmNamesQuaryOrFile, "@") {
 				// It's a file
-				filePath := vmNamesOrFile[1:]
+				filePath := vmNamesQuaryOrFile[1:]
 				content, err := os.ReadFile(filePath)
 				if err != nil {
 					return fmt.Errorf("failed to read file %s: %v", filePath, err)
@@ -125,7 +152,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				}
 			} else {
 				// It's a comma-separated list
-				vmNameSlice := strings.Split(vmNamesOrFile, ",")
+				vmNameSlice := strings.Split(vmNamesQuaryOrFile, ",")
 				for _, vmName := range vmNameSlice {
 					newVM := planv1beta1.VM{}
 					newVM.Name = strings.TrimSpace(vmName)
@@ -301,7 +328,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().StringVar(&defaultOffloadSecret, "default-offload-secret", "", "Default offload plugin secret name for storage pairs")
 	cmd.Flags().StringVar(&defaultOffloadVendor, "default-offload-vendor", "", "Default offload plugin vendor for storage pairs (vantara|ontap|primera3par|pureFlashArray|powerflex|powermax)")
 
-	cmd.Flags().StringVar(&vmNamesOrFile, "vms", "", "List of VM names (comma-separated) or path to YAML/JSON file containing a list of VM structs")
+	cmd.Flags().StringVar(&vmNamesQuaryOrFile, "vms", "", "List of VM names (comma-separated), path to YAML/JSON file (prefix with @), or query string (prefix with 'where ')")
 	cmd.Flags().StringVar(&preHook, "pre-hook", "", "Pre-migration hook to add to all VMs in the plan")
 	cmd.Flags().StringVar(&postHook, "post-hook", "", "Post-migration hook to add to all VMs in the plan")
 

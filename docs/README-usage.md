@@ -584,10 +584,31 @@ kubectl mtv get plan <plan-name> --vms
 
 ### Create Migration Plans
 
+#### VM Selection Methods
+
+The `--vms` flag supports three methods for specifying VMs:
+
+1. **Comma-separated list**: Explicit VM names
+   ```bash
+   --vms "vm1,vm2,vm3"
+   ```
+
+2. **File reference**: YAML/JSON file with VM definitions (prefix with `@`)
+   ```bash
+   --vms "@vms.yaml"
+   ```
+
+3. **Query string**: Dynamic selection using filters (prefix with `where `)
+   ```bash
+   --vms "where name like 'prod%'"
+   ```
+
+For detailed information about using query strings, see [Query-based VM Selection](README_query_vms.md).
+
 #### Basic Plan Creation
 
 ```bash
-# Create a simple migration plan
+# Create a simple migration plan with explicit VM list
 kubectl mtv create plan my-migration \
   --source-provider vmware \
   --vms vm1,vm2,vm3
@@ -597,6 +618,11 @@ kubectl mtv create plan web-servers \
   --source-provider vmware \
   --target-namespace production \
   --vms web-01,web-02,web-03
+
+# Create plan using query to select VMs dynamically
+kubectl mtv create plan production-migration \
+  --source-provider vmware \
+  --vms "where name like 'prod%' and powerState = 'On'"
 ```
 
 #### Advanced Plan Options
@@ -639,7 +665,7 @@ kubectl mtv create plan mapped-migration \
 |------|-------------|---------|
 | `--source`, `-S` | Source provider name | `--source vmware` |
 | `--target`, `-t` | Target provider name | `--target openshift` |
-| `--vms` | Comma-separated list of VMs or path to a file | `--vms vm1,vm2` or `--vms @vms.json` |
+| `--vms` | VM selection: comma-separated list, file path (prefix with `@`), or query (prefix with `where `) | `--vms vm1,vm2` or `--vms @vms.json` or `--vms "where name like 'prod%'"` |
 | `--network-mapping` | Network mapping name | `--network-mapping net-map` |
 | `--storage-mapping` | Storage mapping name | `--storage-mapping storage-map` |
 | `--network-pairs` | Inline network mapping pairs | `--network-pairs 'src-net:tgt-net'` |
