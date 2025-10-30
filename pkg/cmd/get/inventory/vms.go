@@ -133,6 +133,95 @@ func calculateTotalDiskCapacity(vm map[string]interface{}) float64 {
 	return totalCapacity / (1024 * 1024 * 1024)
 }
 
+// FetchVMsByQuery fetches VMs from inventory based on a query string and returns them as plan VM structs
+func FetchVMsByQuery(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL, query string) ([]planv1beta1.VM, error) {
+	// Validate inputs early
+	if providerName == "" {
+		return nil, fmt.Errorf("provider name cannot be empty")
+	}
+	if query == "" {
+		return nil, fmt.Errorf("query string cannot be empty")
+	}
+
+	// Parse and validate query syntax BEFORE fetching inventory (fail fast)
+	queryOpts, err := querypkg.ParseQueryString(query)
+	if err != nil {
+		return nil, fmt.Errorf("invalid query string: %v", err)
+	}
+
+	// Get the provider object
+	provider, err := GetProviderByName(ctx, kubeConfigFlags, providerName, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new provider client
+	providerClient := NewProviderClient(kubeConfigFlags, provider, inventoryURL)
+
+	// Get provider type to verify VM support
+	providerType, err := providerClient.GetProviderType()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider type: %v", err)
+	}
+
+	// Verify provider supports VM inventory before fetching
+	switch providerType {
+	case "ovirt", "vsphere", "openstack", "ova", "openshift":
+		// Provider supports VMs, continue
+	default:
+		return nil, fmt.Errorf("provider type '%s' does not support VM inventory", providerType)
+	}
+
+	// Fetch VM inventory from the provider (expensive operation)
+	data, err := providerClient.GetVMs(4)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch VM inventory: %v", err)
+	}
+
+	// Verify data is an array
+	dataArray, ok := data.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected data format: expected array for VM inventory")
+	}
+
+	// Convert to expected format
+	vms := make([]map[string]interface{}, 0, len(dataArray))
+	for _, item := range dataArray {
+		if vm, ok := item.(map[string]interface{}); ok {
+			// Add provider name to each VM
+			vm["provider"] = providerName
+			vms = append(vms, vm)
+		}
+	}
+
+	// Apply query options (sorting, filtering, limiting)
+	vms, err = querypkg.ApplyQuery(vms, queryOpts)
+	if err != nil {
+		return nil, fmt.Errorf("error applying query: %v", err)
+	}
+
+	// Convert inventory VMs to plan VM structs
+	planVMs := make([]planv1beta1.VM, 0, len(vms))
+	for _, vm := range vms {
+		vmName, ok := vm["name"].(string)
+		if !ok {
+			continue
+		}
+
+		planVM := planv1beta1.VM{}
+		planVM.Name = vmName
+
+		// Add ID if available
+		if vmID, ok := vm["id"].(string); ok {
+			planVM.ID = vmID
+		}
+
+		planVMs = append(planVMs, planVM)
+	}
+
+	return planVMs, nil
+}
+
 // ListVMs queries the provider's VM inventory and displays the results
 func ListVMs(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string, watchMode bool) error {
 	if watchMode {
