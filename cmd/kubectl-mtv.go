@@ -113,7 +113,7 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 	// Add standard commands for various resources - directly using package functions
 	rootCmd.AddCommand(get.NewGetCmd(kubeConfigFlags, getGlobalConfigGetter))
 	rootCmd.AddCommand(delete.NewDeleteCmd(kubeConfigFlags))
-	rootCmd.AddCommand(create.NewCreateCmd(kubeConfigFlags))
+	rootCmd.AddCommand(create.NewCreateCmd(kubeConfigFlags, globalConfig))
 	rootCmd.AddCommand(describe.NewDescribeCmd(kubeConfigFlags, getGlobalConfigGetter))
 	rootCmd.AddCommand(patch.NewPatchCmd(kubeConfigFlags))
 
