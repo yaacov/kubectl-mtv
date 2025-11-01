@@ -5,8 +5,13 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
+// GlobalConfigGetter defines the interface for getting global configuration
+type GlobalConfigGetter interface {
+	GetVerbosity() int
+}
+
 // NewCreateCmd creates the create command with all its subcommands
-func NewCreateCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+func NewCreateCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "create",
 		Short:        "Create resources",
@@ -19,7 +24,7 @@ func NewCreateCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	cmd.AddCommand(NewMappingCmd(kubeConfigFlags))
 	cmd.AddCommand(NewHostCmd(kubeConfigFlags))
 	cmd.AddCommand(NewHookCmd(kubeConfigFlags))
-	cmd.AddCommand(NewVddkCmd())
+	cmd.AddCommand(NewVddkCmd(globalConfig))
 
 	return cmd
 }
