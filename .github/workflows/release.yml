@@ -26,11 +26,6 @@ jobs:
         env:
           VERSION: ${{ github.event.release.tag_name }}
 
-      - name: Build Go MCP servers and create release archives
-        run: cd mcp-go && make dist-all
-        env:
-          VERSION: ${{ github.event.release.tag_name }}
-
       - name: Upload kubectl-mtv release assets
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631
         with:
@@ -46,21 +41,6 @@ jobs:
             kubectl-mtv-${{ github.event.release.tag_name }}-windows-amd64.zip
             kubectl-mtv-${{ github.event.release.tag_name }}-windows-amd64.zip.sha256sum
 
-      - name: Upload Go MCP server release assets
-        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631
-        with:
-          files: |
-            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-linux-amd64.tar.gz
-            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-linux-amd64.tar.gz.sha256sum
-            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-linux-arm64.tar.gz
-            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-linux-arm64.tar.gz.sha256sum
-            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-darwin-amd64.tar.gz
-            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-darwin-amd64.tar.gz.sha256sum
-            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-darwin-arm64.tar.gz
-            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-darwin-arm64.tar.gz.sha256sum
-            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-windows-amd64.zip
-            mcp-go/dist/mcp-servers-${{ github.event.release.tag_name }}-windows-amd64.zip.sha256sum
-
       - name: Wait for assets to be available
         run: |
           echo "Waiting 30 seconds for GitHub to propagate release assets..."
@@ -75,11 +55,6 @@ jobs:
             "kubectl-mtv-${VERSION}-darwin-amd64.tar.gz"
             "kubectl-mtv-${VERSION}-darwin-arm64.tar.gz"
             "kubectl-mtv-${VERSION}-windows-amd64.zip"
-            "mcp-servers-${VERSION}-linux-amd64.tar.gz"
-            "mcp-servers-${VERSION}-linux-arm64.tar.gz"
-            "mcp-servers-${VERSION}-darwin-amd64.tar.gz"
-            "mcp-servers-${VERSION}-darwin-arm64.tar.gz"
-            "mcp-servers-${VERSION}-windows-amd64.zip"
           )
           
           echo "Verifying release assets are downloadable..."
