@@ -22,11 +22,11 @@ kubectl krew install mtv
 
 See [Installation Guide](docs/README-install.md) for more options.
 
-## MCP support
+## MCP Support
 
-It is possible to add a kubectl-mtv MCP server for AI agents that support MCP add‑ons, for example Cursor IDE and Claude Desktop.
+kubectl-mtv includes a built-in MCP (Model Context Protocol) server for AI agents that support MCP add‑ons, such as Cursor IDE and Claude Desktop.
 
-See the [kubectl-mtv-mcp repository](https://github.com/yaacov/kubectl-mtv-mcp) for installation instructions and documentation.
+See [MCP Server Guide](docs/README_mcp_server.md) for detailed setup instructions and usage examples.
 
 ## Quick Start
 
@@ -133,6 +133,7 @@ See [VDDK Setup Guide](docs/README_vddk.md) for detailed instructions.
 - [Installation Guide](docs/README-install.md)
 - [Usage Guide](docs/README-usage.md)
 - [Migration Demo](docs/README_demo.md)
+- [MCP Server Guide](docs/README_mcp_server.md)
 - [Migration Hooks](docs/README_hooks.md)
 - [Inventory Queries](docs/README_inventory.md)
 - [Mapping Configuration](docs/README_mapping_pairs.md)
