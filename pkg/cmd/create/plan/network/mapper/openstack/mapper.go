@@ -1,4 +1,4 @@
-package mapper
+package openstack
 
 import (
 	"strings"
@@ -6,27 +6,30 @@ import (
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/ref"
 	"k8s.io/klog/v2"
+
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper"
 )
 
-// NetworkMappingOptions contains options for network mapping
-type NetworkMappingOptions struct {
-	DefaultTargetNetwork string
-	Namespace            string
+// OpenStackNetworkMapper implements network mapping for OpenStack providers
+type OpenStackNetworkMapper struct{}
+
+// NewOpenStackNetworkMapper creates a new OpenStack network mapper
+func NewOpenStackNetworkMapper() mapper.NetworkMapper {
+	return &OpenStackNetworkMapper{}
 }
 
-// CreateNetworkPairs creates network mapping pairs using generic logic
-func CreateNetworkPairs(sourceNetworks []ref.Ref, targetNetworks []forkliftv1beta1.DestinationNetwork, opts NetworkMappingOptions) ([]forkliftv1beta1.NetworkPair, error) {
+// CreateNetworkPairs creates network mapping pairs using generic logic (no same-name matching)
+func (m *OpenStackNetworkMapper) CreateNetworkPairs(sourceNetworks []ref.Ref, targetNetworks []forkliftv1beta1.DestinationNetwork, opts mapper.NetworkMappingOptions) ([]forkliftv1beta1.NetworkPair, error) {
 	var networkPairs []forkliftv1beta1.NetworkPair
 
-	klog.V(4).Infof("DEBUG: Creating network pairs - %d source networks, %d target networks", len(sourceNetworks), len(targetNetworks))
-	klog.V(4).Infof("DEBUG: Default target network: '%s'", opts.DefaultTargetNetwork)
+	klog.V(4).Infof("DEBUG: OpenStack network mapper - Creating network pairs - %d source networks, %d target networks", len(sourceNetworks), len(targetNetworks))
 
 	if len(sourceNetworks) == 0 {
 		klog.V(4).Infof("DEBUG: No source networks to map")
 		return networkPairs, nil
 	}
 
-	// Find the default target network: user defined or the first multus, or if missing pod network
+	// Use generic default behavior (first -> default, others -> ignored)
 	defaultDestination := findDefaultTargetNetwork(targetNetworks, opts)
 	klog.V(4).Infof("DEBUG: Selected default target network: %s/%s (%s)",
 		defaultDestination.Namespace, defaultDestination.Name, defaultDestination.Type)
@@ -56,7 +59,31 @@ func CreateNetworkPairs(sourceNetworks []ref.Ref, targetNetworks []forkliftv1bet
 	return networkPairs, nil
 }
 
-// parseDefaultNetwork parses a default network specification
+// findDefaultTargetNetwork finds the default target network using the original priority logic
+func findDefaultTargetNetwork(targetNetworks []forkliftv1beta1.DestinationNetwork, opts mapper.NetworkMappingOptions) forkliftv1beta1.DestinationNetwork {
+	// Priority 1: If user explicitly specified a default target network, use it
+	if opts.DefaultTargetNetwork != "" {
+		defaultDestination := parseDefaultNetwork(opts.DefaultTargetNetwork, opts.Namespace)
+		klog.V(4).Infof("DEBUG: Using user-defined default target network: %s/%s (%s)",
+			defaultDestination.Namespace, defaultDestination.Name, defaultDestination.Type)
+		return defaultDestination
+	}
+
+	// Priority 2: Find the first available multus network
+	for _, targetNetwork := range targetNetworks {
+		if targetNetwork.Type == "multus" {
+			klog.V(4).Infof("DEBUG: Using first available multus network as default: %s/%s",
+				targetNetwork.Namespace, targetNetwork.Name)
+			return targetNetwork
+		}
+	}
+
+	// Priority 3: Fall back to pod networking if no multus networks available
+	klog.V(4).Infof("DEBUG: No user-defined or multus networks available, falling back to pod networking")
+	return forkliftv1beta1.DestinationNetwork{Type: "pod"}
+}
+
+// parseDefaultNetwork parses a default network specification (from original mapper)
 func parseDefaultNetwork(defaultTargetNetwork, namespace string) forkliftv1beta1.DestinationNetwork {
 	if defaultTargetNetwork == "default" {
 		return forkliftv1beta1.DestinationNetwork{Type: "pod"}
@@ -88,29 +115,4 @@ func parseDefaultNetwork(defaultTargetNetwork, namespace string) forkliftv1beta1
 		Namespace: namespace,
 	}
 	return destNetwork
-}
-
-// findDefaultTargetNetwork finds the default target network:
-// user defined or the first multus, or if missing pod network
-func findDefaultTargetNetwork(targetNetworks []forkliftv1beta1.DestinationNetwork, opts NetworkMappingOptions) forkliftv1beta1.DestinationNetwork {
-	// Priority 1: If user explicitly specified a default target network, use it
-	if opts.DefaultTargetNetwork != "" {
-		defaultDestination := parseDefaultNetwork(opts.DefaultTargetNetwork, opts.Namespace)
-		klog.V(4).Infof("DEBUG: Using user-defined default target network: %s/%s (%s)",
-			defaultDestination.Namespace, defaultDestination.Name, defaultDestination.Type)
-		return defaultDestination
-	}
-
-	// Priority 2: Find the first available multus network
-	for _, targetNetwork := range targetNetworks {
-		if targetNetwork.Type == "multus" {
-			klog.V(4).Infof("DEBUG: Using first available multus network as default: %s/%s",
-				targetNetwork.Namespace, targetNetwork.Name)
-			return targetNetwork
-		}
-	}
-
-	// Priority 3: Fall back to pod networking if no multus networks available
-	klog.V(4).Infof("DEBUG: No user-defined or multus networks available, falling back to pod networking")
-	return forkliftv1beta1.DestinationNetwork{Type: "pod"}
 }

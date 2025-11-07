@@ -22,6 +22,11 @@ import (
 	ovirtFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/ovirt"
 	vsphereFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper"
+	openshiftMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/openshift"
+	openstackMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/openstack"
+	ovaMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/ova"
+	ovirtMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/ovirt"
+	vsphereMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
@@ -93,11 +98,19 @@ func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (string, e
 		klog.V(4).Infof("DEBUG: Skipping target storage fetch due to DefaultTargetStorageClass='%s'", opts.DefaultTargetStorageClass)
 	}
 
-	// Create storage pairs using generic mapping logic
+	// Get provider-specific storage mapper
+	storageMapper, sourceProviderType, targetProviderType, err := GetStorageMapper(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.TargetProvider, targetProviderNamespace)
+	if err != nil {
+		return "", fmt.Errorf("failed to get storage mapper: %v", err)
+	}
+
+	// Create storage pairs using provider-specific mapping logic
 	mappingOpts := mapper.StorageMappingOptions{
 		DefaultTargetStorageClass: opts.DefaultTargetStorageClass,
+		SourceProviderType:        sourceProviderType,
+		TargetProviderType:        targetProviderType,
 	}
-	storagePairs, err := mapper.CreateStoragePairs(sourceStorages, targetStorages, mappingOpts)
+	storagePairs, err := storageMapper.CreateStoragePairs(sourceStorages, targetStorages, mappingOpts)
 	if err != nil {
 		return "", fmt.Errorf("failed to create storage pairs: %v", err)
 	}
@@ -251,5 +264,56 @@ func GetTargetStorageFetcher(ctx context.Context, configFlags *genericclioptions
 		return ovirtFetcher.NewOvirtStorageFetcher(), nil
 	default:
 		return nil, fmt.Errorf("unsupported target provider type: %s", providerType)
+	}
+}
+
+// GetStorageMapper returns the appropriate storage mapper based on source provider type
+func GetStorageMapper(ctx context.Context, configFlags *genericclioptions.ConfigFlags, sourceProviderName, sourceProviderNamespace, targetProviderName, targetProviderNamespace string) (mapper.StorageMapper, string, string, error) {
+	// Get source provider type
+	sourceProvider, err := inventory.GetProviderByName(ctx, configFlags, sourceProviderName, sourceProviderNamespace)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get source provider: %v", err)
+	}
+
+	sourceProviderClient := inventory.NewProviderClient(configFlags, sourceProvider, "")
+	sourceProviderType, err := sourceProviderClient.GetProviderType()
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get source provider type: %v", err)
+	}
+
+	// Get target provider type
+	targetProvider, err := inventory.GetProviderByName(ctx, configFlags, targetProviderName, targetProviderNamespace)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get target provider: %v", err)
+	}
+
+	targetProviderClient := inventory.NewProviderClient(configFlags, targetProvider, "")
+	targetProviderType, err := targetProviderClient.GetProviderType()
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get target provider type: %v", err)
+	}
+
+	klog.V(4).Infof("DEBUG: GetStorageMapper - Source provider: %s (type: %s), Target provider: %s (type: %s)",
+		sourceProviderName, sourceProviderType, targetProviderName, targetProviderType)
+
+	// Return the appropriate mapper based on source provider type
+	switch sourceProviderType {
+	case "openstack":
+		klog.V(4).Infof("DEBUG: Using OpenStack storage mapper for source %s", sourceProviderName)
+		return openstackMapper.NewOpenStackStorageMapper(), sourceProviderType, targetProviderType, nil
+	case "vsphere":
+		klog.V(4).Infof("DEBUG: Using vSphere storage mapper for source %s", sourceProviderName)
+		return vsphereMapper.NewVSphereStorageMapper(), sourceProviderType, targetProviderType, nil
+	case "openshift":
+		klog.V(4).Infof("DEBUG: Using OpenShift storage mapper for source %s", sourceProviderName)
+		return openshiftMapper.NewOpenShiftStorageMapper(), sourceProviderType, targetProviderType, nil
+	case "ova":
+		klog.V(4).Infof("DEBUG: Using OVA storage mapper for source %s", sourceProviderName)
+		return ovaMapper.NewOVAStorageMapper(), sourceProviderType, targetProviderType, nil
+	case "ovirt":
+		klog.V(4).Infof("DEBUG: Using oVirt storage mapper for source %s", sourceProviderName)
+		return ovirtMapper.NewOvirtStorageMapper(), sourceProviderType, targetProviderType, nil
+	default:
+		return nil, "", "", fmt.Errorf("unsupported source provider type: %s", sourceProviderType)
 	}
 }
