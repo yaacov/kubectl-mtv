@@ -50,10 +50,10 @@ func validateOffloadPlugin(plugin string) error {
 // validateOffloadVendor validates offload vendor values
 func validateOffloadVendor(vendor string) error {
 	switch vendor {
-	case "vantara", "ontap", "primera3par", "pureFlashArray", "powerflex", "powermax":
+	case "flashsystem", "vantara", "ontap", "primera3par", "pureFlashArray", "powerflex", "powermax", "powerstore", "infinibox":
 		return nil
 	default:
-		return fmt.Errorf("must be one of: vantara, ontap, primera3par, pureFlashArray, powerflex, powermax")
+		return fmt.Errorf("must be one of: flashsystem, vantara, ontap, primera3par, pureFlashArray, powerflex, powermax, powerstore, infinibox")
 	}
 }
 

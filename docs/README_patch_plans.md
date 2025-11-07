@@ -44,6 +44,10 @@ kubectl-mtv patch plan PLAN_NAME [flags]
 | `--skip-guest-conversion` | Skip guest conversion process | `true`, `false` |
 | `--warm` | Enable warm migration (legacy flag) | `true`, `false` |
 | `--target-power-state` | Target power state for VMs after migration | `on`, `off`, `auto` |
+| `--convertor-labels` | Labels to add to virt-v2v convertor pods | `performance=high,io=intensive` |
+| `--convertor-node-selector` | Node selector for convertor pod scheduling | `node-type=storage,zone=us-west` |
+| `--convertor-affinity` | Affinity rules for convertor pod placement (KARL syntax) | `REQUIRE pods(app=storage) on node` |
+| `--run-preflight-inspection` | Run preflight inspection on VM base disks (warm migrations only, default: true) | `true`, `false` |
 | `--delete-vm-on-fail-migration` | Delete target VM when migration fails | `true`, `false` |
 
 ### Usage Examples
@@ -103,6 +107,43 @@ kubectl-mtv patch plan production-plan \
 # Pod anti-affinity rule
 kubectl-mtv patch plan distributed-app \
   --target-affinity 'AVOID pods(app=web) on node'
+```
+
+#### Configure Convertor Pod Optimization (Migration Process)
+
+**These settings optimize temporary virt-v2v pods during the migration process for better I/O performance and resource management:**
+
+```bash
+# Optimize convertor pod placement for high-performance storage nodes
+kubectl-mtv patch plan high-perf-migration \
+  --convertor-labels "workload=migration,performance=high" \
+  --convertor-node-selector "node-type=storage,disk=nvme"
+
+# Use KARL syntax for convertor pod affinity - co-locate with storage
+kubectl-mtv patch plan production-migration \
+  --convertor-affinity 'REQUIRE pods(app=ceph-osd) on node' \
+  --convertor-labels "migration-batch=1,priority=high"
+
+# Isolate convertor pods from production workloads during conversion
+kubectl-mtv patch plan isolated-migration \
+  --convertor-affinity 'AVOID pods(tier=production) on node' \
+  --convertor-node-selector "workload-type=migration"
+```
+
+**See the [Convertor Scheduling Guide](README_convertor_scheduling.md) for detailed optimization strategies.**
+
+#### Configure Preflight Inspection
+
+```bash
+# Disable preflight inspection for trusted environments (warm migrations)
+kubectl-mtv patch plan trusted-migration \
+  --run-preflight-inspection=false \
+  --migration-type warm
+
+# Enable preflight inspection for critical workloads (default: true)
+kubectl-mtv patch plan critical-migration \
+  --run-preflight-inspection \
+  --description "Critical workload with full validation"
 ```
 
 #### Configure Plan Templates and Settings

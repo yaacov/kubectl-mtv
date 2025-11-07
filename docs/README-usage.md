@@ -12,6 +12,7 @@ This comprehensive guide covers all kubectl-mtv commands and usage patterns for 
 - [Migration Plan Management](#migration-plan-management)
 - [Plan Lifecycle Commands](#plan-lifecycle-commands)
 - [VDDK Image Management](#vddk-image-management)
+- [Advanced Plan Configuration](#advanced-plan-configuration)
 - [Query Language](#query-language)
 - [Output Formats](#output-formats)
 - [Common Workflows](#common-workflows)
@@ -451,7 +452,7 @@ kubectl mtv create mapping storage production-storage \
 kubectl mtv create mapping storage enhanced-storage \
   --source-provider vmware \
   --target-provider host \
-  --storage-pairs "datastore1:fast-ssd;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=vantara,datastore2:standard-hdd;volumeMode=Filesystem;accessMode=ReadWriteMany" \
+  --storage-pairs "datastore1:fast-ssd;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=flashsystem,datastore2:standard-hdd;volumeMode=Filesystem;accessMode=ReadWriteMany" \
   --default-volume-mode Block \
   --default-offload-plugin vsphere
 
@@ -486,7 +487,7 @@ Examples:
 
 #### Storage Mapping Pairs Format
 
-Storage pairs support enhanced format with semicolon-separated parameters: `"source-storage:target-storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]"`
+Storage pairs support enhanced format with semicolon-separated parameters: `"source-storage:target-storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=flashsystem|vantara|ontap|primera3par|pureFlashArray|powerflex|powermax|powerstore|infinibox]"`
 
 **Basic Examples:**
 - `"datastore1:fast-ssd"` - Simple storage mapping
@@ -495,15 +496,15 @@ Storage pairs support enhanced format with semicolon-separated parameters: `"sou
 **Enhanced Examples:**
 - `"datastore1:fast-ssd;volumeMode=Block;accessMode=ReadWriteOnce"` - Block storage with RWO access
 - `"datastore2:standard-hdd;volumeMode=Filesystem;accessMode=ReadWriteMany"` - Filesystem with RWX access  
-- `"fast-datastore:premium-ssd;volumeMode=Block;offloadPlugin=vsphere;offloadVendor=vantara"` - With offload optimization
-- `"secure-datastore:encrypted-ssd;volumeMode=Block;offloadSecret=vsphere-creds;offloadVendor=ontap"` - With secret and vendor
+- `"fast-datastore:premium-ssd;volumeMode=Block;offloadPlugin=vsphere;offloadVendor=powerstore"` - With offload optimization
+- `"secure-datastore:encrypted-ssd;volumeMode=Block;offloadSecret=vsphere-creds;offloadVendor=infinibox"` - With secret and vendor
 
 **Supported Parameters:**
 - `volumeMode`: `Block` (raw block device) or `Filesystem` (mounted filesystem)
 - `accessMode`: `ReadWriteOnce`, `ReadWriteMany`, `ReadOnlyMany`
 - `offloadPlugin`: `vsphere` (direct storage access optimization)
 - `offloadSecret`: Kubernetes Secret name for offload plugin authentication
-- `offloadVendor`: Storage vendor (`vantara`, `ontap`, `primera3par`, `pureFlashArray`, `powerflex`, `powermax`)
+- `offloadVendor`: Storage vendor (`flashsystem`, `vantara`, `ontap`, `primera3par`, `pureFlashArray`, `powerflex`, `powermax`, `powerstore`, `infinibox`)
 
 ### Patch Mappings
 
@@ -648,6 +649,25 @@ kubectl mtv create plan ephemeral-migration \
   --delete-guest-conversion-pod
 ```
 
+#### Convertor Pod Optimization
+
+```bash
+# High-performance migration with convertor pod optimization
+kubectl mtv create plan high-perf-migration \
+  --source-provider vmware \
+  --vms production-vm1,production-vm2 \
+  --convertor-labels "performance=high,workload=migration" \
+  --convertor-node-selector "node-type=storage,disk=nvme" \
+  --convertor-affinity 'REQUIRE pods(app=ceph-osd) on node'
+
+# Migration with preflight inspection disabled (warm migration)
+kubectl mtv create plan trusted-migration \
+  --source-provider vmware \
+  --vms trusted-vm1,trusted-vm2 \
+  --migration-type warm \
+  --run-preflight-inspection=false
+```
+
 #### Plan with Mappings
 
 ```bash
@@ -660,6 +680,8 @@ kubectl mtv create plan mapped-migration \
 ```
 
 ### Plan Configuration Options
+
+#### Basic Migration Configuration
 
 | Flag | Description | Example |
 |------|-------------|---------|
@@ -690,18 +712,41 @@ kubectl mtv create plan mapped-migration \
 | `--default-target-network`, `-N` | Default target network for mapping (supports namespace/name) | `-N sriov-ns/perf-net` |
 | `--default-target-storage-class` | Default target storage class | `--default-target-storage-class thin` |
 | `--use-compatibility-mode` | Use compatibility devices for bootability | `--use-compatibility-mode=false` |
+| `--run-preflight-inspection` | Run preflight inspection on VM base disks (warm migrations only, default: true) | `--run-preflight-inspection=false` |
+
+#### Target VM Configuration (Operational Placement)
+
+**These flags control where your migrated VMs will run in the target cluster for their operational lifetime:**
+
+| Flag | Description | Example |
+|------|-------------|---------|
 | `--target-labels`, `-L` | Labels to add to the migrated VM | `-L app=web,tier=frontend` |
 | `--target-node-selector` | Node selector for the migrated VM | `--target-node-selector 'disktype=ssd'` |
 | `--target-affinity` | Constrain VM scheduling using KARL syntax | `--target-affinity 'REQUIRE pods(app=db)'` |
 | `--target-power-state` | Target power state for VMs after migration | `--target-power-state on\|off\|auto` |
+
+#### Convertor Pod Optimization (Migration Process)
+
+**These flags optimize temporary virt-v2v pods during the migration process:**
+
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--convertor-labels` | Labels to add to virt-v2v convertor pods | `--convertor-labels "performance=high,io=intensive"` |
+| `--convertor-node-selector` | Node selector for convertor pod scheduling | `--convertor-node-selector "node-type=storage,zone=us-west"` |
+| `--convertor-affinity` | Affinity rules for convertor pod placement (KARL syntax) | `--convertor-affinity "REQUIRE pods(app=storage) on node"` |
+
+#### Storage Enhancement Options
 | `--default-volume-mode` | Default volume mode for storage pairs | `--default-volume-mode Block\|Filesystem` |
 | `--default-access-mode` | Default access mode for storage pairs | `--default-access-mode ReadWriteOnce` |
 | `--default-offload-plugin` | Default offload plugin for storage pairs | `--default-offload-plugin vsphere` |
 | `--default-offload-secret` | Default offload plugin secret name | `--default-offload-secret my-secret` |
-| `--default-offload-vendor` | Default offload plugin vendor | `--default-offload-vendor vantara\|ontap` |
+| `--default-offload-vendor` | Default offload plugin vendor | `--default-offload-vendor flashsystem\|vantara\|ontap\|primera3par\|pureFlashArray\|powerflex\|powermax\|powerstore\|infinibox` |
 | `--delete-vm-on-fail-migration` | Delete target VM when migration fails | `--delete-vm-on-fail-migration` |
 
-For advanced scheduling, see the [Target Affinity Guide](README_target_affinity.md).
+#### Advanced Configuration Guides
+
+- **Target VM Placement**: See the [Target Affinity Guide](README_target_affinity.md) for controlling where migrated VMs run in your cluster
+- **Migration Process Optimization**: See the [Convertor Scheduling Guide](README_convertor_scheduling.md) for optimizing virt-v2v pod placement during migration
 
 ### Describe Plans
 
@@ -791,6 +836,64 @@ kubectl mtv create vddk my-vddk \
   --tag registry.example.com/vddk:8.0.1 \
   --tar vddk-801-file.tar.gz
 ```
+
+## Advanced Plan Configuration
+
+This section covers advanced configuration options that control different aspects of the migration process.
+
+### Target VM Configuration vs Migration Process Optimization
+
+kubectl-mtv provides two distinct sets of configuration options:
+
+#### 🎯 Target VM Configuration (Long-term Operational Placement)
+Controls **where your migrated VMs will run** in the target cluster after migration is complete:
+
+- `--target-affinity` - VM placement using KARL syntax
+- `--target-labels` - Labels applied to migrated VMs  
+- `--target-node-selector` - Node selector for VM scheduling
+- `--target-power-state` - VM power state after migration
+
+**Purpose**: Ensure your VMs run on appropriate nodes for production requirements, compliance, performance, etc.
+
+#### ⚙️ Migration Process Optimization (Temporary Convertor Pods)
+Controls **temporary virt-v2v convertor pods** that handle disk conversion during migration:
+
+- `--convertor-affinity` - Convertor pod placement using KARL syntax
+- `--convertor-labels` - Labels applied to convertor pods
+- `--convertor-node-selector` - Node selector for convertor pods
+
+**Purpose**: Optimize migration performance by placing conversion work near storage, avoiding resource conflicts, etc.
+
+### Quick Reference
+
+```bash
+# Target VM configuration (operational lifetime)
+kubectl mtv create plan production-app \
+  --source vmware --vms app1,app2 \
+  --target-affinity 'REQUIRE pods(app=database) on node' \
+  --target-labels "env=production,tier=web" \
+  --target-node-selector "node-type=compute,ssd=true"
+
+# Migration process optimization (temporary conversion work)
+kubectl mtv create plan storage-optimized \
+  --source vmware --vms storage-vm1,storage-vm2 \
+  --convertor-affinity 'REQUIRE pods(app=ceph-osd) on node' \
+  --convertor-labels "workload=migration,performance=high" \
+  --convertor-node-selector "node-type=storage,disk=nvme"
+
+# Combined configuration
+kubectl mtv create plan comprehensive-migration \
+  --source vmware --vms critical-app \
+  --target-affinity 'REQUIRE pods(app=database) on node' \          # Where VM will run
+  --target-labels "env=production,criticality=high" \                # VM operational labels
+  --convertor-affinity 'REQUIRE pods(app=storage) on node' \         # Where conversion happens
+  --convertor-labels "migration=critical,io-intensive=true"          # Conversion tracking
+```
+
+### Detailed Guides
+
+- **[Target VM Placement Guide](README_target_affinity.md)** - Long-term VM operational placement
+- **[Convertor Scheduling Guide](README_convertor_scheduling.md)** - Migration process optimization
 
 ## Query Language
 
