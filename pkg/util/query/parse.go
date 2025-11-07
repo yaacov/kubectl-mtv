@@ -104,14 +104,24 @@ func ParseQueryString(query string) (*QueryOptions, error) {
 		return options, nil
 	}
 
+	// Validate query syntax before parsing
+	if err := ValidateQuerySyntax(query); err != nil {
+		return nil, err
+	}
+
 	// Convert query to lowercase for case-insensitive matching but preserve original for extraction
 	queryLower := strings.ToLower(query)
 
 	// Check for SELECT clause
 	selectIndex := strings.Index(queryLower, "select ")
 	whereIndex := strings.Index(queryLower, "where ")
-	orderByIndex := strings.Index(queryLower, "order by ")
 	limitIndex := strings.Index(queryLower, "limit ")
+
+	// Look for ordering clause - first "order by", then "sort by" if not found
+	orderByIndex := strings.Index(queryLower, "order by ")
+	if orderByIndex == -1 {
+		orderByIndex = strings.Index(queryLower, "sort by ")
+	}
 
 	// Extract SELECT clause if it exists
 	if selectIndex >= 0 {
@@ -150,8 +160,8 @@ func ParseQueryString(query string) (*QueryOptions, error) {
 			orderByEnd = limitIndex
 		}
 
-		// Extract order by clause (skip "order by " prefix which is 9 chars)
-		orderByClause := strings.TrimSpace(query[orderByIndex+9 : orderByEnd])
+		// Extract order by clause (skip 8 chars for both "order by" and "sort by ")
+		orderByClause := strings.TrimSpace(query[orderByIndex+8 : orderByEnd])
 
 		// use helper to build OrderOption slice
 		options.OrderBy = parseOrderByClause(orderByClause, options.Select)
