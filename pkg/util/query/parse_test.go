@@ -126,6 +126,120 @@ func TestParseQueryString(t *testing.T) {
 				HasLimit:   false,
 			},
 		},
+		{
+			name:  "sort by asc and desc",
+			query: "sort by foo desc, bar ASC",
+			expected: &QueryOptions{
+				Select:    nil,
+				HasSelect: false,
+				Where:     "",
+				OrderBy: []OrderOption{
+					{
+						Field:      SelectOption{Field: ".foo", Alias: "foo", Reducer: ""},
+						Descending: true,
+					},
+					{
+						Field:      SelectOption{Field: ".bar", Alias: "bar", Reducer: ""},
+						Descending: false,
+					},
+				},
+				HasOrderBy: true,
+				Limit:      -1,
+				HasLimit:   false,
+			},
+		},
+		{
+			name:  "sort by alias",
+			query: "SELECT foo as f, bar as b SORT BY f DESC, b",
+			expected: &QueryOptions{
+				Select: []SelectOption{
+					{Field: ".foo", Alias: "f", Reducer: ""},
+					{Field: ".bar", Alias: "b", Reducer: ""},
+				},
+				HasSelect: true,
+				Where:     "",
+				OrderBy: []OrderOption{
+					{
+						Field:      SelectOption{Field: ".foo", Alias: "f", Reducer: ""},
+						Descending: true,
+					},
+					{
+						Field:      SelectOption{Field: ".bar", Alias: "b", Reducer: ""},
+						Descending: false,
+					},
+				},
+				HasOrderBy: true,
+				Limit:      -1,
+				HasLimit:   false,
+			},
+		},
+		{
+			name:  "combined full query with sort by",
+			query: "SELECT sum(x) as total, y WHERE y>1 SORT BY x DESC, y LIMIT 10",
+			expected: &QueryOptions{
+				Select: []SelectOption{
+					{Field: ".x", Alias: "total", Reducer: "sum"},
+					{Field: ".y", Alias: "y", Reducer: ""},
+				},
+				HasSelect: true,
+				Where:     "y>1",
+				OrderBy: []OrderOption{
+					{
+						Field:      SelectOption{Field: ".x", Alias: "total", Reducer: "sum"},
+						Descending: true,
+					},
+					{
+						Field:      SelectOption{Field: ".y", Alias: "y", Reducer: ""},
+						Descending: false,
+					},
+				},
+				HasOrderBy: true,
+				Limit:      10,
+				HasLimit:   true,
+			},
+		},
+		{
+			name:  "case insensitive sort by",
+			query: "select name where id > 1 Sort By name desc",
+			expected: &QueryOptions{
+				Select: []SelectOption{
+					{Field: ".name", Alias: "name", Reducer: ""},
+				},
+				HasSelect: true,
+				Where:     "id > 1",
+				OrderBy: []OrderOption{
+					{
+						Field:      SelectOption{Field: ".name", Alias: "name", Reducer: ""},
+						Descending: true,
+					},
+				},
+				HasOrderBy: true,
+				Limit:      -1,
+				HasLimit:   false,
+			},
+		},
+		{
+			name:  "sort by with where and limit",
+			query: "WHERE status = 'active' SORT BY created_date DESC, name LIMIT 5",
+			expected: &QueryOptions{
+				Select:    nil,
+				HasSelect: false,
+				Where:     "status = 'active'",
+				OrderBy: []OrderOption{
+					{
+						Field:      SelectOption{Field: ".created_date", Alias: "created_date", Reducer: ""},
+						Descending: true,
+					},
+					{
+						Field:      SelectOption{Field: ".name", Alias: "name", Reducer: ""},
+						Descending: false,
+					},
+				},
+				HasOrderBy: true,
+				Limit:      5,
+				HasLimit:   true,
+			},
+		},
 	}
 
 	for _, tt := range tests {
