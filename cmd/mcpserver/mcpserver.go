@@ -28,14 +28,20 @@ func NewMCPServerCmd() *cobra.Command {
 		Short: "Start the MCP (Model Context Protocol) server",
 		Long: `Start the MCP (Model Context Protocol) server for kubectl-mtv.
 
-This is an MCP (Model Context Protocol) server that provides comprehensive
-access to kubectl-mtv resources including read operations for monitoring
-and troubleshooting, as well as write operations for managing MTV resources.
-USE WITH CAUTION: Write operations can create, modify, and delete resources.
+This server provides AI assistants with access to kubectl-mtv resources.
+USE WITH CAUTION: Includes write operations that can modify resources.
 
 Modes:
-  Default: The server communicates via stdio using the MCP protocol.
-  SSE mode: The server runs an HTTP server for SSE-based MCP connections.`,
+  Default: Stdio mode for AI assistant integration
+  --sse:   HTTP server mode for web-based integrations
+
+Quick Setup for AI Assistants:
+
+Claude Desktop: claude mcp add kubectl-mtv kubectl mtv mcp-server
+Cursor IDE: Settings → MCP → Add Server (Name: kubectl-mtv, Command: kubectl, Args: mtv mcp-server)
+
+Manual Claude config: Add to claude_desktop_config.json:
+  "kubectl-mtv": {"command": "kubectl", "args": ["mtv", "mcp-server"]}`,
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
 			// Create a context that listens for interrupt signals
 			ctx, cancel := context.WithCancel(context.Background())
