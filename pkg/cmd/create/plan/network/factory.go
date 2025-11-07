@@ -22,6 +22,11 @@ import (
 	ovirtFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/ovirt"
 	vsphereFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper"
+	openshiftMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/openshift"
+	openstackMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/openstack"
+	ovaMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/ova"
+	ovirtMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/ovirt"
+	vsphereMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
@@ -130,6 +135,57 @@ func GetTargetNetworkFetcher(ctx context.Context, configFlags *genericclioptions
 	}
 }
 
+// GetNetworkMapper returns the appropriate network mapper based on source provider type
+func GetNetworkMapper(ctx context.Context, configFlags *genericclioptions.ConfigFlags, sourceProviderName, sourceProviderNamespace, targetProviderName, targetProviderNamespace string) (mapper.NetworkMapper, string, string, error) {
+	// Get source provider type
+	sourceProvider, err := inventory.GetProviderByName(ctx, configFlags, sourceProviderName, sourceProviderNamespace)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get source provider: %v", err)
+	}
+
+	sourceProviderClient := inventory.NewProviderClient(configFlags, sourceProvider, "")
+	sourceProviderType, err := sourceProviderClient.GetProviderType()
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get source provider type: %v", err)
+	}
+
+	// Get target provider type
+	targetProvider, err := inventory.GetProviderByName(ctx, configFlags, targetProviderName, targetProviderNamespace)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get target provider: %v", err)
+	}
+
+	targetProviderClient := inventory.NewProviderClient(configFlags, targetProvider, "")
+	targetProviderType, err := targetProviderClient.GetProviderType()
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get target provider type: %v", err)
+	}
+
+	klog.V(4).Infof("DEBUG: GetNetworkMapper - Source provider: %s (type: %s), Target provider: %s (type: %s)",
+		sourceProviderName, sourceProviderType, targetProviderName, targetProviderType)
+
+	// Return the appropriate mapper based on source provider type
+	switch sourceProviderType {
+	case "openstack":
+		klog.V(4).Infof("DEBUG: Using OpenStack network mapper for source %s", sourceProviderName)
+		return openstackMapper.NewOpenStackNetworkMapper(), sourceProviderType, targetProviderType, nil
+	case "vsphere":
+		klog.V(4).Infof("DEBUG: Using vSphere network mapper for source %s", sourceProviderName)
+		return vsphereMapper.NewVSphereNetworkMapper(), sourceProviderType, targetProviderType, nil
+	case "openshift":
+		klog.V(4).Infof("DEBUG: Using OpenShift network mapper for source %s", sourceProviderName)
+		return openshiftMapper.NewOpenShiftNetworkMapper(), sourceProviderType, targetProviderType, nil
+	case "ova":
+		klog.V(4).Infof("DEBUG: Using OVA network mapper for source %s", sourceProviderName)
+		return ovaMapper.NewOVANetworkMapper(), sourceProviderType, targetProviderType, nil
+	case "ovirt":
+		klog.V(4).Infof("DEBUG: Using oVirt network mapper for source %s", sourceProviderName)
+		return ovirtMapper.NewOvirtNetworkMapper(), sourceProviderType, targetProviderType, nil
+	default:
+		return nil, "", "", fmt.Errorf("unsupported source provider type: %s", sourceProviderType)
+	}
+}
+
 // CreateNetworkMap creates a network map using the new fetcher-based architecture
 func CreateNetworkMap(ctx context.Context, opts NetworkMapperOptions) (string, error) {
 	klog.V(4).Infof("DEBUG: Creating network map - Source: %s, Target: %s, DefaultTargetNetwork: '%s'",
@@ -171,12 +227,20 @@ func CreateNetworkMap(ctx context.Context, opts NetworkMapperOptions) (string, e
 		klog.V(4).Infof("DEBUG: Skipping target network fetch due to DefaultTargetNetwork='%s'", opts.DefaultTargetNetwork)
 	}
 
-	// Create network pairs using generic mapping logic
+	// Get provider-specific network mapper
+	networkMapper, sourceProviderType, targetProviderType, err := GetNetworkMapper(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.TargetProvider, targetProviderNamespace)
+	if err != nil {
+		return "", fmt.Errorf("failed to get network mapper: %v", err)
+	}
+
+	// Create network pairs using provider-specific mapping logic
 	mappingOpts := mapper.NetworkMappingOptions{
 		DefaultTargetNetwork: opts.DefaultTargetNetwork,
 		Namespace:            opts.Namespace,
+		SourceProviderType:   sourceProviderType,
+		TargetProviderType:   targetProviderType,
 	}
-	networkPairs, err := mapper.CreateNetworkPairs(sourceNetworks, targetNetworks, mappingOpts)
+	networkPairs, err := networkMapper.CreateNetworkPairs(sourceNetworks, targetNetworks, mappingOpts)
 	if err != nil {
 		return "", fmt.Errorf("failed to create network pairs: %v", err)
 	}
