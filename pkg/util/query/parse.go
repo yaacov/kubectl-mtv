@@ -104,6 +104,11 @@ func ParseQueryString(query string) (*QueryOptions, error) {
 		return options, nil
 	}
 
+	// Validate query syntax before parsing
+	if err := ValidateQuerySyntax(query); err != nil {
+		return nil, err
+	}
+
 	// Convert query to lowercase for case-insensitive matching but preserve original for extraction
 	queryLower := strings.ToLower(query)
 
