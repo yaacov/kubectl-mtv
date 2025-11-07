@@ -63,9 +63,9 @@ func Create(opts CreateHookOptions) error {
 // validateHookSpec validates the hook specification parameters.
 // It ensures that required fields are present and have valid values.
 func validateHookSpec(spec forkliftv1beta1.HookSpec) error {
-	// Image is required
+	// Image should not be empty (default is set at command level)
 	if spec.Image == "" {
-		return fmt.Errorf("image is required")
+		return fmt.Errorf("image cannot be empty")
 	}
 
 	// Validate deadline if provided

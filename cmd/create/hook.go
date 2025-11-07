@@ -35,24 +35,19 @@ post-migration cleanup, or any custom automation needs.
 The playbook parameter supports the @ convention to read Ansible playbook content from a file.
 
 Examples:
-  # Create a hook with inline playbook content
-  kubectl-mtv create hook my-hook --image my-registry/hook-image:latest --playbook "$(cat playbook.yaml)"
+  # Create a hook with default image and inline playbook content
+  kubectl-mtv create hook my-hook --playbook "$(cat playbook.yaml)"
 
-  # Create a hook reading playbook from file
+  # Create a hook with custom image reading playbook from file
   kubectl-mtv create hook my-hook --image my-registry/hook-image:latest --playbook @playbook.yaml
 
-  # Create a hook with service account and deadline
-  kubectl-mtv create hook my-hook --image my-registry/hook-image:latest --service-account my-sa --deadline 300`,
+  # Create a hook with service account and deadline (uses default image)
+  kubectl-mtv create hook my-hook --service-account my-sa --deadline 300`,
 		Args:         cobra.ExactArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get name from positional argument
 			name := args[0]
-
-			// Validate required parameters
-			if image == "" {
-				return fmt.Errorf("image is required")
-			}
 
 			// Validate deadline is positive
 			if deadline < 0 {
@@ -95,14 +90,10 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVarP(&image, "image", "i", "", "Container image URL to run (required)")
+	cmd.Flags().StringVarP(&image, "image", "i", "quay.io/kubev2v/hook-runner", "Container image URL to run (default: quay.io/kubev2v/hook-runner)")
 	cmd.Flags().StringVar(&serviceAccount, "service-account", "", "Service account to use for the hook (optional)")
 	cmd.Flags().StringVar(&playbook, "playbook", "", "Ansible playbook content, or use @filename to read from file (optional)")
 	cmd.Flags().Int64Var(&deadline, "deadline", 0, "Hook deadline in seconds (optional)")
-
-	if err := cmd.MarkFlagRequired("image"); err != nil {
-		panic(err)
-	}
 
 	return cmd
 }
