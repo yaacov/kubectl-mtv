@@ -23,6 +23,11 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var targetNamespace string
 	var targetPowerState string
 
+	// Convertor-related flags
+	var convertorLabels []string
+	var convertorNodeSelector []string
+	var convertorAffinity string
+
 	// Missing flags from create plan
 	var description string
 	var preserveClusterCPUModel bool
@@ -37,6 +42,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var deleteVmOnFailMigration bool
 	var skipGuestConversion bool
 	var warm bool
+	var runPreflightInspection bool
 
 	// Boolean tracking for flag changes
 	var useCompatibilityModeChanged bool
@@ -49,6 +55,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var deleteVmOnFailMigrationChanged bool
 	var skipGuestConversionChanged bool
 	var warmChanged bool
+	var runPreflightInspectionChanged bool
 
 	cmd := &cobra.Command{
 		Use:               "plan PLAN_NAME",
@@ -75,6 +82,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 			deleteVmOnFailMigrationChanged = cmd.Flags().Changed("delete-vm-on-fail-migration")
 			skipGuestConversionChanged = cmd.Flags().Changed("skip-guest-conversion")
 			warmChanged = cmd.Flags().Changed("warm")
+			runPreflightInspectionChanged = cmd.Flags().Changed("run-preflight-inspection")
 
 			return plan.PatchPlan(plan.PatchPlanOptions{
 				ConfigFlags: kubeConfigFlags,
@@ -92,6 +100,11 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				TargetNamespace:      targetNamespace,
 				TargetPowerState:     targetPowerState,
 
+				// Convertor-related fields
+				ConvertorLabels:       convertorLabels,
+				ConvertorNodeSelector: convertorNodeSelector,
+				ConvertorAffinity:     convertorAffinity,
+
 				// Additional plan fields
 				Description:                    description,
 				PreserveClusterCPUModel:        preserveClusterCPUModel,
@@ -105,6 +118,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				DeleteGuestConversionPod:       deleteGuestConversionPod,
 				SkipGuestConversion:            skipGuestConversion,
 				Warm:                           warm,
+				RunPreflightInspection:         runPreflightInspection,
 
 				// Flag change tracking
 				UseCompatibilityModeChanged:           useCompatibilityModeChanged,
@@ -118,6 +132,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				DeleteVmOnFailMigrationChanged:        deleteVmOnFailMigrationChanged,
 				SkipGuestConversionChanged:            skipGuestConversionChanged,
 				WarmChanged:                           warmChanged,
+				RunPreflightInspectionChanged:         runPreflightInspectionChanged,
 			})
 		},
 	}
@@ -131,6 +146,11 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().StringVar(&targetAffinity, "target-affinity", "", "Target affinity using KARL syntax (e.g. 'REQUIRE pods(app=database) on node')")
 	cmd.Flags().StringVar(&targetNamespace, "target-namespace", "", "Target namespace for migrated VMs")
 	cmd.Flags().StringVar(&targetPowerState, "target-power-state", "", "Target power state for VMs after migration: 'on', 'off', or 'auto' (default: match source VM power state)")
+
+	// Convertor-related flags
+	cmd.Flags().StringSliceVar(&convertorLabels, "convertor-labels", nil, "Labels to be added to virt-v2v convertor pods (e.g., key1=value1,key2=value2)")
+	cmd.Flags().StringSliceVar(&convertorNodeSelector, "convertor-node-selector", nil, "Node selector to constrain convertor pod scheduling (e.g., key1=value1,key2=value2)")
+	cmd.Flags().StringVar(&convertorAffinity, "convertor-affinity", "", "Convertor affinity to constrain convertor pod scheduling using KARL syntax (e.g. 'REQUIRE pods(app=storage) on node')")
 
 	// Plan metadata and configuration flags
 	cmd.Flags().StringVar(&description, "description", "", "Plan description")
@@ -146,6 +166,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().BoolVar(&deleteVmOnFailMigration, "delete-vm-on-fail-migration", false, "Delete target VM when migration fails")
 	cmd.Flags().BoolVar(&skipGuestConversion, "skip-guest-conversion", false, "Skip the guest conversion process")
 	cmd.Flags().BoolVar(&warm, "warm", false, "Enable warm migration (use --migration-type=warm instead)")
+	cmd.Flags().BoolVar(&runPreflightInspection, "run-preflight-inspection", true, "Run preflight inspection on VM base disks before starting disk transfer (applies only to warm migrations from VMware)")
 
 	// Add completion for migration type flag
 	if err := cmd.RegisterFlagCompletionFunc("migration-type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

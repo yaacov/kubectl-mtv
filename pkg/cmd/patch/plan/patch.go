@@ -34,6 +34,11 @@ type PatchPlanOptions struct {
 	TargetNamespace      string
 	TargetPowerState     string
 
+	// Convertor-related fields
+	ConvertorLabels       []string
+	ConvertorNodeSelector []string
+	ConvertorAffinity     string
+
 	// Additional plan fields
 	Description                    string
 	PreserveClusterCPUModel        bool
@@ -48,6 +53,7 @@ type PatchPlanOptions struct {
 	DeleteVmOnFailMigration        bool
 	SkipGuestConversion            bool
 	Warm                           bool
+	RunPreflightInspection         bool
 
 	// Flag change tracking
 	UseCompatibilityModeChanged           bool
@@ -60,6 +66,7 @@ type PatchPlanOptions struct {
 	DeleteVmOnFailMigrationChanged        bool
 	SkipGuestConversionChanged            bool
 	WarmChanged                           bool
+	RunPreflightInspectionChanged         bool
 }
 
 // PatchPlan patches an existing migration plan
@@ -207,6 +214,75 @@ func PatchPlan(opts PatchPlanOptions) error {
 		planUpdated = true // Mark plan as updated since we've applied a patch
 	}
 
+	// Update convertor labels if provided
+	if len(opts.ConvertorLabels) > 0 {
+		labelMap, err := parseKeyValuePairs(opts.ConvertorLabels, "convertor-labels")
+		if err != nil {
+			return fmt.Errorf("failed to parse convertor labels: %v", err)
+		}
+		patchSpec["convertorLabels"] = labelMap
+		klog.V(2).Infof("Updated convertor labels: %v", labelMap)
+		planUpdated = true
+	}
+
+	// Update convertor node selector if provided
+	if len(opts.ConvertorNodeSelector) > 0 {
+		nodeSelectorMap, err := parseKeyValuePairs(opts.ConvertorNodeSelector, "convertor-node-selector")
+		if err != nil {
+			return fmt.Errorf("failed to parse convertor node selector: %v", err)
+		}
+		patchSpec["convertorNodeSelector"] = nodeSelectorMap
+		klog.V(2).Infof("Updated convertor node selector: %v", nodeSelectorMap)
+		planUpdated = true
+	}
+
+	// Update convertor affinity if provided (using karl-interpreter)
+	if opts.ConvertorAffinity != "" {
+		interpreter := karl.NewKARLInterpreter()
+		err := interpreter.Parse(opts.ConvertorAffinity)
+		if err != nil {
+			return fmt.Errorf("failed to parse convertor affinity KARL rule: %v", err)
+		}
+
+		affinity, err := interpreter.ToAffinity()
+		if err != nil {
+			return fmt.Errorf("failed to convert KARL rule to affinity: %v", err)
+		}
+
+		// Convert affinity to unstructured format for patch
+		affinityObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(affinity)
+		if err != nil {
+			return fmt.Errorf("failed to convert affinity to unstructured: %v", err)
+		}
+
+		// JSON Patch: upsert spec.convertorAffinity without merging subfields
+		patchOps := []map[string]interface{}{
+			{
+				"op":    "add", // On objects, "add" replaces the key if it already exists
+				"path":  "/spec/convertorAffinity",
+				"value": affinityObj,
+			},
+		}
+		patchBytes, err := json.Marshal(patchOps)
+		if err != nil {
+			return fmt.Errorf("failed to marshal JSON patch: %v", err)
+		}
+
+		_, err = dynamicClient.Resource(client.PlansGVR).Namespace(opts.Namespace).Patch(
+			context.TODO(),
+			opts.Name,
+			types.JSONPatchType,
+			patchBytes,
+			metav1.PatchOptions{},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to set convertor affinity: %v", err)
+		}
+
+		klog.V(2).Infof("Updated convertor affinity configuration")
+		planUpdated = true // Mark plan as updated since we've applied a patch
+	}
+
 	// Update target namespace if provided
 	if opts.TargetNamespace != "" {
 		patchSpec["targetNamespace"] = opts.TargetNamespace
@@ -309,6 +385,13 @@ func PatchPlan(opts PatchPlanOptions) error {
 	if opts.WarmChanged {
 		patchSpec["warm"] = opts.Warm
 		klog.V(2).Infof("Updated warm migration to %t", opts.Warm)
+		planUpdated = true
+	}
+
+	// Update run preflight inspection if flag was changed
+	if opts.RunPreflightInspectionChanged {
+		patchSpec["runPreflightInspection"] = opts.RunPreflightInspection
+		klog.V(2).Infof("Updated run preflight inspection to %t", opts.RunPreflightInspection)
 		planUpdated = true
 	}
 

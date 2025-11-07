@@ -1,12 +1,14 @@
-# Using Target Affinity in Migration Plans
+# Target VM Affinity and Scheduling
 
-The `targetAffinity` flag allows you to control how migrated virtual machines are scheduled onto target nodes in your Kubernetes cluster. This feature uses the KARL (Kubernetes Affinity Rule Language) interpreter to translate a human-readable syntax into Kubernetes pod affinity and anti-affinity rules.
+This guide explains how to control where your **migrated virtual machines** will be scheduled in the target Kubernetes cluster after migration is complete. These settings affect the long-term placement and resource utilization of your VMs during their operational lifetime.
 
-This guide explains how to use `targetAffinity` to achieve common scheduling scenarios.
+The `targetAffinity`, `targetLabels`, and `targetNodeSelector` flags use KARL (Kubernetes Affinity Rule Language) syntax and standard Kubernetes scheduling mechanisms to ensure your VMs run on the most appropriate nodes for your workload requirements.
 
 ## Basic Syntax
 
-The basic syntax for the `targetAffinity` flag is:
+### Target Affinity
+
+Control VM placement using KARL syntax:
 
 ```bash
 kubectl mtv create plan <plan-name> \
@@ -15,7 +17,19 @@ kubectl mtv create plan <plan-name> \
   --target-affinity "<RULE>"
 ```
 
-The `<RULE>` is a KARL expression that defines your scheduling constraints.
+### Target Labels and Node Selector
+
+Apply labels and node constraints to migrated VMs:
+
+```bash
+kubectl mtv create plan <plan-name> \
+  --source-provider <source> \
+  --vms <vm-list> \
+  --target-labels "env=production,tier=web" \
+  --target-node-selector "node-type=compute,disk=ssd"
+```
+
+The `<RULE>` is a KARL expression that defines your VM scheduling constraints.
 
 ## KARL Syntax Reference
 
@@ -157,6 +171,8 @@ spec:
 
 ## How It Works
 
-When you provide a `targetAffinity` rule, `kubectl-mtv` uses the KARL interpreter to convert the string into a standard Kubernetes `Affinity` object. This object is then embedded into the `Plan` custom resource. The Forklift controller reads this affinity rule and applies it to the `VirtualMachine` resource it creates, which in turn influences the Kubernetes scheduler's decision-making process.
+When you provide a `targetAffinity` rule, `kubectl-mtv` uses the KARL interpreter to convert the string into a standard Kubernetes `Affinity` object. This object is then embedded into the `Plan` custom resource and applied to the `VirtualMachine` resources created by the Forklift controller.
+
+The target affinity rules, labels, and node selectors influence the Kubernetes scheduler's decision-making process to ensure your migrated VMs are placed on the most appropriate nodes for their long-term operational requirements.
 
 For more information on the underlying Kubernetes affinity and anti-affinity concepts, please refer to the official Kubernetes documentation on [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node-affinity/). 

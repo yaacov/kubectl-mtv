@@ -425,6 +425,33 @@ func Create(ctx context.Context, opts CreatePlanOptions) error {
 		}
 	}
 
+	// MTV automatically sets the RunPreflightInspection field to true, if opts.PlanSpec.RunPreflightInspection is false
+	// we need to patch the plan to re-set the RunPreflightInspection field to false.
+	if !opts.PlanSpec.RunPreflightInspection {
+		patch := map[string]interface{}{
+			"spec": map[string]interface{}{
+				"runPreflightInspection": false,
+			},
+		}
+		patchBytes, err := json.Marshal(patch)
+		if err != nil {
+			// Ignore error here, we will still create the plan
+			fmt.Printf("Warning: failed to marshal patch for RunPreflightInspection: %v\n", err)
+		} else {
+			_, err = c.Resource(client.PlansGVR).Namespace(opts.Namespace).Patch(
+				context.TODO(),
+				createdPlan.GetName(),
+				types.MergePatchType,
+				patchBytes,
+				metav1.PatchOptions{},
+			)
+			if err != nil {
+				// Ignore error here, we will still create the plan
+				fmt.Printf("Warning: failed to patch plan for RunPreflightInspection: %v\n", err)
+			}
+		}
+	}
+
 	// Set ownership of maps if we created them
 	if createdNetworkMap {
 		err = setMapOwnership(opts.ConfigFlags, createdPlan, client.NetworkMapGVR, opts.NetworkMapping, opts.Namespace)
