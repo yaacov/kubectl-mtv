@@ -15,17 +15,21 @@ Hook containers have access to migration context through mounted files:
 ## Basic Syntax
 
 ```bash
-kubectl-mtv create hook <name> --image <container-image> [options]
+kubectl-mtv create hook <name> [--image <container-image>] [options]
 ```
 
-**Required**: Only `--image` is required.
+**Default Image**: Uses `quay.io/kubev2v/hook-runner` if no image is specified.
 
 ## Parameters
 
-### --image (required)
-Container image to execute the hook. Can be Ansible runners, shell scripts, Python apps, or any executable container.
+### --image (optional)
+Container image to execute the hook. Can be Ansible runners, shell scripts, Python apps, or any executable container. Defaults to `quay.io/kubev2v/hook-runner` if not specified.
 
 ```bash
+# Using default image
+kubectl-mtv create hook my-hook
+
+# Using custom image
 kubectl-mtv create hook my-hook --image quay.io/ansible/creator-ee:latest
 kubectl-mtv create hook shell-hook --image alpine/bash:latest
 ```
@@ -72,7 +76,6 @@ kubectl-mtv create hook timed-hook \
 ### Database Backup Hook
 ```bash
 kubectl-mtv create hook database-backup \
-  --image quay.io/ansible/creator-ee:latest \
   --service-account migration-sa \
   --deadline 300 \
   --playbook @backup-playbook.yaml
@@ -90,6 +93,13 @@ kubectl-mtv create hook cleanup-tasks \
 kubectl-mtv create hook api-integration \
   --image my-registry/python-automation:v1.0 \
   --service-account api-client
+```
+
+### Simple Hook with Default Image
+```bash
+kubectl-mtv create hook simple-validation \
+  --service-account migration-sa \
+  --deadline 60
 ```
 
 ## Using Hooks in Migration Plans
