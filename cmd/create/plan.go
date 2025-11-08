@@ -60,6 +60,12 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var defaultVolumeMode, defaultAccessMode string
 	var defaultOffloadPlugin, defaultOffloadSecret, defaultOffloadVendor string
 
+	// Offload secret creation flags
+	var offloadVSphereUsername, offloadVSpherePassword, offloadVSphereURL string
+	var offloadStorageUsername, offloadStoragePassword, offloadStorageEndpoint string
+	var offloadCACert string
+	var offloadInsecureSkipTLS bool
+
 	// PlanSpec fields
 	var planSpec forkliftv1beta1.PlanSpec
 	var transferNetwork string
@@ -345,6 +351,15 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 				DefaultOffloadPlugin:      defaultOffloadPlugin,
 				DefaultOffloadSecret:      defaultOffloadSecret,
 				DefaultOffloadVendor:      defaultOffloadVendor,
+				// Offload secret creation options
+				OffloadVSphereUsername: offloadVSphereUsername,
+				OffloadVSpherePassword: offloadVSpherePassword,
+				OffloadVSphereURL:      offloadVSphereURL,
+				OffloadStorageUsername: offloadStorageUsername,
+				OffloadStoragePassword: offloadStoragePassword,
+				OffloadStorageEndpoint: offloadStorageEndpoint,
+				OffloadCACert:          offloadCACert,
+				OffloadInsecureSkipTLS: offloadInsecureSkipTLS,
 			}
 
 			err := plan.Create(cmd.Context(), opts)
@@ -363,8 +378,18 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	cmd.Flags().StringVar(&defaultVolumeMode, "default-volume-mode", "", "Default volume mode for storage pairs (Filesystem|Block)")
 	cmd.Flags().StringVar(&defaultAccessMode, "default-access-mode", "", "Default access mode for storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany)")
 	cmd.Flags().StringVar(&defaultOffloadPlugin, "default-offload-plugin", "", "Default offload plugin type for storage pairs (vsphere)")
-	cmd.Flags().StringVar(&defaultOffloadSecret, "default-offload-secret", "", "Default offload plugin secret name for storage pairs")
+	cmd.Flags().StringVar(&defaultOffloadSecret, "default-offload-secret", "", "Existing offload secret name to use (creates new secret if not provided and offload credentials given)")
 	cmd.Flags().StringVar(&defaultOffloadVendor, "default-offload-vendor", "", "Default offload plugin vendor for storage pairs (flashsystem|vantara|ontap|primera3par|pureFlashArray|powerflex|powermax|powerstore|infinibox)")
+
+	// Offload secret creation flags
+	cmd.Flags().StringVar(&offloadVSphereUsername, "offload-vsphere-username", "", "vSphere username for offload secret (creates new secret if no --default-offload-secret provided)")
+	cmd.Flags().StringVar(&offloadVSpherePassword, "offload-vsphere-password", "", "vSphere password for offload secret")
+	cmd.Flags().StringVar(&offloadVSphereURL, "offload-vsphere-url", "", "vSphere vCenter URL for offload secret")
+	cmd.Flags().StringVar(&offloadStorageUsername, "offload-storage-username", "", "Storage array username for offload secret")
+	cmd.Flags().StringVar(&offloadStoragePassword, "offload-storage-password", "", "Storage array password for offload secret")
+	cmd.Flags().StringVar(&offloadStorageEndpoint, "offload-storage-endpoint", "", "Storage array management endpoint URL for offload secret")
+	cmd.Flags().StringVar(&offloadCACert, "offload-cacert", "", "CA certificate for offload secret (use @filename to load from file)")
+	cmd.Flags().BoolVar(&offloadInsecureSkipTLS, "offload-insecure-skip-tls", false, "Skip TLS verification for offload connections")
 
 	cmd.Flags().StringVar(&vmNamesQuaryOrFile, "vms", "", "List of VM names (comma-separated), path to YAML/JSON file (prefix with @), or query string (prefix with 'where ')")
 	cmd.Flags().StringVar(&preHook, "pre-hook", "", "Pre-migration hook to add to all VMs in the plan")

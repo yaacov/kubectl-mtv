@@ -21,6 +21,15 @@ type StorageCreateOptions struct {
 	DefaultOffloadPlugin string
 	DefaultOffloadSecret string
 	DefaultOffloadVendor string
+	// Offload secret creation fields
+	OffloadVSphereUsername string
+	OffloadVSpherePassword string
+	OffloadVSphereURL      string
+	OffloadStorageUsername string
+	OffloadStoragePassword string
+	OffloadStorageEndpoint string
+	OffloadCACert          string
+	OffloadInsecureSkipTLS bool
 }
 
 // StorageParseOptions holds options for parsing storage pairs
@@ -44,7 +53,7 @@ func CreateNetwork(configFlags *genericclioptions.ConfigFlags, name, namespace, 
 
 // CreateStorageWithOptions creates a new storage mapping with additional options for VolumeMode, AccessMode, and OffloadPlugin
 func CreateStorageWithOptions(opts StorageCreateOptions) error {
-	return createStorageMappingWithOptions(context.TODO(), opts.ConfigFlags, opts.Name, opts.Namespace, opts.SourceProvider, opts.TargetProvider, opts.StoragePairs, opts.InventoryURL, opts.DefaultVolumeMode, opts.DefaultAccessMode, opts.DefaultOffloadPlugin, opts.DefaultOffloadSecret, opts.DefaultOffloadVendor)
+	return createStorageMappingWithOptionsAndSecret(context.TODO(), opts)
 }
 
 // ParseNetworkPairs parses network pairs and returns the parsed pairs (exported for patch functionality)
