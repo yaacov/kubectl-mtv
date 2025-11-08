@@ -50,6 +50,16 @@ type CreatePlanOptions struct {
 	DefaultOffloadPlugin string
 	DefaultOffloadSecret string
 	DefaultOffloadVendor string
+
+	// Offload secret creation fields
+	OffloadVSphereUsername string
+	OffloadVSpherePassword string
+	OffloadVSphereURL      string
+	OffloadStorageUsername string
+	OffloadStoragePassword string
+	OffloadStorageEndpoint string
+	OffloadCACert          string
+	OffloadInsecureSkipTLS bool
 }
 
 // parseProviderName parses a provider name that might contain namespace/name pattern
@@ -188,6 +198,15 @@ func Create(ctx context.Context, opts CreatePlanOptions) error {
 				DefaultOffloadPlugin: opts.DefaultOffloadPlugin,
 				DefaultOffloadSecret: opts.DefaultOffloadSecret,
 				DefaultOffloadVendor: opts.DefaultOffloadVendor,
+				// Offload secret creation options
+				OffloadVSphereUsername: opts.OffloadVSphereUsername,
+				OffloadVSpherePassword: opts.OffloadVSpherePassword,
+				OffloadVSphereURL:      opts.OffloadVSphereURL,
+				OffloadStorageUsername: opts.OffloadStorageUsername,
+				OffloadStoragePassword: opts.OffloadStoragePassword,
+				OffloadStorageEndpoint: opts.OffloadStorageEndpoint,
+				OffloadCACert:          opts.OffloadCACert,
+				OffloadInsecureSkipTLS: opts.OffloadInsecureSkipTLS,
 			})
 			if err != nil {
 				// Clean up the network map if we created it

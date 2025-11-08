@@ -506,6 +506,8 @@ Storage pairs support enhanced format with semicolon-separated parameters: `"sou
 - `offloadSecret`: Kubernetes Secret name for offload plugin authentication
 - `offloadVendor`: Storage vendor (`flashsystem`, `vantara`, `ontap`, `primera3par`, `pureFlashArray`, `powerflex`, `powermax`, `powerstore`, `infinibox`)
 
+**📖 For detailed offload configuration including inline secret creation, see the [Offload Configuration Guide](README_offload.md)**
+
 ### Patch Mappings
 
 Modify existing mappings by adding, updating, or removing pairs.
@@ -745,6 +747,7 @@ kubectl mtv create plan mapped-migration \
 
 #### Advanced Configuration Guides
 
+- **Storage Offload**: See the [Offload Configuration Guide](README_offload.md) for high-performance direct storage array operations
 - **Target VM Placement**: See the [Target Affinity Guide](README_target_affinity.md) for controlling where migrated VMs run in your cluster
 - **Migration Process Optimization**: See the [Convertor Scheduling Guide](README_convertor_scheduling.md) for optimizing virt-v2v pod placement during migration
 

@@ -73,6 +73,12 @@ func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra
 	var defaultOffloadSecret string
 	var defaultOffloadVendor string
 
+	// Offload secret creation flags
+	var offloadVSphereUsername, offloadVSpherePassword, offloadVSphereURL string
+	var offloadStorageUsername, offloadStoragePassword, offloadStorageEndpoint string
+	var offloadCACert string
+	var offloadInsecureSkipTLS bool
+
 	cmd := &cobra.Command{
 		Use:          "storage NAME",
 		Short:        "Create a new storage mapping",
@@ -104,6 +110,15 @@ func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra
 				DefaultOffloadPlugin: defaultOffloadPlugin,
 				DefaultOffloadSecret: defaultOffloadSecret,
 				DefaultOffloadVendor: defaultOffloadVendor,
+				// Offload secret creation options
+				OffloadVSphereUsername: offloadVSphereUsername,
+				OffloadVSpherePassword: offloadVSpherePassword,
+				OffloadVSphereURL:      offloadVSphereURL,
+				OffloadStorageUsername: offloadStorageUsername,
+				OffloadStoragePassword: offloadStoragePassword,
+				OffloadStorageEndpoint: offloadStorageEndpoint,
+				OffloadCACert:          offloadCACert,
+				OffloadInsecureSkipTLS: offloadInsecureSkipTLS,
 			})
 		},
 	}
@@ -114,9 +129,19 @@ func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra
 	cmd.Flags().StringVar(&defaultVolumeMode, "default-volume-mode", "", "Default volume mode for all storage pairs (Filesystem|Block)")
 	cmd.Flags().StringVar(&defaultAccessMode, "default-access-mode", "", "Default access mode for all storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany)")
 	cmd.Flags().StringVar(&defaultOffloadPlugin, "default-offload-plugin", "", "Default offload plugin type for all storage pairs (vsphere)")
-	cmd.Flags().StringVar(&defaultOffloadSecret, "default-offload-secret", "", "Default offload plugin secret name for all storage pairs")
+	cmd.Flags().StringVar(&defaultOffloadSecret, "default-offload-secret", "", "Existing offload secret name to use (creates new secret if not provided and offload credentials given)")
 	cmd.Flags().StringVar(&defaultOffloadVendor, "default-offload-vendor", "", "Default offload plugin vendor for all storage pairs (flashsystem|vantara|ontap|primera3par|pureFlashArray|powerflex|powermax|powerstore|infinibox)")
 	cmd.Flags().StringVarP(&inventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
+
+	// Offload secret creation flags
+	cmd.Flags().StringVar(&offloadVSphereUsername, "offload-vsphere-username", "", "vSphere username for offload secret (creates new secret if no --default-offload-secret provided)")
+	cmd.Flags().StringVar(&offloadVSpherePassword, "offload-vsphere-password", "", "vSphere password for offload secret")
+	cmd.Flags().StringVar(&offloadVSphereURL, "offload-vsphere-url", "", "vSphere vCenter URL for offload secret")
+	cmd.Flags().StringVar(&offloadStorageUsername, "offload-storage-username", "", "Storage array username for offload secret")
+	cmd.Flags().StringVar(&offloadStoragePassword, "offload-storage-password", "", "Storage array password for offload secret")
+	cmd.Flags().StringVar(&offloadStorageEndpoint, "offload-storage-endpoint", "", "Storage array management endpoint URL for offload secret")
+	cmd.Flags().StringVar(&offloadCACert, "offload-cacert", "", "CA certificate for offload secret (use @filename to load from file)")
+	cmd.Flags().BoolVar(&offloadInsecureSkipTLS, "offload-insecure-skip-tls", false, "Skip TLS verification for offload connections")
 
 	// Add completion for volume mode flag
 	if err := cmd.RegisterFlagCompletionFunc("default-volume-mode", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

@@ -293,3 +293,56 @@ func createStorageMappingWithOptions(ctx context.Context, configFlags *genericcl
 	fmt.Printf("storagemap/%s created\n", name)
 	return nil
 }
+
+// createStorageMappingWithOptionsAndSecret creates a new storage mapping with offload secret creation support
+func createStorageMappingWithOptionsAndSecret(ctx context.Context, opts StorageCreateOptions) error {
+	var createdOffloadSecret *corev1.Secret
+	var err error
+
+	// Validate offload secret creation fields if provided
+	if err := validateOffloadSecretFields(opts); err != nil {
+		return err
+	}
+
+	// Determine if we need to create an offload secret
+	if needsOffloadSecret(opts) {
+		fmt.Printf("Creating offload secret for storage mapping '%s'\n", opts.Name)
+
+		createdOffloadSecret, err = createOffloadSecret(opts.ConfigFlags, opts.Namespace, opts.Name, opts)
+		if err != nil {
+			return fmt.Errorf("failed to create offload secret: %v", err)
+		}
+
+		// Use the created secret name as the default offload secret
+		opts.DefaultOffloadSecret = createdOffloadSecret.Name
+		fmt.Printf("Created offload secret '%s' for storage mapping authentication\n", createdOffloadSecret.Name)
+	}
+
+	// Call the original function with the updated options
+	err = createStorageMappingWithOptions(ctx, opts.ConfigFlags, opts.Name, opts.Namespace,
+		opts.SourceProvider, opts.TargetProvider, opts.StoragePairs, opts.InventoryURL,
+		opts.DefaultVolumeMode, opts.DefaultAccessMode, opts.DefaultOffloadPlugin,
+		opts.DefaultOffloadSecret, opts.DefaultOffloadVendor)
+
+	if err != nil {
+		// Clean up the created secret if mapping creation fails
+		if createdOffloadSecret != nil {
+			if delErr := cleanupOffloadSecret(opts.ConfigFlags, opts.Namespace, createdOffloadSecret.Name); delErr != nil {
+				fmt.Printf("Warning: failed to clean up offload secret '%s': %v\n", createdOffloadSecret.Name, delErr)
+			}
+		}
+		return err
+	}
+
+	return nil
+}
+
+// cleanupOffloadSecret removes a created offload secret on failure
+func cleanupOffloadSecret(configFlags *genericclioptions.ConfigFlags, namespace, secretName string) error {
+	k8sClient, err := client.GetKubernetesClientset(configFlags)
+	if err != nil {
+		return fmt.Errorf("failed to get kubernetes client: %v", err)
+	}
+
+	return k8sClient.CoreV1().Secrets(namespace).Delete(context.Background(), secretName, metav1.DeleteOptions{})
+}
