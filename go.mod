@@ -13,7 +13,7 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.0.0
 	github.com/spf13/cobra v1.9.1
 	github.com/yaacov/karl-interpreter v0.0.1
-	github.com/yaacov/kubectl-mtv-mcp v0.0.4
+	github.com/yaacov/kubectl-mtv-mcp v0.0.5
 	github.com/yaacov/tree-search-language/v6 v6.0.8
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.32.5
