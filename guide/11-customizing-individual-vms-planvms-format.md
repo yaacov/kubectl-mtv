@@ -1,7 +1,6 @@
 ---
 layout: page
 title: "Chapter 11: Customizing Individual VMs (PlanVMS Format)"
-render_with_liquid: false
 ---
 
 The PlanVMS format provides granular control over individual VM migration settings, allowing customization of target names, disk configuration, networking, and migration behavior on a per-VM basis. This chapter covers the complete VM customization capabilities.

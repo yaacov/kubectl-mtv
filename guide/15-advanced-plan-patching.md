@@ -1,7 +1,6 @@
 ---
 layout: page
 title: "Chapter 15: Advanced Plan Patching"
-render_with_liquid: false
 ---
 
 Once migration plans are created, you often need to modify their configuration as migration requirements evolve. This chapter covers comprehensive plan modification techniques using `kubectl-mtv` patching capabilities, enabling dynamic updates without recreating plans.

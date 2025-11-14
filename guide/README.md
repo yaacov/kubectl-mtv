@@ -4,8 +4,6 @@ title: kubectl-mtv Technical Guide
 permalink: /
 ---
 
-# kubectl-mtv Technical Guide
-
 Welcome to the technical guide for `kubectl-mtv` - the powerful command-line interface that transforms how you migrate virtual machines to Kubernetes.
 
 `kubectl-mtv` is a sophisticated CLI plugin that enables seamless migration of virtual machines from traditional virtualization platforms (VMware vSphere, Red Hat Virtualization, OpenStack, and more) directly to KubeVirt-enabled Kubernetes clusters. Built on top of the proven Forklift migration engine, it provides advanced features like SQL-like query capabilities, intelligent resource mapping, and AI-powered assistance to make complex migrations simple and reliable.

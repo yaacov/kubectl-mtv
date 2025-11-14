@@ -1,7 +1,6 @@
 ---
 layout: page
 title: "Chapter 14: Migration Hooks"
-render_with_liquid: false
 ---
 
 Migration hooks provide powerful custom automation capabilities that enable running custom code at specific points during the migration process. This chapter covers comprehensive hook development, deployment, and integration with migration workflows.

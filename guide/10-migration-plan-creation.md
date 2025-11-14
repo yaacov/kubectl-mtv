@@ -1,7 +1,6 @@
 ---
 layout: page
 title: "Chapter 10: Migration Plan Creation"
-render_with_liquid: false
 ---
 
 Migration plans are the core orchestration resources that define which VMs to migrate, how to map their resources, and what settings to apply during migration. This chapter covers comprehensive plan creation with all supported configuration options.

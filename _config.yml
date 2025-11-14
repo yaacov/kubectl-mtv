@@ -26,7 +26,6 @@ permalink: pretty
 defaults:
   - scope:
       path: "guide"
-      type: "pages"
     values:
       layout: "page"
   - scope:
@@ -45,6 +44,10 @@ kramdown:
   syntax_highlighter_opts:
     block:
       line_numbers: true
+
+# Include guide files for processing
+include:
+  - guide
 
 # Exclude from processing
 exclude:
