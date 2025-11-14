@@ -16,7 +16,7 @@ It is strongly recommended that Forklift, or the Migration Toolkit for Virtualiz
 
 ### 1. Download the VDDK SDK
 
-Download the [VMware Virtual Disk Development Kit (VDDK) tar.gz](https://developer.vmware.com/web/sdk/8.0/vddk) file from VMware.
+Download the [VMware Virtual Disk Development Kit (VDDK) tar.gz](https://developer.broadcom.com/sdks/vmware-virtual-disk-development-kit-vddk/latest) file from Broadcom.
 
 ### 2. Build the VDDK Image
 

@@ -131,15 +131,16 @@ kubectl mtv create provider openstack --type openstack \
 
 #### OVA Provider
 
-```bash
-# Create OVA provider
-kubectl mtv create provider ova --type ova \
-  -U nfs://nfs.example.com/ova-files
+**Note**: OVA providers only support NFS URLs in the format `nfs_server:nfs_path`.
 
-# OVA provider with CA certificate (for secure NFS/HTTPS)
+```bash
+# Create OVA provider (NFS only)
 kubectl mtv create provider ova --type ova \
-  -U https://fileserver.example.com/ova-files \
-  --cacert @/path/to/server-ca.crt
+  -U nfs.example.com:/ova-files
+
+# OVA provider with IP address
+kubectl mtv create provider ova --type ova \
+  -U 192.168.1.100:/exports/vm-images
 ```
 
 ### Provider Configuration Options
@@ -150,7 +151,7 @@ kubectl mtv create provider ova --type ova \
 | `vsphere` | `--type`, `-U`, `-u`, `-p` | `--vddk-init-image`, `--provider-insecure-skip-tls`, `--cacert` |
 | `ovirt` | `--type`, `-U`, `-u`, `-p` | `--cacert`, `--provider-insecure-skip-tls` |
 | `openstack` | `--type`, `-U`, `-u`, `-p` | `--provider-domain-name`, `--provider-project-name`, `--provider-region-name` |
-| `ova` | `--type`, `-U` | `--cacert` |
+| `ova` | `--type`, `-U` (NFS only) | None |
 
 **Note**: The `--cacert` flag accepts either certificate content directly or use `@filename` to load from file.
 
