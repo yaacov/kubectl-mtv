@@ -65,6 +65,7 @@ exclude:
   - pkg/
   - tests/
   - vendor/
+  - docs/
   - go.mod
   - go.sum
   - main.go

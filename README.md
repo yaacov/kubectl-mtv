@@ -20,13 +20,13 @@ kubectl krew install mtv
 # https://github.com/yaacov/kubectl-mtv/releases
 ```
 
-See [Installation Guide](docs/README-install.md) for more options.
+See [Installation Guide](guide/02-installation-and-prerequisites.md) for more options.
 
 ## MCP Support
 
 kubectl-mtv includes a built-in MCP (Model Context Protocol) server for AI agents that support MCP add‑ons, such as Cursor IDE and Claude Desktop.
 
-See [MCP Server Guide](docs/README_mcp_server.md) for detailed setup instructions and usage examples.
+See [MCP Server Guide](guide/19-model-context-protocol-mcp-server-integration.md) for detailed setup instructions and usage examples.
 
 ## Quick Start
 
@@ -81,7 +81,7 @@ kubectl mtv start plan migration-1
 kubectl mtv get plan --watch
 ```
 
-For a complete walkthrough, see the [Migration Demo Tutorial](docs/README_demo.md).
+For a complete walkthrough, see the [Quick Start Guide](guide/03-quick-start-first-migration-workflow.md).
 
 ## Inventory Management
 
@@ -99,7 +99,7 @@ kubectl mtv get inventory networks vsphere-01
 kubectl mtv get inventory storage vsphere-01
 ```
 
-See [Inventory Commands Tutorial](docs/README_inventory.md) for advanced queries and filtering.
+See [Inventory Management Guide](guide/07-inventory-management.md) for advanced queries and filtering.
 
 ## VDDK Support
 
@@ -117,7 +117,7 @@ kubectl mtv create provider vsphere-01 --type vsphere \
   --vddk-init-image quay.io/myorg/vddk:8.0.1
 ```
 
-See [VDDK Setup Guide](docs/README_vddk.md) for detailed instructions.
+See [VDDK Setup Guide](guide/06-vddk-image-creation-and-configuration.md) for detailed instructions.
 
 ## Features
 
@@ -130,19 +130,19 @@ See [VDDK Setup Guide](docs/README_vddk.md) for detailed instructions.
 
 ## Documentation
 
-- [Installation Guide](docs/README-install.md)
-- [Usage Guide](docs/README-usage.md)
-- [Migration Demo](docs/README_demo.md)
-- [MCP Server Guide](docs/README_mcp_server.md)
-- [Migration Hooks](docs/README_hooks.md)
-- [Inventory Queries](docs/README_inventory.md)
-- [Mapping Configuration](docs/README_mapping_pairs.md)
-- [Creating Mappings](docs/README_create_mappings.md)
-- [Patching Mappings](docs/README_patch_mappings.md)
-- [Patching Providers](docs/README_patch_providers.md)
-- [Patching Plans](docs/README_patch_plans.md)
-- [Creating Migration Hosts](docs/README_host_creation.md)
-- [Development Guide](docs/README-development.md)
+**[Complete Technical Guide](guide/)** - Comprehensive documentation covering all features and use cases
+
+### Quick Links
+
+- [Installation & Prerequisites](guide/02-installation-and-prerequisites.md)
+- [Quick Start Tutorial](guide/03-quick-start-first-migration-workflow.md)
+- [Provider Management](guide/04-provider-management.md)
+- [Inventory Management](guide/07-inventory-management.md)
+- [Mapping Management](guide/09-mapping-management.md)
+- [Migration Plan Creation](guide/10-migration-plan-creation.md)
+- [Migration Hooks](guide/14-migration-hooks.md)
+- [MCP Server Integration](guide/19-model-context-protocol-mcp-server-integration.md)
+- [Command Reference](guide/21-command-reference.md)
 
 ## Environment Variables
 
