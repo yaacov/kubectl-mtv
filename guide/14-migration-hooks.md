@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Chapter 14: Migration Hooks"
-liquid: false
+render_with_liquid: false
 ---
 
 # Chapter 14: Migration Hooks

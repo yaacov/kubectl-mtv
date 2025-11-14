@@ -1,7 +1,7 @@
 ---
 layout: page
 title: "Chapter 15: Advanced Plan Patching"
-liquid: false
+render_with_liquid: false
 ---
 
 # Chapter 15: Advanced Plan Patching
