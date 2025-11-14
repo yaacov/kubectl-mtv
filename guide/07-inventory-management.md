@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 7: Inventory Management"
+---
+
 # Chapter 7: Inventory Management
 
 Inventory management is a core feature of kubectl-mtv that allows you to discover, explore, and query resources from various virtualization providers. This chapter covers comprehensive inventory operations for migration planning and resource discovery.

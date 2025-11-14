@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 21: Command Reference"
+---
+
 # Chapter 21: Command Reference
 
 This chapter provides a comprehensive reference for all `kubectl-mtv` commands, subcommands, and their flags. Commands are organized by functionality to help you quickly find the right tool for your migration tasks.

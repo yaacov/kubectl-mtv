@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 8: Query Language Reference and Advanced Filtering"
+---
+
 # Chapter 8: Query Language Reference and Advanced Filtering
 
 kubectl-mtv integrates the powerful Tree Search Language (TSL), developed by Yaacov Zamir, which provides SQL-like filtering capabilities for inventory resources. This chapter provides a complete reference for TSL syntax and advanced query techniques.

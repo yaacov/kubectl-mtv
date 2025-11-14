@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 5: Migration Host Management (vSphere Specific)"
+---
+
 # Chapter 5: Migration Host Management (vSphere Specific)
 
 Migration hosts enable direct data transfer from ESXi hosts, bypassing vCenter for improved performance and control. This chapter covers the complete lifecycle management of migration hosts, which are exclusive to vSphere environments.

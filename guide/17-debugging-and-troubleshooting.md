@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 17: Debugging and Troubleshooting"
+---
+
 # Chapter 17: Debugging and Troubleshooting
 
 Effective troubleshooting is essential for successful VM migrations. This chapter covers comprehensive debugging techniques, common issues and their solutions, monitoring strategies, and systematic problem resolution approaches verified from the kubectl-mtv implementation and documentation.

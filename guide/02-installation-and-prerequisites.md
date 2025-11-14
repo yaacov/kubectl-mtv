@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 2: Installation and Prerequisites"
+---
+
 # Chapter 2: Installation and Prerequisites
 
 ## Prerequisites

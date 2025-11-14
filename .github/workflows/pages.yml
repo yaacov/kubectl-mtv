@@ -8,7 +8,6 @@ on:
       - 'guide/**'
       - '.github/workflows/pages.yml'
       - '_config.yml'
-      - 'index.md'
       - 'Gemfile'
 
   # Allows you to run this workflow manually from the Actions tab

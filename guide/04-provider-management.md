@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 4: Provider Management"
+---
+
 # Chapter 4: Provider Management
 
 Providers are the core resources in kubectl-mtv that represent source and target virtualization platforms. This chapter covers complete provider lifecycle management including creation, configuration, patching, and deletion.

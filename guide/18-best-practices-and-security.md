@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 18: Best Practices and Security"
+---
+
 # Chapter 18: Best Practices and Security
 
 Implementing secure and efficient migration practices is essential for production environments. This chapter covers comprehensive best practices for plan management, provider security, query optimization, and secure operations derived from real-world deployment experience and security requirements.

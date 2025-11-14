@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 6: VDDK Image Creation and Configuration"
+---
+
 # Chapter 6: VDDK Image Creation and Configuration
 
 VMware Virtual Disk Development Kit (VDDK) provides optimized disk transfer capabilities for VMware vSphere migrations. This chapter covers creating VDDK container images and configuring them for maximum performance.

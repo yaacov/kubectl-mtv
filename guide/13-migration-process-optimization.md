@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 13: Migration Process Optimization (Convertor Pod Scheduling)"
+---
+
 # Chapter 13: Migration Process Optimization (Convertor Pod Scheduling)
 
 Migration process optimization focuses on optimizing the temporary infrastructure used during VM conversion and migration, particularly the virt-v2v convertor pods. This chapter covers performance tuning, resource management, and strategic placement of migration workloads.

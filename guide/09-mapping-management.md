@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 9: Mapping Management"
+---
+
 # Chapter 9: Mapping Management
 
 Mappings define the critical relationships between source and target resources, ensuring VMs are migrated to appropriate networks and storage systems. This chapter covers comprehensive mapping management for both network and storage resources.

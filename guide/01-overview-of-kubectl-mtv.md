@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 1: Overview of kubectl-mtv"
+---
+
 # Chapter 1: Overview of kubectl-mtv
 
 ## What is kubectl-mtv?

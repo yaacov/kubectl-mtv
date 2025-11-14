@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 20: Integration with KubeVirt Tools"
+---
+
 # Chapter 20: Integration with KubeVirt Tools
 
 After successful VM migration with `kubectl-mtv`, the migrated VMs become full KubeVirt virtual machines that can be managed using the broader KubeVirt ecosystem. This chapter covers the seamless integration between `kubectl-mtv` and `virtctl`, enabling complete VM lifecycle management from migration through ongoing operations.

@@ -32,7 +32,8 @@ defaults:
   - scope:
       path: "guide/README.md"
     values:
-      layout: "page"
+      layout: "home"
+      permalink: /
 
 # Navigation
 header_pages:

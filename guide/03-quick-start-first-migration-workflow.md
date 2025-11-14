@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 3: Quick Start - First Migration Workflow"
+---
+
 # Chapter 3: Quick Start - First Migration Workflow
 
 This chapter provides a complete step-by-step walkthrough of your first migration using `kubectl-mtv`. We'll migrate a VM from VMware vSphere to KubeVirt, covering all essential steps from initial setup to completion monitoring.

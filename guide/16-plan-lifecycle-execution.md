@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 16: Plan Lifecycle Execution"
+---
+
 # Chapter 16: Plan Lifecycle Execution
 
 Migration plans follow a defined lifecycle from creation through completion. This chapter covers the complete execution workflow, including starting migrations, managing warm migration cutover, canceling workloads, monitoring progress, and handling plan archival. All command examples are verified against the implementation.

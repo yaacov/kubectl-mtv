@@ -1,3 +1,8 @@
+---
+layout: page
+title: "Chapter 12: Target VM Placement (Operational Lifetime)"
+---
+
 # Chapter 12: Target VM Placement (Operational Lifetime)
 
 Target VM placement controls where and how VMs run in the target Kubernetes cluster after migration. This chapter covers comprehensive VM scheduling, affinity rules, and operational configuration for the target environment.
