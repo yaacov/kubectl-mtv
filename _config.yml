@@ -18,6 +18,12 @@ plugins:
   - jekyll-feed
   - jekyll-sitemap
   - jekyll-seo-tag
+  - jekyll-relative-links
+
+# Plugin configurations
+relative_links:
+  enabled: true
+  collections: false
 
 # Default layout for guide pages
 defaults:
@@ -65,4 +71,3 @@ exclude:
   - Makefile
   - kubectl-mtv
   - kubectl-mtv.spec
-  - LICENSE

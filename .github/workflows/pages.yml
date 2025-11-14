@@ -9,6 +9,7 @@ on:
       - '.github/workflows/pages.yml'
       - '_config.yml'
       - 'index.md'
+      - 'Gemfile'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -43,25 +44,10 @@ jobs:
         id: pages
         uses: actions/configure-pages@v4
         
-      - name: Install Jekyll and dependencies
-        run: |
-          gem install jekyll bundler
-          
-      - name: Create Gemfile if it doesn't exist
-        run: |
-          if [ ! -f Gemfile ]; then
-            cat > Gemfile << EOF
-          source "https://rubygems.org"
-          gem "jekyll", "~> 4.3.0"
-          gem "minima", "~> 2.5"
-          gem "jekyll-feed", "~> 0.12"
-          gem "jekyll-sitemap"
-          gem "jekyll-seo-tag"
-          EOF
-          fi
-          
       - name: Install gems
-        run: bundle install
+        run: |
+          gem install bundler
+          bundle install
         
       - name: Build with Jekyll
         run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
