@@ -583,5 +583,5 @@ After successful installation and verification:
 
 ---
 
-*Previous: [Chapter 1: Overview of kubectl-mtv](/01-overview-of-kubectl-mtv)*  
-*Next: [Chapter 3: Quick Start - First Migration Workflow](/03-quick-start-first-migration-workflow)*
+*Previous: [Chapter 1: Overview of kubectl-mtv](/guide/01-overview-of-kubectl-mtv)*  
+*Next: [Chapter 3: Quick Start - First Migration Workflow](/guide/03-quick-start-first-migration-workflow)*

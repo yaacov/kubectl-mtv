@@ -594,5 +594,5 @@ After mastering plan patching techniques:
 
 ---
 
-*Previous: [Chapter 14: Migration Hooks](/14-migration-hooks)*  
-*Next: [Chapter 16: Plan Lifecycle Execution](/16-plan-lifecycle-execution)*
+*Previous: [Chapter 14: Migration Hooks](/guide/14-migration-hooks)*  
+*Next: [Chapter 16: Plan Lifecycle Execution](/guide/16-plan-lifecycle-execution)*

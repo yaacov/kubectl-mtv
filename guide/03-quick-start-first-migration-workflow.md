@@ -551,5 +551,5 @@ kubectl logs -n konveyor-forklift deployment/forklift-controller
 
 ---
 
-*Previous: [Chapter 2: Installation and Prerequisites](/02-installation-and-prerequisites)*  
-*Next: [Chapter 4: Provider Management](/04-provider-management)*
+*Previous: [Chapter 2: Installation and Prerequisites](/guide/02-installation-and-prerequisites)*  
+*Next: [Chapter 4: Provider Management](/guide/04-provider-management)*

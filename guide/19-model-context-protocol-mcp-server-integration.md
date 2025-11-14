@@ -703,5 +703,5 @@ After mastering MCP integration:
 
 ---
 
-*Previous: [Chapter 18: Best Practices and Security](/18-best-practices-and-security)*  
-*Next: [Chapter 20: Integration with KubeVirt Tools](/20-integration-with-kubevirt-tools)*
+*Previous: [Chapter 18: Best Practices and Security](/guide/18-best-practices-and-security)*  
+*Next: [Chapter 20: Integration with KubeVirt Tools](/guide/20-integration-with-kubevirt-tools)*

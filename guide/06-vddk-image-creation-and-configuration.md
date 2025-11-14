@@ -700,5 +700,5 @@ After configuring VDDK:
 
 ---
 
-*Previous: [Chapter 5: Migration Host Management](/05-migration-host-management)*  
-*Next: [Chapter 7: Inventory Management](/07-inventory-management)*
+*Previous: [Chapter 5: Migration Host Management](/guide/05-migration-host-management)*  
+*Next: [Chapter 7: Inventory Management](/guide/07-inventory-management)*

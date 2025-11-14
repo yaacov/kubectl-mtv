@@ -697,5 +697,5 @@ After mastering TSL queries:
 
 ---
 
-*Previous: [Chapter 7: Inventory Management](/07-inventory-management)*  
-*Next: [Chapter 9: Mapping Management](/09-mapping-management)*
+*Previous: [Chapter 7: Inventory Management](/guide/07-inventory-management)*  
+*Next: [Chapter 9: Mapping Management](/guide/09-mapping-management)*

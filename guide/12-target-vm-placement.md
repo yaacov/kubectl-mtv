@@ -640,5 +640,5 @@ After mastering target VM placement:
 
 ---
 
-*Previous: [Chapter 11: Customizing Individual VMs (PlanVMS Format)](/11-customizing-individual-vms-planvms-format)*  
-*Next: [Chapter 13: Migration Process Optimization](/13-migration-process-optimization)*
+*Previous: [Chapter 11: Customizing Individual VMs (PlanVMS Format)](/guide/11-customizing-individual-vms-planvms-format)*  
+*Next: [Chapter 13: Migration Process Optimization](/guide/13-migration-process-optimization)*
