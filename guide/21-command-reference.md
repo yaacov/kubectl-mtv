@@ -300,7 +300,7 @@ kubectl mtv create plan <name> [flags]
 - `--description`: Plan description
 - `--target-namespace`: Target namespace for migrated VMs
 - `--transfer-network`: Network attachment definition for disk transfer
-- `--migration-type, -m`: Migration type (cold, warm, live)
+- `--migration-type, -m`: Migration type (cold, warm, live, conversion)
 - `--warm`: Enable warm migration (legacy flag)
 
 **Storage Enhancement Flags:**
@@ -861,4 +861,3 @@ kubectl mtv get inventory vm vsphere-source -v=3
 ---
 
 *Previous: [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools.md)*
-*Next: [Table of Contents](toc.md)*
