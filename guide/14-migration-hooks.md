@@ -4,8 +4,6 @@ title: "Chapter 14: Migration Hooks"
 render_with_liquid: false
 ---
 
-# Chapter 14: Migration Hooks
-
 Migration hooks provide powerful custom automation capabilities that enable running custom code at specific points during the migration process. This chapter covers comprehensive hook development, deployment, and integration with migration workflows.
 
 ## Overview: Enabling Custom Automation
@@ -87,7 +85,7 @@ kubectl mtv create hook simple-notification \
   tasks:
   - name: Send notification
     debug:
-      msg: "Migration hook executed for {{ workload.vm.name }}"
+      msg: "Migration hook executed for {% raw %}{{ workload.vm.name }}{% endraw %}"
 EOF
 )"
 ```
@@ -112,8 +110,8 @@ cat > database-backup.yml << 'EOF'
   
   - name: Create database backup
     shell: |
-      mysqldump -h {{ workload.vm.ipaddress }} -u backup_user \
-      --all-databases > /backup/{{ workload.vm.name }}-$(date +%Y%m%d).sql
+      mysqldump -h {% raw %}{{ workload.vm.ipaddress }}{% endraw %} -u backup_user \
+      --all-databases > /backup/{% raw %}{{ workload.vm.name }}{% endraw %}-$(date +%Y%m%d).sql
     when: workload.vm.name is match('.*database.*')
 EOF
 
@@ -158,39 +156,39 @@ kubectl mtv create hook advanced-validation \
 
   - name: Create backup directory
     file:
-      path: /backup/{{ plan.metadata.name }}
+      path: /backup/{% raw %}{{ plan.metadata.name }}{% endraw %}
       state: directory
       mode: '0755'
 
   - name: Check if VM is database server
     set_fact:
-      is_database: "{{ workload.vm.name | regex_search('(database|db|sql|mysql|postgres)', ignorecase=True) | bool }}"
+      is_database: "{% raw %}{{ workload.vm.name | regex_search('(database|db|sql|mysql|postgres)', ignorecase=True) | bool }}{% endraw %}"
 
   - name: Create database backup
     shell: |
-      BACKUP_FILE="/backup/{{ plan.metadata.name }}/{{ workload.vm.name }}-backup-$(date +%Y%m%d_%H%M%S).sql"
-      mysqldump -h {{ workload.vm.ipaddress }} -u {{ backup_user }} -p{{ backup_password }} \
+      BACKUP_FILE="/backup/{% raw %}{{ plan.metadata.name }}{% endraw %}/{% raw %}{{ workload.vm.name }}{% endraw %}-backup-$(date +%Y%m%d_%H%M%S).sql"
+      mysqldump -h {% raw %}{{ workload.vm.ipaddress }}{% endraw %} -u {% raw %}{{ backup_user }}{% endraw %} -p{% raw %}{{ backup_password }}{% endraw %} \
         --single-transaction --routines --triggers --all-databases > "${BACKUP_FILE}"
       echo "Backup created: ${BACKUP_FILE}"
     environment:
-      backup_user: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='Secret', namespace='migration', resource_name='db-credentials')['data']['username'] | b64decode }}"
-      backup_password: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='Secret', namespace='migration', resource_name='db-credentials')['data']['password'] | b64decode }}"
+      backup_user: "{% raw %}{{ lookup('kubernetes.core.k8s', api_version='v1', kind='Secret', namespace='migration', resource_name='db-credentials')['data']['username'] | b64decode }}{% endraw %}"
+      backup_password: "{% raw %}{{ lookup('kubernetes.core.k8s', api_version='v1', kind='Secret', namespace='migration', resource_name='db-credentials')['data']['password'] | b64decode }}{% endraw %}"
     when: is_database
 
   - name: Store backup location in ConfigMap
     kubernetes.core.k8s:
       api_version: v1
       kind: ConfigMap
-      name: "{{ plan.metadata.name }}-backups"
+      name: "{% raw %}{{ plan.metadata.name }}{% endraw %}-backups"
       namespace: migration-backups
       definition:
         data:
-          "{{ workload.vm.name }}": "/backup/{{ plan.metadata.name }}/{{ workload.vm.name }}-backup-{{ ansible_date_time.epoch }}.sql"
+          "{% raw %}{{ workload.vm.name }}{% endraw %}": "/backup/{% raw %}{{ plan.metadata.name }}{% endraw %}/{% raw %}{{ workload.vm.name }}{% endraw %}-backup-{% raw %}{{ ansible_date_time.epoch }}{% endraw %}.sql"
     when: is_database
 
   - name: Log backup completion
     debug:
-      msg: "Database backup completed for {{ workload.vm.name }}"
+      msg: "Database backup completed for {% raw %}{{ workload.vm.name }}{% endraw %}"
     when: is_database
 ```
 
@@ -221,8 +219,8 @@ kubectl mtv create hook database-backup-pre \
   tasks:
   - name: Load migration contexts
     include_vars:
-      file: "{{ item }}"
-      name: "{{ item | basename | regex_replace('\\.yml$', '') }}"
+      file: "{% raw %}{{ item }}{% endraw %}"
+      name: "{% raw %}{{ item | basename | regex_replace('\\.yml$', '') }}{% endraw %}"
     loop:
       - plan.yml
       - workload.yml
@@ -231,8 +229,8 @@ kubectl mtv create hook database-backup-pre \
     kubernetes.core.k8s_info:
       api_version: kubevirt.io/v1
       kind: VirtualMachine
-      name: "{{ workload.vm.name }}"
-      namespace: "{{ plan.spec.targetNamespace | default('default') }}"
+      name: "{% raw %}{{ workload.vm.name }}{% endraw %}"
+      namespace: "{% raw %}{{ plan.spec.targetNamespace | default('default') }}{% endraw %}"
       wait: true
       wait_condition:
         type: Ready
@@ -241,7 +239,7 @@ kubectl mtv create hook database-backup-pre \
 
   - name: Check application endpoints
     uri:
-      url: "http://{{ workload.vm.ipaddress }}:{{ item.port }}{{ item.path }}"
+      url: "http://{% raw %}{{ workload.vm.ipaddress }}{% endraw %}:{% raw %}{{ item.port }}{% endraw %}{% raw %}{{ item.path }}{% endraw %}"
       method: GET
       status_code: 200
       timeout: 30
@@ -256,9 +254,9 @@ kubectl mtv create hook database-backup-pre \
     assert:
       that:
         - item.status == 200
-      fail_msg: "Health check failed for {{ item.url }}"
-      success_msg: "Health check passed for {{ item.url }}"
-    loop: "{{ health_checks.results }}"
+      fail_msg: "Health check failed for {% raw %}{{ item.url }}{% endraw %}"
+      success_msg: "Health check passed for {% raw %}{{ item.url }}{% endraw %}"
+    loop: "{% raw %}{{ health_checks.results }}{% endraw %}"
     when: item.status is defined
 
   - name: Update monitoring configuration
@@ -269,24 +267,24 @@ kubectl mtv create hook database-backup-pre \
       namespace: monitoring
       definition:
         data:
-          "{{ workload.vm.name }}": |
-            - targets: ['{{ workload.vm.ipaddress }}:9090']
+          "{% raw %}{{ workload.vm.name }}{% endraw %}": |
+            - targets: ['{% raw %}{{ workload.vm.ipaddress }}{% endraw %}:9090']
               labels:
-                instance: '{{ workload.vm.name }}'
-                environment: '{{ plan.metadata.labels.environment | default("production") }}'
+                instance: '{% raw %}{{ workload.vm.name }}{% endraw %}'
+                environment: '{% raw %}{{ plan.metadata.labels.environment | default("production") }}{% endraw %}'
 
   - name: Send notification
     uri:
-      url: "{{ notification_webhook }}"
+      url: "{% raw %}{{ notification_webhook }}{% endraw %}"
       method: POST
       body_format: json
       body:
-        text: "Migration completed for {{ workload.vm.name }} - Health checks passed"
-        vm: "{{ workload.vm.name }}"
-        plan: "{{ plan.metadata.name }}"
+        text: "Migration completed for {% raw %}{{ workload.vm.name }}{% endraw %} - Health checks passed"
+        vm: "{% raw %}{{ workload.vm.name }}{% endraw %}"
+        plan: "{% raw %}{{ plan.metadata.name }}{% endraw %}"
         status: "healthy"
     vars:
-      notification_webhook: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='Secret', namespace='migration', resource_name='notification-config')['data']['webhook_url'] | b64decode }}"
+      notification_webhook: "{% raw %}{{ lookup('kubernetes.core.k8s', api_version='v1', kind='Secret', namespace='migration', resource_name='notification-config')['data']['webhook_url'] | b64decode }}{% endraw %}"
 ```
 
 #### Create the Hook
@@ -322,9 +320,9 @@ kubectl mtv create hook health-check-post \
     script: |
       #!/bin/bash
       
-      VM_NAME="{{ workload.vm.name }}"
-      VM_IP="{{ workload.vm.ipaddress }}"
-      PLAN_NAME="{{ plan.metadata.name | default('unknown') }}"
+      VM_NAME="{% raw %}{{ workload.vm.name }}{% endraw %}"
+      VM_IP="{% raw %}{{ workload.vm.ipaddress }}{% endraw %}"
+      PLAN_NAME="{% raw %}{{ plan.metadata.name | default('unknown') }}{% endraw %}"
       
       echo "Processing VM: $VM_NAME (IP: $VM_IP) in plan: $PLAN_NAME"
       
@@ -349,7 +347,7 @@ kubectl mtv create hook health-check-post \
         -H "Authorization: Bearer $MONITORING_TOKEN" \
         -d "host=$VM_IP&name=$VM_NAME&plan=$PLAN_NAME"
     environment:
-      MONITORING_TOKEN: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='Secret', namespace='migration', resource_name='monitoring-token')['data']['token'] | b64decode }}"
+      MONITORING_TOKEN: "{% raw %}{{ lookup('kubernetes.core.k8s', api_version='v1', kind='Secret', namespace='migration', resource_name='monitoring-token')['data']['token'] | b64decode }}{% endraw %}"
     register: script_result
 
   - name: Log script execution results
@@ -548,7 +546,7 @@ kubectl mtv create hook custom-database-hook \
           
       - name: Log failure details
         debug:
-          msg: "Hook failed: {{ ansible_failed_result.msg }}"
+          msg: "Hook failed: {% raw %}{{ ansible_failed_result.msg }}{% endraw %}"
           
       - name: Send failure notification
         # Notification logic here
@@ -597,7 +595,7 @@ kubectl mtv create hook custom-database-hook \
     
   - name: Wait for background task
     async_status:
-      jid: "{{ operation_result.ansible_job_id }}"
+      jid: "{% raw %}{{ operation_result.ansible_job_id }}{% endraw %}"
     register: job_result
     until: job_result.finished
     retries: 60
@@ -613,7 +611,7 @@ kubectl mtv create hook custom-database-hook \
 - name: Enterprise Database Migration Hooks
   hosts: localhost
   vars:
-    notification_webhook: "{{ lookup('env', 'NOTIFICATION_WEBHOOK') }}"
+    notification_webhook: "{% raw %}{{ lookup('env', 'NOTIFICATION_WEBHOOK') }}{% endraw %}"
     
   tasks:
   # Pre-migration tasks
@@ -787,12 +785,12 @@ ansible-playbook -i localhost, playbook.yml
 
 After mastering migration hooks:
 
-1. **Advanced Plan Management**: Learn dynamic plan modification in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching.md)
-2. **Execute Migrations**: Manage complete migration lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution.md)
-3. **Troubleshooting**: Master debugging techniques in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting.md)
-4. **Best Practices**: Learn operational excellence in [Chapter 18: Best Practices and Security](18-best-practices-and-security.md)
+1. **Advanced Plan Management**: Learn dynamic plan modification in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)
+2. **Execute Migrations**: Manage complete migration lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)
+3. **Troubleshooting**: Master debugging techniques in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting)
+4. **Best Practices**: Learn operational excellence in [Chapter 18: Best Practices and Security](18-best-practices-and-security)
 
 ---
 
-*Previous: [Chapter 13: Migration Process Optimization](13-migration-process-optimization.md)*  
-*Next: [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching.md)*
+*Previous: [Chapter 13: Migration Process Optimization](13-migration-process-optimization)*  
+*Next: [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)*

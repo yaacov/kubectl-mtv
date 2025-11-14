@@ -3,8 +3,6 @@ layout: page
 title: "Chapter 8: Query Language Reference and Advanced Filtering"
 ---
 
-# Chapter 8: Query Language Reference and Advanced Filtering
-
 kubectl-mtv integrates the powerful Tree Search Language (TSL), developed by Yaacov Zamir, which provides SQL-like filtering capabilities for inventory resources. This chapter provides a complete reference for TSL syntax and advanced query techniques.
 
 ## Introduction to Tree Search Language (TSL)
@@ -692,12 +690,12 @@ TSL provides a powerful, SQL-like query interface for kubectl-mtv inventory oper
 
 After mastering TSL queries:
 
-1. **Apply to Mappings**: Use queries for mapping creation in [Chapter 9: Mapping Management](09-mapping-management.md)
-2. **Plan Creation**: Leverage queries for plan development in [Chapter 10: Migration Plan Creation](10-migration-plan-creation.md)
-3. **VM Customization**: Use query results for VM customization in [Chapter 11: Customizing Individual VMs](11-customizing-individual-vms-planvms-format.md)
-4. **Optimization**: Apply query insights in [Chapter 13: Migration Process Optimization](13-migration-process-optimization.md)
+1. **Apply to Mappings**: Use queries for mapping creation in [Chapter 9: Mapping Management](09-mapping-management)
+2. **Plan Creation**: Leverage queries for plan development in [Chapter 10: Migration Plan Creation](10-migration-plan-creation)
+3. **VM Customization**: Use query results for VM customization in [Chapter 11: Customizing Individual VMs](11-customizing-individual-vms-planvms-format)
+4. **Optimization**: Apply query insights in [Chapter 13: Migration Process Optimization](13-migration-process-optimization)
 
 ---
 
-*Previous: [Chapter 7: Inventory Management](07-inventory-management.md)*  
-*Next: [Chapter 9: Mapping Management](09-mapping-management.md)*
+*Previous: [Chapter 7: Inventory Management](07-inventory-management)*  
+*Next: [Chapter 9: Mapping Management](09-mapping-management)*

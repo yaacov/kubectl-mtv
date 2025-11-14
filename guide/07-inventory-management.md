@@ -3,8 +3,6 @@ layout: page
 title: "Chapter 7: Inventory Management"
 ---
 
-# Chapter 7: Inventory Management
-
 Inventory management is a core feature of kubectl-mtv that allows you to discover, explore, and query resources from various virtualization providers. This chapter covers comprehensive inventory operations for migration planning and resource discovery.
 
 ## Overview of Resources Available for Querying
@@ -652,12 +650,12 @@ kubectl mtv get inventory datastores vsphere-prod \
 
 After mastering inventory management:
 
-1. **Learn Query Language**: Master advanced filtering in [Chapter 8: Query Language Reference and Advanced Filtering](08-query-language-reference-and-advanced-filtering.md)
-2. **Create Mappings**: Define resource mappings in [Chapter 9: Mapping Management](09-mapping-management.md)
-3. **Plan Migrations**: Use inventory data for planning in [Chapter 10: Migration Plan Creation](10-migration-plan-creation.md)
-4. **Optimize Performance**: Apply inventory insights in [Chapter 13: Migration Process Optimization](13-migration-process-optimization.md)
+1. **Learn Query Language**: Master advanced filtering in [Chapter 8: Query Language Reference and Advanced Filtering](08-query-language-reference-and-advanced-filtering)
+2. **Create Mappings**: Define resource mappings in [Chapter 9: Mapping Management](09-mapping-management)
+3. **Plan Migrations**: Use inventory data for planning in [Chapter 10: Migration Plan Creation](10-migration-plan-creation)
+4. **Optimize Performance**: Apply inventory insights in [Chapter 13: Migration Process Optimization](13-migration-process-optimization)
 
 ---
 
-*Previous: [Chapter 6: VDDK Image Creation and Configuration](06-vddk-image-creation-and-configuration.md)*  
-*Next: [Chapter 8: Query Language Reference and Advanced Filtering](08-query-language-reference-and-advanced-filtering.md)*
+*Previous: [Chapter 6: VDDK Image Creation and Configuration](06-vddk-image-creation-and-configuration)*  
+*Next: [Chapter 8: Query Language Reference and Advanced Filtering](08-query-language-reference-and-advanced-filtering)*

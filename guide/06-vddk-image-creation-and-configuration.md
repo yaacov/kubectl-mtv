@@ -3,8 +3,6 @@ layout: page
 title: "Chapter 6: VDDK Image Creation and Configuration"
 ---
 
-# Chapter 6: VDDK Image Creation and Configuration
-
 VMware Virtual Disk Development Kit (VDDK) provides optimized disk transfer capabilities for VMware vSphere migrations. This chapter covers creating VDDK container images and configuring them for maximum performance.
 
 For background information on VDDK and its integration with Forklift, see the [official VDDK documentation](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#creating-a-vddk-image).
@@ -695,12 +693,12 @@ podman run --rm quay.io/company/vddk:8.0.1 \
 
 After configuring VDDK:
 
-1. **Explore Inventory**: Discover VMs and resources in [Chapter 7: Inventory Management](07-inventory-management.md)
-2. **Create Mappings**: Configure resource mappings in [Chapter 9: Mapping Management](09-mapping-management.md)
-3. **Optimize Performance**: Learn advanced techniques in [Chapter 13: Migration Process Optimization](13-migration-process-optimization.md)
-4. **Plan Migrations**: Create optimized plans in [Chapter 10: Migration Plan Creation](10-migration-plan-creation.md)
+1. **Explore Inventory**: Discover VMs and resources in [Chapter 7: Inventory Management](07-inventory-management)
+2. **Create Mappings**: Configure resource mappings in [Chapter 9: Mapping Management](09-mapping-management)
+3. **Optimize Performance**: Learn advanced techniques in [Chapter 13: Migration Process Optimization](13-migration-process-optimization)
+4. **Plan Migrations**: Create optimized plans in [Chapter 10: Migration Plan Creation](10-migration-plan-creation)
 
 ---
 
-*Previous: [Chapter 5: Migration Host Management](05-migration-host-management.md)*  
-*Next: [Chapter 7: Inventory Management](07-inventory-management.md)*
+*Previous: [Chapter 5: Migration Host Management](05-migration-host-management)*  
+*Next: [Chapter 7: Inventory Management](07-inventory-management)*

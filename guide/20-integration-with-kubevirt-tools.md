@@ -3,8 +3,6 @@ layout: page
 title: "Chapter 20: Integration with KubeVirt Tools"
 ---
 
-# Chapter 20: Integration with KubeVirt Tools
-
 After successful VM migration with `kubectl-mtv`, the migrated VMs become full KubeVirt virtual machines that can be managed using the broader KubeVirt ecosystem. This chapter covers the seamless integration between `kubectl-mtv` and `virtctl`, enabling complete VM lifecycle management from migration through ongoing operations.
 
 ## Overview: Relationship between kubectl-mtv and virtctl
@@ -786,5 +784,5 @@ This complete toolchain enables organizations to migrate from traditional virtua
 
 ---
 
-*Previous: [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration.md)*  
-*Next: [Chapter 21: Command Reference](21-command-reference.md)*
+*Previous: [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration)*  
+*Next: [Chapter 21: Command Reference](21-command-reference)*

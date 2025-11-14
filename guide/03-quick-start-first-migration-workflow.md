@@ -3,15 +3,13 @@ layout: page
 title: "Chapter 3: Quick Start - First Migration Workflow"
 ---
 
-# Chapter 3: Quick Start - First Migration Workflow
-
 This chapter provides a complete step-by-step walkthrough of your first migration using `kubectl-mtv`. We'll migrate a VM from VMware vSphere to KubeVirt, covering all essential steps from initial setup to completion monitoring.
 
 ## Prerequisites
 
 Before starting this workflow, ensure you have:
 
-- `kubectl-mtv` installed and working (see [Chapter 2](02-installation-and-prerequisites.md))
+- `kubectl-mtv` installed and working (see [Chapter 2](02-installation-and-prerequisites))
 - Access to a Kubernetes cluster with Forklift/MTV installed
 - Connection to a source virtualization platform (vSphere, oVirt, OpenStack, or OVA)
 - Appropriate RBAC permissions
@@ -516,11 +514,11 @@ kubectl mtv create plan memory-migration \
 
 After completing your first migration:
 
-1. **Explore Advanced Features**: Learn about [Provider Management](04-provider-management.md) and [VDDK Optimization](06-vddk-image-creation-and-configuration.md)
-2. **Master Query Language**: Dive into [Advanced Filtering](08-query-language-reference-and-advanced-filtering.md)
-3. **Optimize Performance**: Study [Migration Process Optimization](13-migration-process-optimization.md)
-4. **Add Automation**: Implement [Migration Hooks](14-migration-hooks.md)
-5. **Scale Up**: Plan larger migrations with [Best Practices](18-best-practices-and-security.md)
+1. **Explore Advanced Features**: Learn about [Provider Management](04-provider-management) and [VDDK Optimization](06-vddk-image-creation-and-configuration)
+2. **Master Query Language**: Dive into [Advanced Filtering](08-query-language-reference-and-advanced-filtering)
+3. **Optimize Performance**: Study [Migration Process Optimization](13-migration-process-optimization)
+4. **Add Automation**: Implement [Migration Hooks](14-migration-hooks)
+5. **Scale Up**: Plan larger migrations with [Best Practices](18-best-practices-and-security)
 
 ## Troubleshooting Quick Reference
 
@@ -553,5 +551,5 @@ kubectl logs -n konveyor-forklift deployment/forklift-controller
 
 ---
 
-*Previous: [Chapter 2: Installation and Prerequisites](02-installation-and-prerequisites.md)*  
-*Next: [Chapter 4: Provider Management](04-provider-management.md)*
+*Previous: [Chapter 2: Installation and Prerequisites](02-installation-and-prerequisites)*  
+*Next: [Chapter 4: Provider Management](04-provider-management)*

@@ -3,8 +3,6 @@ layout: page
 title: "Chapter 16: Plan Lifecycle Execution"
 ---
 
-# Chapter 16: Plan Lifecycle Execution
-
 Migration plans follow a defined lifecycle from creation through completion. This chapter covers the complete execution workflow, including starting migrations, managing warm migration cutover, canceling workloads, monitoring progress, and handling plan archival. All command examples are verified against the implementation.
 
 ## Overview: Migration Plan States and Lifecycle
@@ -689,12 +687,12 @@ kubectl patch plan problem-plan --type='merge' -p='{"spec":{"vms":[]}}'
 
 After mastering plan lifecycle execution:
 
-1. **Troubleshooting**: Learn to debug migration issues in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting.md)
-2. **Best Practices**: Master operational excellence in [Chapter 18: Best Practices and Security](18-best-practices-and-security.md)
-3. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration.md)
-4. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools.md)
+1. **Troubleshooting**: Learn to debug migration issues in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting)
+2. **Best Practices**: Master operational excellence in [Chapter 18: Best Practices and Security](18-best-practices-and-security)
+3. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration)
+4. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools)
 
 ---
 
-*Previous: [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching.md)*  
-*Next: [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting.md)*
+*Previous: [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)*  
+*Next: [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting)*

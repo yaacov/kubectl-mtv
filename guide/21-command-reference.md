@@ -3,8 +3,6 @@ layout: page
 title: "Chapter 21: Command Reference"
 ---
 
-# Chapter 21: Command Reference
-
 This chapter provides a comprehensive reference for all `kubectl-mtv` commands, subcommands, and their flags. Commands are organized by functionality to help you quickly find the right tool for your migration tasks.
 
 ## Global Flags
@@ -865,4 +863,4 @@ kubectl mtv get inventory vm vsphere-source -v=3
 
 ---
 
-*Previous: [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools.md)*
+*Previous: [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools)*

@@ -3,8 +3,6 @@ layout: page
 title: "Chapter 13: Migration Process Optimization (Convertor Pod Scheduling)"
 ---
 
-# Chapter 13: Migration Process Optimization (Convertor Pod Scheduling)
-
 Migration process optimization focuses on optimizing the temporary infrastructure used during VM conversion and migration, particularly the virt-v2v convertor pods. This chapter covers performance tuning, resource management, and strategic placement of migration workloads.
 
 ## Overview: Optimizing Temporary virt-v2v Convertor Pods
@@ -681,12 +679,12 @@ kubectl mtv create plan cold-cost-optimized \
 
 After mastering migration process optimization:
 
-1. **Implement Hooks**: Add custom automation in [Chapter 14: Migration Hooks](14-migration-hooks.md)
-2. **Advanced Plan Management**: Learn plan patching in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching.md)
-3. **Execute Migrations**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution.md)
-4. **Troubleshooting**: Master debugging in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting.md)
+1. **Implement Hooks**: Add custom automation in [Chapter 14: Migration Hooks](14-migration-hooks)
+2. **Advanced Plan Management**: Learn plan patching in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)
+3. **Execute Migrations**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)
+4. **Troubleshooting**: Master debugging in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting)
 
 ---
 
-*Previous: [Chapter 12: Target VM Placement](12-target-vm-placement.md)*  
-*Next: [Chapter 14: Migration Hooks](14-migration-hooks.md)*
+*Previous: [Chapter 12: Target VM Placement](12-target-vm-placement)*  
+*Next: [Chapter 14: Migration Hooks](14-migration-hooks)*

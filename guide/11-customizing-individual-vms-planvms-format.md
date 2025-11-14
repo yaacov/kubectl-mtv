@@ -4,8 +4,6 @@ title: "Chapter 11: Customizing Individual VMs (PlanVMS Format)"
 render_with_liquid: false
 ---
 
-# Chapter 11: Customizing Individual VMs (PlanVMS Format)
-
 The PlanVMS format provides granular control over individual VM migration settings, allowing customization of target names, disk configuration, networking, and migration behavior on a per-VM basis. This chapter covers the complete VM customization capabilities.
 
 ## Overview of PlanVMS Format
@@ -62,9 +60,9 @@ The PlanVMS format is based on the Forklift API VM specification, verified from 
     hook:
       name: validation-hook
       namespace: migration-hooks
-  pvcNameTemplate: "{{.TargetVmName}}-{{.DiskIndex}}"
-  volumeNameTemplate: "vol-{{.VolumeIndex}}"
-  networkNameTemplate: "net-{{.NetworkIndex}}"
+  pvcNameTemplate: "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
+  volumeNameTemplate: "vol-{% raw %}{{.VolumeIndex}}{% endraw %}"
+  networkNameTemplate: "net-{% raw %}{{.NetworkIndex}}{% endraw %}"
 ```
 
 ## Editable Fields for Customization
@@ -180,36 +178,36 @@ Available in `pvcNameTemplate` field:
 
 | Variable | Description | Example Value |
 |----------|-------------|---------------|
-| `{{.VmName}}` | Original source VM name | `web-server-01` |
-| `{{.TargetVmName}}` | Final target VM name | `web-prod-01` |
-| `{{.PlanName}}` | Migration plan name | `production-migration` |
-| `{{.DiskIndex}}` | Disk index (0-based) | `0`, `1`, `2` |
-| `{{.WinDriveLetter}}` | Windows drive letter | `c`, `d`, `e` |
-| `{{.RootDiskIndex}}` | Index of root/boot disk | `0` |
-| `{{.Shared}}` | True if disk is shared | `true`, `false` |
-| `{{.FileName}}` | VMware disk filename | `web-server-01.vmdk` |
+| `{% raw %}{{.VmName}}{% endraw %}` | Original source VM name | `web-server-01` |
+| `{% raw %}{{.TargetVmName}}{% endraw %}` | Final target VM name | `web-prod-01` |
+| `{% raw %}{{.PlanName}}{% endraw %}` | Migration plan name | `production-migration` |
+| `{% raw %}{{.DiskIndex}}{% endraw %}` | Disk index (0-based) | `0`, `1`, `2` |
+| `{% raw %}{{.WinDriveLetter}}{% endraw %}` | Windows drive letter | `c`, `d`, `e` |
+| `{% raw %}{{.RootDiskIndex}}{% endraw %}` | Index of root/boot disk | `0` |
+| `{% raw %}{{.Shared}}{% endraw %}` | True if disk is shared | `true`, `false` |
+| `{% raw %}{{.FileName}}{% endraw %}` | VMware disk filename | `web-server-01.vmdk` |
 
 #### PVC Template Examples
 
 ```yaml
 # Basic PVC naming
-  pvcNameTemplate: "{{.TargetVmName}}-disk-{{.DiskIndex}}"
+  pvcNameTemplate: "{% raw %}{{.TargetVmName}}{% endraw %}-disk-{% raw %}{{.DiskIndex}}{% endraw %}"
   # Result: web-prod-01-disk-0, web-prod-01-disk-1
 
 # Root vs data disk differentiation  
-  pvcNameTemplate: "{{if eq .DiskIndex .RootDiskIndex}}{{.TargetVmName}}-root{{else}}{{.TargetVmName}}-data-{{.DiskIndex}}{{end}}"
+  pvcNameTemplate: "{% raw %}{{if eq .DiskIndex .RootDiskIndex}}{% endraw %}{% raw %}{{.TargetVmName}}{% endraw %}-root{% raw %}{{else}}{% endraw %}{% raw %}{{.TargetVmName}}{% endraw %}-data-{% raw %}{{.DiskIndex}}{% endraw %}{% raw %}{{end}}{% endraw %}"
   # Result: web-prod-01-root, web-prod-01-data-1
 
 # Shared disk identification
-  pvcNameTemplate: "{{if .Shared}}shared-{{end}}{{.TargetVmName}}-{{.DiskIndex}}"
+  pvcNameTemplate: "{% raw %}{{if .Shared}}{% endraw %}shared-{% raw %}{{end}}{% endraw %}{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
   # Result: web-prod-01-0, shared-web-prod-01-1
 
 # Windows drive letter naming
-  pvcNameTemplate: "{{.TargetVmName}}-{{.WinDriveLetter}}-drive"
+  pvcNameTemplate: "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.WinDriveLetter}}{% endraw %}-drive"
   # Result: windows-server-c-drive, windows-server-d-drive
 
 # Plan-scoped naming
-  pvcNameTemplate: "{{.PlanName}}-{{.TargetVmName}}-disk{{.DiskIndex}}"
+  pvcNameTemplate: "{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.TargetVmName}}{% endraw %}-disk{% raw %}{{.DiskIndex}}{% endraw %}"
   # Result: prod-migration-web-prod-01-disk0
 ```
 
@@ -219,22 +217,22 @@ Available in `volumeNameTemplate` field:
 
 | Variable | Description | Example Value |
 |----------|-------------|---------------|
-| `{{.PVCName}}` | Generated PVC name | `web-prod-01-disk-0` |
-| `{{.VolumeIndex}}` | Volume interface index | `0`, `1`, `2` |
+| `{% raw %}{{.PVCName}}{% endraw %}` | Generated PVC name | `web-prod-01-disk-0` |
+| `{% raw %}{{.VolumeIndex}}{% endraw %}` | Volume interface index | `0`, `1`, `2` |
 
 #### Volume Template Examples
 
 ```yaml
 # Simple volume naming
-  volumeNameTemplate: "disk-{{.VolumeIndex}}"
+  volumeNameTemplate: "disk-{% raw %}{{.VolumeIndex}}{% endraw %}"
   # Result: disk-0, disk-1, disk-2
 
 # PVC-based naming
-  volumeNameTemplate: "vol-{{.PVCName}}"
+  volumeNameTemplate: "vol-{% raw %}{{.PVCName}}{% endraw %}"
   # Result: vol-web-prod-01-disk-0
 
 # Combined indexing
-  volumeNameTemplate: "{{.VolumeIndex}}-{{.PVCName}}"
+  volumeNameTemplate: "{% raw %}{{.VolumeIndex}}{% endraw %}-{% raw %}{{.PVCName}}{% endraw %}"
   # Result: 0-web-prod-01-disk-0
 ```
 
@@ -244,24 +242,24 @@ Available in `networkNameTemplate` field:
 
 | Variable | Description | Example Value |
 |----------|-------------|---------------|
-| `{{.NetworkName}}` | Multus network name | `production-net` |
-| `{{.NetworkNamespace}}` | Network namespace | `multus-system` |
-| `{{.NetworkType}}` | Network type | `Multus`, `Pod` |
-| `{{.NetworkIndex}}` | Interface index | `0`, `1`, `2` |
+| `{% raw %}{{.NetworkName}}{% endraw %}` | Multus network name | `production-net` |
+| `{% raw %}{{.NetworkNamespace}}{% endraw %}` | Network namespace | `multus-system` |
+| `{% raw %}{{.NetworkType}}{% endraw %}` | Network type | `Multus`, `Pod` |
+| `{% raw %}{{.NetworkIndex}}{% endraw %}` | Interface index | `0`, `1`, `2` |
 
 #### Network Template Examples
 
 ```yaml
 # Simple interface naming
-  networkNameTemplate: "net-{{.NetworkIndex}}"
+  networkNameTemplate: "net-{% raw %}{{.NetworkIndex}}{% endraw %}"
   # Result: net-0, net-1, net-2
 
 # Type-based naming
-  networkNameTemplate: "{{if eq .NetworkType \"Pod\"}}pod-net{{else}}multus-{{.NetworkIndex}}{{end}}"
+  networkNameTemplate: "{% raw %}{{if eq .NetworkType \"Pod\"}}{% endraw %}pod-net{% raw %}{{else}}{% endraw %}multus-{% raw %}{{.NetworkIndex}}{% endraw %}{% raw %}{{end}}{% endraw %}"
   # Result: pod-net, multus-1, multus-2
 
 # Network-specific naming
-  networkNameTemplate: "{{.NetworkType}}-{{.NetworkName}}-{{.NetworkIndex}}"
+  networkNameTemplate: "{% raw %}{{.NetworkType}}{% endraw %}-{% raw %}{{.NetworkName}}{% endraw %}-{% raw %}{{.NetworkIndex}}{% endraw %}"
   # Result: Multus-production-net-0
 ```
 
@@ -276,7 +274,7 @@ Available in `networkNameTemplate` field:
 - name: web-server-01
   targetName: web-prod-01
   targetPowerState: on
-  pvcNameTemplate: "{{.TargetVmName}}-{{.DiskIndex}}"
+  pvcNameTemplate: "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
 
 - name: database-01
   targetName: db-prod-01
@@ -335,7 +333,7 @@ kubectl mtv get inventory vms vsphere-prod \
   targetName: web-prod-01
   rootDisk: /dev/sda
   targetPowerState: on
-  pvcNameTemplate: "prod-{{.TargetVmName}}-disk-{{.DiskIndex}}"
+  pvcNameTemplate: "prod-{% raw %}{{.TargetVmName}}{% endraw %}-disk-{% raw %}{{.DiskIndex}}{% endraw %}"
   hooks:
   - step: PostHook
     hook:
@@ -352,8 +350,8 @@ kubectl mtv get inventory vms vsphere-prod \
 - name: web-server-01
   targetName: web-prod-01
   targetPowerState: on
-  pvcNameTemplate: "web-{{.TargetVmName}}-{{.DiskIndex}}"
-  volumeNameTemplate: "vol-{{.VolumeIndex}}"
+  pvcNameTemplate: "web-{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
+  volumeNameTemplate: "vol-{% raw %}{{.VolumeIndex}}{% endraw %}"
   hooks:
   - step: PostHook
     hook:
@@ -363,8 +361,8 @@ kubectl mtv get inventory vms vsphere-prod \
 - name: web-server-02
   targetName: web-prod-02
   targetPowerState: on
-  pvcNameTemplate: "web-{{.TargetVmName}}-{{.DiskIndex}}"
-  volumeNameTemplate: "vol-{{.VolumeIndex}}"
+  pvcNameTemplate: "web-{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
+  volumeNameTemplate: "vol-{% raw %}{{.VolumeIndex}}{% endraw %}"
   hooks:
   - step: PostHook
     hook:
@@ -383,7 +381,7 @@ kubectl mtv get inventory vms vsphere-prod \
   rootDisk: /dev/sda
   instanceType: database-primary
   targetPowerState: on
-  pvcNameTemplate: "{{.TargetVmName}}-{{if .Shared}}shared-{{end}}{{.DiskIndex}}"
+  pvcNameTemplate: "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{if .Shared}}{% endraw %}shared-{% raw %}{{end}}{% endraw %}{% raw %}{{.DiskIndex}}{% endraw %}"
   luks:
     name: db-encryption-keys
     namespace: database-security
@@ -402,7 +400,7 @@ kubectl mtv get inventory vms vsphere-prod \
   rootDisk: /dev/sda
   instanceType: database-replica
   targetPowerState: on
-  pvcNameTemplate: "{{.TargetVmName}}-{{if .Shared}}shared-{{end}}{{.DiskIndex}}"
+  pvcNameTemplate: "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{if .Shared}}{% endraw %}shared-{% raw %}{{end}}{% endraw %}{% raw %}{{.DiskIndex}}{% endraw %}"
   luks:
     name: db-encryption-keys
     namespace: database-security
@@ -412,7 +410,7 @@ kubectl mtv get inventory vms vsphere-prod \
   rootDisk: /dev/sda
   instanceType: database-replica
   targetPowerState: on
-  pvcNameTemplate: "{{.TargetVmName}}-{{if .Shared}}shared-{{end}}{{.DiskIndex}}"
+  pvcNameTemplate: "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{if .Shared}}{% endraw %}shared-{% raw %}{{end}}{% endraw %}{% raw %}{{.DiskIndex}}{% endraw %}"
   luks:
     name: db-encryption-keys
     namespace: database-security
@@ -427,8 +425,8 @@ kubectl mtv get inventory vms vsphere-prod \
   rootDisk: /dev/sda
   targetPowerState: on
   instanceType: windows-server
-  pvcNameTemplate: "{{.TargetVmName}}-{{.WinDriveLetter}}"
-  volumeNameTemplate: "{{.WinDriveLetter}}-drive"
+  pvcNameTemplate: "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.WinDriveLetter}}{% endraw %}"
+  volumeNameTemplate: "{% raw %}{{.WinDriveLetter}}{% endraw %}-drive"
   hooks:
   - step: PreHook
     hook:
@@ -445,7 +443,7 @@ kubectl mtv get inventory vms vsphere-prod \
   rootDisk: /dev/sda
   targetPowerState: on
   instanceType: file-server
-  pvcNameTemplate: "{{.TargetVmName}}-{{.WinDriveLetter}}-{{if .Shared}}shared{{else}}local{{end}}"
+  pvcNameTemplate: "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.WinDriveLetter}}{% endraw %}-{% raw %}{{if .Shared}}{% endraw %}shared{% raw %}{{else}}{% endraw %}local{% raw %}{{end}}{% endraw %}"
   deleteVmOnFailMigration: false
 ```
 
@@ -457,7 +455,7 @@ kubectl mtv get inventory vms vsphere-prod \
   targetName: web-loadbalancer
   targetPowerState: on
   instanceType: load-balancer
-  pvcNameTemplate: "web-{{.TargetVmName}}-{{.DiskIndex}}"
+  pvcNameTemplate: "web-{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
   hooks:
   - step: PreHook
     hook:
@@ -469,7 +467,7 @@ kubectl mtv get inventory vms vsphere-prod \
   targetName: app-primary
   targetPowerState: on
   instanceType: application-server
-  pvcNameTemplate: "app-{{.TargetVmName}}-{{.DiskIndex}}"
+  pvcNameTemplate: "app-{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
   hooks:
   - step: PreHook
     hook:
@@ -485,7 +483,7 @@ kubectl mtv get inventory vms vsphere-prod \
   targetName: redis-cache
   targetPowerState: on
   instanceType: cache-server
-  pvcNameTemplate: "cache-{{.TargetVmName}}-{{.DiskIndex}}"
+  pvcNameTemplate: "cache-{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
   luks:
     name: cache-encryption
     namespace: security
@@ -498,13 +496,13 @@ kubectl mtv get inventory vms vsphere-prod \
 - name: "Dev Web Server 01"  # Source name with spaces
   targetName: dev-web-01      # Kubernetes-compliant name
   targetPowerState: on
-  pvcNameTemplate: "dev-{{.TargetVmName | lower}}-disk{{.DiskIndex}}"
+  pvcNameTemplate: "dev-{% raw %}{{.TargetVmName | lower}}{% endraw %}-disk{% raw %}{{.DiskIndex}}{% endraw %}"
 
 - name: "Test Database (MySQL)"
   targetName: test-mysql-db
   rootDisk: /dev/sda
   targetPowerState: on
-  pvcNameTemplate: "test-{{.TargetVmName}}-{{if eq .DiskIndex .RootDiskIndex}}os{{else}}data{{end}}"
+  pvcNameTemplate: "test-{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{if eq .DiskIndex .RootDiskIndex}}{% endraw %}os{% raw %}{{else}}{% endraw %}data{% raw %}{{end}}{% endraw %}"
 
 - name: "QA_Environment_App"
   targetName: qa-app-server
@@ -522,26 +520,26 @@ kubectl-mtv supports Go template functions for advanced string manipulation:
 
 ```yaml
 # Lowercase conversion
-  pvcNameTemplate: "{{.TargetVmName | lower}}-{{.DiskIndex}}"
+  pvcNameTemplate: "{% raw %}{{.TargetVmName | lower}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
 
 # Replace characters
-  pvcNameTemplate: "{{.VmName | replace \" \" \"-\" | lower}}-disk{{.DiskIndex}}"
+  pvcNameTemplate: "{% raw %}{{.VmName | replace \" \" \"-\" | lower}}{% endraw %}-disk{% raw %}{{.DiskIndex}}{% endraw %}"
 
 # Conditional logic
-  pvcNameTemplate: "{{if .Shared}}shared-{{else}}local-{{end}}{{.TargetVmName}}"
+  pvcNameTemplate: "{% raw %}{{if .Shared}}{% endraw %}shared-{% raw %}{{else}}{% endraw %}local-{% raw %}{{end}}{% endraw %}{% raw %}{{.TargetVmName}}{% endraw %}"
 ```
 
 #### Complex Conditional Templates
 
 ```yaml
 # Multi-condition PVC naming
-  pvcNameTemplate: "{{if eq .DiskIndex .RootDiskIndex}}root{{else if .Shared}}shared-data{{else}}data{{end}}-{{.DiskIndex}}"
+  pvcNameTemplate: "{% raw %}{{if eq .DiskIndex .RootDiskIndex}}{% endraw %}root{% raw %}{{else if .Shared}}{% endraw %}shared-data{% raw %}{{else}}{% endraw %}data{% raw %}{{end}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
 
 # Windows vs Linux differentiation
-  volumeNameTemplate: "{{if .WinDriveLetter}}{{.WinDriveLetter}}-drive{{else}}disk-{{.VolumeIndex}}{{end}}"
+  volumeNameTemplate: "{% raw %}{{if .WinDriveLetter}}{% endraw %}{% raw %}{{.WinDriveLetter}}{% endraw %}-drive{% raw %}{{else}}{% endraw %}disk-{% raw %}{{.VolumeIndex}}{% endraw %}{% raw %}{{end}}{% endraw %}"
 
 # Network type-based naming
-  networkNameTemplate: "{{if eq .NetworkType \"Pod\"}}pod{{else}}{{.NetworkName | lower}}{{end}}-{{.NetworkIndex}}"
+  networkNameTemplate: "{% raw %}{{if eq .NetworkType \"Pod\"}}{% endraw %}pod{% raw %}{{else}}{% endraw %}{% raw %}{{.NetworkName | lower}}{% endraw %}{% raw %}{{end}}{% endraw %}-{% raw %}{{.NetworkIndex}}{% endraw %}"
 ```
 
 ## Validation and Testing
@@ -629,7 +627,7 @@ Plan-level templates are overridden by VM-level templates:
 ```bash
 # Plan-level template
 kubectl mtv create plan plan-template \
-  --pvc-name-template "{{.PlanName}}-{{.VmName}}-{{.DiskIndex}}" \
+  --pvc-name-template "{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.VmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}" \
   --vms @vms-with-templates.yaml
 
 # VM-level template overrides plan-level
@@ -713,12 +711,12 @@ kubectl get vmstatus -n migration-namespace --watch
 
 After mastering PlanVMS customization:
 
-1. **Advanced Placement**: Learn VM placement strategies in [Chapter 12: Target VM Placement](12-target-vm-placement.md)
-2. **Performance Optimization**: Apply customization insights in [Chapter 13: Migration Process Optimization](13-migration-process-optimization.md)
-3. **Hook Development**: Create custom hooks in [Chapter 14: Migration Hooks](14-migration-hooks.md)
-4. **Plan Patching**: Modify plans dynamically in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching.md)
+1. **Advanced Placement**: Learn VM placement strategies in [Chapter 12: Target VM Placement](12-target-vm-placement)
+2. **Performance Optimization**: Apply customization insights in [Chapter 13: Migration Process Optimization](13-migration-process-optimization)
+3. **Hook Development**: Create custom hooks in [Chapter 14: Migration Hooks](14-migration-hooks)
+4. **Plan Patching**: Modify plans dynamically in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)
 
 ---
 
-*Previous: [Chapter 10: Migration Plan Creation](10-migration-plan-creation.md)*  
-*Next: [Chapter 12: Target VM Placement](12-target-vm-placement.md)*
+*Previous: [Chapter 10: Migration Plan Creation](10-migration-plan-creation)*  
+*Next: [Chapter 12: Target VM Placement](12-target-vm-placement)*

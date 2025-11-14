@@ -4,8 +4,6 @@ title: "Chapter 15: Advanced Plan Patching"
 render_with_liquid: false
 ---
 
-# Chapter 15: Advanced Plan Patching
-
 Once migration plans are created, you often need to modify their configuration as migration requirements evolve. This chapter covers comprehensive plan modification techniques using `kubectl-mtv` patching capabilities, enabling dynamic updates without recreating plans.
 
 ## Overview: Dynamic Plan Modification
@@ -131,15 +129,15 @@ Update naming templates for better resource organization:
 ```bash
 # Update PVC naming template
 kubectl mtv patch plan organized-migration \
-  --pvc-name-template "{{.PlanName}}-{{.TargetVmName}}-disk-{{.DiskIndex}}"
+  --pvc-name-template "{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.TargetVmName}}{% endraw %}-disk-{% raw %}{{.DiskIndex}}{% endraw %}"
 
 # Set volume naming template
 kubectl mtv patch plan structured-storage \
-  --volume-name-template "vol-{{.PVCName}}-{{.VolumeIndex}}"
+  --volume-name-template "vol-{% raw %}{{.PVCName}}{% endraw %}-{% raw %}{{.VolumeIndex}}{% endraw %}"
 
 # Configure network interface naming
 kubectl mtv patch plan network-organized \
-  --network-name-template "{{.TargetVmName}}-{{.NetworkType}}-{{.NetworkIndex}}"
+  --network-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.NetworkType}}{% endraw %}-{% raw %}{{.NetworkIndex}}{% endraw %}"
 ```
 
 ### Migration Behavior Configuration
@@ -191,7 +189,7 @@ kubectl mtv patch plan enterprise-migration \
   --convertor-affinity "REQUIRE nodes(storage-tier=premium) on node" \
   --preserve-static-ips=true \
   --preserve-cluster-cpu-model=true \
-  --pvc-name-template "prod-{{.TargetVmName}}-{{.DiskIndex}}" \
+  --pvc-name-template "prod-{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}" \
   --delete-guest-conversion-pod=true \
   --run-preflight-inspection=true
 ```
@@ -227,15 +225,15 @@ Apply custom naming templates to individual VMs:
 ```bash
 # Custom PVC naming for high-storage VM
 kubectl mtv patch planvm data-migration large-database \
-  --pvc-name-template "{{.TargetVmName}}-data-{{.WinDriveLetter}}-{{.DiskIndex}}"
+  --pvc-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-data-{% raw %}{{.WinDriveLetter}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
 
 # Custom volume naming for multi-tier application
 kubectl mtv patch planvm app-migration web-tier \
-  --volume-name-template "{{.TargetVmName}}-vol-{{.VolumeIndex}}"
+  --volume-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-vol-{% raw %}{{.VolumeIndex}}{% endraw %}"
 
 # Custom network naming for multi-homed VMs
 kubectl mtv patch planvm network-migration firewall-vm \
-  --network-name-template "{{.TargetVmName}}-{{.NetworkType}}-{{.NetworkIndex}}"
+  --network-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.NetworkType}}{% endraw %}-{% raw %}{{.NetworkIndex}}{% endraw %}"
 ```
 
 ### Security Configuration
@@ -300,9 +298,9 @@ kubectl mtv patch planvm enterprise-migration critical-database \
   --instance-type extra-large \
   --root-disk "SCSI disk 1" \
   --target-power-state on \
-  --pvc-name-template "{{.TargetVmName}}-{{.WinDriveLetter}}-{{.DiskIndex}}" \
-  --volume-name-template "{{.TargetVmName}}-storage-{{.VolumeIndex}}" \
-  --network-name-template "{{.TargetVmName}}-net-{{.NetworkIndex}}" \
+  --pvc-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.WinDriveLetter}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}" \
+  --volume-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-storage-{% raw %}{{.VolumeIndex}}{% endraw %}" \
+  --network-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-net-{% raw %}{{.NetworkIndex}}{% endraw %}" \
   --luks-secret database-encryption-secret \
   --delete-vm-on-fail-migration=false \
   --add-pre-hook database-cluster-quiesce \
@@ -554,7 +552,7 @@ kubectl mtv patch plan slow-migration \
 ```bash
 # Fix naming conflicts with better templates
 kubectl mtv patch plan naming-conflict \
-  --pvc-name-template "{{.PlanName}}-{{.TargetVmName}}-{{.DiskIndex}}"
+  --pvc-name-template "{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
 
 # Individual VM name fixes
 kubectl mtv patch planvm naming-conflict conflicting-vm \
@@ -590,12 +588,12 @@ kubectl mtv patch plan secure-migration \
 
 After mastering plan patching techniques:
 
-1. **Execute Migrations**: Learn to start and manage migration execution in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution.md)
-2. **Handle Problems**: Master troubleshooting in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting.md)
-3. **Optimize Operations**: Learn best practices in [Chapter 18: Best Practices and Security](18-best-practices-and-security.md)
-4. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration.md)
+1. **Execute Migrations**: Learn to start and manage migration execution in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)
+2. **Handle Problems**: Master troubleshooting in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting)
+3. **Optimize Operations**: Learn best practices in [Chapter 18: Best Practices and Security](18-best-practices-and-security)
+4. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration)
 
 ---
 
-*Previous: [Chapter 14: Migration Hooks](14-migration-hooks.md)*  
-*Next: [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution.md)*
+*Previous: [Chapter 14: Migration Hooks](14-migration-hooks)*  
+*Next: [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)*

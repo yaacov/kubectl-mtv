@@ -4,8 +4,6 @@ title: "Chapter 2: Installation and Prerequisites"
 render_with_liquid: false
 ---
 
-# Chapter 2: Installation and Prerequisites
-
 ## Prerequisites
 
 Before installing `kubectl-mtv`, ensure your environment meets the following requirements:
@@ -476,7 +474,7 @@ EOF
 
 # Retrieve the token
 kubectl get secret mtv-operator-token -n migration-ops \
-  -o go-template='{{ .data.token | base64decode }}'
+  -o go-template='{% raw %}{{ .data.token | base64decode }}{% endraw %}'
 ```
 
 ## Troubleshooting Installation
@@ -571,7 +569,7 @@ kubectl mtv -v=2 --kubeconfig=/path/to/config get providers
 ### Getting Help
 
 - **Documentation**: Check the [complete documentation](https://github.com/yaacov/kubectl-mtv/tree/main/docs)
-- **Examples**: Review [demo examples](https://github.com/yaacov/kubectl-mtv/blob/main/docs/README_demo.md)
+- **Examples**: Review [demo examples](https://github.com/yaacov/kubectl-mtv/blob/main/docs/README_demo)
 - **Issues**: Open an issue on [GitHub](https://github.com/yaacov/kubectl-mtv/issues)
 - **Community**: Join discussions on the Forklift community channels
 
@@ -579,12 +577,12 @@ kubectl mtv -v=2 --kubeconfig=/path/to/config get providers
 
 After successful installation and verification:
 
-1. **Follow the Quick Start** in [Chapter 3: Quick Start - First Migration Workflow](03-quick-start-first-migration-workflow.md)
+1. **Follow the Quick Start** in [Chapter 3: Quick Start - First Migration Workflow](03-quick-start-first-migration-workflow)
 2. **Set up providers** for your source virtualization platforms
 3. **Create your first migration plan** using the simplified workflow
 4. **Explore advanced features** like VDDK optimization and migration hooks
 
 ---
 
-*Previous: [Chapter 1: Overview of kubectl-mtv](01-overview-of-kubectl-mtv.md)*  
-*Next: [Chapter 3: Quick Start - First Migration Workflow](03-quick-start-first-migration-workflow.md)*
+*Previous: [Chapter 1: Overview of kubectl-mtv](01-overview-of-kubectl-mtv)*  
+*Next: [Chapter 3: Quick Start - First Migration Workflow](03-quick-start-first-migration-workflow)*

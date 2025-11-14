@@ -3,8 +3,6 @@ layout: page
 title: "Chapter 18: Best Practices and Security"
 ---
 
-# Chapter 18: Best Practices and Security
-
 Implementing secure and efficient migration practices is essential for production environments. This chapter covers comprehensive best practices for plan management, provider security, query optimization, and secure operations derived from real-world deployment experience and security requirements.
 
 ## Overview: Operational Excellence Framework
@@ -777,10 +775,10 @@ echo "Plan $PLAN_NAME tagged with change request $CHANGE_TICKET"
 
 After implementing comprehensive best practices and security:
 
-1. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration.md)
-2. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools.md)
+1. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration)
+2. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools)
 
 ---
 
-*Previous: [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting.md)*  
-*Next: [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration.md)*
+*Previous: [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting)*  
+*Next: [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration)*

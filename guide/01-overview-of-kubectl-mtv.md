@@ -3,8 +3,6 @@ layout: page
 title: "Chapter 1: Overview of kubectl-mtv"
 ---
 
-# Chapter 1: Overview of kubectl-mtv
-
 ## What is kubectl-mtv?
 
 `kubectl-mtv` is a powerful command-line interface (CLI) plugin for Kubernetes that enables seamless migration of virtual machines from various virtualization platforms to KubeVirt-enabled Kubernetes clusters. MTV stands for "Migration Toolkit for Virtualization" and serves as the primary user interface for the [Forklift](https://github.com/kubev2v/forklift) project.
@@ -36,11 +34,11 @@ The tool supports multiple migration strategies to accommodate different use cas
 - **Cold Migration** - Traditional offline migration where the source VM is powered down during the process (see [Forklift Cold Migration](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#cold-migration))
 - **Warm Migration** - Pre-copy migration that minimizes downtime by transferring data while the VM is running, followed by a brief cutover period (see [Forklift Warm Migration](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#warm-migration))
 - **Live Migration** - Advanced migration with minimal downtime using KubeVirt's live migration capabilities (available only for KubeVirt/OpenShift Virtualization sources) (see [Forklift Live Migration](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#about-live-migration))
-- **Conversion Migration** - Perform only guest conversion and VM creation when storage vendors provide pre-populated PVCs (VMware sources only) (see [Chapter 3.6: Conversion Migration](03.6-conversion-migration.md))
+- **Conversion Migration** - Perform only guest conversion and VM creation when storage vendors provide pre-populated PVCs (VMware sources only) (see [Chapter 3.6: Conversion Migration](03.6-conversion-migration))
 
 For detailed information about migration types, see:
-- [Chapter 3.5: Migration Types and Strategy Selection](03.5-migration-types-and-strategy-selection.md) - Cold, warm, and live migration strategies
-- [Chapter 3.6: Conversion Migration](03.6-conversion-migration.md) - External storage vendor integration workflows
+- [Chapter 3.5: Migration Types and Strategy Selection](03.5-migration-types-and-strategy-selection) - Cold, warm, and live migration strategies
+- [Chapter 3.6: Conversion Migration](03.6-conversion-migration) - External storage vendor integration workflows
 
 ## Key Features
 
@@ -66,7 +64,7 @@ The tool provides multiple approaches to resource mapping:
 - **Explicit Mappings** - Pre-defined network and storage mappings for consistent, reusable configurations
 - **Inline Mapping Pairs** - Direct specification of source-to-target mappings during plan creation
 - **Automatic Default Mappings** - Intelligent mapping based on available target resources
-- **Enhanced Storage Options** - Support for volume modes, access modes, and advanced storage array offloading for up to 10x faster migrations (see [Chapter 9.5: Storage Array Offloading](09.5-storage-array-offloading-and-optimization.md))
+- **Enhanced Storage Options** - Support for volume modes, access modes, and advanced storage array offloading for up to 10x faster migrations (see [Chapter 9.5: Storage Array Offloading](09.5-storage-array-offloading-and-optimization))
 
 ### 3. VDDK (Virtual Disk Development Kit) Support
 
@@ -164,4 +162,4 @@ The following chapters will guide you through:
 
 ---
 
-*Next: [Chapter 2: Installation and Prerequisites](02-installation-and-prerequisites.md)*
+*Next: [Chapter 2: Installation and Prerequisites](02-installation-and-prerequisites)*

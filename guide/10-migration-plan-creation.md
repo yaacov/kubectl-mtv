@@ -4,8 +4,6 @@ title: "Chapter 10: Migration Plan Creation"
 render_with_liquid: false
 ---
 
-# Chapter 10: Migration Plan Creation
-
 Migration plans are the core orchestration resources that define which VMs to migrate, how to map their resources, and what settings to apply during migration. This chapter covers comprehensive plan creation with all supported configuration options.
 
 ## Overview of Migration Plans
@@ -193,7 +191,7 @@ kubectl-mtv supports four migration types (see [Forklift Migration Types](https:
 | `live` | Live migration (KubeVirt sources only) | Zero-downtime migration between KubeVirt clusters |
 | `conversion` | Guest conversion only (VMware only) | When storage vendors provide pre-populated PVCs |
 
-For detailed information about conversion migration, including prerequisites, workflow, and integration requirements, see [Chapter 3.6: Conversion Migration](03.6-conversion-migration.md).
+For detailed information about conversion migration, including prerequisites, workflow, and integration requirements, see [Chapter 3.6: Conversion Migration](03.6-conversion-migration).
 
 #### Migration Type Examples
 
@@ -264,49 +262,49 @@ kubectl-mtv provides Go template variables for customizing resource names:
 
 #### PVC Name Template
 
-Available variables: `{{.VmName}}`, `{{.PlanName}}`, `{{.DiskIndex}}`, `{{.WinDriveLetter}}`, `{{.RootDiskIndex}}`, `{{.Shared}}`, `{{.FileName}}`
+Available variables: `{% raw %}{{.VmName}}{% endraw %}`, `{% raw %}{{.PlanName}}{% endraw %}`, `{% raw %}{{.DiskIndex}}{% endraw %}`, `{% raw %}{{.WinDriveLetter}}{% endraw %}`, `{% raw %}{{.RootDiskIndex}}{% endraw %}`, `{% raw %}{{.Shared}}{% endraw %}`, `{% raw %}{{.FileName}}{% endraw %}`
 
 ```bash
 # Custom PVC naming with plan and VM name
 kubectl mtv create plan custom-pvc-names \
   --source vsphere-prod \
-  --pvc-name-template "{{.PlanName}}-{{.VmName}}-disk-{{.DiskIndex}}" \
+  --pvc-name-template "{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.VmName}}{% endraw %}-disk-{% raw %}{{.DiskIndex}}{% endraw %}" \
   --vms "web-01,web-02"
 
 # Windows-specific PVC naming
 kubectl mtv create plan windows-migration \
   --source vsphere-prod \
-  --pvc-name-template "{{.VmName}}-{{.WinDriveLetter}}-disk" \
+  --pvc-name-template "{% raw %}{{.VmName}}{% endraw %}-{% raw %}{{.WinDriveLetter}}{% endraw %}-disk" \
   --vms "where guestOS ~= '.*windows.*'"
 
 # Shared disk identification
 kubectl mtv create plan shared-disk-migration \
   --source vsphere-prod \
-  --pvc-name-template "{{.VmName}}-{{if .Shared}}shared{{else}}local{{end}}-{{.DiskIndex}}" \
+  --pvc-name-template "{% raw %}{{.VmName}}{% endraw %}-{% raw %}{{if .Shared}}{% endraw %}shared{% raw %}{{else}}{% endraw %}local{% raw %}{{end}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}" \
   --vms "cluster-node-01,cluster-node-02"
 ```
 
 #### Volume Name Template
 
-Available variables: `{{.PVCName}}`, `{{.VolumeIndex}}`
+Available variables: `{% raw %}{{.PVCName}}{% endraw %}`, `{% raw %}{{.VolumeIndex}}{% endraw %}`
 
 ```bash
 # Custom volume interface names
 kubectl mtv create plan custom-volumes \
   --source vsphere-prod \
-  --volume-name-template "vol-{{.VolumeIndex}}-{{.PVCName}}" \
+  --volume-name-template "vol-{% raw %}{{.VolumeIndex}}{% endraw %}-{% raw %}{{.PVCName}}{% endraw %}" \
   --vms "multi-disk-vm-01"
 ```
 
 #### Network Name Template
 
-Available variables: `{{.NetworkName}}`, `{{.NetworkNamespace}}`, `{{.NetworkType}}`, `{{.NetworkIndex}}`
+Available variables: `{% raw %}{{.NetworkName}}{% endraw %}`, `{% raw %}{{.NetworkNamespace}}{% endraw %}`, `{% raw %}{{.NetworkType}}{% endraw %}`, `{% raw %}{{.NetworkIndex}}{% endraw %}`
 
 ```bash
 # Custom network interface names
 kubectl mtv create plan custom-networks \
   --source vsphere-prod \
-  --network-name-template "{{.NetworkType}}-{{.NetworkIndex}}" \
+  --network-name-template "{% raw %}{{.NetworkType}}{% endraw %}-{% raw %}{{.NetworkIndex}}{% endraw %}" \
   --vms "multi-nic-vm-01"
 ```
 
@@ -521,7 +519,7 @@ kubectl mtv create plan enterprise-production \
   --preserve-static-ips \
   --target-labels "environment=production,migration=phase1" \
   --target-node-selector "zone=east,performance=high" \
-  --pvc-name-template "{{.PlanName}}-{{.VmName}}-{{.DiskIndex}}" \
+  --pvc-name-template "{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.VmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}" \
   --pre-hook production-backup \
   --post-hook production-validation \
   --run-preflight-inspection \
@@ -557,7 +555,7 @@ kubectl mtv create plan batch-small-vms \
   --storage-pairs "datastore1:standard-ssd,datastore2:premium-nvme;volumeMode=Block" \
   --target-labels "batch=phase1,size=small" \
   --convertor-node-selector "batch-processing=true" \
-  --pvc-name-template "batch-{{.PlanName}}-{{.VmName}}-disk{{.DiskIndex}}" \
+  --pvc-name-template "batch-{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.VmName}}{% endraw %}-disk{% raw %}{{.DiskIndex}}{% endraw %}" \
   --delete-vm-on-fail-migration \
   --vms "where powerState = 'poweredOn' and memoryMB <= 4096 and len disks <= 2 and not template"
 ```
@@ -788,12 +786,12 @@ kubectl mtv create plan mixed-mappings \
 
 After mastering plan creation:
 
-1. **Customize VMs**: Learn detailed VM customization in [Chapter 11: Customizing Individual VMs (PlanVMS Format)](11-customizing-individual-vms-planvms-format.md)
-2. **Optimize Placement**: Configure advanced placement in [Chapter 12: Target VM Placement](12-target-vm-placement.md)
-3. **Execute Plans**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution.md)
-4. **Advanced Patching**: Modify existing plans in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching.md)
+1. **Customize VMs**: Learn detailed VM customization in [Chapter 11: Customizing Individual VMs (PlanVMS Format)](11-customizing-individual-vms-planvms-format)
+2. **Optimize Placement**: Configure advanced placement in [Chapter 12: Target VM Placement](12-target-vm-placement)
+3. **Execute Plans**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)
+4. **Advanced Patching**: Modify existing plans in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)
 
 ---
 
-*Previous: [Chapter 9.5: Storage Array Offloading and Optimization](09.5-storage-array-offloading-and-optimization.md)*  
-*Next: [Chapter 11: Customizing Individual VMs (PlanVMS Format)](11-customizing-individual-vms-planvms-format.md)*
+*Previous: [Chapter 9.5: Storage Array Offloading and Optimization](09.5-storage-array-offloading-and-optimization)*  
+*Next: [Chapter 11: Customizing Individual VMs (PlanVMS Format)](11-customizing-individual-vms-planvms-format)*

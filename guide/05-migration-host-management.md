@@ -3,8 +3,6 @@ layout: page
 title: "Chapter 5: Migration Host Management (vSphere Specific)"
 ---
 
-# Chapter 5: Migration Host Management (vSphere Specific)
-
 Migration hosts enable direct data transfer from ESXi hosts, bypassing vCenter for improved performance and control. This chapter covers the complete lifecycle management of migration hosts, which are exclusive to vSphere environments.
 
 ## Overview and Purpose of Migration Hosts
@@ -558,12 +556,12 @@ kubectl mtv create plan migration-with-hosts \
 
 After setting up migration hosts:
 
-1. **Optimize VDDK**: Configure VDDK images in [Chapter 6: VDDK Image Creation and Configuration](06-vddk-image-creation-and-configuration.md)
-2. **Explore Inventory**: Discover available resources in [Chapter 7: Inventory Management](07-inventory-management.md)
-3. **Create Mappings**: Define resource mappings in [Chapter 9: Mapping Management](09-mapping-management.md)
-4. **Plan Migrations**: Create optimized migration plans in [Chapter 10: Migration Plan Creation](10-migration-plan-creation.md)
+1. **Optimize VDDK**: Configure VDDK images in [Chapter 6: VDDK Image Creation and Configuration](06-vddk-image-creation-and-configuration)
+2. **Explore Inventory**: Discover available resources in [Chapter 7: Inventory Management](07-inventory-management)
+3. **Create Mappings**: Define resource mappings in [Chapter 9: Mapping Management](09-mapping-management)
+4. **Plan Migrations**: Create optimized migration plans in [Chapter 10: Migration Plan Creation](10-migration-plan-creation)
 
 ---
 
-*Previous: [Chapter 4: Provider Management](04-provider-management.md)*  
-*Next: [Chapter 6: VDDK Image Creation and Configuration](06-vddk-image-configuration.md)*
+*Previous: [Chapter 4: Provider Management](04-provider-management)*  
+*Next: [Chapter 6: VDDK Image Creation and Configuration](06-vddk-image-configuration)*

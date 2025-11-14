@@ -3,8 +3,6 @@ layout: page
 title: "Chapter 12: Target VM Placement (Operational Lifetime)"
 ---
 
-# Chapter 12: Target VM Placement (Operational Lifetime)
-
 Target VM placement controls where and how VMs run in the target Kubernetes cluster after migration. This chapter covers comprehensive VM scheduling, affinity rules, and operational configuration for the target environment.
 
 ## Overview of Target VM Placement
@@ -635,12 +633,12 @@ kubectl mtv create plan cpu-distribution \
 
 After mastering target VM placement:
 
-1. **Optimize Migration Process**: Learn convertor optimization in [Chapter 13: Migration Process Optimization](13-migration-process-optimization.md)
-2. **Create Hooks**: Develop migration automation in [Chapter 14: Migration Hooks](14-migration-hooks.md)
-3. **Advanced Plan Modification**: Learn plan patching in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching.md)
-4. **Execute Migrations**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution.md)
+1. **Optimize Migration Process**: Learn convertor optimization in [Chapter 13: Migration Process Optimization](13-migration-process-optimization)
+2. **Create Hooks**: Develop migration automation in [Chapter 14: Migration Hooks](14-migration-hooks)
+3. **Advanced Plan Modification**: Learn plan patching in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)
+4. **Execute Migrations**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)
 
 ---
 
-*Previous: [Chapter 11: Customizing Individual VMs (PlanVMS Format)](11-customizing-individual-vms-planvms-format.md)*  
-*Next: [Chapter 13: Migration Process Optimization](13-migration-process-optimization.md)*
+*Previous: [Chapter 11: Customizing Individual VMs (PlanVMS Format)](11-customizing-individual-vms-planvms-format)*  
+*Next: [Chapter 13: Migration Process Optimization](13-migration-process-optimization)*
