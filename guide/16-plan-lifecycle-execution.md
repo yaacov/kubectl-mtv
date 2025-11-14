@@ -23,17 +23,17 @@ Different migration types follow distinct execution patterns:
 
 #### Cold Migration Flow
 ```
-Created → Started → Completed/Failed/Canceled
+Created - Started - Completed/Failed/Canceled
 ```
 
 #### Warm Migration Flow
 ```
-Created → Started → Warm Running → Cutover Scheduled → Completed/Failed/Canceled
+Created - Started - Warm Running - Cutover Scheduled - Completed/Failed/Canceled
 ```
 
 #### Live Migration Flow (KubeVirt sources only)
 ```
-Created → Started → Completed/Failed/Canceled
+Created - Started - Completed/Failed/Canceled
 ```
 
 ### Command Overview

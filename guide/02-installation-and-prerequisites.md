@@ -356,7 +356,7 @@ kubectl get pods -n konveyor-forklift
 For OpenShift environments, install MTV through the Operator Hub:
 
 **Using OpenShift Console:**
-1. Navigate to Operators → OperatorHub
+1. Navigate to Operators - OperatorHub
 2. Search for "Migration Toolkit for Virtualization"
 3. Install the operator
 4. Create an MTV instance

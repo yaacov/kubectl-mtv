@@ -395,23 +395,23 @@ for vm in $(kubectl get vms -n "$NAMESPACE" -o jsonpath='{.items[*].metadata.nam
   
   # Check VM is running
   if kubectl get vm "$vm" -n "$NAMESPACE" -o jsonpath='{.status.ready}' | grep -q true; then
-    echo "  ✓ VM is running"
+    echo "  [OK] VM is running"
     
     # Test SSH connectivity
     if virtctl ssh admin@"$vm" -n "$NAMESPACE" "echo 'SSH OK'" &>/dev/null; then
-      echo "  ✓ SSH accessible"
+      echo "  [OK] SSH accessible"
     else
-      echo "  ✗ SSH not accessible"
+      echo "  [FAIL] SSH not accessible"
     fi
     
     # Test application ports (example)
     if virtctl ssh admin@"$vm" -n "$NAMESPACE" "nc -z localhost 80" &>/dev/null; then
-      echo "  ✓ HTTP service responding"
+      echo "  [OK] HTTP service responding"
     else
-      echo "  ✗ HTTP service not responding"
+      echo "  [FAIL] HTTP service not responding"
     fi
   else
-    echo "  ✗ VM not running"
+    echo "  [FAIL] VM not running"
   fi
   echo
 done

@@ -6,11 +6,11 @@ This chapter provides a complete step-by-step walkthrough of your first migratio
 
 Before starting this workflow, ensure you have:
 
-- ✅ `kubectl-mtv` installed and working (see [Chapter 2](02-installation-and-prerequisites.md))
-- ✅ Access to a Kubernetes cluster with Forklift/MTV installed
-- ✅ Connection to a source virtualization platform (vSphere, oVirt, OpenStack, or OVA)
-- ✅ Appropriate RBAC permissions
-- ✅ Knowledge of VMs you want to migrate
+- `kubectl-mtv` installed and working (see [Chapter 2](02-installation-and-prerequisites.md))
+- Access to a Kubernetes cluster with Forklift/MTV installed
+- Connection to a source virtualization platform (vSphere, oVirt, OpenStack, or OVA)
+- Appropriate RBAC permissions
+- Knowledge of VMs you want to migrate
 
 ## Step 1: Project Setup (Creating a Namespace)
 
