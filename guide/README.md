@@ -1,4 +1,3 @@
-# kubectl-mtv Technical Guide
 
 Welcome to the technical guide for `kubectl-mtv` - the powerful command-line interface that transforms how you migrate virtual machines to Kubernetes.
 
