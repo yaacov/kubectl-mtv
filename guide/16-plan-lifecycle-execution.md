@@ -687,10 +687,10 @@ kubectl patch plan problem-plan --type='merge' -p='{"spec":{"vms":[]}}'
 
 After mastering plan lifecycle execution:
 
-1. **Troubleshooting**: Learn to debug migration issues in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting)
-2. **Best Practices**: Master operational excellence in [Chapter 18: Best Practices and Security](18-best-practices-and-security)
-3. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration)
-4. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools)
+1. **Troubleshooting**: Learn to debug migration issues in [Chapter 17: Debugging and Troubleshooting](/kubectl-mtv/17-debugging-and-troubleshooting)
+2. **Best Practices**: Master operational excellence in [Chapter 18: Best Practices and Security](/kubectl-mtv/18-best-practices-and-security)
+3. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/19-model-context-protocol-mcp-server-integration)
+4. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 20: Integration with KubeVirt Tools](/kubectl-mtv/20-integration-with-kubevirt-tools)
 
 ---
 

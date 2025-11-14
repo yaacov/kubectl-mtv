@@ -765,9 +765,9 @@ kubectl mtv describe mapping storage mapping-name
 
 After mastering debugging and troubleshooting:
 
-1. **Best Practices**: Learn operational excellence in [Chapter 18: Best Practices and Security](18-best-practices-and-security)
-2. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration)
-3. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools)
+1. **Best Practices**: Learn operational excellence in [Chapter 18: Best Practices and Security](/kubectl-mtv/18-best-practices-and-security)
+2. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/19-model-context-protocol-mcp-server-integration)
+3. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 20: Integration with KubeVirt Tools](/kubectl-mtv/20-integration-with-kubevirt-tools)
 
 ---
 

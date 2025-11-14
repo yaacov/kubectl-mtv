@@ -556,10 +556,10 @@ kubectl mtv create plan migration-with-hosts \
 
 After setting up migration hosts:
 
-1. **Optimize VDDK**: Configure VDDK images in [Chapter 6: VDDK Image Creation and Configuration](06-vddk-image-creation-and-configuration)
-2. **Explore Inventory**: Discover available resources in [Chapter 7: Inventory Management](07-inventory-management)
-3. **Create Mappings**: Define resource mappings in [Chapter 9: Mapping Management](09-mapping-management)
-4. **Plan Migrations**: Create optimized migration plans in [Chapter 10: Migration Plan Creation](10-migration-plan-creation)
+1. **Optimize VDDK**: Configure VDDK images in [Chapter 6: VDDK Image Creation and Configuration](/kubectl-mtv/06-vddk-image-creation-and-configuration)
+2. **Explore Inventory**: Discover available resources in [Chapter 7: Inventory Management](/kubectl-mtv/07-inventory-management)
+3. **Create Mappings**: Define resource mappings in [Chapter 9: Mapping Management](/kubectl-mtv/09-mapping-management)
+4. **Plan Migrations**: Create optimized migration plans in [Chapter 10: Migration Plan Creation](/kubectl-mtv/10-migration-plan-creation)
 
 ---
 

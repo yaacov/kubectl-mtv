@@ -9,7 +9,7 @@ This chapter provides a complete step-by-step walkthrough of your first migratio
 
 Before starting this workflow, ensure you have:
 
-- `kubectl-mtv` installed and working (see [Chapter 2](02-installation-and-prerequisites))
+- `kubectl-mtv` installed and working (see [Chapter 2](/kubectl-mtv/02-installation-and-prerequisites))
 - Access to a Kubernetes cluster with Forklift/MTV installed
 - Connection to a source virtualization platform (vSphere, oVirt, OpenStack, or OVA)
 - Appropriate RBAC permissions
@@ -514,11 +514,11 @@ kubectl mtv create plan memory-migration \
 
 After completing your first migration:
 
-1. **Explore Advanced Features**: Learn about [Provider Management](04-provider-management) and [VDDK Optimization](06-vddk-image-creation-and-configuration)
-2. **Master Query Language**: Dive into [Advanced Filtering](08-query-language-reference-and-advanced-filtering)
-3. **Optimize Performance**: Study [Migration Process Optimization](13-migration-process-optimization)
-4. **Add Automation**: Implement [Migration Hooks](14-migration-hooks)
-5. **Scale Up**: Plan larger migrations with [Best Practices](18-best-practices-and-security)
+1. **Explore Advanced Features**: Learn about [Provider Management](/kubectl-mtv/04-provider-management) and [VDDK Optimization](/kubectl-mtv/06-vddk-image-creation-and-configuration)
+2. **Master Query Language**: Dive into [Advanced Filtering](/kubectl-mtv/08-query-language-reference-and-advanced-filtering)
+3. **Optimize Performance**: Study [Migration Process Optimization](/kubectl-mtv/13-migration-process-optimization)
+4. **Add Automation**: Implement [Migration Hooks](/kubectl-mtv/14-migration-hooks)
+5. **Scale Up**: Plan larger migrations with [Best Practices](/kubectl-mtv/18-best-practices-and-security)
 
 ## Troubleshooting Quick Reference
 

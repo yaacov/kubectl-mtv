@@ -587,10 +587,10 @@ kubectl mtv patch plan secure-migration \
 
 After mastering plan patching techniques:
 
-1. **Execute Migrations**: Learn to start and manage migration execution in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)
-2. **Handle Problems**: Master troubleshooting in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting)
-3. **Optimize Operations**: Learn best practices in [Chapter 18: Best Practices and Security](18-best-practices-and-security)
-4. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration)
+1. **Execute Migrations**: Learn to start and manage migration execution in [Chapter 16: Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)
+2. **Handle Problems**: Master troubleshooting in [Chapter 17: Debugging and Troubleshooting](/kubectl-mtv/17-debugging-and-troubleshooting)
+3. **Optimize Operations**: Learn best practices in [Chapter 18: Best Practices and Security](/kubectl-mtv/18-best-practices-and-security)
+4. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/19-model-context-protocol-mcp-server-integration)
 
 ---
 

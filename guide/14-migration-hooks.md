@@ -784,10 +784,10 @@ ansible-playbook -i localhost, playbook.yml
 
 After mastering migration hooks:
 
-1. **Advanced Plan Management**: Learn dynamic plan modification in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)
-2. **Execute Migrations**: Manage complete migration lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)
-3. **Troubleshooting**: Master debugging techniques in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting)
-4. **Best Practices**: Learn operational excellence in [Chapter 18: Best Practices and Security](18-best-practices-and-security)
+1. **Advanced Plan Management**: Learn dynamic plan modification in [Chapter 15: Advanced Plan Patching](/kubectl-mtv/15-advanced-plan-patching)
+2. **Execute Migrations**: Manage complete migration lifecycle in [Chapter 16: Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)
+3. **Troubleshooting**: Master debugging techniques in [Chapter 17: Debugging and Troubleshooting](/kubectl-mtv/17-debugging-and-troubleshooting)
+4. **Best Practices**: Learn operational excellence in [Chapter 18: Best Practices and Security](/kubectl-mtv/18-best-practices-and-security)
 
 ---
 

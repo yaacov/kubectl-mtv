@@ -633,10 +633,10 @@ kubectl mtv create plan cpu-distribution \
 
 After mastering target VM placement:
 
-1. **Optimize Migration Process**: Learn convertor optimization in [Chapter 13: Migration Process Optimization](13-migration-process-optimization)
-2. **Create Hooks**: Develop migration automation in [Chapter 14: Migration Hooks](14-migration-hooks)
-3. **Advanced Plan Modification**: Learn plan patching in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)
-4. **Execute Migrations**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)
+1. **Optimize Migration Process**: Learn convertor optimization in [Chapter 13: Migration Process Optimization](/kubectl-mtv/13-migration-process-optimization)
+2. **Create Hooks**: Develop migration automation in [Chapter 14: Migration Hooks](/kubectl-mtv/14-migration-hooks)
+3. **Advanced Plan Modification**: Learn plan patching in [Chapter 15: Advanced Plan Patching](/kubectl-mtv/15-advanced-plan-patching)
+4. **Execute Migrations**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)
 
 ---
 

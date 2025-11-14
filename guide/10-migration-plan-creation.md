@@ -181,7 +181,7 @@ kubectl mtv create plan pod-network-migration \
 
 ### Migration Types
 
-kubectl-mtv supports four migration types (see [Forklift Migration Types](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#about-cold-and-warm-migration)):
+kubectl-mtv supports four migration types (see [Forklift Migration Types](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#about-cold-warm-migration_forklift)):
 
 | Type | Description | Use Case |
 |------|-------------|----------|
@@ -190,7 +190,7 @@ kubectl-mtv supports four migration types (see [Forklift Migration Types](https:
 | `live` | Live migration (KubeVirt sources only) | Zero-downtime migration between KubeVirt clusters |
 | `conversion` | Guest conversion only (VMware only) | When storage vendors provide pre-populated PVCs |
 
-For detailed information about conversion migration, including prerequisites, workflow, and integration requirements, see [Chapter 3.6: Conversion Migration](03.6-conversion-migration).
+For detailed information about conversion migration, including prerequisites, workflow, and integration requirements, see [Chapter 3.6: Conversion Migration](/kubectl-mtv/03.6-conversion-migration).
 
 #### Migration Type Examples
 
@@ -785,10 +785,10 @@ kubectl mtv create plan mixed-mappings \
 
 After mastering plan creation:
 
-1. **Customize VMs**: Learn detailed VM customization in [Chapter 11: Customizing Individual VMs (PlanVMS Format)](11-customizing-individual-vms-planvms-format)
-2. **Optimize Placement**: Configure advanced placement in [Chapter 12: Target VM Placement](12-target-vm-placement)
-3. **Execute Plans**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)
-4. **Advanced Patching**: Modify existing plans in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)
+1. **Customize VMs**: Learn detailed VM customization in [Chapter 11: Customizing Individual VMs (PlanVMS Format)](/kubectl-mtv/11-customizing-individual-vms-planvms-format)
+2. **Optimize Placement**: Configure advanced placement in [Chapter 12: Target VM Placement](/kubectl-mtv/12-target-vm-placement)
+3. **Execute Plans**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)
+4. **Advanced Patching**: Modify existing plans in [Chapter 15: Advanced Plan Patching](/kubectl-mtv/15-advanced-plan-patching)
 
 ---
 

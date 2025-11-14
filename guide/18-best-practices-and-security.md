@@ -775,8 +775,8 @@ echo "Plan $PLAN_NAME tagged with change request $CHANGE_TICKET"
 
 After implementing comprehensive best practices and security:
 
-1. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](19-model-context-protocol-mcp-server-integration)
-2. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools)
+1. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/19-model-context-protocol-mcp-server-integration)
+2. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 20: Integration with KubeVirt Tools](/kubectl-mtv/20-integration-with-kubevirt-tools)
 
 ---
 

@@ -5,7 +5,7 @@ title: "Chapter 4: Provider Management"
 
 Providers are the core resources in kubectl-mtv that represent source and target virtualization platforms. This chapter covers complete provider lifecycle management including creation, configuration, patching, and deletion.
 
-For detailed information about provider prerequisites and requirements, see the [official Forklift provider documentation](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#prerequisites-and-software-requirements-for-all-providers).
+For detailed information about provider prerequisites and requirements, see the [official Forklift provider documentation](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#prerequisites-for-all-providers_forklift).
 
 ## Overview of Providers
 
@@ -626,10 +626,10 @@ kubectl get provider vsphere-prod -o yaml
 
 After mastering provider management:
 
-1. **Explore Inventory**: Learn to discover and query VMs in [Chapter 7: Inventory Management](07-inventory-management)
-2. **Create Migration Hosts**: Set up direct ESXi connections in [Chapter 5: Migration Host Management](05-migration-host-management)
-3. **Configure VDDK**: Optimize VMware transfers in [Chapter 6: VDDK Image Creation and Configuration](06-vddk-image-creation-and-configuration)
-4. **Plan Migrations**: Create migration plans in [Chapter 10: Migration Plan Creation](10-migration-plan-creation)
+1. **Explore Inventory**: Learn to discover and query VMs in [Chapter 7: Inventory Management](/kubectl-mtv/07-inventory-management)
+2. **Create Migration Hosts**: Set up direct ESXi connections in [Chapter 5: Migration Host Management](/kubectl-mtv/05-migration-host-management)
+3. **Configure VDDK**: Optimize VMware transfers in [Chapter 6: VDDK Image Creation and Configuration](/kubectl-mtv/06-vddk-image-creation-and-configuration)
+4. **Plan Migrations**: Create migration plans in [Chapter 10: Migration Plan Creation](/kubectl-mtv/10-migration-plan-creation)
 
 ---
 

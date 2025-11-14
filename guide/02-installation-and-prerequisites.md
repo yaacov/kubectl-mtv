@@ -576,7 +576,7 @@ kubectl mtv -v=2 --kubeconfig=/path/to/config get providers
 
 After successful installation and verification:
 
-1. **Follow the Quick Start** in [Chapter 3: Quick Start - First Migration Workflow](03-quick-start-first-migration-workflow)
+1. **Follow the Quick Start** in [Chapter 3: Quick Start - First Migration Workflow](/kubectl-mtv/03-quick-start-first-migration-workflow)
 2. **Set up providers** for your source virtualization platforms
 3. **Create your first migration plan** using the simplified workflow
 4. **Explore advanced features** like VDDK optimization and migration hooks

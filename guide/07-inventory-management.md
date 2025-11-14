@@ -650,10 +650,10 @@ kubectl mtv get inventory datastores vsphere-prod \
 
 After mastering inventory management:
 
-1. **Learn Query Language**: Master advanced filtering in [Chapter 8: Query Language Reference and Advanced Filtering](08-query-language-reference-and-advanced-filtering)
-2. **Create Mappings**: Define resource mappings in [Chapter 9: Mapping Management](09-mapping-management)
-3. **Plan Migrations**: Use inventory data for planning in [Chapter 10: Migration Plan Creation](10-migration-plan-creation)
-4. **Optimize Performance**: Apply inventory insights in [Chapter 13: Migration Process Optimization](13-migration-process-optimization)
+1. **Learn Query Language**: Master advanced filtering in [Chapter 8: Query Language Reference and Advanced Filtering](/kubectl-mtv/08-query-language-reference-and-advanced-filtering)
+2. **Create Mappings**: Define resource mappings in [Chapter 9: Mapping Management](/kubectl-mtv/09-mapping-management)
+3. **Plan Migrations**: Use inventory data for planning in [Chapter 10: Migration Plan Creation](/kubectl-mtv/10-migration-plan-creation)
+4. **Optimize Performance**: Apply inventory insights in [Chapter 13: Migration Process Optimization](/kubectl-mtv/13-migration-process-optimization)
 
 ---
 

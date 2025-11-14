@@ -699,7 +699,7 @@ netstat -tlnp | grep 8080
 
 After mastering MCP integration:
 
-1. **Complete Migration Toolkit**: Explore complementary tools in [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools)
+1. **Complete Migration Toolkit**: Explore complementary tools in [Chapter 20: Integration with KubeVirt Tools](/kubectl-mtv/20-integration-with-kubevirt-tools)
 
 ---
 

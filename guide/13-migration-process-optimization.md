@@ -679,10 +679,10 @@ kubectl mtv create plan cold-cost-optimized \
 
 After mastering migration process optimization:
 
-1. **Implement Hooks**: Add custom automation in [Chapter 14: Migration Hooks](14-migration-hooks)
-2. **Advanced Plan Management**: Learn plan patching in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)
-3. **Execute Migrations**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)
-4. **Troubleshooting**: Master debugging in [Chapter 17: Debugging and Troubleshooting](17-debugging-and-troubleshooting)
+1. **Implement Hooks**: Add custom automation in [Chapter 14: Migration Hooks](/kubectl-mtv/14-migration-hooks)
+2. **Advanced Plan Management**: Learn plan patching in [Chapter 15: Advanced Plan Patching](/kubectl-mtv/15-advanced-plan-patching)
+3. **Execute Migrations**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)
+4. **Troubleshooting**: Master debugging in [Chapter 17: Debugging and Troubleshooting](/kubectl-mtv/17-debugging-and-troubleshooting)
 
 ---
 

@@ -710,10 +710,10 @@ kubectl get vmstatus -n migration-namespace --watch
 
 After mastering PlanVMS customization:
 
-1. **Advanced Placement**: Learn VM placement strategies in [Chapter 12: Target VM Placement](12-target-vm-placement)
-2. **Performance Optimization**: Apply customization insights in [Chapter 13: Migration Process Optimization](13-migration-process-optimization)
-3. **Hook Development**: Create custom hooks in [Chapter 14: Migration Hooks](14-migration-hooks)
-4. **Plan Patching**: Modify plans dynamically in [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)
+1. **Advanced Placement**: Learn VM placement strategies in [Chapter 12: Target VM Placement](/kubectl-mtv/12-target-vm-placement)
+2. **Performance Optimization**: Apply customization insights in [Chapter 13: Migration Process Optimization](/kubectl-mtv/13-migration-process-optimization)
+3. **Hook Development**: Create custom hooks in [Chapter 14: Migration Hooks](/kubectl-mtv/14-migration-hooks)
+4. **Plan Patching**: Modify plans dynamically in [Chapter 15: Advanced Plan Patching](/kubectl-mtv/15-advanced-plan-patching)
 
 ---
 
