@@ -657,5 +657,5 @@ After mastering inventory management:
 
 ---
 
-*Previous: [Chapter 6: VDDK Image Creation and Configuration](/guide/06-vddk-image-creation-and-configuration)*  
-*Next: [Chapter 8: Query Language Reference and Advanced Filtering](/guide/08-query-language-reference-and-advanced-filtering)*
+*Previous: [Chapter 6: VDDK Image Creation and Configuration](/kubectl-mtv/06-vddk-image-creation-and-configuration)*  
+*Next: [Chapter 8: Query Language Reference and Advanced Filtering](/kubectl-mtv/08-query-language-reference-and-advanced-filtering)*

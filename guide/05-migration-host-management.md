@@ -563,5 +563,5 @@ After setting up migration hosts:
 
 ---
 
-*Previous: [Chapter 4: Provider Management](/guide/04-provider-management)*  
-*Next: [Chapter 6: VDDK Image Creation and Configuration](/guide/06-vddk-image-creation-and-configuration)*
+*Previous: [Chapter 4: Provider Management](/kubectl-mtv/04-provider-management)*  
+*Next: [Chapter 6: VDDK Image Creation and Configuration](/kubectl-mtv/06-vddk-image-creation-and-configuration)*

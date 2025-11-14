@@ -791,5 +791,5 @@ After mastering migration hooks:
 
 ---
 
-*Previous: [Chapter 13: Migration Process Optimization](/guide/13-migration-process-optimization)*  
-*Next: [Chapter 15: Advanced Plan Patching](/guide/15-advanced-plan-patching)*
+*Previous: [Chapter 13: Migration Process Optimization](/kubectl-mtv/13-migration-process-optimization)*  
+*Next: [Chapter 15: Advanced Plan Patching](/kubectl-mtv/15-advanced-plan-patching)*

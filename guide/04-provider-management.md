@@ -633,5 +633,5 @@ After mastering provider management:
 
 ---
 
-*Previous: [Chapter 3: Quick Start - First Migration Workflow](/guide/03-quick-start-first-migration-workflow)*  
-*Next: [Chapter 5: Migration Host Management](/guide/05-migration-host-management)*
+*Previous: [Chapter 3: Quick Start - First Migration Workflow](/kubectl-mtv/03-quick-start-first-migration-workflow)*  
+*Next: [Chapter 5: Migration Host Management](/kubectl-mtv/05-migration-host-management)*

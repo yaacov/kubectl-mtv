@@ -780,5 +780,5 @@ After implementing comprehensive best practices and security:
 
 ---
 
-*Previous: [Chapter 17: Debugging and Troubleshooting](/guide/17-debugging-and-troubleshooting)*  
-*Next: [Chapter 19: Model Context Protocol (MCP) Server Integration](/guide/19-model-context-protocol-mcp-server-integration)*
+*Previous: [Chapter 17: Debugging and Troubleshooting](/kubectl-mtv/17-debugging-and-troubleshooting)*  
+*Next: [Chapter 19: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/19-model-context-protocol-mcp-server-integration)*

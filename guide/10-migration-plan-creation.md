@@ -792,5 +792,5 @@ After mastering plan creation:
 
 ---
 
-*Previous: [Chapter 9.5: Storage Array Offloading and Optimization](/guide/09.5-storage-array-offloading-and-optimization)*  
-*Next: [Chapter 11: Customizing Individual VMs (PlanVMS Format)](/guide/11-customizing-individual-vms-planvms-format)*
+*Previous: [Chapter 9.5: Storage Array Offloading and Optimization](/kubectl-mtv/09.5-storage-array-offloading-and-optimization)*  
+*Next: [Chapter 11: Customizing Individual VMs (PlanVMS Format)](/kubectl-mtv/11-customizing-individual-vms-planvms-format)*

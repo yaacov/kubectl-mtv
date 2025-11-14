@@ -694,5 +694,5 @@ After mastering plan lifecycle execution:
 
 ---
 
-*Previous: [Chapter 15: Advanced Plan Patching](/guide/15-advanced-plan-patching)*  
-*Next: [Chapter 17: Debugging and Troubleshooting](/guide/17-debugging-and-troubleshooting)*
+*Previous: [Chapter 15: Advanced Plan Patching](/kubectl-mtv/15-advanced-plan-patching)*  
+*Next: [Chapter 17: Debugging and Troubleshooting](/kubectl-mtv/17-debugging-and-troubleshooting)*

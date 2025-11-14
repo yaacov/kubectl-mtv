@@ -717,5 +717,5 @@ After mastering PlanVMS customization:
 
 ---
 
-*Previous: [Chapter 10: Migration Plan Creation](/guide/10-migration-plan-creation)*  
-*Next: [Chapter 12: Target VM Placement](/guide/12-target-vm-placement)*
+*Previous: [Chapter 10: Migration Plan Creation](/kubectl-mtv/10-migration-plan-creation)*  
+*Next: [Chapter 12: Target VM Placement](/kubectl-mtv/12-target-vm-placement)*

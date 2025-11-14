@@ -706,5 +706,5 @@ After mastering mapping management:
 
 ---
 
-*Previous: [Chapter 8: Query Language Reference and Advanced Filtering](/guide/08-query-language-reference-and-advanced-filtering)*
-*Next: [Chapter 9.5: Storage Array Offloading and Optimization](/guide/09.5-storage-array-offloading-and-optimization)*
+*Previous: [Chapter 8: Query Language Reference and Advanced Filtering](/kubectl-mtv/08-query-language-reference-and-advanced-filtering)*
+*Next: [Chapter 9.5: Storage Array Offloading and Optimization](/kubectl-mtv/09.5-storage-array-offloading-and-optimization)*

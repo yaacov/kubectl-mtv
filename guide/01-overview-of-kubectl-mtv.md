@@ -162,4 +162,4 @@ The following chapters will guide you through:
 
 ---
 
-*Next: [Chapter 2: Installation and Prerequisites](/guide/02-installation-and-prerequisites)*
+*Next: [Chapter 2: Installation and Prerequisites](/kubectl-mtv/02-installation-and-prerequisites)*

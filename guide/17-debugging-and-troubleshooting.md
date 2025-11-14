@@ -771,5 +771,5 @@ After mastering debugging and troubleshooting:
 
 ---
 
-*Previous: [Chapter 16: Plan Lifecycle Execution](/guide/16-plan-lifecycle-execution)*  
-*Next: [Chapter 18: Best Practices and Security](/guide/18-best-practices-and-security)*
+*Previous: [Chapter 16: Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)*  
+*Next: [Chapter 18: Best Practices and Security](/kubectl-mtv/18-best-practices-and-security)*
