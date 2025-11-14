@@ -28,6 +28,7 @@ defaults:
       path: "guide"
     values:
       layout: "page"
+      permalink: /:basename/
   - scope:
       path: "guide/README.md"
     values:
