@@ -1,6 +1,7 @@
 ---
 layout: page
 title: "Chapter 10: Migration Plan Creation"
+liquid: false
 ---
 
 # Chapter 10: Migration Plan Creation
