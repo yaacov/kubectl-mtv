@@ -18,14 +18,11 @@ plugins:
   - jekyll-feed
   - jekyll-sitemap
   - jekyll-seo-tag
-  - jekyll-relative-links
 
-# Plugin configurations
-relative_links:
-  enabled: true
-  collections: false
+# Permalink structure (GitHub Pages standard)
+permalink: pretty
 
-# Default layout for guide pages
+# Default layout for guide pages  
 defaults:
   - scope:
       path: "guide"
@@ -35,8 +32,7 @@ defaults:
   - scope:
       path: "guide/README.md"
     values:
-      layout: "home"
-      permalink: /
+      layout: "page"
 
 # Navigation
 header_pages:
