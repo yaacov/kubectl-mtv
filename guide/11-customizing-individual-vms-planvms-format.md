@@ -1,6 +1,7 @@
 ---
 layout: page
 title: "Chapter 11: Customizing Individual VMs (PlanVMS Format)"
+render_with_liquid: false
 ---
 
 # Chapter 11: Customizing Individual VMs (PlanVMS Format)
