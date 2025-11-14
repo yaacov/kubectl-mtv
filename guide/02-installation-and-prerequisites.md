@@ -1,7 +1,6 @@
 ---
 layout: page
-title: "Chapter 2: Installation and Prerequisites"  
-render_with_liquid: false
+title: "Chapter 2: Installation and Prerequisites"
 ---
 
 # Chapter 2: Installation and Prerequisites

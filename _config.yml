@@ -29,11 +29,13 @@ defaults:
       type: "pages"
     values:
       layout: "page"
+      render_with_liquid: false
   - scope:
       path: "guide/README.md"
     values:
       layout: "home"
       permalink: /
+      render_with_liquid: true
 
 # Navigation
 header_pages:
