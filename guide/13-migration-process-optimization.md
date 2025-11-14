@@ -686,5 +686,5 @@ After mastering migration process optimization:
 
 ---
 
-*Previous: [Chapter 12: Target VM Placement](12-target-vm-placement)*  
-*Next: [Chapter 14: Migration Hooks](14-migration-hooks)*
+*Previous: [Chapter 12: Target VM Placement](/12-target-vm-placement)*  
+*Next: [Chapter 14: Migration Hooks](/14-migration-hooks)*

@@ -863,4 +863,4 @@ kubectl mtv get inventory vm vsphere-source -v=3
 
 ---
 
-*Previous: [Chapter 20: Integration with KubeVirt Tools](20-integration-with-kubevirt-tools)*
+*Previous: [Chapter 20: Integration with KubeVirt Tools](/20-integration-with-kubevirt-tools)*

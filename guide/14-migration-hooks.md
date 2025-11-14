@@ -791,5 +791,5 @@ After mastering migration hooks:
 
 ---
 
-*Previous: [Chapter 13: Migration Process Optimization](13-migration-process-optimization)*  
-*Next: [Chapter 15: Advanced Plan Patching](15-advanced-plan-patching)*
+*Previous: [Chapter 13: Migration Process Optimization](/13-migration-process-optimization)*  
+*Next: [Chapter 15: Advanced Plan Patching](/15-advanced-plan-patching)*

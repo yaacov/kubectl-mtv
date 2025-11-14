@@ -771,5 +771,5 @@ After mastering debugging and troubleshooting:
 
 ---
 
-*Previous: [Chapter 16: Plan Lifecycle Execution](16-plan-lifecycle-execution)*  
-*Next: [Chapter 18: Best Practices and Security](18-best-practices-and-security)*
+*Previous: [Chapter 16: Plan Lifecycle Execution](/16-plan-lifecycle-execution)*  
+*Next: [Chapter 18: Best Practices and Security](/18-best-practices-and-security)*
