@@ -1,0 +1,68 @@
+# Site settings
+title: kubectl-mtv Technical Guide
+email: your-email@example.com
+description: >-
+  Comprehensive technical guide for kubectl-mtv - the powerful command-line interface 
+  that transforms how you migrate virtual machines to Kubernetes.
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "" # the base hostname & protocol for your site, e.g. http://example.com
+
+# GitHub repository
+github_username: yaacov
+repository: yaacov/kubectl-mtv
+
+# Build settings
+markdown: kramdown
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Default layout for guide pages
+defaults:
+  - scope:
+      path: "guide"
+      type: "pages"
+    values:
+      layout: "page"
+  - scope:
+      path: "guide/README.md"
+    values:
+      layout: "home"
+      permalink: /
+
+# Navigation
+header_pages:
+  - guide/README.md
+
+# Kramdown settings
+kramdown:
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    block:
+      line_numbers: true
+
+# Exclude from processing
+exclude:
+  - .sass-cache/
+  - .jekyll-cache/
+  - gemfiles/
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - cmd/
+  - pkg/
+  - tests/
+  - vendor/
+  - go.mod
+  - go.sum
+  - main.go
+  - Makefile
+  - kubectl-mtv
+  - kubectl-mtv.spec
+  - LICENSE

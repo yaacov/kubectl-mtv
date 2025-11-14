@@ -42,7 +42,7 @@ Before building VDDK images, ensure you have:
 
 ### VMware License Compliance
 
-> **⚠️ Important License Notice**  
+> **Important License Notice**  
 > Storing VDDK images in public registries might violate VMware license terms. Always use private registries and ensure compliance with VMware licensing requirements.
 
 ### Download VDDK SDK
