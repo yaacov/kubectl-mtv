@@ -37,6 +37,7 @@ type CreatePlanOptions struct {
 	NetworkMapping            string
 	StorageMapping            string
 	InventoryURL              string
+	InventoryInsecureSkipTLS  bool
 	DefaultTargetNetwork      string
 	DefaultTargetStorageClass string
 	PlanSpec                  forkliftv1beta1.PlanSpec
@@ -501,7 +502,7 @@ func validateVMs(ctx context.Context, configFlags *genericclioptions.ConfigFlags
 	}
 
 	// Fetch source VMs inventory
-	sourceVMsInventory, err := client.FetchProviderInventory(configFlags, opts.InventoryURL, sourceProvider, "vms")
+	sourceVMsInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, opts.InventoryURL, sourceProvider, "vms", opts.InventoryInsecureSkipTLS)
 	if err != nil {
 		return fmt.Errorf("failed to fetch source VMs inventory: %v", err)
 	}

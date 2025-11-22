@@ -14,6 +14,8 @@ These flags are available for all `kubectl-mtv` commands:
 | `--verbose` | `-v` | int | 0 | Verbose output level (0=silent, 1=info, 2=debug, 3=trace) |
 | `--all-namespaces` | `-A` | bool | false | List resources across all namespaces |
 | `--use-utc` | | bool | false | Format timestamps in UTC instead of local timezone |
+| `--inventory-url` | `-i` | string | `$MTV_INVENTORY_URL` | Base URL for the inventory service |
+| `--inventory-insecure-skip-tls` | | bool | `$MTV_INVENTORY_INSECURE_SKIP_TLS` | Skip TLS verification for inventory service connections |
 | `--kubeconfig` | | string | | Path to the kubeconfig file |
 | `--context` | | string | | The name of the kubeconfig context to use |
 | `--namespace` | `-n` | string | | If present, the namespace scope for this CLI request |

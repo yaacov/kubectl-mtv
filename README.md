@@ -148,6 +148,7 @@ See [VDDK Setup Guide](guide/06-vddk-image-creation-and-configuration.md) for de
 
 - `MTV_VDDK_INIT_IMAGE`: Default VDDK init image for VMware providers
 - `MTV_INVENTORY_URL`: Base URL for inventory service
+- `MTV_INVENTORY_INSECURE_SKIP_TLS`: Skip TLS verification for inventory service connections (set to "true" to enable)
 
 ## License
 
