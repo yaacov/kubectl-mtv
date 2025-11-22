@@ -86,22 +86,24 @@ func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, global
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
-			// Get inventory URL from global config (auto-discovers if needed)
+			// Get inventory URL and insecure skip TLS from global config (auto-discovers if needed)
 			inventoryURL := globalConfig.GetInventoryURL()
+			inventoryInsecureSkipTLS := globalConfig.GetInventoryInsecureSkipTLS()
 
 			return mapping.CreateStorageWithOptions(mapping.StorageCreateOptions{
-				ConfigFlags:          kubeConfigFlags,
-				Name:                 name,
-				Namespace:            namespace,
-				SourceProvider:       sourceProvider,
-				TargetProvider:       targetProvider,
-				StoragePairs:         storagePairs,
-				InventoryURL:         inventoryURL,
-				DefaultVolumeMode:    defaultVolumeMode,
-				DefaultAccessMode:    defaultAccessMode,
-				DefaultOffloadPlugin: defaultOffloadPlugin,
-				DefaultOffloadSecret: defaultOffloadSecret,
-				DefaultOffloadVendor: defaultOffloadVendor,
+				ConfigFlags:              kubeConfigFlags,
+				Name:                     name,
+				Namespace:                namespace,
+				SourceProvider:           sourceProvider,
+				TargetProvider:           targetProvider,
+				StoragePairs:             storagePairs,
+				InventoryURL:             inventoryURL,
+				InventoryInsecureSkipTLS: inventoryInsecureSkipTLS,
+				DefaultVolumeMode:        defaultVolumeMode,
+				DefaultAccessMode:        defaultAccessMode,
+				DefaultOffloadPlugin:     defaultOffloadPlugin,
+				DefaultOffloadSecret:     defaultOffloadSecret,
+				DefaultOffloadVendor:     defaultOffloadVendor,
 				// Offload secret creation options
 				OffloadVSphereUsername: offloadVSphereUsername,
 				OffloadVSpherePassword: offloadVSpherePassword,

@@ -43,11 +43,6 @@ func countNetworkSubnets(network map[string]interface{}) int {
 	return len(subnetsArray)
 }
 
-// ListNetworks queries the provider's network inventory and displays the results
-func ListNetworks(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
-	return ListNetworksWithInsecure(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, watchMode, false)
-}
-
 // ListNetworksWithInsecure queries the provider's network inventory and displays the results with optional insecure TLS skip verification
 func ListNetworksWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
 	if watchMode {
