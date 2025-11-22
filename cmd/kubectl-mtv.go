@@ -168,7 +168,7 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 	rootCmd.AddCommand(delete.NewDeleteCmd(kubeConfigFlags))
 	rootCmd.AddCommand(create.NewCreateCmd(kubeConfigFlags, globalConfig))
 	rootCmd.AddCommand(describe.NewDescribeCmd(kubeConfigFlags, getGlobalConfigGetter))
-	rootCmd.AddCommand(patch.NewPatchCmd(kubeConfigFlags))
+	rootCmd.AddCommand(patch.NewPatchCmd(kubeConfigFlags, globalConfig))
 
 	// Plan commands - directly using package functions
 	rootCmd.AddCommand(start.NewStartCmd(kubeConfigFlags, getGlobalConfigGetter))

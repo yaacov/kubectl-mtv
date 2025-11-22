@@ -24,7 +24,7 @@ func NewCreateCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig G
 	cmd.AddCommand(NewProviderCmd(kubeConfigFlags))
 	cmd.AddCommand(NewPlanCmd(kubeConfigFlags, globalConfig))
 	cmd.AddCommand(NewMappingCmd(kubeConfigFlags, globalConfig))
-	cmd.AddCommand(NewHostCmd(kubeConfigFlags))
+	cmd.AddCommand(NewHostCmd(kubeConfigFlags, globalConfig))
 	cmd.AddCommand(NewHookCmd(kubeConfigFlags))
 	cmd.AddCommand(NewVddkCmd(globalConfig))
 

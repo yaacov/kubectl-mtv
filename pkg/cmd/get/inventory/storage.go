@@ -13,11 +13,6 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/watch"
 )
 
-// ListStorage queries the provider's storage inventory and displays the results
-func ListStorage(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool) error {
-	return ListStorageWithInsecure(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, watchMode, false)
-}
-
 // ListStorageWithInsecure queries the provider's storage inventory and displays the results with optional insecure TLS skip verification
 func ListStorageWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
 	if watchMode {
