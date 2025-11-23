@@ -14,7 +14,7 @@ import (
 )
 
 // NewHostCmd creates the get host command
-func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
+func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 
 	cmd := &cobra.Command{
@@ -25,9 +25,8 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.HostResourceNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get the global configuration
-			config := getGlobalConfig()
-			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
+			// Get namespace from global configuration
+			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
 			// Get optional host name from arguments
 			var hostName string
@@ -37,15 +36,15 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 
 			// Log the operation being performed
 			if hostName != "" {
-				logNamespaceOperation("Getting host", namespace, config.GetAllNamespaces())
+				logNamespaceOperation("Getting host", namespace, globalConfig.GetAllNamespaces())
 			} else {
-				logNamespaceOperation("Getting hosts", namespace, config.GetAllNamespaces())
+				logNamespaceOperation("Getting hosts", namespace, globalConfig.GetAllNamespaces())
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
 			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 			defer cancel()
-			return host.List(ctx, config.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hostName, config.GetUseUTC())
+			return host.List(ctx, globalConfig.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hostName, globalConfig.GetUseUTC())
 		},
 	}
 

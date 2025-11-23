@@ -65,18 +65,18 @@ func listStorageOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 	var data interface{}
 	switch providerType {
 	case "ovirt":
-		data, err = providerClient.GetStorageDomains(4)
+		data, err = providerClient.GetStorageDomains(ctx, 4)
 	case "vsphere":
-		data, err = providerClient.GetDatastores(4)
+		data, err = providerClient.GetDatastores(ctx, 4)
 	case "ova":
-		data, err = providerClient.GetResourceCollection("storages", 4)
+		data, err = providerClient.GetResourceCollection(ctx, "storages", 4)
 	case "openstack":
-		data, err = providerClient.GetVolumeTypes(4)
+		data, err = providerClient.GetVolumeTypes(ctx, 4)
 	case "openshift":
-		data, err = providerClient.GetStorageClasses(4)
+		data, err = providerClient.GetStorageClasses(ctx, 4)
 	default:
 		// For other providers, use generic storage resource
-		data, err = providerClient.GetResourceCollection("storages", 4)
+		data, err = providerClient.GetResourceCollection(ctx, "storages", 4)
 	}
 
 	if err != nil {

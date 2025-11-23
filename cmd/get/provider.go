@@ -14,7 +14,7 @@ import (
 )
 
 // NewProviderCmd creates the get provider command
-func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
+func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 
 	cmd := &cobra.Command{
@@ -29,8 +29,9 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalCon
 			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 			defer cancel()
 
-			config := getGlobalConfig()
-			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
+			kubeConfigFlags := globalConfig.GetKubeConfigFlags()
+			allNamespaces := globalConfig.GetAllNamespaces()
+			namespace := client.ResolveNamespaceWithAllFlag(kubeConfigFlags, allNamespaces)
 
 			// Get optional provider name from arguments
 			var providerName string
@@ -38,18 +39,19 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalCon
 				providerName = args[0]
 			}
 
-			// Get inventory URL from global config (auto-discovers if needed)
-			inventoryURL := config.GetInventoryURL()
+			// Get inventory URL and insecure skip TLS from global config (auto-discovers if needed)
+			inventoryURL := globalConfig.GetInventoryURL()
+			inventoryInsecureSkipTLS := globalConfig.GetInventoryInsecureSkipTLS()
 
 			// Log the operation being performed
 			if providerName != "" {
-				logNamespaceOperation("Getting provider", namespace, config.GetAllNamespaces())
+				logNamespaceOperation("Getting provider", namespace, allNamespaces)
 			} else {
-				logNamespaceOperation("Getting providers", namespace, config.GetAllNamespaces())
+				logNamespaceOperation("Getting providers", namespace, allNamespaces)
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return provider.List(ctx, config.GetKubeConfigFlags(), namespace, inventoryURL, outputFormatFlag.GetValue(), providerName, config.GetUseUTC())
+			return provider.List(ctx, kubeConfigFlags, namespace, inventoryURL, outputFormatFlag.GetValue(), providerName, inventoryInsecureSkipTLS)
 		},
 	}
 

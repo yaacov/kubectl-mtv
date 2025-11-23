@@ -51,7 +51,7 @@ func listDataCentersOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 	var data interface{}
 	switch providerType {
 	case "ovirt", "vsphere":
-		data, err = providerClient.GetDataCenters(4)
+		data, err = providerClient.GetDataCenters(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support datacenter inventory", providerType)
 	}

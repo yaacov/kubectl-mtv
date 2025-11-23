@@ -105,10 +105,10 @@ func listNetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 	switch providerType {
 	case "openshift":
 		// For OpenShift, get network attachment definitions
-		data, err = providerClient.GetResourceCollection("networkattachmentdefinitions", 4)
+		data, err = providerClient.GetResourceCollection(ctx, "networkattachmentdefinitions", 4)
 	default:
 		// For other providers, get networks
-		data, err = providerClient.GetNetworks(4)
+		data, err = providerClient.GetNetworks(ctx, 4)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to fetch network inventory: %v", err)

@@ -2,15 +2,13 @@ package patch
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/yaacov/kubectl-mtv/pkg/util/config"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
-// GlobalConfigGetter interface for getting global configuration
-type GlobalConfigGetter interface {
-	GetInventoryURL() string
-	GetInventoryInsecureSkipTLS() bool
-	GetKubeConfigFlags() *genericclioptions.ConfigFlags
-}
+// GlobalConfigGetter is a type alias for the shared config interface.
+// This maintains backward compatibility while using the centralized interface definition.
+type GlobalConfigGetter = config.InventoryConfigWithKubeFlags
 
 // NewPatchCmd creates the patch command with subcommands
 func NewPatchCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {

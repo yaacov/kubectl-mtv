@@ -14,7 +14,7 @@ import (
 )
 
 // NewInventoryDiskProfileCmd creates the get inventory disk-profile command
-func NewInventoryDiskProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
+func NewInventoryDiskProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
@@ -35,17 +35,19 @@ func NewInventoryDiskProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, 
 			}
 
 			provider := args[0]
-			config := getGlobalConfig()
-			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
 
-			logNamespaceOperation("Getting disk profiles from provider", namespace, config.GetAllNamespaces())
+			cfg := globalConfig.GetKubeConfigFlags()
+			allNamespaces := globalConfig.GetAllNamespaces()
+			namespace := client.ResolveNamespaceWithAllFlag(cfg, allNamespaces)
+
+			logNamespaceOperation("Getting disk profiles from provider", namespace, allNamespaces)
 			logOutputFormat(outputFormatFlag.GetValue())
 
 			// Get inventory URL and insecure skip TLS from global config (auto-discovers if needed)
-			inventoryURL := config.GetInventoryURL()
-			inventoryInsecureSkipTLS := config.GetInventoryInsecureSkipTLS()
+			inventoryURL := globalConfig.GetInventoryURL()
+			inventoryInsecureSkipTLS := globalConfig.GetInventoryInsecureSkipTLS()
 
-			return inventory.ListDiskProfilesWithInsecure(ctx, config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
+			return inventory.ListDiskProfilesWithInsecure(ctx, cfg, provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
@@ -63,7 +65,7 @@ func NewInventoryDiskProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, 
 }
 
 // NewInventoryNICProfileCmd creates the get inventory nic-profile command
-func NewInventoryNICProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
+func NewInventoryNICProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
@@ -84,17 +86,19 @@ func NewInventoryNICProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 			}
 
 			provider := args[0]
-			config := getGlobalConfig()
-			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
 
-			logNamespaceOperation("Getting NIC profiles from provider", namespace, config.GetAllNamespaces())
+			cfg := globalConfig.GetKubeConfigFlags()
+			allNamespaces := globalConfig.GetAllNamespaces()
+			namespace := client.ResolveNamespaceWithAllFlag(cfg, allNamespaces)
+
+			logNamespaceOperation("Getting NIC profiles from provider", namespace, allNamespaces)
 			logOutputFormat(outputFormatFlag.GetValue())
 
 			// Get inventory URL and insecure skip TLS from global config (auto-discovers if needed)
-			inventoryURL := config.GetInventoryURL()
-			inventoryInsecureSkipTLS := config.GetInventoryInsecureSkipTLS()
+			inventoryURL := globalConfig.GetInventoryURL()
+			inventoryInsecureSkipTLS := globalConfig.GetInventoryInsecureSkipTLS()
 
-			return inventory.ListNICProfilesWithInsecure(ctx, config.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
+			return inventory.ListNICProfilesWithInsecure(ctx, cfg, provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")

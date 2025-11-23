@@ -14,7 +14,7 @@ import (
 )
 
 // resolveOpenShiftNetworkNameToIDWithInsecure resolves network name for OpenShift provider with optional insecure TLS skip verification
-func resolveOpenShiftNetworkNameToIDWithInsecure(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, networkName string, insecureSkipTLS bool) ([]ref.Ref, error) {
+func resolveOpenShiftNetworkNameToIDWithInsecure(ctx context.Context, configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, networkName string, insecureSkipTLS bool) ([]ref.Ref, error) {
 	// If networkName is empty, return an empty ref
 	if networkName == "" {
 		return nil, fmt.Errorf("network name cannot be empty")
@@ -40,7 +40,7 @@ func resolveOpenShiftNetworkNameToIDWithInsecure(configFlags *genericclioptions.
 	}
 
 	// Fetch NetworkAttachmentDefinitions from OpenShift
-	networksInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "networkattachmentdefinitions?detail=4", insecureSkipTLS)
+	networksInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "networkattachmentdefinitions?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch networks inventory: %v", err)
 	}
@@ -90,9 +90,9 @@ func resolveOpenShiftNetworkNameToIDWithInsecure(configFlags *genericclioptions.
 }
 
 // resolveVirtualizationNetworkNameToIDWithInsecure resolves network name for virtualization providers (VMware, oVirt, OpenStack) with optional insecure TLS skip verification
-func resolveVirtualizationNetworkNameToIDWithInsecure(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, networkName string, insecureSkipTLS bool) ([]ref.Ref, error) {
+func resolveVirtualizationNetworkNameToIDWithInsecure(ctx context.Context, configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, networkName string, insecureSkipTLS bool) ([]ref.Ref, error) {
 	// Fetch networks from virtualization providers
-	networksInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "networks?detail=4", insecureSkipTLS)
+	networksInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "networks?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch networks inventory: %v", err)
 	}
@@ -144,10 +144,10 @@ func resolveNetworkNameToIDWithInsecure(ctx context.Context, configFlags *generi
 
 	switch providerType {
 	case "openshift":
-		return resolveOpenShiftNetworkNameToIDWithInsecure(configFlags, inventoryURL, provider, networkName, insecureSkipTLS)
+		return resolveOpenShiftNetworkNameToIDWithInsecure(ctx, configFlags, inventoryURL, provider, networkName, insecureSkipTLS)
 	case "vsphere", "ovirt", "openstack", "ova":
-		return resolveVirtualizationNetworkNameToIDWithInsecure(configFlags, inventoryURL, provider, networkName, insecureSkipTLS)
+		return resolveVirtualizationNetworkNameToIDWithInsecure(ctx, configFlags, inventoryURL, provider, networkName, insecureSkipTLS)
 	default:
-		return resolveVirtualizationNetworkNameToIDWithInsecure(configFlags, inventoryURL, provider, networkName, insecureSkipTLS)
+		return resolveVirtualizationNetworkNameToIDWithInsecure(ctx, configFlags, inventoryURL, provider, networkName, insecureSkipTLS)
 	}
 }

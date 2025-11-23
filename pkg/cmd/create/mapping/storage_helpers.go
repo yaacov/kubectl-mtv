@@ -13,9 +13,9 @@ import (
 )
 
 // resolveVSphereStorageNameToID resolves storage name for VMware vSphere provider
-func resolveVSphereStorageNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string, insecureSkipTLS bool) ([]ref.Ref, error) {
+func resolveVSphereStorageNameToID(ctx context.Context, configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string, insecureSkipTLS bool) ([]ref.Ref, error) {
 	// Fetch datastores from VMware vSphere
-	storageInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "datastores?detail=4", insecureSkipTLS)
+	storageInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "datastores?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch storage inventory: %v", err)
 	}
@@ -52,9 +52,9 @@ func resolveVSphereStorageNameToID(configFlags *genericclioptions.ConfigFlags, i
 }
 
 // resolveOvirtStorageNameToID resolves storage name for oVirt provider
-func resolveOvirtStorageNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string, insecureSkipTLS bool) ([]ref.Ref, error) {
+func resolveOvirtStorageNameToID(ctx context.Context, configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string, insecureSkipTLS bool) ([]ref.Ref, error) {
 	// Fetch storage domains from oVirt
-	storageInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "storagedomains?detail=4", insecureSkipTLS)
+	storageInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "storagedomains?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch storage inventory: %v", err)
 	}
@@ -91,7 +91,7 @@ func resolveOvirtStorageNameToID(configFlags *genericclioptions.ConfigFlags, inv
 }
 
 // resolveOpenStackStorageNameToID resolves storage name for OpenStack provider
-func resolveOpenStackStorageNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string, insecureSkipTLS bool) ([]ref.Ref, error) {
+func resolveOpenStackStorageNameToID(ctx context.Context, configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string, insecureSkipTLS bool) ([]ref.Ref, error) {
 	// Handle '__DEFAULT__' as a special case - return ref with type 'default'
 	if storageName == "__DEFAULT__" {
 		return []ref.Ref{{
@@ -100,7 +100,7 @@ func resolveOpenStackStorageNameToID(configFlags *genericclioptions.ConfigFlags,
 	}
 
 	// Fetch storage types from OpenStack
-	storageInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "volumetypes?detail=4", insecureSkipTLS)
+	storageInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "volumetypes?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch storage inventory: %v", err)
 	}
@@ -137,9 +137,9 @@ func resolveOpenStackStorageNameToID(configFlags *genericclioptions.ConfigFlags,
 }
 
 // resolveOVAStorageNameToID resolves storage name for OVA provider
-func resolveOVAStorageNameToID(configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string, insecureSkipTLS bool) ([]ref.Ref, error) {
+func resolveOVAStorageNameToID(ctx context.Context, configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string, insecureSkipTLS bool) ([]ref.Ref, error) {
 	// Fetch storage from OVA
-	storageInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "storages?detail=4", insecureSkipTLS)
+	storageInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "storages?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch storage inventory: %v", err)
 	}
@@ -197,16 +197,16 @@ func resolveStorageNameToID(ctx context.Context, configFlags *genericclioptions.
 			Name: storageName,
 		}}, nil
 	case "vsphere":
-		return resolveVSphereStorageNameToID(configFlags, inventoryURL, provider, storageName, insecureSkipTLS)
+		return resolveVSphereStorageNameToID(ctx, configFlags, inventoryURL, provider, storageName, insecureSkipTLS)
 	case "ovirt":
-		return resolveOvirtStorageNameToID(configFlags, inventoryURL, provider, storageName, insecureSkipTLS)
+		return resolveOvirtStorageNameToID(ctx, configFlags, inventoryURL, provider, storageName, insecureSkipTLS)
 	case "openstack":
-		return resolveOpenStackStorageNameToID(configFlags, inventoryURL, provider, storageName, insecureSkipTLS)
+		return resolveOpenStackStorageNameToID(ctx, configFlags, inventoryURL, provider, storageName, insecureSkipTLS)
 	case "ova":
-		return resolveOVAStorageNameToID(configFlags, inventoryURL, provider, storageName, insecureSkipTLS)
+		return resolveOVAStorageNameToID(ctx, configFlags, inventoryURL, provider, storageName, insecureSkipTLS)
 	default:
 		// Default to generic storage endpoint for unknown providers
-		storageInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "storages?detail=4", insecureSkipTLS)
+		storageInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "storages?detail=4", insecureSkipTLS)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch storage inventory: %v", err)
 		}

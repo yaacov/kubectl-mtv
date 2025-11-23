@@ -33,7 +33,7 @@ func (f *OvirtStorageFetcher) FetchSourceStorages(ctx context.Context, configFla
 	}
 
 	// Fetch storage domains inventory first to create ID-to-storage mapping
-	storageDomainsInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "storagedomains?detail=4", insecureSkipTLS)
+	storageDomainsInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "storagedomains?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch storage domains inventory: %v", err)
 	}
@@ -61,7 +61,7 @@ func (f *OvirtStorageFetcher) FetchSourceStorages(ctx context.Context, configFla
 	}
 
 	// Fetch VMs inventory to get disk references from VMs
-	vmsInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
+	vmsInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch VMs inventory: %v", err)
 	}
@@ -102,13 +102,13 @@ func (f *OvirtStorageFetcher) FetchSourceStorages(ctx context.Context, configFla
 	storageDomainIDSet := make(map[string]bool)
 
 	// Try to fetch disks inventory to get storage domain mappings
-	disksInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "disks?detail=4", insecureSkipTLS)
+	disksInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "disks?detail=4", insecureSkipTLS)
 	if err != nil {
 		// If disks endpoint doesn't work, try disk profiles as fallback
 		klog.V(4).Infof("Disks endpoint failed, trying disk profiles: %v", err)
 
 		// Fetch disk profiles to map disks to storage domains
-		diskProfilesInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "diskprofiles?detail=4", insecureSkipTLS)
+		diskProfilesInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "diskprofiles?detail=4", insecureSkipTLS)
 		if err != nil {
 			klog.V(4).Infof("Warning: Could not fetch disk profiles either: %v", err)
 			// Return all storage domains as fallback

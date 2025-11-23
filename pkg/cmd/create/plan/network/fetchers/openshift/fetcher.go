@@ -35,7 +35,7 @@ func (f *OpenShiftNetworkFetcher) FetchSourceNetworks(ctx context.Context, confi
 	}
 
 	// Fetch networks inventory (NADs in OpenShift) first to create name-to-ID mapping
-	networksInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "networkattachmentdefinitions?detail=4", insecureSkipTLS)
+	networksInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "networkattachmentdefinitions?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch networks inventory: %v", err)
 	}
@@ -69,7 +69,7 @@ func (f *OpenShiftNetworkFetcher) FetchSourceNetworks(ctx context.Context, confi
 	}
 
 	// Fetch VMs inventory to get network references from VMs
-	vmsInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
+	vmsInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch VMs inventory: %v", err)
 	}
@@ -182,7 +182,7 @@ func (f *OpenShiftNetworkFetcher) FetchTargetNetworks(ctx context.Context, confi
 
 	// For OpenShift targets, always fetch NADs
 	klog.V(4).Infof("Fetching NetworkAttachmentDefinitions for OpenShift target")
-	networksInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "networkattachmentdefinitions?detail=4", insecureSkipTLS)
+	networksInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "networkattachmentdefinitions?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch target networks inventory: %v", err)
 	}

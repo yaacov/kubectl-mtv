@@ -47,7 +47,7 @@ func listProvidersOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 		}
 	} else {
 		// Get all providers with detail=4
-		providersData, err = client.FetchProvidersWithDetailAndInsecure(kubeConfigFlags, inventoryURL, 4, insecureSkipTLS)
+		providersData, err = client.FetchProvidersWithDetailAndInsecure(ctx, kubeConfigFlags, inventoryURL, 4, insecureSkipTLS)
 		if err != nil {
 			return fmt.Errorf("failed to fetch providers inventory: %v", err)
 		}

@@ -53,7 +53,7 @@ func listInstancesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 	var data interface{}
 	switch providerType {
 	case "openstack":
-		data, err = providerClient.GetInstances(4)
+		data, err = providerClient.GetInstances(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support instance inventory", providerType)
 	}
@@ -131,7 +131,7 @@ func listImagesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Conf
 	var data interface{}
 	switch providerType {
 	case "openstack":
-		data, err = providerClient.GetImages(4)
+		data, err = providerClient.GetImages(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support image inventory", providerType)
 	}
@@ -213,7 +213,7 @@ func listFlavorsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 	var data interface{}
 	switch providerType {
 	case "openstack":
-		data, err = providerClient.GetFlavors(4)
+		data, err = providerClient.GetFlavors(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support flavor inventory", providerType)
 	}
@@ -294,7 +294,7 @@ func listProjectsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 	var data interface{}
 	switch providerType {
 	case "openstack":
-		data, err = providerClient.GetProjects(4)
+		data, err = providerClient.GetProjects(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support project inventory", providerType)
 	}
@@ -373,7 +373,7 @@ func listVolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 	var data interface{}
 	switch providerType {
 	case "openstack":
-		data, err = providerClient.GetVolumes(4)
+		data, err = providerClient.GetVolumes(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support volume inventory", providerType)
 	}
@@ -453,7 +453,7 @@ func listVolumeTypesOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 	var data interface{}
 	switch providerType {
 	case "openstack":
-		data, err = providerClient.GetVolumeTypes(4)
+		data, err = providerClient.GetVolumeTypes(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support volume type inventory", providerType)
 	}
@@ -531,7 +531,7 @@ func listSnapshotsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 	var data interface{}
 	switch providerType {
 	case "openstack":
-		data, err = providerClient.GetSnapshots(4)
+		data, err = providerClient.GetSnapshots(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support snapshot inventory", providerType)
 	}
@@ -614,7 +614,7 @@ func listSubnetsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 	var data interface{}
 	switch providerType {
 	case "openstack":
-		data, err = providerClient.GetSubnets(4)
+		data, err = providerClient.GetSubnets(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support subnet inventory", providerType)
 	}

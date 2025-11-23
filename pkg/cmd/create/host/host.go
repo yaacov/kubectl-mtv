@@ -168,7 +168,7 @@ func getProviderHosts(ctx context.Context, configFlags *genericclioptions.Config
 	providerClient := inventory.NewProviderClientWithInsecure(configFlags, provider, inventoryURL, insecureSkipTLS)
 
 	// Fetch hosts inventory
-	data, err := providerClient.GetHosts(4)
+	data, err := providerClient.GetHosts(ctx, 4)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch host inventory: %v", err)
 	}

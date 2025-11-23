@@ -65,7 +65,7 @@ func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (string, e
 
 	// Get source storage fetcher using the provider's namespace
 	sourceProviderNamespace := client.GetProviderNamespace(opts.SourceProviderNamespace, opts.Namespace)
-	sourceFetcher, err := GetSourceStorageFetcher(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace)
+	sourceFetcher, err := GetSourceStorageFetcher(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.InventoryInsecureSkipTLS)
 	if err != nil {
 		return "", fmt.Errorf("failed to get source storage fetcher: %v", err)
 	}
@@ -73,7 +73,7 @@ func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (string, e
 
 	// Get target storage fetcher using the provider's namespace
 	targetProviderNamespace := client.GetProviderNamespace(opts.TargetProviderNamespace, opts.Namespace)
-	targetFetcher, err := GetTargetStorageFetcher(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace)
+	targetFetcher, err := GetTargetStorageFetcher(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace, opts.InventoryInsecureSkipTLS)
 	if err != nil {
 		return "", fmt.Errorf("failed to get target storage fetcher: %v", err)
 	}
@@ -100,7 +100,7 @@ func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (string, e
 	}
 
 	// Get provider-specific storage mapper
-	storageMapper, sourceProviderType, targetProviderType, err := GetStorageMapper(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.TargetProvider, targetProviderNamespace)
+	storageMapper, sourceProviderType, targetProviderType, err := GetStorageMapper(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.TargetProvider, targetProviderNamespace, opts.InventoryInsecureSkipTLS)
 	if err != nil {
 		return "", fmt.Errorf("failed to get storage mapper: %v", err)
 	}
@@ -191,7 +191,7 @@ func createStorageMap(opts StorageMapperOptions, storagePairs []forkliftv1beta1.
 }
 
 // GetSourceStorageFetcher returns the appropriate source storage fetcher based on provider type
-func GetSourceStorageFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.SourceStorageFetcher, error) {
+func GetSourceStorageFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string, insecureSkipTLS bool) (fetchers.SourceStorageFetcher, error) {
 	// Get the provider object to determine its type
 	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
@@ -199,7 +199,8 @@ func GetSourceStorageFetcher(ctx context.Context, configFlags *genericclioptions
 	}
 
 	// Create a provider client to get the provider type
-	providerClient := inventory.NewProviderClient(configFlags, provider, "")
+	// Note: GetProviderType() only reads from CRD spec (no HTTPS calls), but we pass insecureSkipTLS for consistency
+	providerClient := inventory.NewProviderClientWithInsecure(configFlags, provider, "", insecureSkipTLS)
 	providerType, err := providerClient.GetProviderType()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider type: %v", err)
@@ -230,7 +231,7 @@ func GetSourceStorageFetcher(ctx context.Context, configFlags *genericclioptions
 }
 
 // GetTargetStorageFetcher returns the appropriate target storage fetcher based on provider type
-func GetTargetStorageFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.TargetStorageFetcher, error) {
+func GetTargetStorageFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string, insecureSkipTLS bool) (fetchers.TargetStorageFetcher, error) {
 	// Get the provider object to determine its type
 	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
@@ -238,7 +239,8 @@ func GetTargetStorageFetcher(ctx context.Context, configFlags *genericclioptions
 	}
 
 	// Create a provider client to get the provider type
-	providerClient := inventory.NewProviderClient(configFlags, provider, "")
+	// Note: GetProviderType() only reads from CRD spec (no HTTPS calls), but we pass insecureSkipTLS for consistency
+	providerClient := inventory.NewProviderClientWithInsecure(configFlags, provider, "", insecureSkipTLS)
 	providerType, err := providerClient.GetProviderType()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider type: %v", err)
@@ -269,14 +271,15 @@ func GetTargetStorageFetcher(ctx context.Context, configFlags *genericclioptions
 }
 
 // GetStorageMapper returns the appropriate storage mapper based on source provider type
-func GetStorageMapper(ctx context.Context, configFlags *genericclioptions.ConfigFlags, sourceProviderName, sourceProviderNamespace, targetProviderName, targetProviderNamespace string) (mapper.StorageMapper, string, string, error) {
+func GetStorageMapper(ctx context.Context, configFlags *genericclioptions.ConfigFlags, sourceProviderName, sourceProviderNamespace, targetProviderName, targetProviderNamespace string, insecureSkipTLS bool) (mapper.StorageMapper, string, string, error) {
 	// Get source provider type
 	sourceProvider, err := inventory.GetProviderByName(ctx, configFlags, sourceProviderName, sourceProviderNamespace)
 	if err != nil {
 		return nil, "", "", fmt.Errorf("failed to get source provider: %v", err)
 	}
 
-	sourceProviderClient := inventory.NewProviderClient(configFlags, sourceProvider, "")
+	// Note: GetProviderType() only reads from CRD spec (no HTTPS calls), but we pass insecureSkipTLS for consistency
+	sourceProviderClient := inventory.NewProviderClientWithInsecure(configFlags, sourceProvider, "", insecureSkipTLS)
 	sourceProviderType, err := sourceProviderClient.GetProviderType()
 	if err != nil {
 		return nil, "", "", fmt.Errorf("failed to get source provider type: %v", err)
@@ -288,7 +291,8 @@ func GetStorageMapper(ctx context.Context, configFlags *genericclioptions.Config
 		return nil, "", "", fmt.Errorf("failed to get target provider: %v", err)
 	}
 
-	targetProviderClient := inventory.NewProviderClient(configFlags, targetProvider, "")
+	// Note: GetProviderType() only reads from CRD spec (no HTTPS calls), but we pass insecureSkipTLS for consistency
+	targetProviderClient := inventory.NewProviderClientWithInsecure(configFlags, targetProvider, "", insecureSkipTLS)
 	targetProviderType, err := targetProviderClient.GetProviderType()
 	if err != nil {
 		return nil, "", "", fmt.Errorf("failed to get target provider type: %v", err)

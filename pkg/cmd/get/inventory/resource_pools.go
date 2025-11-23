@@ -60,7 +60,7 @@ func listResourcePoolsOnce(ctx context.Context, kubeConfigFlags *genericclioptio
 	var data interface{}
 	switch providerType {
 	case "vsphere":
-		data, err = providerClient.GetResourcePools(4)
+		data, err = providerClient.GetResourcePools(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support resource pool inventory", providerType)
 	}

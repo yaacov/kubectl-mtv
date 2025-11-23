@@ -33,7 +33,7 @@ func (f *OvirtNetworkFetcher) FetchSourceNetworks(ctx context.Context, configFla
 	}
 
 	// Fetch networks inventory first to create ID-to-network mapping
-	networksInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "networks?detail=4", insecureSkipTLS)
+	networksInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "networks?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch networks inventory: %v", err)
 	}
@@ -61,7 +61,7 @@ func (f *OvirtNetworkFetcher) FetchSourceNetworks(ctx context.Context, configFla
 	}
 
 	// Fetch NIC profiles to map profile IDs to network IDs
-	nicProfilesInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "nicprofiles?detail=4", insecureSkipTLS)
+	nicProfilesInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "nicprofiles?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch NIC profiles inventory: %v", err)
 	}
@@ -84,7 +84,7 @@ func (f *OvirtNetworkFetcher) FetchSourceNetworks(ctx context.Context, configFla
 	}
 
 	// Fetch VMs inventory to get network references from VMs
-	vmsInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
+	vmsInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch VMs inventory: %v", err)
 	}

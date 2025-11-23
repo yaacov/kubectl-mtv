@@ -59,7 +59,7 @@ func listFoldersOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 	var data interface{}
 	switch providerType {
 	case "vsphere":
-		data, err = providerClient.GetFolders(4)
+		data, err = providerClient.GetFolders(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support folder inventory", providerType)
 	}
