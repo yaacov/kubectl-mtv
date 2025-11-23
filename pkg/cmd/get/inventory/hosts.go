@@ -44,7 +44,7 @@ func listHostsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Confi
 	var data interface{}
 	switch providerType {
 	case "ovirt", "vsphere":
-		data, err = providerClient.GetHosts(4)
+		data, err = providerClient.GetHosts(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support host inventory", providerType)
 	}

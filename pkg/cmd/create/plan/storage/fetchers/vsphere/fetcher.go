@@ -34,7 +34,7 @@ func (f *VSphereStorageFetcher) FetchSourceStorages(ctx context.Context, configF
 	}
 
 	// Fetch datastores inventory first to create ID-to-datastore mapping
-	datastoresInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "datastores?detail=4", insecureSkipTLS)
+	datastoresInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "datastores?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch datastores inventory: %v", err)
 	}
@@ -62,7 +62,7 @@ func (f *VSphereStorageFetcher) FetchSourceStorages(ctx context.Context, configF
 	}
 
 	// Fetch VMs inventory to get datastore references from VMs
-	vmsInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
+	vmsInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch VMs inventory: %v", err)
 	}

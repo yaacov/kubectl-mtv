@@ -61,7 +61,7 @@ func listPersistentVolumeClaimsOnce(ctx context.Context, kubeConfigFlags *generi
 	var data interface{}
 	switch providerType {
 	case "openshift":
-		data, err = providerClient.GetPersistentVolumeClaims(4)
+		data, err = providerClient.GetPersistentVolumeClaims(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support persistent volume claim inventory", providerType)
 	}

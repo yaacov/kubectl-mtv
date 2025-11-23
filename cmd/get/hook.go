@@ -14,7 +14,7 @@ import (
 )
 
 // NewHookCmd creates the get hook command
-func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig func() GlobalConfigGetter) *cobra.Command {
+func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 
 	cmd := &cobra.Command{
@@ -29,9 +29,10 @@ func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 			defer cancel()
 
-			// Get the global configuration
-			config := getGlobalConfig()
-			namespace := client.ResolveNamespaceWithAllFlag(config.GetKubeConfigFlags(), config.GetAllNamespaces())
+			// Get namespace from global configuration
+			kubeConfigFlags := globalConfig.GetKubeConfigFlags()
+			allNamespaces := globalConfig.GetAllNamespaces()
+			namespace := client.ResolveNamespaceWithAllFlag(kubeConfigFlags, allNamespaces)
 
 			// Get optional hook name from arguments
 			var hookName string
@@ -41,13 +42,13 @@ func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags, getGlobalConfig 
 
 			// Log the operation being performed
 			if hookName != "" {
-				logNamespaceOperation("Getting hook", namespace, config.GetAllNamespaces())
+				logNamespaceOperation("Getting hook", namespace, allNamespaces)
 			} else {
-				logNamespaceOperation("Getting hooks", namespace, config.GetAllNamespaces())
+				logNamespaceOperation("Getting hooks", namespace, allNamespaces)
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return hook.List(ctx, config.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hookName, config.GetUseUTC())
+			return hook.List(ctx, kubeConfigFlags, namespace, outputFormatFlag.GetValue(), hookName, globalConfig.GetUseUTC())
 		},
 	}
 

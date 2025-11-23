@@ -63,7 +63,7 @@ func getSpecificProvider(ctx context.Context, dynamicClient dynamic.Interface, n
 }
 
 // List lists providers
-func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string, useUTC bool) error {
+func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string, insecureSkipTLS bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -104,7 +104,8 @@ func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, names
 	// Fetch bulk provider inventory data
 	var bulkProviderData map[string][]map[string]interface{}
 	if baseURL != "" {
-		if bulk, err := client.FetchProviders(configFlags, baseURL); err == nil && bulk != nil {
+		// Detail level 1: includes basic inventory counts (vmCount, hostCount, etc.) without full resource lists
+		if bulk, err := client.FetchProvidersWithDetailAndInsecure(ctx, configFlags, baseURL, 1, insecureSkipTLS); err == nil && bulk != nil {
 			if bulkMap, ok := bulk.(map[string]interface{}); ok {
 				bulkProviderData = make(map[string][]map[string]interface{})
 				// Parse bulk data for each provider type

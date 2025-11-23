@@ -503,7 +503,7 @@ func validateVMs(ctx context.Context, configFlags *genericclioptions.ConfigFlags
 	}
 
 	// Fetch source VMs inventory
-	sourceVMsInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, opts.InventoryURL, sourceProvider, "vms", opts.InventoryInsecureSkipTLS)
+	sourceVMsInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, opts.InventoryURL, sourceProvider, "vms", opts.InventoryInsecureSkipTLS)
 	if err != nil {
 		return fmt.Errorf("failed to fetch source VMs inventory: %v", err)
 	}

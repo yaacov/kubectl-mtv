@@ -66,11 +66,11 @@ func listDisksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Confi
 	var data interface{}
 	switch providerType {
 	case "ovirt":
-		data, err = providerClient.GetDisks(4)
+		data, err = providerClient.GetDisks(ctx, 4)
 	case "openstack":
-		data, err = providerClient.GetVolumes(4)
+		data, err = providerClient.GetVolumes(ctx, 4)
 	case "ova":
-		data, err = providerClient.GetOVAFiles(4)
+		data, err = providerClient.GetOVAFiles(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support disk inventory", providerType)
 	}

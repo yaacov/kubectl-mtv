@@ -32,7 +32,7 @@ func (f *OVAStorageFetcher) FetchSourceStorages(ctx context.Context, configFlags
 	}
 
 	// Fetch storage inventory first to create ID-to-storage mapping
-	storageInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "storages?detail=4", insecureSkipTLS)
+	storageInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "storages?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch storage inventory: %v", err)
 	}
@@ -60,7 +60,7 @@ func (f *OVAStorageFetcher) FetchSourceStorages(ctx context.Context, configFlags
 	}
 
 	// Fetch VMs inventory to get storage references from VMs
-	vmsInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
+	vmsInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch VMs inventory: %v", err)
 	}

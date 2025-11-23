@@ -34,7 +34,7 @@ func (f *OpenStackStorageFetcher) FetchSourceStorages(ctx context.Context, confi
 	}
 
 	// Fetch volume types inventory first to create ID-to-volumeType mapping
-	volumeTypesInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "volumetypes?detail=4", insecureSkipTLS)
+	volumeTypesInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "volumetypes?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch volume types inventory: %v", err)
 	}
@@ -66,7 +66,7 @@ func (f *OpenStackStorageFetcher) FetchSourceStorages(ctx context.Context, confi
 	}
 
 	// Fetch VMs inventory to get volume IDs from VMs
-	vmsInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
+	vmsInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch VMs inventory: %v", err)
 	}
@@ -111,7 +111,7 @@ func (f *OpenStackStorageFetcher) FetchSourceStorages(ctx context.Context, confi
 		}
 	}
 
-	volumesInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "volumes?detail=4", insecureSkipTLS)
+	volumesInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "volumes?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch volumes inventory: %v", err)
 	}

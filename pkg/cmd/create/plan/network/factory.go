@@ -59,7 +59,7 @@ type NetworkMapperOptions struct {
 }
 
 // GetSourceNetworkFetcher returns the appropriate source network fetcher based on provider type
-func GetSourceNetworkFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.SourceNetworkFetcher, error) {
+func GetSourceNetworkFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string, insecureSkipTLS bool) (fetchers.SourceNetworkFetcher, error) {
 	// Get the provider object to determine its type
 	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
@@ -67,7 +67,8 @@ func GetSourceNetworkFetcher(ctx context.Context, configFlags *genericclioptions
 	}
 
 	// Create a provider client to get the provider type
-	providerClient := inventory.NewProviderClient(configFlags, provider, "")
+	// Note: GetProviderType() only reads from CRD spec (no HTTPS calls), but we pass insecureSkipTLS for consistency
+	providerClient := inventory.NewProviderClientWithInsecure(configFlags, provider, "", insecureSkipTLS)
 	providerType, err := providerClient.GetProviderType()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider type: %v", err)
@@ -98,7 +99,7 @@ func GetSourceNetworkFetcher(ctx context.Context, configFlags *genericclioptions
 }
 
 // GetTargetNetworkFetcher returns the appropriate target network fetcher based on provider type
-func GetTargetNetworkFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string) (fetchers.TargetNetworkFetcher, error) {
+func GetTargetNetworkFetcher(ctx context.Context, configFlags *genericclioptions.ConfigFlags, providerName, namespace string, insecureSkipTLS bool) (fetchers.TargetNetworkFetcher, error) {
 	// Get the provider object to determine its type
 	provider, err := inventory.GetProviderByName(ctx, configFlags, providerName, namespace)
 	if err != nil {
@@ -106,7 +107,8 @@ func GetTargetNetworkFetcher(ctx context.Context, configFlags *genericclioptions
 	}
 
 	// Create a provider client to get the provider type
-	providerClient := inventory.NewProviderClient(configFlags, provider, "")
+	// Note: GetProviderType() only reads from CRD spec (no HTTPS calls), but we pass insecureSkipTLS for consistency
+	providerClient := inventory.NewProviderClientWithInsecure(configFlags, provider, "", insecureSkipTLS)
 	providerType, err := providerClient.GetProviderType()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider type: %v", err)
@@ -137,14 +139,15 @@ func GetTargetNetworkFetcher(ctx context.Context, configFlags *genericclioptions
 }
 
 // GetNetworkMapper returns the appropriate network mapper based on source provider type
-func GetNetworkMapper(ctx context.Context, configFlags *genericclioptions.ConfigFlags, sourceProviderName, sourceProviderNamespace, targetProviderName, targetProviderNamespace string) (mapper.NetworkMapper, string, string, error) {
+func GetNetworkMapper(ctx context.Context, configFlags *genericclioptions.ConfigFlags, sourceProviderName, sourceProviderNamespace, targetProviderName, targetProviderNamespace string, insecureSkipTLS bool) (mapper.NetworkMapper, string, string, error) {
 	// Get source provider type
 	sourceProvider, err := inventory.GetProviderByName(ctx, configFlags, sourceProviderName, sourceProviderNamespace)
 	if err != nil {
 		return nil, "", "", fmt.Errorf("failed to get source provider: %v", err)
 	}
 
-	sourceProviderClient := inventory.NewProviderClient(configFlags, sourceProvider, "")
+	// Note: GetProviderType() only reads from CRD spec (no HTTPS calls), but we pass insecureSkipTLS for consistency
+	sourceProviderClient := inventory.NewProviderClientWithInsecure(configFlags, sourceProvider, "", insecureSkipTLS)
 	sourceProviderType, err := sourceProviderClient.GetProviderType()
 	if err != nil {
 		return nil, "", "", fmt.Errorf("failed to get source provider type: %v", err)
@@ -156,7 +159,7 @@ func GetNetworkMapper(ctx context.Context, configFlags *genericclioptions.Config
 		return nil, "", "", fmt.Errorf("failed to get target provider: %v", err)
 	}
 
-	targetProviderClient := inventory.NewProviderClient(configFlags, targetProvider, "")
+	targetProviderClient := inventory.NewProviderClientWithInsecure(configFlags, targetProvider, "", insecureSkipTLS)
 	targetProviderType, err := targetProviderClient.GetProviderType()
 	if err != nil {
 		return nil, "", "", fmt.Errorf("failed to get target provider type: %v", err)
@@ -194,7 +197,7 @@ func CreateNetworkMap(ctx context.Context, opts NetworkMapperOptions) (string, e
 
 	// Get source network fetcher using the provider's namespace
 	sourceProviderNamespace := client.GetProviderNamespace(opts.SourceProviderNamespace, opts.Namespace)
-	sourceFetcher, err := GetSourceNetworkFetcher(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace)
+	sourceFetcher, err := GetSourceNetworkFetcher(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.InventoryInsecureSkipTLS)
 	if err != nil {
 		return "", fmt.Errorf("failed to get source network fetcher: %v", err)
 	}
@@ -202,7 +205,7 @@ func CreateNetworkMap(ctx context.Context, opts NetworkMapperOptions) (string, e
 
 	// Get target network fetcher using the provider's namespace
 	targetProviderNamespace := client.GetProviderNamespace(opts.TargetProviderNamespace, opts.Namespace)
-	targetFetcher, err := GetTargetNetworkFetcher(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace)
+	targetFetcher, err := GetTargetNetworkFetcher(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace, opts.InventoryInsecureSkipTLS)
 	if err != nil {
 		return "", fmt.Errorf("failed to get target network fetcher: %v", err)
 	}
@@ -229,7 +232,7 @@ func CreateNetworkMap(ctx context.Context, opts NetworkMapperOptions) (string, e
 	}
 
 	// Get provider-specific network mapper
-	networkMapper, sourceProviderType, targetProviderType, err := GetNetworkMapper(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.TargetProvider, targetProviderNamespace)
+	networkMapper, sourceProviderType, targetProviderType, err := GetNetworkMapper(ctx, opts.ConfigFlags, opts.SourceProvider, sourceProviderNamespace, opts.TargetProvider, targetProviderNamespace, opts.InventoryInsecureSkipTLS)
 	if err != nil {
 		return "", fmt.Errorf("failed to get network mapper: %v", err)
 	}

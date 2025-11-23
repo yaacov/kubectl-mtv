@@ -2,15 +2,13 @@ package create
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/yaacov/kubectl-mtv/pkg/util/config"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
-// GlobalConfigGetter defines the interface for getting global configuration
-type GlobalConfigGetter interface {
-	GetVerbosity() int
-	GetInventoryURL() string
-	GetInventoryInsecureSkipTLS() bool
-}
+// GlobalConfigGetter is a type alias for the shared config interface.
+// This maintains backward compatibility while using the centralized interface definition.
+type GlobalConfigGetter = config.InventoryConfigWithVerbosity
 
 // NewCreateCmd creates the create command with all its subcommands
 func NewCreateCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {

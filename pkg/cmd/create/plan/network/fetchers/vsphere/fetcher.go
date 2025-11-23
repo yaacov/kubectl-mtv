@@ -34,7 +34,7 @@ func (f *VSphereNetworkFetcher) FetchSourceNetworks(ctx context.Context, configF
 	}
 
 	// Fetch networks inventory first to create ID-to-network mapping
-	networksInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "networks?detail=4", insecureSkipTLS)
+	networksInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "networks?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch networks inventory: %v", err)
 	}
@@ -62,7 +62,7 @@ func (f *VSphereNetworkFetcher) FetchSourceNetworks(ctx context.Context, configF
 	}
 
 	// Fetch VMs inventory to get network references from VMs
-	vmsInventory, err := client.FetchProviderInventoryWithInsecure(configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
+	vmsInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "vms?detail=4", insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch VMs inventory: %v", err)
 	}

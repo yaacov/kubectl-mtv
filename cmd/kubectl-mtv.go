@@ -118,11 +118,6 @@ func GetGlobalConfig() *GlobalConfig {
 	return globalConfig
 }
 
-// getGlobalConfigGetter returns the global configuration as an interface to avoid circular imports
-func getGlobalConfigGetter() get.GlobalConfigGetter {
-	return globalConfig
-}
-
 // Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() error {
 	return rootCmd.Execute()
@@ -164,21 +159,21 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 	rootCmd.PersistentFlags().BoolVar(&globalConfig.InventoryInsecureSkipTLS, "inventory-insecure-skip-tls", os.Getenv("MTV_INVENTORY_INSECURE_SKIP_TLS") == "true", "Skip TLS verification for inventory service connections")
 
 	// Add standard commands for various resources - directly using package functions
-	rootCmd.AddCommand(get.NewGetCmd(kubeConfigFlags, getGlobalConfigGetter))
+	rootCmd.AddCommand(get.NewGetCmd(kubeConfigFlags, globalConfig))
 	rootCmd.AddCommand(delete.NewDeleteCmd(kubeConfigFlags))
 	rootCmd.AddCommand(create.NewCreateCmd(kubeConfigFlags, globalConfig))
-	rootCmd.AddCommand(describe.NewDescribeCmd(kubeConfigFlags, getGlobalConfigGetter))
+	rootCmd.AddCommand(describe.NewDescribeCmd(kubeConfigFlags, globalConfig))
 	rootCmd.AddCommand(patch.NewPatchCmd(kubeConfigFlags, globalConfig))
 
 	// Plan commands - directly using package functions
-	rootCmd.AddCommand(start.NewStartCmd(kubeConfigFlags, getGlobalConfigGetter))
+	rootCmd.AddCommand(start.NewStartCmd(kubeConfigFlags, globalConfig))
 	rootCmd.AddCommand(cancel.NewCancelCmd(kubeConfigFlags))
 	rootCmd.AddCommand(cutover.NewCutoverCmd(kubeConfigFlags))
 	rootCmd.AddCommand(archive.NewArchiveCmd(kubeConfigFlags))
 	rootCmd.AddCommand(unarchive.NewUnArchiveCmd(kubeConfigFlags))
 
 	// Version command - directly using package function
-	rootCmd.AddCommand(version.NewVersionCmd(clientVersion, kubeConfigFlags))
+	rootCmd.AddCommand(version.NewVersionCmd(clientVersion, kubeConfigFlags, globalConfig))
 
 	// MCP Server command - start the Model Context Protocol server
 	rootCmd.AddCommand(mcpserver.NewMCPServerCmd())

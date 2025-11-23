@@ -51,7 +51,7 @@ func listDiskProfilesOnce(ctx context.Context, kubeConfigFlags *genericclioption
 	var data interface{}
 	switch providerType {
 	case "ovirt":
-		data, err = providerClient.GetDiskProfiles(4)
+		data, err = providerClient.GetDiskProfiles(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support disk profile inventory", providerType)
 	}
@@ -130,7 +130,7 @@ func listNICProfilesOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 	var data interface{}
 	switch providerType {
 	case "ovirt":
-		data, err = providerClient.GetNICProfiles(4)
+		data, err = providerClient.GetNICProfiles(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support NIC profile inventory", providerType)
 	}

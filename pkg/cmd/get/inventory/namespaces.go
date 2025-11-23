@@ -44,9 +44,9 @@ func listNamespacesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.
 	var data interface{}
 	switch providerType {
 	case "openshift":
-		data, err = providerClient.GetNamespaces(4)
+		data, err = providerClient.GetNamespaces(ctx, 4)
 	case "openstack":
-		data, err = providerClient.GetProjects(4)
+		data, err = providerClient.GetProjects(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support namespace inventory", providerType)
 	}

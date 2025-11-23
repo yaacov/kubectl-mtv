@@ -61,7 +61,7 @@ func listDataVolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 	var data interface{}
 	switch providerType {
 	case "openshift":
-		data, err = providerClient.GetDataVolumes(4)
+		data, err = providerClient.GetDataVolumes(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support data volume inventory", providerType)
 	}

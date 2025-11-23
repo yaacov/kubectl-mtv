@@ -70,7 +70,7 @@ func listClustersOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 	var data interface{}
 	switch providerType {
 	case "ovirt", "vsphere":
-		data, err = providerClient.GetClusters(4)
+		data, err = providerClient.GetClusters(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support cluster inventory", providerType)
 	}

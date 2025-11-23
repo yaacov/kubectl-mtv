@@ -13,15 +13,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// FetchProvidersWithDetail fetches lists of providers from the inventory server with specified detail level
-func FetchProvidersWithDetail(configFlags *genericclioptions.ConfigFlags, baseURL string, detail int) (interface{}, error) {
-	return FetchProvidersWithDetailAndInsecure(configFlags, baseURL, detail, false)
-}
-
 // FetchProvidersWithDetailAndInsecure fetches lists of providers from the inventory server with specified detail level
 // and optional insecure TLS skip verification
-func FetchProvidersWithDetailAndInsecure(configFlags *genericclioptions.ConfigFlags, baseURL string, detail int, insecureSkipTLS bool) (interface{}, error) {
-	httpClient, err := GetAuthenticatedHTTPClientWithInsecure(configFlags, baseURL, insecureSkipTLS)
+func FetchProvidersWithDetailAndInsecure(ctx context.Context, configFlags *genericclioptions.ConfigFlags, baseURL string, detail int, insecureSkipTLS bool) (interface{}, error) {
+	httpClient, err := GetAuthenticatedHTTPClientWithInsecure(ctx, configFlags, baseURL, insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create authenticated HTTP client: %v", err)
 	}
@@ -32,7 +27,7 @@ func FetchProvidersWithDetailAndInsecure(configFlags *genericclioptions.ConfigFl
 	klog.V(4).Infof("Fetching provider inventory from: %s%s (insecure=%v)", baseURL, path, insecureSkipTLS)
 
 	// Fetch the provider inventory
-	responseBytes, err := httpClient.Get(path)
+	responseBytes, err := httpClient.GetWithContext(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -46,23 +41,13 @@ func FetchProvidersWithDetailAndInsecure(configFlags *genericclioptions.ConfigFl
 	return result, nil
 }
 
-// FetchProviders fetches lists of providers from the inventory server (detail level 1 for backward compatibility)
-func FetchProviders(configFlags *genericclioptions.ConfigFlags, baseURL string) (interface{}, error) {
-	return FetchProvidersWithDetail(configFlags, baseURL, 1)
-}
-
-// FetchProviderInventory fetches inventory for a specific provider
-func FetchProviderInventory(configFlags *genericclioptions.ConfigFlags, baseURL string, provider *unstructured.Unstructured, subPath string) (interface{}, error) {
-	return FetchProviderInventoryWithInsecure(configFlags, baseURL, provider, subPath, false)
-}
-
 // FetchProviderInventoryWithInsecure fetches inventory for a specific provider with optional insecure TLS skip verification
-func FetchProviderInventoryWithInsecure(configFlags *genericclioptions.ConfigFlags, baseURL string, provider *unstructured.Unstructured, subPath string, insecureSkipTLS bool) (interface{}, error) {
+func FetchProviderInventoryWithInsecure(ctx context.Context, configFlags *genericclioptions.ConfigFlags, baseURL string, provider *unstructured.Unstructured, subPath string, insecureSkipTLS bool) (interface{}, error) {
 	if provider == nil {
 		return nil, fmt.Errorf("provider is nil")
 	}
 
-	httpClient, err := GetAuthenticatedHTTPClientWithInsecure(configFlags, baseURL, insecureSkipTLS)
+	httpClient, err := GetAuthenticatedHTTPClientWithInsecure(ctx, configFlags, baseURL, insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create authenticated HTTP client: %v", err)
 	}
@@ -88,7 +73,7 @@ func FetchProviderInventoryWithInsecure(configFlags *genericclioptions.ConfigFla
 	klog.V(4).Infof("Fetching provider inventory from path: %s (insecure=%v)", path, insecureSkipTLS)
 
 	// Fetch the provider inventory
-	responseBytes, err := httpClient.Get(path)
+	responseBytes, err := httpClient.GetWithContext(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -102,19 +87,9 @@ func FetchProviderInventoryWithInsecure(configFlags *genericclioptions.ConfigFla
 	return result, nil
 }
 
-// FetchSpecificProvider fetches inventory for a specific provider by name (detail level 1 for backward compatibility)
-func FetchSpecificProvider(ctx context.Context, configFlags *genericclioptions.ConfigFlags, baseURL string, providerName string) (interface{}, error) {
-	return FetchSpecificProviderWithDetail(ctx, configFlags, baseURL, providerName, 1)
-}
-
-// FetchSpecificProviderWithDetail fetches inventory for a specific provider by name with specified detail level
-// This function uses direct URL access: /providers/<type>/<uid>?detail=N
-func FetchSpecificProviderWithDetail(ctx context.Context, configFlags *genericclioptions.ConfigFlags, baseURL string, providerName string, detail int) (interface{}, error) {
-	return FetchSpecificProviderWithDetailAndInsecure(ctx, configFlags, baseURL, providerName, detail, false)
-}
-
 // FetchSpecificProviderWithDetailAndInsecure fetches inventory for a specific provider by name with specified detail level
 // and optional insecure TLS skip verification
+// This function uses direct URL access: /providers/<type>/<uid>?detail=N
 func FetchSpecificProviderWithDetailAndInsecure(ctx context.Context, configFlags *genericclioptions.ConfigFlags, baseURL string, providerName string, detail int, insecureSkipTLS bool) (interface{}, error) {
 	// We need to determine the namespace to look for the provider CRD
 	// Try to get it from configFlags or use empty string for all namespaces
@@ -169,7 +144,7 @@ func FetchSpecificProviderWithDetailAndInsecure(ctx context.Context, configFlags
 	}
 
 	// Use direct URL to fetch provider inventory: /providers/<type>/<uid>?detail=N
-	httpClient, err := GetAuthenticatedHTTPClientWithInsecure(configFlags, baseURL, insecureSkipTLS)
+	httpClient, err := GetAuthenticatedHTTPClientWithInsecure(ctx, configFlags, baseURL, insecureSkipTLS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create authenticated HTTP client: %v", err)
 	}
@@ -178,7 +153,7 @@ func FetchSpecificProviderWithDetailAndInsecure(ctx context.Context, configFlags
 	klog.V(4).Infof("Fetching specific provider inventory from path: %s (insecure=%v)", path, insecureSkipTLS)
 
 	// Fetch the provider inventory
-	responseBytes, err := httpClient.Get(path)
+	responseBytes, err := httpClient.GetWithContext(ctx, path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch provider inventory: %v", err)
 	}
