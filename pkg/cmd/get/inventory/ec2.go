@@ -45,7 +45,7 @@ func listEC2InstancesOnce(ctx context.Context, kubeConfigFlags *genericclioption
 	}
 
 	// Define default headers for EC2 instances
-	// Note: AWS API returns PascalCase field names
+	// Note: AWS API returns PascalCase field names (object extracted)
 	// NAME column shows Name tag if available, otherwise falls back to InstanceId
 	defaultHeaders := []output.Header{
 		{DisplayName: "NAME", JSONPath: "name"},
@@ -63,8 +63,8 @@ func listEC2InstancesOnce(ctx context.Context, kubeConfigFlags *genericclioption
 		return fmt.Errorf("failed to get EC2 instances from provider: %v", err)
 	}
 
-	// Process data to extract name from tags
-	data = addEC2InstanceNames(data)
+	// Extract objects from EC2 envelope
+	data = ExtractEC2Objects(data)
 
 	// Parse query options for advanced query features
 	var queryOpts *querypkg.QueryOptions
@@ -128,10 +128,10 @@ func listEC2VolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.
 	}
 
 	// Define default headers for EC2 volumes
-	// Note: AWS API returns PascalCase field names
+	// Note: AWS API returns PascalCase field names (object extracted)
 	defaultHeaders := []output.Header{
 		{DisplayName: "NAME", JSONPath: "name"},
-		{DisplayName: "ID", JSONPath: "VolumeId"},
+		{DisplayName: "ID", JSONPath: "id"},
 		{DisplayName: "SIZE", JSONPath: "sizeHuman"},
 		{DisplayName: "TYPE", JSONPath: "VolumeType"},
 		{DisplayName: "STATE", JSONPath: "State"},
@@ -145,6 +145,9 @@ func listEC2VolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.
 	if err != nil {
 		return fmt.Errorf("failed to get EC2 volumes from provider: %v", err)
 	}
+
+	// Extract objects from EC2 envelope
+	data = ExtractEC2Objects(data)
 
 	// Process data to add human-readable fields
 	data = addEC2VolumeFields(data)
@@ -224,6 +227,9 @@ func listEC2VolumeTypesOnce(ctx context.Context, kubeConfigFlags *genericcliopti
 		return fmt.Errorf("failed to get EC2 volume types from provider: %v", err)
 	}
 
+	// Extract objects from EC2 envelope
+	data = ExtractEC2Objects(data)
+
 	// Parse query options for advanced query features
 	var queryOpts *querypkg.QueryOptions
 	if query != "" {
@@ -286,7 +292,7 @@ func listEC2NetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 	}
 
 	// Define default headers for EC2 networks
-	// Note: AWS API returns PascalCase field names
+	// Note: AWS API returns PascalCase field names (object extracted)
 	defaultHeaders := []output.Header{
 		{DisplayName: "NAME", JSONPath: "name"},
 		{DisplayName: "ID", JSONPath: "id"},
@@ -301,6 +307,9 @@ func listEC2NetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 	if err != nil {
 		return fmt.Errorf("failed to get EC2 networks from provider: %v", err)
 	}
+
+	// Extract objects from EC2 envelope
+	data = ExtractEC2Objects(data)
 
 	// Process data to extract names and normalize fields
 	data = addEC2NetworkFields(data)
@@ -336,61 +345,6 @@ func listEC2NetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 
 // Helper functions for EC2 data processing
 
-// extractNameFromTags extracts the Name tag value from AWS Tags array
-func extractNameFromTags(tags interface{}) (string, bool) {
-	tagsArray, ok := tags.([]interface{})
-	if !ok {
-		return "", false
-	}
-	for _, tagInterface := range tagsArray {
-		if tag, ok := tagInterface.(map[string]interface{}); ok {
-			if key, keyOk := tag["Key"].(string); keyOk && key == "Name" {
-				if value, valueOk := tag["Value"].(string); valueOk {
-					return value, true
-				}
-			}
-		}
-	}
-	return "", false
-}
-
-// addEC2InstanceNames extracts instance names from tags
-// AWS API returns PascalCase: Tags, Key, Value, InstanceId
-func addEC2InstanceNames(data interface{}) interface{} {
-	switch v := data.(type) {
-	case []interface{}:
-		for _, item := range v {
-			if instance, ok := item.(map[string]interface{}); ok {
-				// Extract name from tags using shared helper
-				if tags, exists := instance["Tags"]; exists {
-					if name, found := extractNameFromTags(tags); found {
-						instance["name"] = name
-					}
-				}
-				// If no name tag, use instance ID
-				if _, hasName := instance["name"]; !hasName {
-					if instanceID, ok := instance["InstanceId"].(string); ok {
-						instance["name"] = instanceID
-					}
-				}
-			}
-		}
-	case map[string]interface{}:
-		// Single instance
-		if tags, exists := v["Tags"]; exists {
-			if name, found := extractNameFromTags(tags); found {
-				v["name"] = name
-			}
-		}
-		if _, hasName := v["name"]; !hasName {
-			if instanceID, ok := v["InstanceId"].(string); ok {
-				v["name"] = instanceID
-			}
-		}
-	}
-	return data
-}
-
 // addEC2VolumeFields adds human-readable fields to volume data
 func addEC2VolumeFields(data interface{}) interface{} {
 	switch v := data.(type) {
@@ -407,19 +361,6 @@ func addEC2VolumeFields(data interface{}) interface{} {
 }
 
 func processEC2Volume(volume map[string]interface{}) {
-	// Extract name from tags using shared helper
-	if tags, exists := volume["Tags"]; exists {
-		if name, found := extractNameFromTags(tags); found {
-			volume["name"] = name
-		}
-	}
-	// If no name tag, use volume ID
-	if _, hasName := volume["name"]; !hasName {
-		if volumeID, ok := volume["VolumeId"].(string); ok {
-			volume["name"] = volumeID
-		}
-	}
-
 	// Add human-readable size (Size is in GiB)
 	if size, exists := volume["Size"]; exists {
 		if sizeVal, ok := size.(float64); ok {
@@ -458,38 +399,15 @@ func addEC2NetworkFields(data interface{}) interface{} {
 }
 
 func processEC2Network(network map[string]interface{}) {
-	// Extract name from tags using shared helper
-	if _, hasName := network["name"]; !hasName {
-		if tags, exists := network["Tags"]; exists {
-			if name, found := extractNameFromTags(tags); found {
-				network["name"] = name
-			}
-		}
-	}
-
-	// Normalize ID field and determine network type based on which ID is present
+	// Determine network type based on which ID field is present (for display purposes)
 	// Subnet takes precedence over VPC
-	if _, hasID := network["id"]; !hasID {
-		if subnetID, ok := network["SubnetId"].(string); ok {
-			// It's a Subnet
-			network["id"] = subnetID
-			network["networkType"] = "subnet"
-		} else if vpcID, ok := network["VpcId"].(string); ok {
-			// It's a VPC
-			network["id"] = vpcID
-			network["networkType"] = "vpc"
-		}
-	}
-
-	// Fallback if networkType wasn't set (malformed data)
 	if _, hasType := network["networkType"]; !hasType {
-		network["networkType"] = "unknown"
-	}
-
-	// If still no name, use ID
-	if _, hasName := network["name"]; !hasName {
-		if id, ok := network["id"].(string); ok {
-			network["name"] = id
+		if _, ok := network["SubnetId"].(string); ok {
+			network["networkType"] = "subnet"
+		} else if _, ok := network["VpcId"].(string); ok {
+			network["networkType"] = "vpc"
+		} else {
+			network["networkType"] = "unknown"
 		}
 	}
 }

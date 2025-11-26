@@ -330,6 +330,11 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 		return fmt.Errorf("failed to fetch VM inventory: %v", err)
 	}
 
+	// Extract objects from EC2 envelope
+	if providerType == "ec2" {
+		data = ExtractEC2Objects(data)
+	}
+
 	// Verify data is an array
 	dataArray, ok := data.([]interface{})
 	if !ok {
@@ -345,12 +350,10 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 			// Add provider name to each VM
 			vm["provider"] = providerName
 
-			// Provider-specific name extraction
+			// Provider-specific handling
 			if providerType == "ec2" {
-				// EC2: Use shared name extraction logic (same as ec2-instance command)
-				addEC2InstanceNames(vm)
-
 				// For EC2, skip augmentVMInfo as it doesn't have concern/memory/disk/power fields
+				// The inventory server already provides name and id fields
 				vms = append(vms, vm)
 				continue
 			}

@@ -508,6 +508,12 @@ func validateVMs(ctx context.Context, configFlags *genericclioptions.ConfigFlags
 		return fmt.Errorf("failed to fetch source VMs inventory: %v", err)
 	}
 
+	// Extract objects from EC2 envelope
+	providerType, found, err := unstructured.NestedString(sourceProvider.Object, "spec", "type")
+	if err == nil && found && providerType == "ec2" {
+		sourceVMsInventory = inventory.ExtractEC2Objects(sourceVMsInventory)
+	}
+
 	sourceVMsArray, ok := sourceVMsInventory.([]interface{})
 	if !ok {
 		return fmt.Errorf("unexpected data format: expected array for source VMs inventory")
@@ -572,7 +578,16 @@ func validateVMs(ctx context.Context, configFlags *genericclioptions.ConfigFlags
 				planVM.ID = vmID
 				validVMs = append(validVMs, planVM)
 			} else {
-				fmt.Printf("Warning: VM with name '%s' not found in source provider, removing from plan\n", planVM.Name)
+				// Fallback: check if the provided name is actually a VM ID
+				if vmName, existsAsID := vmIDToNameMap[planVM.Name]; existsAsID {
+					// The provided "name" is actually an ID
+					planVM.ID = planVM.Name
+					planVM.Name = vmName
+					validVMs = append(validVMs, planVM)
+					fmt.Printf("Info: VM ID '%s' found in source provider (name: '%s')\n", planVM.ID, planVM.Name)
+				} else {
+					fmt.Printf("Warning: VM with name '%s' not found in source provider, removing from plan\n", planVM.Name)
+				}
 			}
 		}
 	}

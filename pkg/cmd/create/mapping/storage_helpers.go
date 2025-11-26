@@ -253,6 +253,9 @@ func resolveEC2StorageNameToID(ctx context.Context, configFlags *genericclioptio
 		return nil, fmt.Errorf("failed to fetch storage inventory: %v", err)
 	}
 
+	// Extract objects from EC2 envelope
+	storageInventory = inventory.ExtractEC2Objects(storageInventory)
+
 	storageArray, ok := storageInventory.([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("unexpected data format: expected array for storage inventory")

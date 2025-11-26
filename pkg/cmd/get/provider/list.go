@@ -16,105 +16,80 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/output"
 )
 
-// getDynamicInventoryColumns returns appropriate inventory columns based on provider types
+// getProviderRelevantFields returns the fields that are relevant for display
+func getProviderRelevantFields(providerType string) map[string]string {
+	// Map field names to their inventory resource types for counting
+	// All providers show VMS and NETWORKS columns
+	return map[string]string{
+		"vmCount":      "vms",
+		"networkCount": "networks",
+	}
+}
+
+// normalizeProviderInventory ensures all relevant fields exist for a provider
+// and attempts to count missing fields from inventory if possible
+func normalizeProviderInventory(ctx context.Context, configFlags *genericclioptions.ConfigFlags, baseURL string, provider *unstructured.Unstructured, item map[string]interface{}, insecureSkipTLS bool) {
+	providerType, _, _ := unstructured.NestedString(provider.Object, "spec", "type")
+	providerName := provider.GetName()
+
+	// Get relevant fields for this provider type
+	relevantFields := getProviderRelevantFields(providerType)
+
+	// Process each relevant field
+	for fieldName, resourceType := range relevantFields {
+		// Skip if field already has a value
+		if _, exists := item[fieldName]; exists {
+			continue
+		}
+
+		// If we have inventory URL and resource type, try to count
+		if baseURL != "" && resourceType != "" {
+			count := countProviderResources(ctx, configFlags, baseURL, provider, resourceType, insecureSkipTLS)
+			if count >= 0 {
+				item[fieldName] = count
+				klog.V(4).Infof("Counted %d %s for %s provider %s", count, resourceType, providerType, providerName)
+			} else {
+				// Counting failed, but this is a relevant field - set to 0
+				item[fieldName] = 0
+				klog.V(4).Infof("Failed to count %s for %s provider %s, defaulting to 0", resourceType, providerType, providerName)
+			}
+		} else {
+			// No inventory URL or cannot count this resource type - set to 0
+			item[fieldName] = 0
+		}
+	}
+
+	// For fields that are NOT relevant to this provider, don't add them (leave undefined)
+	// The table printer will show empty cells for undefined fields
+}
+
+// getDynamicInventoryColumns returns consistent inventory columns for all provider types
 func getDynamicInventoryColumns(providerTypes map[string]bool) []output.Header {
-	var columns []output.Header
-	vmColumnAdded := false
-	hostsColumnAdded := false
+	// Always return the same essential columns for all providers
+	// This ensures consistent table headers
+	return []output.Header{
+		{DisplayName: "VMS", JSONPath: "vmCount"},
+		{DisplayName: "NETWORKS", JSONPath: "networkCount"},
+	}
+}
 
-	// Add vSphere-specific columns
-	if providerTypes["vsphere"] {
-		if len(providerTypes) == 1 {
-			// Only vSphere - show VMS, HOSTS, and more details
-			columns = append(columns,
-				output.Header{DisplayName: "VMS", JSONPath: "vmCount"},
-				output.Header{DisplayName: "HOSTS", JSONPath: "hostCount"},
-				output.Header{DisplayName: "DATACENTERS", JSONPath: "datacenterCount"},
-				output.Header{DisplayName: "CLUSTERS", JSONPath: "clusterCount"},
-				output.Header{DisplayName: "DATASTORES", JSONPath: "datastoreCount"},
-			)
-			vmColumnAdded = true
-			hostsColumnAdded = true
-		}
+// countProviderResources counts resources (vms or networks) for any provider type
+// Returns -1 if counting fails
+func countProviderResources(ctx context.Context, configFlags *genericclioptions.ConfigFlags, baseURL string, provider *unstructured.Unstructured, resourceType string, insecureSkipTLS bool) int {
+	// Fetch the resource collection from the provider
+	data, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, baseURL, provider, resourceType, insecureSkipTLS)
+	if err != nil {
+		klog.V(4).Infof("Failed to fetch %s for provider: %v", resourceType, err)
+		return -1
 	}
 
-	// Add oVirt-specific columns
-	if providerTypes["ovirt"] {
-		if len(providerTypes) == 1 {
-			// Only oVirt - show VMS, HOSTS, and more details
-			columns = append(columns,
-				output.Header{DisplayName: "VMS", JSONPath: "vmCount"},
-				output.Header{DisplayName: "HOSTS", JSONPath: "hostCount"},
-				output.Header{DisplayName: "DATACENTERS", JSONPath: "datacenterCount"},
-				output.Header{DisplayName: "CLUSTERS", JSONPath: "clusterCount"},
-				output.Header{DisplayName: "STORAGE-DOMAINS", JSONPath: "storageDomainCount"},
-			)
-			vmColumnAdded = true
-			hostsColumnAdded = true
-		}
+	// Count the items in the response
+	if dataSlice, ok := data.([]interface{}); ok {
+		return len(dataSlice)
 	}
 
-	// Add OVA-specific columns
-	if providerTypes["ova"] {
-		if len(providerTypes) == 1 {
-			// Only OVA - show VMS
-			columns = append(columns, output.Header{DisplayName: "VMS", JSONPath: "vmCount"})
-			vmColumnAdded = true
-		}
-	}
-
-	// Add OpenStack-specific columns
-	if providerTypes["openstack"] {
-		if len(providerTypes) == 1 {
-			// Only OpenStack - use INSTANCES and show more details
-			columns = append(columns,
-				output.Header{DisplayName: "INSTANCES", JSONPath: "vmCount"},
-				output.Header{DisplayName: "REGIONS", JSONPath: "regionCount"},
-				output.Header{DisplayName: "PROJECTS", JSONPath: "projectCount"},
-				output.Header{DisplayName: "VOLUMES", JSONPath: "volumeCount"},
-			)
-			vmColumnAdded = true
-		}
-	}
-
-	// Add OpenShift-specific columns
-	if providerTypes["openshift"] {
-		if len(providerTypes) == 1 {
-			// Only OpenShift - show VMS and more details
-			columns = append(columns,
-				output.Header{DisplayName: "VMS", JSONPath: "vmCount"},
-				output.Header{DisplayName: "STORAGE-CLASSES", JSONPath: "storageClassCount"},
-			)
-			vmColumnAdded = true
-		}
-	}
-
-	// Add EC2-specific columns
-	if providerTypes["ec2"] {
-		if len(providerTypes) == 1 {
-			// Only EC2 - use INSTANCES
-			columns = append(columns, output.Header{DisplayName: "INSTANCES", JSONPath: "vmCount"})
-			vmColumnAdded = true
-			// EC2 doesn't have additional inventory counts from the backend yet
-			// but we're prepared for when it does
-		}
-	}
-
-	// Handle mixed environments - add default VM and HOSTS columns if not already added
-	if !vmColumnAdded {
-		// Mixed environment - use generic VMS term
-		columns = append(columns, output.Header{DisplayName: "VMS", JSONPath: "vmCount"})
-	}
-
-	if !hostsColumnAdded && (providerTypes["vsphere"] || providerTypes["ovirt"]) {
-		// Mixed environment with vsphere/ovirt - add HOSTS column
-		columns = append(columns, output.Header{DisplayName: "HOSTS", JSONPath: "hostCount"})
-	}
-
-	// Add NETWORKS column for all providers (most have it)
-	columns = append(columns, output.Header{DisplayName: "NETWORKS", JSONPath: "networkCount"})
-
-	return columns
+	klog.V(4).Infof("Unexpected data format when counting %s for provider", resourceType)
+	return -1
 }
 
 // getProviders retrieves all providers from the given namespace
@@ -330,6 +305,10 @@ func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, names
 				}
 			}
 		}
+
+		// Normalize inventory data: ensure all relevant fields exist for this provider type
+		// and try to count missing fields from inventory if possible
+		normalizeProviderInventory(ctx, configFlags, baseURL, provider, item, insecureSkipTLS)
 
 		// Add the item to the list
 		items = append(items, item)

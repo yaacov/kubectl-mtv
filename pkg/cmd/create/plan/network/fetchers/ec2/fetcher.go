@@ -39,6 +39,9 @@ func (f *EC2NetworkFetcher) FetchSourceNetworks(ctx context.Context, configFlags
 		return nil, fmt.Errorf("failed to fetch EC2 networks inventory: %v", err)
 	}
 
+	// Extract objects from EC2 envelope
+	networksInventory = inventory.ExtractEC2Objects(networksInventory)
+
 	networksArray, ok := networksInventory.([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("unexpected data format: expected array for networks inventory")
@@ -76,7 +79,8 @@ func (f *EC2NetworkFetcher) FetchSourceNetworks(ctx context.Context, configFlags
 		})
 
 		for _, subnet := range subnets {
-			if subnetID, ok := subnet["SubnetId"].(string); ok {
+			// Use id from top level (provided by inventory server)
+			if subnetID, ok := subnet["id"].(string); ok {
 				sourceNetworks = append(sourceNetworks, ref.Ref{
 					ID: subnetID,
 				})
@@ -85,16 +89,17 @@ func (f *EC2NetworkFetcher) FetchSourceNetworks(ctx context.Context, configFlags
 	} else if len(vpcs) > 0 {
 		// If no subnets, return VPCs sorted by ID
 		sort.Slice(vpcs, func(i, j int) bool {
-			vpcI, okI := vpcs[i]["VpcId"].(string)
-			vpcJ, okJ := vpcs[j]["VpcId"].(string)
+			vpcI, okI := vpcs[i]["id"].(string)
+			vpcJ, okJ := vpcs[j]["id"].(string)
 			if !okI || !okJ {
-				klog.V(4).Infof("DEBUG: EC2 - Missing or invalid VpcId during VPC sort (i:%v, j:%v)", okI, okJ)
+				klog.V(4).Infof("DEBUG: EC2 - Missing or invalid id during VPC sort (i:%v, j:%v)", okI, okJ)
 			}
 			return vpcI < vpcJ
 		})
 
 		for _, vpc := range vpcs {
-			if vpcID, ok := vpc["VpcId"].(string); ok {
+			// Use id from top level (provided by inventory server)
+			if vpcID, ok := vpc["id"].(string); ok {
 				sourceNetworks = append(sourceNetworks, ref.Ref{
 					ID: vpcID,
 				})

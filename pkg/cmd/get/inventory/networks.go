@@ -123,6 +123,11 @@ func listNetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 		return fmt.Errorf("failed to fetch network inventory: %v", err)
 	}
 
+	// Extract objects from EC2 envelope
+	if providerType == "ec2" {
+		data = ExtractEC2Objects(data)
+	}
+
 	// Verify data is an array
 	dataArray, ok := data.([]interface{})
 	if !ok {
