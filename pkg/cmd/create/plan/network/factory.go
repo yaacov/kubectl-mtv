@@ -16,12 +16,14 @@ import (
 	"github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/ref"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers"
+	ec2Fetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/ec2"
 	openshiftFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/openshift"
 	openstackFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/openstack"
 	ovaFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/ova"
 	ovirtFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/ovirt"
 	vsphereFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper"
+	ec2Mapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/ec2"
 	openshiftMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/openshift"
 	openstackMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/openstack"
 	ovaMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/ova"
@@ -78,6 +80,9 @@ func GetSourceNetworkFetcher(ctx context.Context, configFlags *genericclioptions
 
 	// Return the appropriate fetcher based on provider type
 	switch providerType {
+	case "ec2":
+		klog.V(4).Infof("DEBUG: Using EC2 source network fetcher for %s", providerName)
+		return ec2Fetcher.NewEC2NetworkFetcher(), nil
 	case "openstack":
 		klog.V(4).Infof("DEBUG: Using OpenStack source network fetcher for %s", providerName)
 		return openstackFetcher.NewOpenStackNetworkFetcher(), nil
@@ -170,6 +175,9 @@ func GetNetworkMapper(ctx context.Context, configFlags *genericclioptions.Config
 
 	// Return the appropriate mapper based on source provider type
 	switch sourceProviderType {
+	case "ec2":
+		klog.V(4).Infof("DEBUG: Using EC2 network mapper for source %s", sourceProviderName)
+		return ec2Mapper.NewEC2NetworkMapper(), sourceProviderType, targetProviderType, nil
 	case "openstack":
 		klog.V(4).Infof("DEBUG: Using OpenStack network mapper for source %s", sourceProviderName)
 		return openstackMapper.NewOpenStackNetworkMapper(), sourceProviderType, targetProviderType, nil

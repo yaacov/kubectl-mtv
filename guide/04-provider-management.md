@@ -240,34 +240,24 @@ kubectl mtv create provider test-openshift --type openshift \
 
 ### EC2 Provider
 
-Create providers for Amazon EC2 environments.
+Create providers for Amazon EC2 environments. The `--url` flag is optional; if omitted, it will be auto-generated from the region.
 
 ```bash
-# Basic EC2 provider
+# Basic EC2 provider (URL auto-generated from region)
 kubectl mtv create provider ec2-prod --type ec2 \
-  --url https://ec2.amazonaws.com \
-  --username AKIAIOSFODNN7EXAMPLE \
-  --password wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
-  --ec2-region us-east-1
+  --region us-east-1 \
+  --access-key-id AKIAIOSFODNN7EXAMPLE \
+  --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
-# EC2 provider with CA certificate
+# EC2 provider with explicit URL
 kubectl mtv create provider ec2-prod --type ec2 \
-  --url https://ec2.amazonaws.com \
-  --username AKIAIOSFODNN7EXAMPLE \
-  --password wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
-  --ec2-region us-west-2 \
-  --cacert @/path/to/ca-certificate.pem
-
-# EC2 provider with TLS verification disabled
-kubectl mtv create provider ec2-test --type ec2 \
-  --url https://ec2.amazonaws.com \
-  --username AKIAIOSFODNN7EXAMPLE \
-  --password wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
-  --ec2-region us-east-1 \
-  --provider-insecure-skip-tls
+  --url https://ec2.us-west-2.amazonaws.com \
+  --region us-west-2 \
+  --access-key-id AKIAIOSFODNN7EXAMPLE \
+  --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
 
-**Note**: For EC2 providers, use AWS Access Key ID as username and Secret Access Key as password. Migration host creation and VDDK settings are not applicable to EC2 providers.
+**Note**: Migration host creation and VDDK settings are not applicable to EC2 providers.
 
 ### OVA Provider
 
@@ -367,14 +357,16 @@ kubectl mtv patch provider openstack-prod \
 
 # Update EC2 region
 kubectl mtv patch provider ec2-prod \
-  --ec2-region us-west-2
+  --region us-west-2
 
 # Update EC2 credentials and region
 kubectl mtv patch provider ec2-prod \
   --username NEW_ACCESS_KEY_ID \
   --password NEW_SECRET_ACCESS_KEY \
-  --ec2-region eu-west-1
+  --region eu-west-1
 ```
+
+**Note**: Use `--region` as a convenient alias that works for both `--provider-region-name` (OpenStack) and `--ec2-region` (EC2).
 
 #### Update CA Certificates
 

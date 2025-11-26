@@ -3,6 +3,7 @@ package ec2
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,6 +17,21 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 
+// getAWSEndpoint returns the appropriate AWS EC2 endpoint based on region
+// Handles different AWS partitions (standard, China, GovCloud)
+func getAWSEndpoint(region string) string {
+	// China regions use .cn domain
+	if strings.HasPrefix(region, "cn-") {
+		return fmt.Sprintf("https://ec2.%s.amazonaws.com.cn", region)
+	}
+	// GovCloud regions
+	if strings.HasPrefix(region, "us-gov-") {
+		return fmt.Sprintf("https://ec2.%s.amazonaws.com", region)
+	}
+	// Standard AWS partition
+	return fmt.Sprintf("https://ec2.%s.amazonaws.com", region)
+}
+
 // validateProviderOptions validates the options for creating an EC2 provider
 func validateProviderOptions(options providerutil.ProviderOptions) error {
 	if options.Name == "" {
@@ -24,15 +40,11 @@ func validateProviderOptions(options providerutil.ProviderOptions) error {
 	if options.Namespace == "" {
 		return fmt.Errorf("provider namespace is required")
 	}
-	if options.URL == "" {
-		return fmt.Errorf("provider URL is required")
-	}
+	// URL is optional for EC2 providers (AWS uses regional endpoints)
 	if options.EC2Region == "" {
 		return fmt.Errorf("EC2 region is required")
 	}
-	if options.CACert == "" && !options.InsecureSkipTLS {
-		return fmt.Errorf("either CA certificate or insecure skip TLS must be provided")
-	}
+	// For EC2, CA cert and insecure skip TLS are optional (AWS certificates are typically trusted)
 	if options.Secret != "" && (options.Username != "" || options.Password != "") {
 		return fmt.Errorf("if a secret is provided, username and password should not be specified")
 	}
@@ -107,18 +119,27 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 	provider.APIVersion = forkliftv1beta1.SchemeGroupVersion.String()
 	provider.Kind = "Provider"
 
-	// Set provider type and URL
+	// Set provider type
 	providerTypeValue := forkliftv1beta1.ProviderType("ec2")
 	provider.Spec.Type = &providerTypeValue
-	provider.Spec.URL = options.URL
+
+	// Set URL - use provided URL or construct default AWS regional endpoint
+	providerURL := options.URL
+	if providerURL == "" {
+		// Construct default AWS EC2 regional endpoint
+		// Handle different AWS partitions (China regions use .cn domain)
+		providerURL = getAWSEndpoint(options.EC2Region)
+	}
+	provider.Spec.URL = providerURL
 
 	// Create and set the Secret
 	var createdSecret *corev1.Secret
 	var err error
 
 	if options.Secret == "" {
+		// Pass the providerURL (which may be default or custom) to secret creation
 		createdSecret, err = createSecret(configFlags, options.Namespace, options.Name,
-			options.Username, options.Password, options.URL, options.CACert, options.EC2Region, options.InsecureSkipTLS)
+			options.Username, options.Password, providerURL, options.CACert, options.EC2Region, options.InsecureSkipTLS)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create EC2 secret: %v", err)
 		}

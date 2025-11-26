@@ -16,12 +16,14 @@ import (
 	"github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/ref"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers"
+	ec2Fetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/ec2"
 	openshiftFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/openshift"
 	openstackFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/openstack"
 	ovaFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/ova"
 	ovirtFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/ovirt"
 	vsphereFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper"
+	ec2Mapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/ec2"
 	openshiftMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/openshift"
 	openstackMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/openstack"
 	ovaMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/ova"
@@ -210,6 +212,9 @@ func GetSourceStorageFetcher(ctx context.Context, configFlags *genericclioptions
 
 	// Return the appropriate fetcher based on provider type
 	switch providerType {
+	case "ec2":
+		klog.V(4).Infof("DEBUG: Using EC2 source storage fetcher for %s", providerName)
+		return ec2Fetcher.NewEC2StorageFetcher(), nil
 	case "openstack":
 		klog.V(4).Infof("DEBUG: Using OpenStack source storage fetcher for %s", providerName)
 		return openstackFetcher.NewOpenStackStorageFetcher(), nil
@@ -250,6 +255,11 @@ func GetTargetStorageFetcher(ctx context.Context, configFlags *genericclioptions
 
 	// Return the appropriate fetcher based on provider type
 	switch providerType {
+	case "ec2":
+		// Note: EC2 is typically used as a source provider for migrations to OpenShift/Kubernetes.
+		// EC2 as a migration target is not a common use case, but we provide the fetcher for interface completeness.
+		klog.V(4).Infof("DEBUG: Using EC2 target storage fetcher for %s (note: EC2 is typically a source, not target)", providerName)
+		return ec2Fetcher.NewEC2StorageFetcher(), nil
 	case "openstack":
 		klog.V(4).Infof("DEBUG: Using OpenStack target storage fetcher for %s", providerName)
 		return openstackFetcher.NewOpenStackStorageFetcher(), nil
@@ -303,6 +313,9 @@ func GetStorageMapper(ctx context.Context, configFlags *genericclioptions.Config
 
 	// Return the appropriate mapper based on source provider type
 	switch sourceProviderType {
+	case "ec2":
+		klog.V(4).Infof("DEBUG: Using EC2 storage mapper for source %s", sourceProviderName)
+		return ec2Mapper.NewEC2StorageMapper(), sourceProviderType, targetProviderType, nil
 	case "openstack":
 		klog.V(4).Infof("DEBUG: Using OpenStack storage mapper for source %s", sourceProviderName)
 		return openstackMapper.NewOpenStackStorageMapper(), sourceProviderType, targetProviderType, nil

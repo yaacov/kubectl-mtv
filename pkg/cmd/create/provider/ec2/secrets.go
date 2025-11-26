@@ -21,6 +21,7 @@ func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, provide
 	}
 
 	// Create secret data without base64 encoding (the API handles this automatically)
+	// URL is always included (either custom or default AWS endpoint)
 	secretData := map[string][]byte{
 		"accessKeyId":     []byte(accessKeyID),
 		"secretAccessKey": []byte(secretAccessKey),
