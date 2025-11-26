@@ -20,7 +20,7 @@ import (
 // PatchProvider patches an existing provider
 func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace string,
 	url, username, password, cacert string, insecureSkipTLS bool, vddkInitImage, token string,
-	domainName, projectName, regionName string, useVddkAioOptimization bool, vddkBufSizeIn64K, vddkBufCount int,
+	domainName, projectName, regionName string, useVddkAioOptimization bool, vddkBufSizeIn64K, vddkBufCount int, ec2Region string,
 	insecureSkipTLSChanged, useVddkAioOptimizationChanged bool) error {
 
 	klog.V(2).Infof("Patching provider '%s' in namespace '%s'", name, namespace)
@@ -49,7 +49,7 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 
 	// Track if we need to update credentials
 	needsCredentialUpdate := username != "" || password != "" || token != "" || cacert != "" ||
-		domainName != "" || projectName != "" || regionName != ""
+		domainName != "" || projectName != "" || regionName != "" || ec2Region != ""
 
 	// Get and validate secret ownership if credentials need updating
 	var secret *corev1.Secret
@@ -126,7 +126,7 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 	secretUpdated := false
 	if needsCredentialUpdate && secret != nil {
 		secretUpdated, err = updateSecretCredentials(configFlags, secret, providerType,
-			username, password, cacert, token, domainName, projectName, regionName)
+			username, password, cacert, token, domainName, projectName, regionName, ec2Region)
 		if err != nil {
 			return fmt.Errorf("failed to update credentials: %v", err)
 		}
@@ -229,7 +229,7 @@ func getAndValidateSecret(configFlags *genericclioptions.ConfigFlags, provider *
 
 // updateSecretCredentials updates the secret with new credential values
 func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret *corev1.Secret, providerType string,
-	username, password, cacert, token, domainName, projectName, regionName string) (bool, error) {
+	username, password, cacert, token, domainName, projectName, regionName, ec2Region string) (bool, error) {
 
 	updated := false
 
@@ -281,6 +281,22 @@ func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret 
 		if regionName != "" {
 			secret.Data["regionName"] = []byte(regionName)
 			klog.V(2).Infof("Updated OpenStack region name")
+			updated = true
+		}
+	case "ec2":
+		if username != "" {
+			secret.Data["accessKeyId"] = []byte(username)
+			klog.V(2).Infof("Updated EC2 access key ID")
+			updated = true
+		}
+		if password != "" {
+			secret.Data["secretAccessKey"] = []byte(password)
+			klog.V(2).Infof("Updated EC2 secret access key")
+			updated = true
+		}
+		if ec2Region != "" {
+			secret.Data["region"] = []byte(ec2Region)
+			klog.V(2).Infof("Updated EC2 region")
 			updated = true
 		}
 	}
