@@ -47,6 +47,12 @@ func PatchProvider(configFlags *genericclioptions.ConfigFlags, name, namespace s
 
 	klog.V(3).Infof("Current provider type: %s", providerType)
 
+	// For EC2 provider, use regionName (from --provider-region-name) if ec2Region is empty
+	// This allows using --provider-region-name for EC2 regions as shown in documentation
+	if providerType == "ec2" && ec2Region == "" && regionName != "" {
+		ec2Region = regionName
+	}
+
 	// Track if we need to update credentials
 	needsCredentialUpdate := username != "" || password != "" || token != "" || cacert != "" ||
 		domainName != "" || projectName != "" || regionName != "" || ec2Region != ""

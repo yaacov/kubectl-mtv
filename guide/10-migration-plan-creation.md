@@ -175,7 +175,14 @@ kubectl mtv create plan pod-network-migration \
   --default-target-network default \
   --default-target-storage-class premium-nvme \
   --vms "where name ~= '^test-.*'"
+
+# Auto-mapping (no mappings needed for any provider)
+kubectl mtv create plan simple-migration \
+  --source vsphere-prod \
+  --vms "where powerState = 'poweredOn'"
 ```
+
+**Note**: All source providers support automatic mapping generation. Provider-specific mappers intelligently match source networks and storage to appropriate target resources.
 
 ## Key Plan Configuration Flags
 

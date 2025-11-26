@@ -133,6 +133,67 @@ func calculateTotalDiskCapacity(vm map[string]interface{}) float64 {
 	return totalCapacity / (1024 * 1024 * 1024)
 }
 
+// augmentVMInfo adds computed fields to VM data for display purposes
+// Returns the expanded data string if the VM has concerns (for extended output)
+func augmentVMInfo(vm map[string]interface{}, extendedOutput bool) string {
+	var expandedText string
+
+	// Add concern counts by category
+	concernCounts := countConcernsByCategory(vm)
+	vm["criticalConcerns"] = concernCounts["Critical"]
+	vm["warningConcerns"] = concernCounts["Warning"]
+	vm["infoConcerns"] = concernCounts["Information"]
+
+	// Create a combined concerns string (Critical/Warning/Info)
+	vm["concernsHuman"] = fmt.Sprintf("%d/%d/%d",
+		concernCounts["Critical"],
+		concernCounts["Warning"],
+		concernCounts["Information"])
+
+	// Add (*) indicator if critical concerns exist
+	if concernCounts["Critical"] > 0 {
+		vm["concernsHuman"] = vm["concernsHuman"].(string) + " (*)"
+	}
+
+	// If VM has concerns, create expanded data
+	if extendedOutput && (concernCounts["Critical"] > 0 || concernCounts["Warning"] > 0 || concernCounts["Information"] > 0) {
+		// Format concerns for expanded view
+		expandedText = formatVMConcerns(vm)
+	}
+
+	// Format memory in GB for display
+	if memoryMB, exists := vm["memoryMB"]; exists {
+		if memVal, ok := memoryMB.(float64); ok {
+			vm["memoryGB"] = fmt.Sprintf("%.1f GB", memVal/1024)
+		}
+	}
+
+	// Calculate and format disk capacity
+	totalDiskCapacityGB := calculateTotalDiskCapacity(vm)
+	vm["diskCapacity"] = fmt.Sprintf("%.1f GB", totalDiskCapacityGB)
+
+	// Format storage used
+	if storageUsed, exists := vm["storageUsed"]; exists {
+		if storageVal, ok := storageUsed.(float64); ok {
+			storageUsedGB := storageVal / (1024 * 1024 * 1024)
+			vm["storageUsedGB"] = fmt.Sprintf("%.1f GB", storageUsedGB)
+		}
+	}
+
+	// Humanize power state
+	if powerState, exists := vm["powerState"]; exists {
+		if ps, ok := powerState.(string); ok {
+			if strings.Contains(strings.ToLower(ps), "on") {
+				vm["powerStateHuman"] = "On"
+			} else {
+				vm["powerStateHuman"] = "Off"
+			}
+		}
+	}
+
+	return expandedText
+}
+
 // FetchVMsByQuery fetches VMs from inventory based on a query string and returns them as plan VM structs
 func FetchVMsByQuery(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace, inventoryURL, query string) ([]planv1beta1.VM, error) {
 	return FetchVMsByQueryWithInsecure(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, query, false)
@@ -171,7 +232,7 @@ func FetchVMsByQueryWithInsecure(ctx context.Context, kubeConfigFlags *genericcl
 
 	// Verify provider supports VM inventory before fetching
 	switch providerType {
-	case "ovirt", "vsphere", "openstack", "ova", "openshift":
+	case "ovirt", "vsphere", "openstack", "ova", "openshift", "ec2":
 		// Provider supports VMs, continue
 	default:
 		return nil, fmt.Errorf("provider type '%s' does not support VM inventory", providerType)
@@ -258,7 +319,7 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 	// Fetch VM inventory from the provider based on provider type
 	var data interface{}
 	switch providerType {
-	case "ovirt", "vsphere", "openstack", "ova", "openshift":
+	case "ovirt", "vsphere", "openstack", "ova", "openshift", "ec2":
 		data, err = providerClient.GetVMs(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support VM inventory", providerType)
@@ -284,59 +345,20 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 			// Add provider name to each VM
 			vm["provider"] = providerName
 
-			// Format VM name for expanded data key
-			vmName, _ := vm["name"].(string)
+			// Provider-specific name extraction
+			if providerType == "ec2" {
+				// EC2: Use shared name extraction logic (same as ec2-instance command)
+				addEC2InstanceNames(vm)
 
-			// Add concern counts by category
-			concernCounts := countConcernsByCategory(vm)
-			vm["criticalConcerns"] = concernCounts["Critical"]
-			vm["warningConcerns"] = concernCounts["Warning"]
-			vm["infoConcerns"] = concernCounts["Information"]
-
-			// Create a combined concerns string (Critical/Warning/Info)
-			vm["concernsHuman"] = fmt.Sprintf("%d/%d/%d",
-				concernCounts["Critical"],
-				concernCounts["Warning"],
-				concernCounts["Information"])
-
-			// Add (*) indicator if critical concerns exist
-			if concernCounts["Critical"] > 0 {
-				vm["concernsHuman"] = vm["concernsHuman"].(string) + " (*)"
+				// For EC2, skip augmentVMInfo as it doesn't have concern/memory/disk/power fields
+				vms = append(vms, vm)
+				continue
 			}
 
-			// If VM has concerns, create expanded data
-			if extendedOutput && (concernCounts["Critical"] > 0 || concernCounts["Warning"] > 0 || concernCounts["Information"] > 0) {
-				// Format concerns for expanded view
-				expandedData[vmName] = formatVMConcerns(vm)
-			}
-
-			// Format memory in GB for display
-			if memoryMB, exists := vm["memoryMB"]; exists {
-				if memVal, ok := memoryMB.(float64); ok {
-					vm["memoryGB"] = fmt.Sprintf("%.1f GB", memVal/1024)
-				}
-			}
-
-			// Calculate and format disk capacity
-			totalDiskCapacityGB := calculateTotalDiskCapacity(vm)
-			vm["diskCapacity"] = fmt.Sprintf("%.1f GB", totalDiskCapacityGB)
-
-			// Format storage used
-			if storageUsed, exists := vm["storageUsed"]; exists {
-				if storageVal, ok := storageUsed.(float64); ok {
-					storageUsedGB := storageVal / (1024 * 1024 * 1024)
-					vm["storageUsedGB"] = fmt.Sprintf("%.1f GB", storageUsedGB)
-				}
-			}
-
-			// Humanize power state
-			if powerState, exists := vm["powerState"]; exists {
-				if ps, ok := powerState.(string); ok {
-					if strings.Contains(strings.ToLower(ps), "on") {
-						vm["powerStateHuman"] = "On"
-					} else {
-						vm["powerStateHuman"] = "Off"
-					}
+			// Augment VM info for non-EC2 providers (adds concern counts, memory, disk, power formatting)
+			if expandedText := augmentVMInfo(vm, extendedOutput); expandedText != "" {
+				if vmName, ok := vm["name"].(string); ok {
+					expandedData[vmName] = expandedText
 				}
 			}
 
@@ -414,17 +436,34 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 				WithHeaders(headers...).
 				WithSelectOptions(queryOpts.Select)
 		} else {
-			// Use default table headers
-			tablePrinter = output.NewTablePrinter().WithHeaders(
-				output.Header{DisplayName: "NAME", JSONPath: "name"},
-				output.Header{DisplayName: "ID", JSONPath: "id"},
-				output.Header{DisplayName: "POWER", JSONPath: "powerStateHuman"},
-				output.Header{DisplayName: "CPU", JSONPath: "cpuCount"},
-				output.Header{DisplayName: "MEMORY", JSONPath: "memoryGB"},
-				output.Header{DisplayName: "DISK USAGE", JSONPath: "storageUsedGB"},
-				output.Header{DisplayName: "GUEST OS", JSONPath: "guestId"},
-				output.Header{DisplayName: "CONCERNS (C/W/I)", JSONPath: "concernsHuman"},
-			)
+			// Use provider-specific table headers
+			var headers []output.Header
+
+			switch providerType {
+			case "ec2":
+				headers = []output.Header{
+					{DisplayName: "NAME", JSONPath: "name"},
+					{DisplayName: "TYPE", JSONPath: "InstanceType"},
+					{DisplayName: "STATE", JSONPath: "State.Name"},
+					{DisplayName: "PLATFORM", JSONPath: "PlatformDetails"},
+					{DisplayName: "AZ", JSONPath: "Placement.AvailabilityZone"},
+					{DisplayName: "PUBLIC-IP", JSONPath: "PublicIpAddress"},
+					{DisplayName: "PRIVATE-IP", JSONPath: "PrivateIpAddress"},
+				}
+			default:
+				headers = []output.Header{
+					{DisplayName: "NAME", JSONPath: "name"},
+					{DisplayName: "ID", JSONPath: "id"},
+					{DisplayName: "POWER", JSONPath: "powerStateHuman"},
+					{DisplayName: "CPU", JSONPath: "cpuCount"},
+					{DisplayName: "MEMORY", JSONPath: "memoryGB"},
+					{DisplayName: "DISK USAGE", JSONPath: "storageUsedGB"},
+					{DisplayName: "GUEST OS", JSONPath: "guestId"},
+					{DisplayName: "CONCERNS (C/W/I)", JSONPath: "concernsHuman"},
+				}
+			}
+
+			tablePrinter = output.NewTablePrinter().WithHeaders(headers...)
 		}
 
 		// Add items with expanded concern data

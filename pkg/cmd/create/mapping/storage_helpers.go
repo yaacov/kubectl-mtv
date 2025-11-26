@@ -3,6 +3,7 @@ package mapping
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -196,6 +197,8 @@ func resolveStorageNameToID(ctx context.Context, configFlags *genericclioptions.
 		return []ref.Ref{{
 			Name: storageName,
 		}}, nil
+	case "ec2":
+		return resolveEC2StorageNameToID(ctx, configFlags, inventoryURL, provider, storageName, insecureSkipTLS)
 	case "vsphere":
 		return resolveVSphereStorageNameToID(ctx, configFlags, inventoryURL, provider, storageName, insecureSkipTLS)
 	case "ovirt":
@@ -240,4 +243,53 @@ func resolveStorageNameToID(ctx context.Context, configFlags *genericclioptions.
 
 		return matchingRefs, nil
 	}
+}
+
+// resolveEC2StorageNameToID resolves storage name for EC2 provider
+func resolveEC2StorageNameToID(ctx context.Context, configFlags *genericclioptions.ConfigFlags, inventoryURL string, provider *unstructured.Unstructured, storageName string, insecureSkipTLS bool) ([]ref.Ref, error) {
+	// Fetch EBS volume types from EC2
+	storageInventory, err := client.FetchProviderInventoryWithInsecure(ctx, configFlags, inventoryURL, provider, "storages?detail=4", insecureSkipTLS)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch storage inventory: %v", err)
+	}
+
+	storageArray, ok := storageInventory.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected data format: expected array for storage inventory")
+	}
+
+	// Search for the storage by type (gp2, gp3, io1, io2, st1, sc1, standard)
+	// Use case-insensitive matching and deduplicate results
+	var matchingRefs []ref.Ref
+	seen := make(map[string]struct{})
+	storageNameLower := strings.ToLower(storageName)
+
+	for _, item := range storageArray {
+		storage, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		// EC2 storage uses "type" field for EBS volume types
+		volumeType, _ := storage["type"].(string)
+
+		// Case-insensitive match
+		if strings.ToLower(volumeType) == storageNameLower {
+			// Deduplicate - only add if not seen before
+			if _, exists := seen[volumeType]; exists {
+				continue
+			}
+			seen[volumeType] = struct{}{}
+
+			matchingRefs = append(matchingRefs, ref.Ref{
+				Name: volumeType,
+			})
+		}
+	}
+
+	if len(matchingRefs) == 0 {
+		return nil, fmt.Errorf("EBS volume type '%s' not found in EC2 provider inventory", storageName)
+	}
+
+	return matchingRefs, nil
 }

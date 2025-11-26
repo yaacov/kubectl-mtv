@@ -89,6 +89,15 @@ func listNetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 			{DisplayName: "ADMIN-UP", JSONPath: "adminStateUp"},
 			{DisplayName: "SUBNETS", JSONPath: "subnetsCount"},
 		}
+	case "ec2":
+		defaultHeaders = []output.Header{
+			{DisplayName: "NAME", JSONPath: "name"},
+			{DisplayName: "ID", JSONPath: "id"},
+			{DisplayName: "TYPE", JSONPath: "networkType"},
+			{DisplayName: "CIDR", JSONPath: "CidrBlock"},
+			{DisplayName: "STATE", JSONPath: "State"},
+			{DisplayName: "DEFAULT", JSONPath: "IsDefault"},
+		}
 	default:
 		defaultHeaders = []output.Header{
 			{DisplayName: "NAME", JSONPath: "name"},
@@ -133,6 +142,11 @@ func listNetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 			// Add subnets count (for OpenStack)
 			if providerType == "openstack" {
 				network["subnetsCount"] = countNetworkSubnets(network)
+			}
+
+			// Process EC2 networks (extract name from tags, set ID and type)
+			if providerType == "ec2" {
+				processEC2Network(network)
 			}
 
 			networks = append(networks, network)

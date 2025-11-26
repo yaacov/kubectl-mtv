@@ -30,6 +30,8 @@ Mappings define source-to-target resource relationships for migration:
 | **Network** | VM Networks, Port Groups, VLANs | Pod networking, Multus networks, Default networking |
 | **Storage** | Datastores, Storage Domains, Volumes | StorageClasses with volume modes and access patterns |
 
+**Note**: All source providers support automatic mapping generation during plan creation. Provider-specific mappers intelligently match source networks and storage to appropriate target resources.
+
 ## Listing, Viewing, and Deleting Mappings
 
 ### List Mappings

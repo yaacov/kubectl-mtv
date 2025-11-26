@@ -86,6 +86,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	cmd.Flags().StringVar(&domainName, "provider-domain-name", "", "OpenStack domain name")
 	cmd.Flags().StringVar(&projectName, "provider-project-name", "", "OpenStack project name")
 	cmd.Flags().StringVar(&regionName, "provider-region-name", "", "OpenStack region name")
+	cmd.Flags().StringVar(&regionName, "region", "", "Region name (alias for --provider-region-name, also used for EC2)")
 
 	// EC2 specific flags
 	cmd.Flags().StringVar(&ec2Region, "ec2-region", "", "EC2 region")

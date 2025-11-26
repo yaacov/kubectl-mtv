@@ -22,6 +22,12 @@ func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, name
 	url, username, password, cacert string, insecureSkipTLS bool, vddkInitImage, sdkEndpoint string, token string,
 	domainName, projectName, regionName string, useVddkAioOptimization bool, vddkBufSizeIn64K, vddkBufCount int,
 	ec2Region string) error {
+	// For EC2 provider, use regionName (from --provider-region-name) if ec2Region is empty
+	// This allows using --provider-region-name for EC2 regions as shown in documentation
+	if providerType == "ec2" && ec2Region == "" && regionName != "" {
+		ec2Region = regionName
+	}
+
 	// Create provider options
 	options := providerutil.ProviderOptions{
 		Name:                   name,

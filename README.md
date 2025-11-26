@@ -33,9 +33,15 @@ See [MCP Server Guide](guide/19-model-context-protocol-mcp-server-integration.md
 ### 1. Create Provider
 
 ```bash
+# vSphere
 kubectl mtv create provider vsphere-01 --type vsphere \
   --url https://vcenter.example.com \
   -u admin --password secret --cacert @ca.cert
+
+# EC2 (URL is optional, auto-generated from region)
+kubectl mtv create provider ec2-01 --type ec2 \
+  --region us-east-1 \
+  --access-key-id AKIA... --secret-access-key secret
 ```
 
 ### 2. Create Mappings (Optional)
@@ -121,7 +127,8 @@ See [VDDK Setup Guide](guide/06-vddk-image-creation-and-configuration.md) for de
 
 ## Features
 
-- **Multi-Platform Support**: Migrate from vSphere, oVirt, OpenStack, and OVA
+- **Multi-Platform Support**: Migrate from vSphere, oVirt, OpenStack, EC2, and OVA
+- **Auto-Mapping**: Automatic network and storage mapping for all source providers
 - **Flexible Mapping**: Use existing mappings, inline pairs, or automatic defaults
 - **Advanced Queries**: Filter and search inventory with powerful query language
 - **VDDK Support**: Optimized VMware disk transfers

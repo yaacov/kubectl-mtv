@@ -116,5 +116,22 @@ func NewInventoryCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfi
 	providerCmd.Aliases = []string{"providers"}
 	cmd.AddCommand(providerCmd)
 
+	// Add EC2-specific resources
+	ec2InstanceCmd := NewInventoryEC2InstanceCmd(kubeConfigFlags, globalConfig)
+	ec2InstanceCmd.Aliases = []string{"ec2-instances"}
+	cmd.AddCommand(ec2InstanceCmd)
+
+	ec2VolumeCmd := NewInventoryEC2VolumeCmd(kubeConfigFlags, globalConfig)
+	ec2VolumeCmd.Aliases = []string{"ec2-volumes"}
+	cmd.AddCommand(ec2VolumeCmd)
+
+	ec2VolumeTypeCmd := NewInventoryEC2VolumeTypeCmd(kubeConfigFlags, globalConfig)
+	ec2VolumeTypeCmd.Aliases = []string{"ec2-volumetypes", "ec2-volume-types"}
+	cmd.AddCommand(ec2VolumeTypeCmd)
+
+	ec2NetworkCmd := NewInventoryEC2NetworkCmd(kubeConfigFlags, globalConfig)
+	ec2NetworkCmd.Aliases = []string{"ec2-networks"}
+	cmd.AddCommand(ec2NetworkCmd)
+
 	return cmd
 }

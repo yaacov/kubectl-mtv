@@ -50,6 +50,13 @@ func listStorageOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 			{DisplayName: "DEFAULT", JSONPath: "object.metadata.annotations[storageclass.kubernetes.io/is-default-class]"},
 			{DisplayName: "VIRT-DEFAULT", JSONPath: "object.metadata.annotations[storageclass.kubevirt.io/is-default-virt-class]"},
 		}
+	case "ec2":
+		defaultHeaders = []output.Header{
+			{DisplayName: "TYPE", JSONPath: "type"},
+			{DisplayName: "DESCRIPTION", JSONPath: "description"},
+			{DisplayName: "MAX-IOPS", JSONPath: "maxIOPS"},
+			{DisplayName: "MAX-THROUGHPUT", JSONPath: "maxThroughput"},
+		}
 	default:
 		defaultHeaders = []output.Header{
 			{DisplayName: "NAME", JSONPath: "name"},
@@ -74,6 +81,8 @@ func listStorageOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 		data, err = providerClient.GetVolumeTypes(ctx, 4)
 	case "openshift":
 		data, err = providerClient.GetStorageClasses(ctx, 4)
+	case "ec2":
+		data, err = providerClient.GetResourceCollection(ctx, "storages", 4)
 	default:
 		// For other providers, use generic storage resource
 		data, err = providerClient.GetResourceCollection(ctx, "storages", 4)
