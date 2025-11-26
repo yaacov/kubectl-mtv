@@ -162,6 +162,9 @@ func resolveEC2NetworkNameToIDWithInsecure(ctx context.Context, configFlags *gen
 		return nil, fmt.Errorf("failed to fetch networks inventory: %v", err)
 	}
 
+	// Extract objects from EC2 envelope
+	networksInventory = inventory.ExtractEC2Objects(networksInventory)
+
 	networksArray, ok := networksInventory.([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("unexpected data format: expected array for networks inventory")

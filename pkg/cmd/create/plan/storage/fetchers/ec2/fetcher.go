@@ -40,6 +40,9 @@ func (f *EC2StorageFetcher) FetchSourceStorages(ctx context.Context, configFlags
 		return nil, fmt.Errorf("failed to fetch EC2 storage inventory: %v", err)
 	}
 
+	// Extract objects from EC2 envelope
+	storageInventory = inventory.ExtractEC2Objects(storageInventory)
+
 	storageArray, ok := storageInventory.([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("unexpected data format: expected array for storage inventory")
