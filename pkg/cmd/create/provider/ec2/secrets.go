@@ -1,4 +1,4 @@
-package vsphere
+package ec2
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 
-// Helper function to create a vSphere secret
-func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName, user, password, url, cacert string, insecureSkipTLS bool) (*corev1.Secret, error) {
+// Helper function to create an EC2 secret
+func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName, accessKeyID, secretAccessKey, url, cacert, region string, insecureSkipTLS bool) (*corev1.Secret, error) {
 	// Get the Kubernetes client using configFlags
 	k8sClient, err := client.GetKubernetesClientset(configFlags)
 	if err != nil {
@@ -22,9 +22,10 @@ func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, provide
 
 	// Create secret data without base64 encoding (the API handles this automatically)
 	secretData := map[string][]byte{
-		"user":     []byte(user),
-		"password": []byte(password),
-		"url":      []byte(url),
+		"accessKeyId":     []byte(accessKeyID),
+		"secretAccessKey": []byte(secretAccessKey),
+		"url":             []byte(url),
+		"region":          []byte(region),
 	}
 
 	// Add optional fields
@@ -36,7 +37,7 @@ func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, provide
 	}
 
 	// Generate a name prefix for the secret
-	secretName := fmt.Sprintf("%s-vsphere-", providerName)
+	secretName := fmt.Sprintf("%s-ec2-", providerName)
 
 	// Create the secret object directly as a typed Secret
 	secret := &corev1.Secret{
@@ -44,7 +45,7 @@ func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, provide
 			GenerateName: secretName,
 			Namespace:    namespace,
 			Labels: map[string]string{
-				"createdForProviderType": "vsphere",
+				"createdForProviderType": "ec2",
 				"createdForResourceType": "providers",
 			},
 		},

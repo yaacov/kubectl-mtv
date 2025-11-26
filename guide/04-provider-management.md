@@ -23,6 +23,7 @@ kubectl-mtv supports the following provider types:
 | `vsphere` | VMware vSphere/vCenter | Source provider for VMware environments |
 | `ovirt` | oVirt/Red Hat Virtualization | Source provider for oVirt/RHV environments |
 | `openstack` | OpenStack platforms | Source provider for OpenStack environments |
+| `ec2` | Amazon EC2 | Source provider for AWS environments |
 | `ova` | OVA/OVF files | Source provider for VM image files |
 
 ## Listing, Describing, and Deleting Providers
@@ -237,6 +238,37 @@ kubectl mtv create provider test-openshift --type openshift \
   --provider-insecure-skip-tls
 ```
 
+### EC2 Provider
+
+Create providers for Amazon EC2 environments.
+
+```bash
+# Basic EC2 provider
+kubectl mtv create provider ec2-prod --type ec2 \
+  --url https://ec2.amazonaws.com \
+  --username AKIAIOSFODNN7EXAMPLE \
+  --password wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
+  --ec2-region us-east-1
+
+# EC2 provider with CA certificate
+kubectl mtv create provider ec2-prod --type ec2 \
+  --url https://ec2.amazonaws.com \
+  --username AKIAIOSFODNN7EXAMPLE \
+  --password wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
+  --ec2-region us-west-2 \
+  --cacert @/path/to/ca-certificate.pem
+
+# EC2 provider with TLS verification disabled
+kubectl mtv create provider ec2-test --type ec2 \
+  --url https://ec2.amazonaws.com \
+  --username AKIAIOSFODNN7EXAMPLE \
+  --password wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY \
+  --ec2-region us-east-1 \
+  --provider-insecure-skip-tls
+```
+
+**Note**: For EC2 providers, use AWS Access Key ID as username and Secret Access Key as password. Migration host creation and VDDK settings are not applicable to EC2 providers.
+
 ### OVA Provider
 
 Create providers for OVA/OVF file imports from NFS shares.
@@ -332,6 +364,16 @@ kubectl mtv patch provider vsphere-prod \
 kubectl mtv patch provider openstack-prod \
   --provider-domain-name NewDomain \
   --provider-project-name NewProject
+
+# Update EC2 region
+kubectl mtv patch provider ec2-prod \
+  --ec2-region us-west-2
+
+# Update EC2 credentials and region
+kubectl mtv patch provider ec2-prod \
+  --username NEW_ACCESS_KEY_ID \
+  --password NEW_SECRET_ACCESS_KEY \
+  --ec2-region eu-west-1
 ```
 
 #### Update CA Certificates

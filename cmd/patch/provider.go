@@ -27,6 +27,9 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	// OpenStack specific flags (editable)
 	var domainName, projectName, regionName string
 
+	// EC2 specific flags (editable)
+	var ec2Region string
+
 	// Check if MTV_VDDK_INIT_IMAGE environment variable is set
 	if envVddkInitImage := os.Getenv("MTV_VDDK_INIT_IMAGE"); envVddkInitImage != "" {
 		vddkInitImage = envVddkInitImage
@@ -58,7 +61,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 
 			return provider.PatchProvider(kubeConfigFlags, name, namespace,
 				url, username, password, cacert, insecureSkipTLS, vddkInitImage, token,
-				domainName, projectName, regionName, useVddkAioOptimization, vddkBufSizeIn64K, vddkBufCount,
+				domainName, projectName, regionName, useVddkAioOptimization, vddkBufSizeIn64K, vddkBufCount, ec2Region,
 				cmd.Flag("provider-insecure-skip-tls").Changed, cmd.Flag("use-vddk-aio-optimization").Changed)
 		},
 	}
@@ -83,6 +86,9 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	cmd.Flags().StringVar(&domainName, "provider-domain-name", "", "OpenStack domain name")
 	cmd.Flags().StringVar(&projectName, "provider-project-name", "", "OpenStack project name")
 	cmd.Flags().StringVar(&regionName, "provider-region-name", "", "OpenStack region name")
+
+	// EC2 specific flags
+	cmd.Flags().StringVar(&ec2Region, "ec2-region", "", "EC2 region")
 
 	return cmd
 }

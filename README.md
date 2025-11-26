@@ -8,7 +8,7 @@ A kubectl plugin for migrating virtual machines to KubeVirt using Forklift.
 
 ## Overview
 
-kubectl-mtv helps migrate VMs from vSphere, oVirt, OpenStack, and OVA to Kubernetes/OpenShift using KubeVirt. It's a command-line interface for the [Forklift](https://github.com/kubev2v/forklift) project.
+kubectl-mtv helps migrate VMs from vSphere, oVirt, OpenStack, EC2, and OVA to Kubernetes/OpenShift using KubeVirt. It's a command-line interface for the [Forklift](https://github.com/kubev2v/forklift) project.
 
 ## Installation
 

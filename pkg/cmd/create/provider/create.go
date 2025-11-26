@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/ec2"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/generic"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/openshift"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/openstack"
@@ -19,7 +20,8 @@ import (
 // Create creates a new provider
 func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, namespace, secret string,
 	url, username, password, cacert string, insecureSkipTLS bool, vddkInitImage, sdkEndpoint string, token string,
-	domainName, projectName, regionName string, useVddkAioOptimization bool, vddkBufSizeIn64K, vddkBufCount int) error {
+	domainName, projectName, regionName string, useVddkAioOptimization bool, vddkBufSizeIn64K, vddkBufCount int,
+	ec2Region string) error {
 	// Create provider options
 	options := providerutil.ProviderOptions{
 		Name:                   name,
@@ -39,6 +41,7 @@ func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, name
 		UseVddkAioOptimization: useVddkAioOptimization,
 		VddkBufSizeIn64K:       vddkBufSizeIn64K,
 		VddkBufCount:           vddkBufCount,
+		EC2Region:              ec2Region,
 	}
 
 	var providerResource *forkliftv1beta1.Provider
@@ -57,6 +60,8 @@ func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, name
 		providerResource, secretResource, err = generic.CreateProvider(configFlags, options, "ovirt")
 	case "openstack":
 		providerResource, secretResource, err = openstack.CreateProvider(configFlags, options)
+	case "ec2":
+		providerResource, secretResource, err = ec2.CreateProvider(configFlags, options)
 	default:
 		// For dynamic provider types, use generic provider creation
 		// This allows support for DynamicProvider CRs defined in the cluster

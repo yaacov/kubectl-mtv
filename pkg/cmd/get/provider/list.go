@@ -16,6 +16,107 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/output"
 )
 
+// getDynamicInventoryColumns returns appropriate inventory columns based on provider types
+func getDynamicInventoryColumns(providerTypes map[string]bool) []output.Header {
+	var columns []output.Header
+	vmColumnAdded := false
+	hostsColumnAdded := false
+
+	// Add vSphere-specific columns
+	if providerTypes["vsphere"] {
+		if len(providerTypes) == 1 {
+			// Only vSphere - show VMS, HOSTS, and more details
+			columns = append(columns,
+				output.Header{DisplayName: "VMS", JSONPath: "vmCount"},
+				output.Header{DisplayName: "HOSTS", JSONPath: "hostCount"},
+				output.Header{DisplayName: "DATACENTERS", JSONPath: "datacenterCount"},
+				output.Header{DisplayName: "CLUSTERS", JSONPath: "clusterCount"},
+				output.Header{DisplayName: "DATASTORES", JSONPath: "datastoreCount"},
+			)
+			vmColumnAdded = true
+			hostsColumnAdded = true
+		}
+	}
+
+	// Add oVirt-specific columns
+	if providerTypes["ovirt"] {
+		if len(providerTypes) == 1 {
+			// Only oVirt - show VMS, HOSTS, and more details
+			columns = append(columns,
+				output.Header{DisplayName: "VMS", JSONPath: "vmCount"},
+				output.Header{DisplayName: "HOSTS", JSONPath: "hostCount"},
+				output.Header{DisplayName: "DATACENTERS", JSONPath: "datacenterCount"},
+				output.Header{DisplayName: "CLUSTERS", JSONPath: "clusterCount"},
+				output.Header{DisplayName: "STORAGE-DOMAINS", JSONPath: "storageDomainCount"},
+			)
+			vmColumnAdded = true
+			hostsColumnAdded = true
+		}
+	}
+
+	// Add OVA-specific columns
+	if providerTypes["ova"] {
+		if len(providerTypes) == 1 {
+			// Only OVA - show VMS
+			columns = append(columns, output.Header{DisplayName: "VMS", JSONPath: "vmCount"})
+			vmColumnAdded = true
+		}
+	}
+
+	// Add OpenStack-specific columns
+	if providerTypes["openstack"] {
+		if len(providerTypes) == 1 {
+			// Only OpenStack - use INSTANCES and show more details
+			columns = append(columns,
+				output.Header{DisplayName: "INSTANCES", JSONPath: "vmCount"},
+				output.Header{DisplayName: "REGIONS", JSONPath: "regionCount"},
+				output.Header{DisplayName: "PROJECTS", JSONPath: "projectCount"},
+				output.Header{DisplayName: "VOLUMES", JSONPath: "volumeCount"},
+			)
+			vmColumnAdded = true
+		}
+	}
+
+	// Add OpenShift-specific columns
+	if providerTypes["openshift"] {
+		if len(providerTypes) == 1 {
+			// Only OpenShift - show VMS and more details
+			columns = append(columns,
+				output.Header{DisplayName: "VMS", JSONPath: "vmCount"},
+				output.Header{DisplayName: "STORAGE-CLASSES", JSONPath: "storageClassCount"},
+			)
+			vmColumnAdded = true
+		}
+	}
+
+	// Add EC2-specific columns
+	if providerTypes["ec2"] {
+		if len(providerTypes) == 1 {
+			// Only EC2 - use INSTANCES
+			columns = append(columns, output.Header{DisplayName: "INSTANCES", JSONPath: "vmCount"})
+			vmColumnAdded = true
+			// EC2 doesn't have additional inventory counts from the backend yet
+			// but we're prepared for when it does
+		}
+	}
+
+	// Handle mixed environments - add default VM and HOSTS columns if not already added
+	if !vmColumnAdded {
+		// Mixed environment - use generic VMS term
+		columns = append(columns, output.Header{DisplayName: "VMS", JSONPath: "vmCount"})
+	}
+
+	if !hostsColumnAdded && (providerTypes["vsphere"] || providerTypes["ovirt"]) {
+		// Mixed environment with vsphere/ovirt - add HOSTS column
+		columns = append(columns, output.Header{DisplayName: "HOSTS", JSONPath: "hostCount"})
+	}
+
+	// Add NETWORKS column for all providers (most have it)
+	columns = append(columns, output.Header{DisplayName: "NETWORKS", JSONPath: "networkCount"})
+
+	return columns
+}
+
 // getProviders retrieves all providers from the given namespace
 func getProviders(ctx context.Context, dynamicClient dynamic.Interface, namespace string) (*unstructured.UnstructuredList, error) {
 	if namespace != "" {
@@ -267,7 +368,7 @@ func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, names
 			headers = append(headers, output.Header{DisplayName: "NAMESPACE", JSONPath: "metadata.namespace"})
 		}
 
-		// Add remaining columns
+		// Add common columns
 		headers = append(headers,
 			output.Header{DisplayName: "TYPE", JSONPath: "spec.type"},
 			output.Header{DisplayName: "URL", JSONPath: "spec.url"},
@@ -275,9 +376,20 @@ func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, names
 			output.Header{DisplayName: "CONNECTED", JSONPath: "conditionStatuses.ConnectionStatus"},
 			output.Header{DisplayName: "INVENTORY", JSONPath: "conditionStatuses.InventoryStatus"},
 			output.Header{DisplayName: "READY", JSONPath: "conditionStatuses.ReadyStatus"},
-			output.Header{DisplayName: "VMS", JSONPath: "vmCount"},
-			output.Header{DisplayName: "HOSTS", JSONPath: "hostCount"},
 		)
+
+		// Determine which provider types are present
+		providerTypes := make(map[string]bool)
+		for _, item := range items {
+			if spec, ok := item["spec"].(map[string]interface{}); ok {
+				if providerType, ok := spec["type"].(string); ok {
+					providerTypes[providerType] = true
+				}
+			}
+		}
+
+		// Add dynamic columns based on provider types present
+		headers = append(headers, getDynamicInventoryColumns(providerTypes)...)
 
 		tablePrinter := output.NewTablePrinter().WithHeaders(headers...).AddItems(items)
 

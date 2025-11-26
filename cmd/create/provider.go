@@ -30,6 +30,9 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	// OpenStack specific flags
 	var domainName, projectName, regionName string
 
+	// EC2 specific flags
+	var ec2Region string
+
 	// Check if MTV_VDDK_INIT_IMAGE environment variable is set
 	if envVddkInitImage := os.Getenv("MTV_VDDK_INIT_IMAGE"); envVddkInitImage != "" {
 		vddkInitImage = envVddkInitImage
@@ -73,11 +76,11 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 
 			return provider.Create(kubeConfigFlags, providerType.GetValue(), name, namespace, secret,
 				url, username, password, cacert, insecureSkipTLS, vddkInitImage, sdkEndpointType.GetValue(), token,
-				domainName, projectName, regionName, useVddkAioOptimization, vddkBufSizeIn64K, vddkBufCount)
+				domainName, projectName, regionName, useVddkAioOptimization, vddkBufSizeIn64K, vddkBufCount, ec2Region)
 		},
 	}
 
-	cmd.Flags().VarP(providerType, "type", "t", "Provider type (openshift, vsphere, ovirt, openstack, ova)")
+	cmd.Flags().VarP(providerType, "type", "t", "Provider type (openshift, vsphere, ovirt, openstack, ova, ec2)")
 	cmd.Flags().StringVar(&secret, "secret", "", "Secret containing provider credentials")
 
 	// Provider credential flags
@@ -101,6 +104,9 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	cmd.Flags().StringVar(&domainName, "provider-domain-name", "", "OpenStack domain name")
 	cmd.Flags().StringVar(&projectName, "provider-project-name", "", "OpenStack project name")
 	cmd.Flags().StringVar(&regionName, "provider-region-name", "", "OpenStack region name")
+
+	// EC2 specific flags
+	cmd.Flags().StringVar(&ec2Region, "ec2-region", "", "EC2 region (required for EC2 provider)")
 
 	// Add completion for provider type flag
 	if err := cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
