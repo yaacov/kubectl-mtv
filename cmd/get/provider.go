@@ -16,6 +16,7 @@ import (
 // NewProviderCmd creates the get provider command
 func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
+	var watch bool
 
 	cmd := &cobra.Command{
 		Use:               "provider [NAME]",
@@ -25,9 +26,12 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Create context with 30s timeout
-			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
-			defer cancel()
+			ctx := cmd.Context()
+			if !watch {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+				defer cancel()
+			}
 
 			kubeConfigFlags := globalConfig.GetKubeConfigFlags()
 			allNamespaces := globalConfig.GetAllNamespaces()
@@ -51,11 +55,12 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return provider.List(ctx, kubeConfigFlags, namespace, inventoryURL, outputFormatFlag.GetValue(), providerName, inventoryInsecureSkipTLS)
+			return provider.List(ctx, kubeConfigFlags, namespace, inventoryURL, watch, outputFormatFlag.GetValue(), providerName, inventoryInsecureSkipTLS)
 		},
 	}
 
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
 	// Add completion for output format flag
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

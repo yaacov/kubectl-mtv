@@ -23,5 +23,7 @@ type ProviderOptions struct {
 	ProjectName string
 	RegionName  string
 	// EC2 specific options
-	EC2Region string
+	EC2Region       string
+	EC2TargetRegion string
+	EC2TargetAZ     string
 }

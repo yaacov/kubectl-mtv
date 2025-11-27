@@ -144,7 +144,6 @@ func (m Model) handleWindowResize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 		// We're still initializing, create viewport
 		m.viewport = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
 		m.viewport.YPosition = headerHeight
-		m.viewport.HighPerformanceRendering = false
 		m.viewport.SetContent(m.content)
 	} else {
 		// Update existing viewport

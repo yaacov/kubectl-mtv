@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -19,26 +20,29 @@ func Watch(renderFunc RenderFunc, interval time.Duration) error {
 	dataFetcher := func() (string, error) {
 		// Create a pipe to capture stdout
 		oldStdout := os.Stdout
-		r, w, _ := os.Pipe()
+		r, w, err := os.Pipe()
+		if err != nil {
+			return "", fmt.Errorf("failed to create pipe: %w", err)
+		}
 		os.Stdout = w
 
 		// Create a channel to collect output
 		outputChan := make(chan string)
 		go func() {
 			var buf strings.Builder
-			io.Copy(&buf, r)
+			_, _ = io.Copy(&buf, r) // Explicitly ignore copy errors as we're just capturing output
 			outputChan <- buf.String()
 		}()
 
 		// Call renderFunc which will print to our captured stdout
-		err := renderFunc()
+		renderErr := renderFunc()
 
 		// Restore stdout
 		w.Close()
 		os.Stdout = oldStdout
 		output := <-outputChan
 
-		return output, err
+		return output, renderErr
 	}
 
 	return tui.Run(dataFetcher, interval)

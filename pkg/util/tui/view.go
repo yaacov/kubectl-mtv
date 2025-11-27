@@ -36,11 +36,6 @@ var (
 
 	// Spinner style
 	spinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
-
-	// Error message style
-	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("196")).
-			Bold(true)
 )
 
 // View renders the TUI
