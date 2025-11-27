@@ -16,6 +16,7 @@ import (
 // NewHostCmd creates the get host command
 func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
+	var watch bool
 
 	cmd := &cobra.Command{
 		Use:               "host [NAME]",
@@ -25,6 +26,13 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.HostResourceNameCompletion(kubeConfigFlags),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			if !watch {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+				defer cancel()
+			}
+
 			// Get namespace from global configuration
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -42,13 +50,12 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
-			defer cancel()
-			return host.List(ctx, globalConfig.GetKubeConfigFlags(), namespace, outputFormatFlag.GetValue(), hostName, globalConfig.GetUseUTC())
+			return host.List(ctx, globalConfig.GetKubeConfigFlags(), namespace, watch, outputFormatFlag.GetValue(), hostName, globalConfig.GetUseUTC())
 		},
 	}
 
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
 	// Add completion for output format flag
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

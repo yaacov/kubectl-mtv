@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -14,6 +15,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/providerutil"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/output"
+	"github.com/yaacov/kubectl-mtv/pkg/util/watch"
 )
 
 // getProviderRelevantFields returns the fields that are relevant for display
@@ -138,8 +140,8 @@ func getSpecificProvider(ctx context.Context, dynamicClient dynamic.Interface, n
 	}
 }
 
-// List lists providers
-func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string, insecureSkipTLS bool) error {
+// ListProviders lists providers without watch functionality
+func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string, insecureSkipTLS bool) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -384,4 +386,11 @@ func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, names
 	}
 
 	return nil
+}
+
+// List lists providers with optional watch mode
+func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, watchMode bool, outputFormat string, providerName string, insecureSkipTLS bool) error {
+	return watch.WrapWithWatch(watchMode, outputFormat, func() error {
+		return ListProviders(ctx, configFlags, namespace, baseURL, outputFormat, providerName, insecureSkipTLS)
+	}, 15*time.Second)
 }

@@ -132,6 +132,25 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 	}
 	provider.Spec.URL = providerURL
 
+	// Always set target-region: use provided value, or default to provider region
+	targetRegion := options.EC2TargetRegion
+	if targetRegion == "" {
+		targetRegion = options.EC2Region
+	}
+
+	// Always set target-az: use provided value, or default to target-region + 'a'
+	targetAZ := options.EC2TargetAZ
+	if targetAZ == "" {
+		targetAZ = targetRegion + "a"
+	}
+
+	// Initialize settings map and set EC2-specific settings
+	if provider.Spec.Settings == nil {
+		provider.Spec.Settings = map[string]string{}
+	}
+	provider.Spec.Settings["target-region"] = targetRegion
+	provider.Spec.Settings["target-az"] = targetAZ
+
 	// Create and set the Secret
 	var createdSecret *corev1.Secret
 	var err error

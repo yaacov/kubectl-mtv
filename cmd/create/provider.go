@@ -31,7 +31,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	var domainName, projectName, regionName string
 
 	// EC2 specific flags
-	var ec2Region string
+	var ec2Region, ec2TargetRegion, ec2TargetAZ string
 
 	// Check if MTV_VDDK_INIT_IMAGE environment variable is set
 	if envVddkInitImage := os.Getenv("MTV_VDDK_INIT_IMAGE"); envVddkInitImage != "" {
@@ -76,7 +76,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 
 			return provider.Create(kubeConfigFlags, providerType.GetValue(), name, namespace, secret,
 				url, username, password, cacert, insecureSkipTLS, vddkInitImage, sdkEndpointType.GetValue(), token,
-				domainName, projectName, regionName, useVddkAioOptimization, vddkBufSizeIn64K, vddkBufCount, ec2Region)
+				domainName, projectName, regionName, useVddkAioOptimization, vddkBufSizeIn64K, vddkBufCount, ec2Region, ec2TargetRegion, ec2TargetAZ)
 		},
 	}
 
@@ -108,6 +108,8 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 
 	// EC2 specific flags
 	cmd.Flags().StringVar(&ec2Region, "ec2-region", "", "EC2 region (required for EC2 provider)")
+	cmd.Flags().StringVar(&ec2TargetRegion, "target-region", "", "EC2 target region for migrations (defaults to provider region)")
+	cmd.Flags().StringVar(&ec2TargetAZ, "target-az", "", "EC2 target availability zone for migrations (defaults to target-region + 'a')")
 
 	// Add completion for provider type flag
 	if err := cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

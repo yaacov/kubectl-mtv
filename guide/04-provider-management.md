@@ -249,13 +249,18 @@ kubectl mtv create provider ec2-prod --type ec2 \
   --access-key-id AKIAIOSFODNN7EXAMPLE \
   --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
-# EC2 provider with explicit URL
+# EC2 provider with target region/AZ for migrations
 kubectl mtv create provider ec2-prod --type ec2 \
-  --url https://ec2.us-west-2.amazonaws.com \
-  --region us-west-2 \
+  --region us-east-1 \
+  --target-region us-west-2 \
+  --target-az us-west-2b \
   --access-key-id AKIAIOSFODNN7EXAMPLE \
   --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
+
+**EC2 Migration Settings**:
+- `--target-region`: Target region for migrations (defaults to provider region)
+- `--target-az`: Target availability zone (defaults to `target-region` + `a`)
 
 **Note**: Migration host creation and VDDK settings are not applicable to EC2 providers.
 
@@ -358,6 +363,11 @@ kubectl mtv patch provider openstack-prod \
 # Update EC2 region
 kubectl mtv patch provider ec2-prod \
   --region us-west-2
+
+# Update EC2 target region and AZ
+kubectl mtv patch provider ec2-prod \
+  --target-region us-west-2 \
+  --target-az us-west-2c
 
 # Update EC2 credentials and region
 kubectl mtv patch provider ec2-prod \
