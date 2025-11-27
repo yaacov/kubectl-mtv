@@ -250,6 +250,8 @@ func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, names
 		if outputFormat != "table" {
 			return fmt.Errorf("watch mode only supports table output format")
 		}
+
+		// Use watch mode with TUI
 		return watch.Watch(func() error {
 			return ListPlans(ctx, configFlags, namespace, outputFormat, planName, useUTC)
 		}, 15*time.Second)

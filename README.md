@@ -84,8 +84,16 @@ kubectl mtv start plan migration-1
 ### 5. Monitor Progress
 
 ```bash
+# Interactive TUI with scrolling, help panel, and adjustable refresh
 kubectl mtv get plan --watch
 ```
+
+**NEW**: Watch mode now features an interactive Terminal UI with:
+- Smooth screen updates without flickering
+- Scrollable output (arrow keys, pgup/pgdn)
+- Interactive help panel (press ?)
+- Adjustable refresh interval (+/- keys)
+- Manual refresh (press r)
 
 For a complete walkthrough, see the [Quick Start Guide](guide/03-quick-start-first-migration-workflow.md).
 

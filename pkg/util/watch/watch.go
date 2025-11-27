@@ -1,52 +1,45 @@
 package watch
 
 import (
-	"fmt"
+	"io"
 	"os"
-	"os/signal"
-	"syscall"
+	"strings"
 	"time"
-)
 
-const exitMessage = "\n\033[1;34mPress Ctrl+C to exit watch mode...\033[0m"
+	"github.com/yaacov/kubectl-mtv/pkg/util/tui"
+)
 
 // RenderFunc is a function that renders output and returns an error if any
 type RenderFunc func() error
 
-// Watch periodically calls a render function and refreshes the screen
-// It exits when Ctrl+C is received
+// Watch uses TUI mode for watching with smooth updates and interactive features
+// It exits when user presses q or Ctrl+C
 func Watch(renderFunc RenderFunc, interval time.Duration) error {
-	// Setup signal handling for Ctrl+C
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	// Create a data fetcher that captures output from the renderFunc
+	dataFetcher := func() (string, error) {
+		// Create a pipe to capture stdout
+		oldStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
 
-	// Create a ticker for periodic rendering
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+		// Create a channel to collect output
+		outputChan := make(chan string)
+		go func() {
+			var buf strings.Builder
+			io.Copy(&buf, r)
+			outputChan <- buf.String()
+		}()
 
-	// Render immediately on start
-	clearScreen()
-	if err := renderFunc(); err != nil {
-		return err
+		// Call renderFunc which will print to our captured stdout
+		err := renderFunc()
+
+		// Restore stdout
+		w.Close()
+		os.Stdout = oldStdout
+		output := <-outputChan
+
+		return output, err
 	}
-	fmt.Println(exitMessage)
 
-	// Main watch loop
-	for {
-		select {
-		case <-ticker.C:
-			clearScreen()
-			if err := renderFunc(); err != nil {
-				return err
-			}
-			fmt.Println(exitMessage)
-		case <-sigChan:
-			return nil
-		}
-	}
-}
-
-// clearScreen clears the terminal screen
-func clearScreen() {
-	fmt.Print("\033[2J\033[H") // ANSI escape code to clear screen and move cursor to top-left
+	return tui.Run(dataFetcher, interval)
 }
