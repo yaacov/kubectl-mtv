@@ -10,6 +10,9 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/tui"
 )
 
+// DefaultInterval is the default watch interval for all watch operations
+const DefaultInterval = 5 * time.Second
+
 // RenderFunc is a function that renders output and returns an error if any
 type RenderFunc func() error
 

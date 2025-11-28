@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -392,5 +391,5 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, watchMode bool, outputFormat string, providerName string, insecureSkipTLS bool) error {
 	return watch.WrapWithWatch(watchMode, outputFormat, func() error {
 		return ListProviders(ctx, configFlags, namespace, baseURL, outputFormat, providerName, insecureSkipTLS)
-	}, 15*time.Second)
+	}, watch.DefaultInterval)
 }

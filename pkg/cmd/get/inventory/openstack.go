@@ -3,7 +3,6 @@ package inventory
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -17,7 +16,7 @@ func ListInstancesWithInsecure(ctx context.Context, kubeConfigFlags *genericclio
 	if watchMode {
 		return watch.Watch(func() error {
 			return listInstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listInstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
@@ -96,7 +95,7 @@ func ListImagesWithInsecure(ctx context.Context, kubeConfigFlags *genericcliopti
 	if watchMode {
 		return watch.Watch(func() error {
 			return listImagesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listImagesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
@@ -177,7 +176,7 @@ func ListFlavorsWithInsecure(ctx context.Context, kubeConfigFlags *genericcliopt
 	if watchMode {
 		return watch.Watch(func() error {
 			return listFlavorsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listFlavorsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
@@ -260,7 +259,7 @@ func ListProjectsWithInsecure(ctx context.Context, kubeConfigFlags *genericcliop
 	if watchMode {
 		return watch.Watch(func() error {
 			return listProjectsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listProjectsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
@@ -337,7 +336,7 @@ func ListVolumesWithInsecure(ctx context.Context, kubeConfigFlags *genericcliopt
 	if watchMode {
 		return watch.Watch(func() error {
 			return listVolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listVolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
@@ -419,7 +418,7 @@ func ListVolumeTypesWithInsecure(ctx context.Context, kubeConfigFlags *genericcl
 	if watchMode {
 		return watch.Watch(func() error {
 			return listVolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listVolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
@@ -496,7 +495,7 @@ func ListSnapshotsWithInsecure(ctx context.Context, kubeConfigFlags *genericclio
 	if watchMode {
 		return watch.Watch(func() error {
 			return listSnapshotsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listSnapshotsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
@@ -577,7 +576,7 @@ func ListSubnetsWithInsecure(ctx context.Context, kubeConfigFlags *genericcliopt
 	if watchMode {
 		return watch.Watch(func() error {
 			return listSubnetsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listSubnetsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)

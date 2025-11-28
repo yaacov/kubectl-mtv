@@ -3,7 +3,6 @@ package inventory
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -17,7 +16,7 @@ func ListDiskProfilesWithInsecure(ctx context.Context, kubeConfigFlags *genericc
 	if watchMode {
 		return watch.Watch(func() error {
 			return listDiskProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listDiskProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
@@ -94,7 +93,7 @@ func ListNICProfilesWithInsecure(ctx context.Context, kubeConfigFlags *genericcl
 	if watchMode {
 		return watch.Watch(func() error {
 			return listNICProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listNICProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
