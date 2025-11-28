@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"gopkg.in/yaml.v3"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -294,7 +293,7 @@ func ListVMsWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions
 	if watchMode {
 		return watch.Watch(func() error {
 			return listVMsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listVMsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, query, insecureSkipTLS)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -48,7 +47,7 @@ func ListNetworksWithInsecure(ctx context.Context, kubeConfigFlags *genericcliop
 	if watchMode {
 		return watch.Watch(func() error {
 			return listNetworksOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listNetworksOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)

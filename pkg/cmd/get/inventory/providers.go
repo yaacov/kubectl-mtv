@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -19,7 +18,7 @@ func ListProvidersWithInsecure(ctx context.Context, kubeConfigFlags *genericclio
 	if watchMode {
 		return watch.Watch(func() error {
 			return listProvidersOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listProvidersOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)

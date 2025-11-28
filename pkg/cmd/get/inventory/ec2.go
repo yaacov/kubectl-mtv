@@ -3,7 +3,6 @@ package inventory
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -17,7 +16,7 @@ func ListEC2InstancesWithInsecure(ctx context.Context, kubeConfigFlags *genericc
 	if watchMode {
 		return watch.Watch(func() error {
 			return listEC2InstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listEC2InstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
@@ -100,7 +99,7 @@ func ListEC2VolumesWithInsecure(ctx context.Context, kubeConfigFlags *genericcli
 	if watchMode {
 		return watch.Watch(func() error {
 			return listEC2VolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listEC2VolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
@@ -186,7 +185,7 @@ func ListEC2VolumeTypesWithInsecure(ctx context.Context, kubeConfigFlags *generi
 	if watchMode {
 		return watch.Watch(func() error {
 			return listEC2VolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listEC2VolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
@@ -264,7 +263,7 @@ func ListEC2NetworksWithInsecure(ctx context.Context, kubeConfigFlags *genericcl
 	if watchMode {
 		return watch.Watch(func() error {
 			return listEC2NetworksOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listEC2NetworksOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)

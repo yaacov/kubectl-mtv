@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -18,7 +17,7 @@ func ListNamespacesWithInsecure(ctx context.Context, kubeConfigFlags *genericcli
 	if watchMode {
 		return watch.Watch(func() error {
 			return listNamespacesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, 10*time.Second)
+		}, watch.DefaultInterval)
 	}
 
 	return listNamespacesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)

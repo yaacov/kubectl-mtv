@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -253,5 +252,5 @@ func GetHookPlaybookContent(hook unstructured.Unstructured) (string, error) {
 func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool, outputFormat string, hookName string, useUTC bool) error {
 	return watch.WrapWithWatch(watchMode, outputFormat, func() error {
 		return ListHooks(ctx, configFlags, namespace, outputFormat, hookName, useUTC)
-	}, 15*time.Second)
+	}, watch.DefaultInterval)
 }

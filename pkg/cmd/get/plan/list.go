@@ -248,5 +248,5 @@ func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool, outputFormat string, planName string, useUTC bool) error {
 	return watch.WrapWithWatch(watchMode, outputFormat, func() error {
 		return ListPlans(ctx, configFlags, namespace, outputFormat, planName, useUTC)
-	}, 15*time.Second)
+	}, watch.DefaultInterval)
 }

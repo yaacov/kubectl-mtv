@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -316,5 +315,5 @@ func listMappings(ctx context.Context, configFlags *genericclioptions.ConfigFlag
 func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, mappingType, namespace string, watchMode bool, outputFormat string, mappingName string, useUTC bool) error {
 	return watch.WrapWithWatch(watchMode, outputFormat, func() error {
 		return ListMappings(ctx, configFlags, mappingType, namespace, outputFormat, mappingName, useUTC)
-	}, 15*time.Second)
+	}, watch.DefaultInterval)
 }
