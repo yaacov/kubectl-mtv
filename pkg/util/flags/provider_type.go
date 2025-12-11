@@ -24,6 +24,7 @@ func (p *ProviderTypeFlag) Set(value string) error {
 		forkliftv1beta1.OVirt,
 		forkliftv1beta1.OpenStack,
 		forkliftv1beta1.Ova,
+		"hyperv",
 		"ec2",
 	}
 
@@ -47,7 +48,7 @@ func (p *ProviderTypeFlag) Set(value string) error {
 	}
 
 	if !isValid {
-		validTypesStr := "openshift, vsphere, ovirt, openstack, ova, ec2"
+		validTypesStr := "openshift, vsphere, ovirt, openstack, ova, hyperv, ec2"
 		if len(p.dynamicTypes) > 0 {
 			validTypesStr = fmt.Sprintf("%s, %s", validTypesStr, joinStrings(p.dynamicTypes, ", "))
 		}
@@ -81,7 +82,7 @@ func (p *ProviderTypeFlag) GetValue() string {
 
 // GetValidValues returns all valid provider type values for auto-completion
 func (p *ProviderTypeFlag) GetValidValues() []string {
-	staticTypes := []string{"openshift", "vsphere", "ovirt", "openstack", "ova", "ec2"}
+	staticTypes := []string{"openshift", "vsphere", "ovirt", "openstack", "ova", "hyperv", "ec2"}
 
 	// Combine static and dynamic types
 	allTypes := make([]string, 0, len(staticTypes)+len(p.dynamicTypes))

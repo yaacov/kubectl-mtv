@@ -7,6 +7,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/ec2"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/generic"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/hyperv"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/openshift"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/openstack"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/ova"
@@ -62,6 +63,8 @@ func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, name
 		providerResource, secretResource, err = vsphere.CreateProvider(configFlags, options)
 	case "ova":
 		providerResource, secretResource, err = ova.CreateProvider(configFlags, options)
+	case "hyperv":
+		providerResource, secretResource, err = hyperv.CreateProvider(configFlags, options)
 	case "openshift":
 		providerResource, secretResource, err = openshift.CreateProvider(configFlags, options)
 	case "ovirt":
