@@ -149,4 +149,3 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 
 	return createdProvider, createdSecret, nil
 }
-
