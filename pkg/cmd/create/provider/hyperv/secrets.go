@@ -91,4 +91,3 @@ func setSecretOwnership(configFlags *genericclioptions.ConfigFlags, provider *fo
 
 	return nil
 }
-
