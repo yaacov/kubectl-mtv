@@ -82,6 +82,9 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	cmd.Flags().StringVar(&opts.EC2Region, "ec2-region", "", "EC2 region")
 	cmd.Flags().StringVar(&opts.EC2TargetRegion, "target-region", "", "EC2 target region for migrations (defaults to provider region)")
 	cmd.Flags().StringVar(&opts.EC2TargetAZ, "target-az", "", "EC2 target availability zone for migrations (defaults to target-region + 'a')")
+	cmd.Flags().StringVar(&opts.EC2TargetAccessKeyID, "target-access-key-id", "", "Target AWS account access key ID (for cross-account migrations)")
+	cmd.Flags().StringVar(&opts.EC2TargetSecretKey, "target-secret-access-key", "", "Target AWS account secret access key (for cross-account migrations)")
+	cmd.Flags().BoolVar(&opts.AutoTargetCredentials, "auto-target-credentials", false, "Automatically fetch target AWS credentials from cluster (kube-system/aws-creds) and target-az from worker nodes")
 
 	return cmd
 }

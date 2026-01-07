@@ -107,6 +107,13 @@ func createTypedProvider(configFlags *genericclioptions.ConfigFlags, namespace s
 
 // CreateProvider implements the ProviderCreator interface for EC2
 func CreateProvider(configFlags *genericclioptions.ConfigFlags, options providerutil.ProviderOptions) (*forkliftv1beta1.Provider, *corev1.Secret, error) {
+	// Auto-fetch target credentials and target-az from cluster if requested
+	if options.AutoTargetCredentials {
+		if err := AutoPopulateTargetOptions(configFlags, &options.EC2TargetAccessKeyID, &options.EC2TargetSecretKey, &options.EC2TargetAZ, &options.EC2TargetRegion); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	// Validate required fields
 	if err := validateProviderOptions(options); err != nil {
 		return nil, nil, err
@@ -158,7 +165,8 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 	if options.Secret == "" {
 		// Pass the providerURL (which may be default or custom) to secret creation
 		createdSecret, err = createSecret(configFlags, options.Namespace, options.Name,
-			options.Username, options.Password, providerURL, options.CACert, options.EC2Region, options.InsecureSkipTLS)
+			options.Username, options.Password, providerURL, options.CACert, options.EC2Region, options.InsecureSkipTLS,
+			options.EC2TargetAccessKeyID, options.EC2TargetSecretKey)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create EC2 secret: %v", err)
 		}

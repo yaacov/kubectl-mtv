@@ -32,6 +32,8 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 
 	// EC2 specific flags
 	var ec2Region, ec2TargetRegion, ec2TargetAZ string
+	var ec2TargetAccessKeyID, ec2TargetSecretKey string
+	var autoTargetCredentials bool
 
 	// Check if MTV_VDDK_INIT_IMAGE environment variable is set
 	if envVddkInitImage := os.Getenv("MTV_VDDK_INIT_IMAGE"); envVddkInitImage != "" {
@@ -76,7 +78,8 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 
 			return provider.Create(kubeConfigFlags, providerType.GetValue(), name, namespace, secret,
 				url, username, password, cacert, insecureSkipTLS, vddkInitImage, sdkEndpointType.GetValue(), token,
-				domainName, projectName, regionName, useVddkAioOptimization, vddkBufSizeIn64K, vddkBufCount, ec2Region, ec2TargetRegion, ec2TargetAZ)
+				domainName, projectName, regionName, useVddkAioOptimization, vddkBufSizeIn64K, vddkBufCount,
+				ec2Region, ec2TargetRegion, ec2TargetAZ, ec2TargetAccessKeyID, ec2TargetSecretKey, autoTargetCredentials)
 		},
 	}
 
@@ -110,6 +113,9 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	cmd.Flags().StringVar(&ec2Region, "ec2-region", "", "EC2 region (required for EC2 provider)")
 	cmd.Flags().StringVar(&ec2TargetRegion, "target-region", "", "EC2 target region for migrations (defaults to provider region)")
 	cmd.Flags().StringVar(&ec2TargetAZ, "target-az", "", "EC2 target availability zone for migrations (defaults to target-region + 'a')")
+	cmd.Flags().StringVar(&ec2TargetAccessKeyID, "target-access-key-id", "", "Target AWS account access key ID (for cross-account migrations)")
+	cmd.Flags().StringVar(&ec2TargetSecretKey, "target-secret-access-key", "", "Target AWS account secret access key (for cross-account migrations)")
+	cmd.Flags().BoolVar(&autoTargetCredentials, "auto-target-credentials", false, "Automatically fetch target AWS credentials from cluster (kube-system/aws-creds) and target-az from worker nodes")
 
 	// Add completion for provider type flag
 	if err := cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
