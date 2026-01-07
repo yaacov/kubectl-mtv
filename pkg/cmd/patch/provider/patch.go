@@ -14,6 +14,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/ec2"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 
@@ -47,9 +48,12 @@ type PatchProviderOptions struct {
 	RegionName  string
 
 	// EC2 settings
-	EC2Region       string
-	EC2TargetRegion string
-	EC2TargetAZ     string
+	EC2Region             string
+	EC2TargetRegion       string
+	EC2TargetAZ           string
+	EC2TargetAccessKeyID  string
+	EC2TargetSecretKey    string
+	AutoTargetCredentials bool
 }
 
 // PatchProvider patches an existing provider
@@ -84,9 +88,18 @@ func PatchProvider(opts PatchProviderOptions) error {
 		opts.EC2Region = opts.RegionName
 	}
 
+	// Auto-fetch target credentials and target-az from cluster if requested (EC2 only)
+	if providerType == "ec2" && opts.AutoTargetCredentials {
+		if err := ec2.AutoPopulateTargetOptions(opts.ConfigFlags, &opts.EC2TargetAccessKeyID, &opts.EC2TargetSecretKey, &opts.EC2TargetAZ, &opts.EC2TargetRegion); err != nil {
+			return err
+		}
+	}
+
 	// Track if we need to update credentials
+	// Note: AutoTargetCredentials for EC2 providers will populate EC2TargetAccessKeyID and EC2TargetSecretKey above
 	needsCredentialUpdate := opts.Username != "" || opts.Password != "" || opts.Token != "" || opts.CACert != "" ||
-		opts.DomainName != "" || opts.ProjectName != "" || opts.RegionName != "" || opts.EC2Region != ""
+		opts.DomainName != "" || opts.ProjectName != "" || opts.RegionName != "" || opts.EC2Region != "" ||
+		opts.EC2TargetAccessKeyID != "" || opts.EC2TargetSecretKey != ""
 
 	// Get and validate secret ownership if credentials need updating
 	var secret *corev1.Secret
@@ -186,7 +199,8 @@ func PatchProvider(opts PatchProviderOptions) error {
 	secretUpdated := false
 	if needsCredentialUpdate && secret != nil {
 		secretUpdated, err = updateSecretCredentials(opts.ConfigFlags, secret, providerType,
-			opts.Username, opts.Password, opts.CACert, opts.Token, opts.DomainName, opts.ProjectName, opts.RegionName, opts.EC2Region)
+			opts.Username, opts.Password, opts.CACert, opts.Token, opts.DomainName, opts.ProjectName, opts.RegionName,
+			opts.EC2Region, opts.EC2TargetAccessKeyID, opts.EC2TargetSecretKey)
 		if err != nil {
 			return fmt.Errorf("failed to update credentials: %v", err)
 		}
@@ -289,7 +303,7 @@ func getAndValidateSecret(configFlags *genericclioptions.ConfigFlags, provider *
 
 // updateSecretCredentials updates the secret with new credential values
 func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret *corev1.Secret, providerType string,
-	username, password, cacert, token, domainName, projectName, regionName, ec2Region string) (bool, error) {
+	username, password, cacert, token, domainName, projectName, regionName, ec2Region, ec2TargetAccessKeyID, ec2TargetSecretKey string) (bool, error) {
 
 	updated := false
 
@@ -357,6 +371,16 @@ func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret 
 		if ec2Region != "" {
 			secret.Data["region"] = []byte(ec2Region)
 			klog.V(2).Infof("Updated EC2 region")
+			updated = true
+		}
+		if ec2TargetAccessKeyID != "" {
+			secret.Data["targetAccessKeyId"] = []byte(ec2TargetAccessKeyID)
+			klog.V(2).Infof("Updated EC2 target account access key ID (cross-account)")
+			updated = true
+		}
+		if ec2TargetSecretKey != "" {
+			secret.Data["targetSecretAccessKey"] = []byte(ec2TargetSecretKey)
+			klog.V(2).Infof("Updated EC2 target account secret access key (cross-account)")
 			updated = true
 		}
 	}

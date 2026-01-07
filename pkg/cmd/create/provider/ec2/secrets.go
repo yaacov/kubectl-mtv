@@ -13,7 +13,7 @@ import (
 )
 
 // Helper function to create an EC2 secret
-func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName, accessKeyID, secretAccessKey, url, cacert, region string, insecureSkipTLS bool) (*corev1.Secret, error) {
+func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName, accessKeyID, secretAccessKey, url, cacert, region string, insecureSkipTLS bool, targetAccessKeyID, targetSecretAccessKey string) (*corev1.Secret, error) {
 	// Get the Kubernetes client using configFlags
 	k8sClient, err := client.GetKubernetesClientset(configFlags)
 	if err != nil {
@@ -35,6 +35,14 @@ func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, provide
 	}
 	if cacert != "" {
 		secretData["cacert"] = []byte(cacert)
+	}
+
+	// Add cross-account migration credentials (optional)
+	if targetAccessKeyID != "" {
+		secretData["targetAccessKeyId"] = []byte(targetAccessKeyID)
+	}
+	if targetSecretAccessKey != "" {
+		secretData["targetSecretAccessKey"] = []byte(targetSecretAccessKey)
 	}
 
 	// Generate a name prefix for the secret
