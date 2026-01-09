@@ -37,11 +37,6 @@ See [MCP Server Guide](guide/19-model-context-protocol-mcp-server-integration.md
 kubectl mtv create provider vsphere-01 --type vsphere \
   --url https://vcenter.example.com \
   -u admin --password secret --cacert @ca.cert
-
-# EC2 (URL is optional, auto-generated from region)
-kubectl mtv create provider ec2-01 --type ec2 \
-  --region us-east-1 \
-  --access-key-id AKIA... --secret-access-key secret
 ```
 
 ### 2. Create Mappings (Optional)
@@ -85,15 +80,8 @@ kubectl mtv start plan migration-1
 
 ```bash
 # Interactive TUI with scrolling, help panel, and adjustable refresh
-kubectl mtv get plan --watch
+kubectl mtv get plan --vms --watch
 ```
-
-**NEW**: Watch mode now features an interactive Terminal UI with:
-- Smooth screen updates without flickering
-- Scrollable output (arrow keys, pgup/pgdn)
-- Interactive help panel (press ?)
-- Adjustable refresh interval (+/- keys)
-- Manual refresh (press r)
 
 For a complete walkthrough, see the [Quick Start Guide](guide/03-quick-start-first-migration-workflow.md).
 
