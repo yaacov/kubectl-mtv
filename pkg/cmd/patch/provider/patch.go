@@ -99,7 +99,7 @@ func PatchProvider(opts PatchProviderOptions) error {
 	// Note: AutoTargetCredentials for EC2 providers will populate EC2TargetAccessKeyID and EC2TargetSecretKey above
 	needsCredentialUpdate := opts.Username != "" || opts.Password != "" || opts.Token != "" || opts.CACert != "" ||
 		opts.DomainName != "" || opts.ProjectName != "" || opts.RegionName != "" || opts.EC2Region != "" ||
-		opts.EC2TargetAccessKeyID != "" || opts.EC2TargetSecretKey != ""
+		opts.EC2TargetAccessKeyID != "" || opts.EC2TargetSecretKey != "" || opts.InsecureSkipTLSChanged
 
 	// Get and validate secret ownership if credentials need updating
 	var secret *corev1.Secret
@@ -132,13 +132,6 @@ func PatchProvider(opts PatchProviderOptions) error {
 		for k, v := range existingSettings {
 			currentSettings[k] = v
 		}
-	}
-
-	// Update insecureSkipTLS setting
-	if opts.InsecureSkipTLSChanged {
-		currentSettings["insecureSkipVerify"] = fmt.Sprintf("%t", opts.InsecureSkipTLS)
-		klog.V(2).Infof("Updated insecureSkipTLS setting to %t", opts.InsecureSkipTLS)
-		providerUpdated = true
 	}
 
 	// Update VDDK settings for vSphere providers
@@ -200,7 +193,8 @@ func PatchProvider(opts PatchProviderOptions) error {
 	if needsCredentialUpdate && secret != nil {
 		secretUpdated, err = updateSecretCredentials(opts.ConfigFlags, secret, providerType,
 			opts.Username, opts.Password, opts.CACert, opts.Token, opts.DomainName, opts.ProjectName, opts.RegionName,
-			opts.EC2Region, opts.EC2TargetAccessKeyID, opts.EC2TargetSecretKey)
+			opts.EC2Region, opts.EC2TargetAccessKeyID, opts.EC2TargetSecretKey,
+			opts.InsecureSkipTLS, opts.InsecureSkipTLSChanged)
 		if err != nil {
 			return fmt.Errorf("failed to update credentials: %v", err)
 		}
@@ -303,7 +297,8 @@ func getAndValidateSecret(configFlags *genericclioptions.ConfigFlags, provider *
 
 // updateSecretCredentials updates the secret with new credential values
 func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret *corev1.Secret, providerType string,
-	username, password, cacert, token, domainName, projectName, regionName, ec2Region, ec2TargetAccessKeyID, ec2TargetSecretKey string) (bool, error) {
+	username, password, cacert, token, domainName, projectName, regionName, ec2Region, ec2TargetAccessKeyID, ec2TargetSecretKey string,
+	insecureSkipTLS, insecureSkipTLSChanged bool) (bool, error) {
 
 	updated := false
 
@@ -389,6 +384,18 @@ func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret 
 	if cacert != "" {
 		secret.Data["cacert"] = []byte(cacert)
 		klog.V(2).Infof("Updated CA certificate")
+		updated = true
+	}
+
+	// Update insecureSkipVerify for all types (if changed)
+	if insecureSkipTLSChanged {
+		if insecureSkipTLS {
+			secret.Data["insecureSkipVerify"] = []byte("true")
+		} else {
+			// Remove the key if insecureSkipTLS is false
+			delete(secret.Data, "insecureSkipVerify")
+		}
+		klog.V(2).Infof("Updated insecureSkipVerify to %t", insecureSkipTLS)
 		updated = true
 	}
 
