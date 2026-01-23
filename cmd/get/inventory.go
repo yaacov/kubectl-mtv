@@ -8,9 +8,22 @@ import (
 // NewInventoryCmd creates the inventory command with all its subcommands
 func NewInventoryCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "inventory",
-		Short:        "Get inventory resources",
-		Long:         `Get inventory resources from providers`,
+		Use:   "inventory",
+		Short: "Get inventory resources",
+		Long: `Get inventory resources from providers via the MTV inventory service.
+
+The inventory service provides access to source provider resources (VMs, networks,
+storage, hosts, etc.) without directly connecting to the provider. Resources are
+cached and can be queried using TSL (Tree Search Language) filters.
+
+Available resource types vary by provider:
+  - All providers: vm, network, storage
+  - vSphere/oVirt: host, datacenter, cluster, disk
+  - vSphere: datastore, folder, resourcepool
+  - oVirt: diskprofile, nicprofile
+  - OpenStack: instance, image, flavor, project, volume, volumetype, snapshot, subnet
+  - OpenShift: namespace, pvc, datavolume
+  - EC2: ec2instance, ec2volume, ec2volumetype, ec2network`,
 		SilenceUsage: true,
 	}
 

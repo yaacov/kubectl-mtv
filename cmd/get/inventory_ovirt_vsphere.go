@@ -20,9 +20,20 @@ func NewInventoryHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalC
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:               "host PROVIDER",
-		Short:             "Get hosts from a provider (ovirt, vsphere)",
-		Long:              `Get hosts from a provider (ovirt, vsphere)`,
+		Use:   "host PROVIDER",
+		Short: "Get hosts from a provider (ovirt, vsphere)",
+		Long: `Get hypervisor hosts from a provider's inventory.
+
+Lists ESXi hosts (vSphere) or hypervisor hosts (oVirt) from the source provider.
+Host information is useful for planning migrations and understanding the source environment.`,
+		Example: `  # List all hosts from a vSphere provider
+  kubectl-mtv get inventory host vsphere-prod
+
+  # Filter hosts by cluster
+  kubectl-mtv get inventory host vsphere-prod -q "where cluster = 'production'"
+
+  # Output as JSON
+  kubectl-mtv get inventory host vsphere-prod -o json`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -69,9 +80,20 @@ func NewInventoryDataCenterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:               "datacenter PROVIDER",
-		Short:             "Get datacenters from a provider (ovirt, vsphere)",
-		Long:              `Get datacenters from a provider (ovirt, vsphere)`,
+		Use:   "datacenter PROVIDER",
+		Short: "Get datacenters from a provider (ovirt, vsphere)",
+		Long: `Get datacenters from a provider's inventory.
+
+Lists datacenters from vSphere or oVirt providers. Datacenters are the top-level
+organizational units that contain clusters, hosts, and VMs.`,
+		Example: `  # List all datacenters from a vSphere provider
+  kubectl-mtv get inventory datacenter vsphere-prod
+
+  # Filter datacenters by name
+  kubectl-mtv get inventory datacenter vsphere-prod -q "where name ~= 'DC*'"
+
+  # Output as YAML
+  kubectl-mtv get inventory datacenter vsphere-prod -o yaml`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -118,9 +140,20 @@ func NewInventoryClusterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:               "cluster PROVIDER",
-		Short:             "Get clusters from a provider (ovirt, vsphere)",
-		Long:              `Get clusters from a provider (ovirt, vsphere)`,
+		Use:   "cluster PROVIDER",
+		Short: "Get clusters from a provider (ovirt, vsphere)",
+		Long: `Get clusters from a provider's inventory.
+
+Lists compute clusters from vSphere or oVirt providers. Clusters group hosts
+together and define resource pools for VMs.`,
+		Example: `  # List all clusters from a vSphere provider
+  kubectl-mtv get inventory cluster vsphere-prod
+
+  # Filter clusters by datacenter
+  kubectl-mtv get inventory cluster vsphere-prod -q "where datacenter = 'DC1'"
+
+  # Output as JSON
+  kubectl-mtv get inventory cluster vsphere-prod -o json`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -167,9 +200,20 @@ func NewInventoryDiskCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalC
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:               "disk PROVIDER",
-		Short:             "Get disks from a provider (ovirt, vsphere)",
-		Long:              `Get disks from a provider (ovirt, vsphere)`,
+		Use:   "disk PROVIDER",
+		Short: "Get disks from a provider (ovirt, vsphere)",
+		Long: `Get disks from a provider's inventory.
+
+Lists virtual disks from vSphere or oVirt providers. Disk information includes
+size, storage location, and attachment to VMs.`,
+		Example: `  # List all disks from an oVirt provider
+  kubectl-mtv get inventory disk ovirt-prod
+
+  # Filter disks by size (greater than 100GB)
+  kubectl-mtv get inventory disk vsphere-prod -q "where capacity > 107374182400"
+
+  # Output as JSON
+  kubectl-mtv get inventory disk vsphere-prod -o json`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),

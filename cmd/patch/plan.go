@@ -58,9 +58,23 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var runPreflightInspectionChanged bool
 
 	cmd := &cobra.Command{
-		Use:               "plan PLAN_NAME",
-		Short:             "Patch a migration plan",
-		Long:              `Patch various fields of an existing migration plan without modifying its VMs.`,
+		Use:   "plan PLAN_NAME",
+		Short: "Patch a migration plan",
+		Long: `Patch an existing migration plan without modifying its VM list.
+
+Use this to update plan settings like migration type, transfer network,
+target labels, node selectors, or convertor pod configuration.`,
+		Example: `  # Change migration type to warm
+  kubectl-mtv patch plan my-migration --migration-type warm
+
+  # Update transfer network
+  kubectl-mtv patch plan my-migration --transfer-network my-namespace/migration-net
+
+  # Add target labels to migrated VMs
+  kubectl-mtv patch plan my-migration --target-labels env=prod,team=platform
+
+  # Configure convertor pod scheduling
+  kubectl-mtv patch plan my-migration --convertor-node-selector node-role=worker`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),

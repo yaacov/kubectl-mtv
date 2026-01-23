@@ -82,8 +82,50 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 	var convertorAffinity string
 
 	cmd := &cobra.Command{
-		Use:          "plan NAME",
-		Short:        "Create a migration plan",
+		Use:   "plan NAME",
+		Short: "Create a migration plan",
+		Long: `Create a migration plan to move VMs from a source provider to OpenShift.
+
+A plan defines which VMs to migrate, the source and target providers, and
+network/storage mappings. VMs can be specified as:
+  - Comma-separated names: --vms "vm1,vm2,vm3"
+  - TSL query: --vms "where name ~= 'prod-*' and cpuCount <= 8"
+  - YAML/JSON file: --vms @vms.yaml
+
+Network and storage mappings can be created inline using --network-pairs and
+--storage-pairs, or reference existing mapping resources with --network-mapping
+and --storage-mapping.`,
+		Example: `  # Create a plan with specific VMs
+  kubectl-mtv create plan my-migration \
+    --source vsphere-prod \
+    --target host \
+    --vms "web-server,db-server" \
+    --network-pairs "VM Network:default" \
+    --storage-pairs "datastore1:standard"
+
+  # Create a plan using VM query
+  kubectl-mtv create plan batch-migration \
+    --source vsphere-prod \
+    --target host \
+    --vms "where name ~= 'legacy-*'" \
+    --default-target-network default \
+    --default-target-storage-class standard
+
+  # Create a warm migration plan with scheduled cutover
+  kubectl-mtv create plan warm-migration \
+    --source vsphere-prod \
+    --target host \
+    --vms "critical-vm" \
+    --migration-type warm
+
+  # Create a plan from VM file
+  kubectl-mtv get inventory vm vsphere-prod -o planvms > vms.yaml
+  kubectl-mtv create plan file-migration \
+    --source vsphere-prod \
+    --target host \
+    --vms @vms.yaml \
+    --default-target-network default \
+    --default-target-storage-class standard`,
 		Args:         cobra.ExactArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {

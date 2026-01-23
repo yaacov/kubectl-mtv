@@ -19,9 +19,21 @@ func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:               "hook [NAME]",
-		Short:             "Get hooks",
-		Long:              `Get migration hooks`,
+		Use:   "hook [NAME]",
+		Short: "Get hooks",
+		Long: `Get MTV hook resources from the cluster.
+
+Hooks are custom scripts or Ansible playbooks that run at specific points during
+VM migration (pre-migration or post-migration). They can be used to customize
+the migration process, such as installing drivers or configuring the target VM.`,
+		Example: `  # List all hooks
+  kubectl-mtv get hook
+
+  # Get a specific hook in JSON format
+  kubectl-mtv get hook my-post-hook -o json
+
+  # Watch hook status changes
+  kubectl-mtv get hook -w`,
 		Args:              cobra.MaximumNArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.HookResourceNameCompletion(kubeConfigFlags),
