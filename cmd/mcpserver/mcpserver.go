@@ -2,6 +2,7 @@ package mcpserver
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -66,7 +67,12 @@ Manual Claude config: Add to claude_desktop_config.json:
 
 				// Create MCP handler
 				handler := mcp.NewSSEHandler(func(req *http.Request) *mcp.Server {
-					return cmd.CreateReadServer()
+					server, err := cmd.CreateServer()
+					if err != nil {
+						log.Printf("Failed to create server: %v", err)
+						return nil
+					}
+					return server
 				}, nil)
 
 				server := &http.Server{
@@ -111,7 +117,10 @@ Manual Claude config: Add to claude_desktop_config.json:
 			}
 
 			// Stdio mode - default behavior
-			server := cmd.CreateReadServer()
+			server, err := cmd.CreateServer()
+			if err != nil {
+				return fmt.Errorf("failed to create server: %w", err)
+			}
 
 			log.Println("Starting kubectl-mtv MCP server in stdio mode")
 			log.Println("Server is ready and listening for MCP protocol messages on stdin/stdout")
