@@ -19,9 +19,23 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:               "provider [NAME]",
-		Short:             "Get providers",
-		Long:              `Get providers`,
+		Use:   "provider [NAME]",
+		Short: "Get providers",
+		Long: `Get MTV providers from the cluster.
+
+Providers represent source (oVirt, vSphere, OpenStack, OVA, EC2) or target (OpenShift)
+environments for VM migrations. Lists all providers or retrieves details for a specific one.`,
+		Example: `  # List all providers
+  kubectl-mtv get provider
+
+  # List providers across all namespaces
+  kubectl-mtv get provider -A
+
+  # Get provider details in YAML format
+  kubectl-mtv get provider vsphere-prod -o yaml
+
+  # Watch provider status changes
+  kubectl-mtv get provider -w`,
 		Args:              cobra.MaximumNArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),

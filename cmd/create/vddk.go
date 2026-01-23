@@ -16,6 +16,29 @@ func NewVddkCmd(globalConfig GlobalConfigGetter) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "vddk-image",
 		Short: "Create a VDDK image for MTV",
+		Long: `Build a VDDK (Virtual Disk Development Kit) container image for vSphere migrations.
+
+VDDK is required for migrating VMs from vSphere. This command builds a container
+image from the VMware VDDK SDK and pushes it to your container registry.
+
+You must download the VDDK SDK from VMware (requires VMware account):
+https://developer.vmware.com/web/sdk/8.0/vddk`,
+		Example: `  # Build VDDK image using podman
+  kubectl-mtv create vddk-image \
+    --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \
+    --tag quay.io/myorg/vddk:8.0.1
+
+  # Build and push to registry
+  kubectl-mtv create vddk-image \
+    --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \
+    --tag quay.io/myorg/vddk:8.0.1 \
+    --push
+
+  # Use specific container runtime
+  kubectl-mtv create vddk-image \
+    --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \
+    --tag quay.io/myorg/vddk:8.0.1 \
+    --runtime docker`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			verbosity := 0
 			if globalConfig != nil {

@@ -19,9 +19,20 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:               "host [NAME]",
-		Short:             "Get hosts",
-		Long:              `Get migration hosts`,
+		Use:   "host [NAME]",
+		Short: "Get hosts",
+		Long: `Get MTV host resources from the cluster.
+
+Host resources represent ESXi hosts for vSphere migrations or hypervisor hosts
+for oVirt migrations. They store host-specific credentials and configuration.`,
+		Example: `  # List all hosts
+  kubectl-mtv get host
+
+  # Get a specific host in YAML format
+  kubectl-mtv get host esxi-host-1 -o yaml
+
+  # Watch host status changes
+  kubectl-mtv get host -w`,
 		Args:              cobra.MaximumNArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.HostResourceNameCompletion(kubeConfigFlags),

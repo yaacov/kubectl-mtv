@@ -17,6 +17,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/cmd/delete"
 	"github.com/yaacov/kubectl-mtv/cmd/describe"
 	"github.com/yaacov/kubectl-mtv/cmd/get"
+	"github.com/yaacov/kubectl-mtv/cmd/help"
 	"github.com/yaacov/kubectl-mtv/cmd/mcpserver"
 	"github.com/yaacov/kubectl-mtv/cmd/patch"
 	"github.com/yaacov/kubectl-mtv/cmd/start"
@@ -177,4 +178,8 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 
 	// MCP Server command - start the Model Context Protocol server
 	rootCmd.AddCommand(mcpserver.NewMCPServerCmd())
+
+	// Help command - replace default Cobra help with our enhanced version
+	// that supports machine-readable output for MCP server integration
+	rootCmd.SetHelpCommand(help.NewHelpCmd(rootCmd, clientVersion))
 }

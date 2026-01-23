@@ -20,8 +20,29 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig get
 	var all bool
 
 	cmd := &cobra.Command{
-		Use:               "plan [NAME...] [--all]",
-		Short:             "Start one or more migration plans",
+		Use:   "plan [NAME...] [--all]",
+		Short: "Start one or more migration plans",
+		Long: `Start one or more migration plans.
+
+For cold migrations, the migration begins immediately. For warm migrations,
+you can optionally specify a cutover time; if not provided, cutover defaults
+to 1 hour from the start time.
+
+The plan must be in a 'Ready' state to be started.`,
+		Example: `  # Start a migration plan
+  kubectl-mtv start plan my-migration
+
+  # Start multiple plans
+  kubectl-mtv start plan plan1 plan2 plan3
+
+  # Start all plans in the namespace
+  kubectl-mtv start plan --all
+
+  # Start with scheduled cutover (warm migration)
+  kubectl-mtv start plan my-migration --cutover 2026-12-31T23:00:00Z
+
+  # Start warm migration with cutover in 2 hours (Linux)
+  kubectl-mtv start plan my-migration --cutover "$(date -d '+2 hours' --iso-8601=sec)"`,
 		Args:              flags.ValidateAllFlagArgs(func() bool { return all }, 1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),

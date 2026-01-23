@@ -13,8 +13,13 @@ import (
 // NewHostCmd creates the host description command
 func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig get.GlobalConfigGetter) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "host NAME",
-		Short:             "Describe a migration host",
+		Use:   "host NAME",
+		Short: "Describe a migration host",
+		Long: `Display detailed information about a migration host.
+
+Shows host configuration, IP address, provider reference, and status conditions.`,
+		Example: `  # Describe a host
+  kubectl-mtv describe host esxi-host-1`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.HostResourceNameCompletion(kubeConfigFlags),

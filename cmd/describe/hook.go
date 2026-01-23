@@ -13,8 +13,14 @@ import (
 // NewHookCmd creates the hook description command
 func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig get.GlobalConfigGetter) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "hook NAME",
-		Short:             "Describe a migration hook",
+		Use:   "hook NAME",
+		Short: "Describe a migration hook",
+		Long: `Display detailed information about a migration hook.
+
+Shows hook configuration including container image, playbook content,
+service account, deadline, and status conditions.`,
+		Example: `  # Describe a hook
+  kubectl-mtv describe hook my-post-hook`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.HookResourceNameCompletion(kubeConfigFlags),

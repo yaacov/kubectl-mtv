@@ -21,9 +21,26 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 	var vms bool
 
 	cmd := &cobra.Command{
-		Use:               "plan [NAME]",
-		Short:             "Get migration plans",
-		Long:              `Get migration plans`,
+		Use:   "plan [NAME]",
+		Short: "Get migration plans",
+		Long: `Get migration plans from the cluster.
+
+Lists all plans in the namespace, or retrieves details for a specific plan.
+Use --vms to see the migration status of individual VMs within a plan.`,
+		Example: `  # List all plans in current namespace
+  kubectl-mtv get plan
+
+  # List plans across all namespaces
+  kubectl-mtv get plan -A
+
+  # Get a specific plan in JSON format
+  kubectl-mtv get plan my-migration -o json
+
+  # Watch plan status changes
+  kubectl-mtv get plan my-migration -w
+
+  # Get VM migration status within a plan
+  kubectl-mtv get plan my-migration --vms`,
 		Args:              cobra.MaximumNArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),

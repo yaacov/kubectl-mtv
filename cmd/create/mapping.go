@@ -11,9 +11,13 @@ import (
 // NewMappingCmd creates the mapping creation command with subcommands
 func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "mapping",
-		Short:        "Create a new mapping",
-		Long:         `Create a new network or storage mapping`,
+		Use:   "mapping",
+		Short: "Create a new mapping",
+		Long: `Create a new network or storage mapping.
+
+Mappings define how source provider resources (networks, storage) are translated
+to target OpenShift resources. Use 'mapping network' or 'mapping storage' to
+create specific mapping types.`,
 		SilenceUsage: true,
 	}
 
@@ -30,9 +34,29 @@ func newNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, global
 	var networkPairs string
 
 	cmd := &cobra.Command{
-		Use:          "network NAME",
-		Short:        "Create a new network mapping",
-		Long:         `Create a new network mapping between source and target providers`,
+		Use:   "network NAME",
+		Short: "Create a new network mapping",
+		Long: `Create a new network mapping between source and target providers.
+
+Network mappings translate source VM network connections to target network
+attachment definitions (NADs) or pod networking ('default').
+
+Pair formats:
+  - source:target-namespace/target-network - Map to specific NAD
+  - source:target-network - Map to NAD in same namespace
+  - source:default - Map to pod networking
+  - source:ignored - Skip this network`,
+		Example: `  # Create a network mapping to pod networking
+  kubectl-mtv create mapping network my-net-map \
+    --source vsphere-prod \
+    --target host \
+    --network-pairs "VM Network:default"
+
+  # Create a network mapping to a specific NAD
+  kubectl-mtv create mapping network my-net-map \
+    --source vsphere-prod \
+    --target host \
+    --network-pairs "VM Network:openshift-cnv/br-external,Management:default"`,
 		Args:         cobra.ExactArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -74,9 +98,31 @@ func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, global
 	var offloadInsecureSkipTLS bool
 
 	cmd := &cobra.Command{
-		Use:          "storage NAME",
-		Short:        "Create a new storage mapping",
-		Long:         `Create a new storage mapping between source and target providers`,
+		Use:   "storage NAME",
+		Short: "Create a new storage mapping",
+		Long: `Create a new storage mapping between source and target providers.
+
+Storage mappings translate source datastores/storage domains to target Kubernetes
+storage classes. Advanced options include volume mode, access mode, and offload
+plugin configuration for optimized data transfer.`,
+		Example: `  # Create a simple storage mapping
+  kubectl-mtv create mapping storage my-storage-map \
+    --source vsphere-prod \
+    --target host \
+    --storage-pairs "datastore1:standard,datastore2:fast"
+
+  # Create a storage mapping with volume mode
+  kubectl-mtv create mapping storage my-storage-map \
+    --source vsphere-prod \
+    --target host \
+    --storage-pairs "datastore1:ocs-storagecluster-ceph-rbd" \
+    --default-volume-mode Block
+
+  # Create a storage mapping with offload plugin
+  kubectl-mtv create mapping storage my-storage-map \
+    --source vsphere-prod \
+    --target host \
+    --storage-pairs "datastore1:ocs-storagecluster-ceph-rbd;offloadPlugin=vsphere;offloadVendor=ontap"`,
 		Args:         cobra.ExactArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {

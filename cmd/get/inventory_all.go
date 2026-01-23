@@ -20,9 +20,20 @@ func NewInventoryNetworkCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:               "network PROVIDER",
-		Short:             "Get networks from a provider (ovirt, vsphere, openstack, ova, openshift)",
-		Long:              `Get networks from a provider (ovirt, vsphere, openstack, ova, openshift)`,
+		Use:   "network PROVIDER",
+		Short: "Get networks from a provider",
+		Long: `Get networks from a provider's inventory.
+
+Queries the MTV inventory service to list networks available in the source provider.
+Use --query (-q) to filter results using TSL query syntax.`,
+		Example: `  # List all networks from a vSphere provider
+  kubectl-mtv get inventory network vsphere-prod
+
+  # Filter networks by name
+  kubectl-mtv get inventory network vsphere-prod -q "where name ~= 'VM Network*'"
+
+  # Output as JSON
+  kubectl-mtv get inventory network vsphere-prod -o json`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -70,9 +81,20 @@ func NewInventoryStorageCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:               "storage PROVIDER",
-		Short:             "Get storage from a provider (ovirt, vsphere, openstack, ova, openshift)",
-		Long:              `Get storage from a provider (ovirt, vsphere, openstack, ova, openshift)`,
+		Use:   "storage PROVIDER",
+		Short: "Get storage from a provider",
+		Long: `Get storage resources from a provider's inventory.
+
+Queries the MTV inventory service to list storage domains (oVirt), datastores (vSphere),
+or storage classes (OpenShift) available in the source provider.`,
+		Example: `  # List all storage from a vSphere provider
+  kubectl-mtv get inventory storage vsphere-prod
+
+  # Filter storage by name pattern
+  kubectl-mtv get inventory storage ovirt-prod -q "where name ~= 'data*'"
+
+  # Output as YAML
+  kubectl-mtv get inventory storage vsphere-prod -o yaml`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -121,9 +143,30 @@ func NewInventoryVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalCon
 	var watch bool
 
 	cmd := &cobra.Command{
-		Use:               "vm PROVIDER",
-		Short:             "Get VMs from a provider (ovirt, vsphere, openstack, ova, openshift)",
-		Long:              `Get VMs from a provider (ovirt, vsphere, openstack, ova, openshift)`,
+		Use:   "vm PROVIDER",
+		Short: "Get VMs from a provider",
+		Long: `Get virtual machines from a provider's inventory.
+
+Queries the MTV inventory service to list VMs available for migration.
+Use --query (-q) to filter results using TSL query syntax. The --extended
+flag shows additional VM details.
+
+Output format 'planvms' generates YAML suitable for use with 'create plan --vms @file'.`,
+		Example: `  # List all VMs from a vSphere provider
+  kubectl-mtv get inventory vm vsphere-prod
+
+  # Filter VMs by name pattern
+  kubectl-mtv get inventory vm vsphere-prod -q "where name ~= 'web-*'"
+
+  # Get VMs with more than 4 CPUs and 8GB memory
+  kubectl-mtv get inventory vm vsphere-prod -q "where cpuCount > 4 and memoryMB > 8192"
+
+  # Show extended VM details
+  kubectl-mtv get inventory vm vsphere-prod --extended
+
+  # Export VMs for plan creation
+  kubectl-mtv get inventory vm vsphere-prod -q "where name ~= 'prod-*'" -o planvms > vms.yaml
+  kubectl-mtv create plan my-migration --vms @vms.yaml`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),

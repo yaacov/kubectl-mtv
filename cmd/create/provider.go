@@ -41,8 +41,48 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	}
 
 	cmd := &cobra.Command{
-		Use:          "provider NAME",
-		Short:        "Create a new provider",
+		Use:   "provider NAME",
+		Short: "Create a new provider",
+		Long: `Create a new MTV provider to connect to a virtualization platform.
+
+Providers represent source or target environments for VM migrations. Supported types:
+  - vsphere: VMware vSphere/vCenter (requires VDDK init image for migration)
+  - ovirt: Red Hat Virtualization (oVirt/RHV)
+  - openstack: OpenStack cloud platform
+  - ova: OVA files from NFS share
+  - openshift: Target OpenShift cluster (usually named 'host')
+  - ec2: Amazon EC2 instances
+
+Credentials can be provided directly via flags or through an existing Kubernetes secret.`,
+		Example: `  # Create a vSphere provider
+  kubectl-mtv create provider vsphere-prod \
+    --type vsphere \
+    --url https://vcenter.example.com/sdk \
+    --username admin@vsphere.local \
+    --password 'secret' \
+    --vddk-init-image quay.io/kubev2v/vddk:latest
+
+  # Create an oVirt provider
+  kubectl-mtv create provider ovirt-prod \
+    --type ovirt \
+    --url https://rhv-manager.example.com/ovirt-engine/api \
+    --username admin@internal \
+    --password 'secret'
+
+  # Create an OpenShift target provider
+  kubectl-mtv create provider host \
+    --type openshift \
+    --url https://api.cluster.example.com:6443 \
+    --token 'eyJhbGciOiJSUzI1NiIsInR5...'
+
+  # Create an OpenStack provider
+  kubectl-mtv create provider openstack-prod \
+    --type openstack \
+    --url https://keystone.example.com:5000/v3 \
+    --username admin \
+    --password 'secret' \
+    --provider-domain-name Default \
+    --provider-project-name admin`,
 		Args:         cobra.ExactArgs(1),
 		SilenceUsage: true,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
