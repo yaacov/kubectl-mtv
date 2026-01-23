@@ -11,12 +11,12 @@ import (
 // Info holds all version-related information
 type Info struct {
 	ClientVersion     string `json:"clientVersion" yaml:"clientVersion"`
-	OperatorVersion   string `json:"operatorVersion" yaml:"operatorVersion"`
-	OperatorStatus    string `json:"operatorStatus" yaml:"operatorStatus"`
+	OperatorVersion   string `json:"operatorVersion,omitempty" yaml:"operatorVersion,omitempty"`
+	OperatorStatus    string `json:"operatorStatus,omitempty" yaml:"operatorStatus,omitempty"`
 	OperatorNamespace string `json:"operatorNamespace,omitempty" yaml:"operatorNamespace,omitempty"`
-	InventoryURL      string `json:"inventoryURL" yaml:"inventoryURL"`
-	InventoryStatus   string `json:"inventoryStatus" yaml:"inventoryStatus"`
-	InventoryInsecure bool   `json:"inventoryInsecure" yaml:"inventoryInsecure"`
+	InventoryURL      string `json:"inventoryURL,omitempty" yaml:"inventoryURL,omitempty"`
+	InventoryStatus   string `json:"inventoryStatus,omitempty" yaml:"inventoryStatus,omitempty"`
+	InventoryInsecure bool   `json:"inventoryInsecure,omitempty" yaml:"inventoryInsecure,omitempty"`
 }
 
 // GetInventoryInfo returns information about the MTV inventory service
