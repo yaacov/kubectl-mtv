@@ -134,28 +134,28 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 	cmd.Flags().BoolVar(&insecureSkipTLS, "provider-insecure-skip-tls", false, "Skip TLS verification when connecting to the provider")
 
 	// OpenShift specific flags
-	cmd.Flags().StringVarP(&token, "token", "T", "", "Provider authentication token (used for openshift provider)")
+	cmd.Flags().StringVarP(&token, "token", "T", "", "Provider authentication token "+flags.ProvidersOpenShift)
 
-	// VSphere specific flags
-	cmd.Flags().StringVar(&vddkInitImage, "vddk-init-image", vddkInitImage, "Virtual Disk Development Kit (VDDK) container init image path")
-	cmd.Flags().Var(sdkEndpointType, "sdk-endpoint", "SDK endpoint type for vSphere provider (vcenter or esxi)")
-	cmd.Flags().BoolVar(&useVddkAioOptimization, "use-vddk-aio-optimization", false, "Enable VDDK AIO optimization for vSphere provider")
-	cmd.Flags().IntVar(&vddkBufSizeIn64K, "vddk-buf-size-in-64k", 0, "VDDK buffer size in 64K units (VixDiskLib.nfcAio.Session.BufSizeIn64K)")
-	cmd.Flags().IntVar(&vddkBufCount, "vddk-buf-count", 0, "VDDK buffer count (VixDiskLib.nfcAio.Session.BufCount)")
+	// vSphere specific flags
+	cmd.Flags().StringVar(&vddkInitImage, "vddk-init-image", vddkInitImage, "Virtual Disk Development Kit (VDDK) container init image path "+flags.ProvidersVSphere)
+	cmd.Flags().Var(sdkEndpointType, "sdk-endpoint", "SDK endpoint type (vcenter or esxi) "+flags.ProvidersVSphere)
+	cmd.Flags().BoolVar(&useVddkAioOptimization, "use-vddk-aio-optimization", false, "Enable VDDK AIO optimization for improved disk transfer performance "+flags.ProvidersVSphere)
+	cmd.Flags().IntVar(&vddkBufSizeIn64K, "vddk-buf-size-in-64k", 0, "VDDK buffer size in 64K units (VixDiskLib.nfcAio.Session.BufSizeIn64K) "+flags.ProvidersVSphere)
+	cmd.Flags().IntVar(&vddkBufCount, "vddk-buf-count", 0, "VDDK buffer count (VixDiskLib.nfcAio.Session.BufCount) "+flags.ProvidersVSphere)
 
 	// OpenStack specific flags
-	cmd.Flags().StringVar(&domainName, "provider-domain-name", "", "OpenStack domain name")
-	cmd.Flags().StringVar(&projectName, "provider-project-name", "", "OpenStack project name")
-	cmd.Flags().StringVar(&regionName, "provider-region-name", "", "OpenStack region name")
-	cmd.Flags().StringVar(&regionName, "region", "", "Region name (alias for --provider-region-name, also used for EC2)")
+	cmd.Flags().StringVar(&domainName, "provider-domain-name", "", "OpenStack domain name "+flags.ProvidersOpenStack)
+	cmd.Flags().StringVar(&projectName, "provider-project-name", "", "OpenStack project name "+flags.ProvidersOpenStack)
+	cmd.Flags().StringVar(&regionName, "provider-region-name", "", "OpenStack region name "+flags.ProvidersOpenStack)
+	cmd.Flags().StringVar(&regionName, "region", "", "Region name (alias for --provider-region-name) "+flags.ProviderHint("openstack", "ec2"))
 
 	// EC2 specific flags
-	cmd.Flags().StringVar(&ec2Region, "ec2-region", "", "EC2 region (required for EC2 provider)")
-	cmd.Flags().StringVar(&ec2TargetRegion, "target-region", "", "EC2 target region for migrations (defaults to provider region)")
-	cmd.Flags().StringVar(&ec2TargetAZ, "target-az", "", "EC2 target availability zone for migrations (defaults to target-region + 'a')")
-	cmd.Flags().StringVar(&ec2TargetAccessKeyID, "target-access-key-id", "", "Target AWS account access key ID (for cross-account migrations)")
-	cmd.Flags().StringVar(&ec2TargetSecretKey, "target-secret-access-key", "", "Target AWS account secret access key (for cross-account migrations)")
-	cmd.Flags().BoolVar(&autoTargetCredentials, "auto-target-credentials", false, "Automatically fetch target AWS credentials from cluster (kube-system/aws-creds) and target-az from worker nodes")
+	cmd.Flags().StringVar(&ec2Region, "ec2-region", "", "AWS region where source EC2 instances are located "+flags.ProvidersEC2)
+	cmd.Flags().StringVar(&ec2TargetRegion, "target-region", "", "Target region for migrations (defaults to provider region) "+flags.ProvidersEC2)
+	cmd.Flags().StringVar(&ec2TargetAZ, "target-az", "", "Target availability zone for migrations (required - EBS volumes are AZ-specific) "+flags.ProvidersEC2)
+	cmd.Flags().StringVar(&ec2TargetAccessKeyID, "target-access-key-id", "", "Target AWS account access key ID (for cross-account migrations) "+flags.ProvidersEC2)
+	cmd.Flags().StringVar(&ec2TargetSecretKey, "target-secret-access-key", "", "Target AWS account secret access key (for cross-account migrations) "+flags.ProvidersEC2)
+	cmd.Flags().BoolVar(&autoTargetCredentials, "auto-target-credentials", false, "Automatically fetch target AWS credentials from cluster and target-az from worker nodes "+flags.ProvidersEC2)
 
 	// Add completion for provider type flag
 	if err := cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

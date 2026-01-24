@@ -21,8 +21,8 @@ func NewInventoryInstanceCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glo
 
 	cmd := &cobra.Command{
 		Use:               "instance PROVIDER",
-		Short:             "Get instances from a provider (openstack)",
-		Long:              `Get instances from a provider (openstack)`,
+		Short:             "Get instances from a provider " + flags.ProvidersOpenStack,
+		Long:              `Get Nova instances from an OpenStack provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -70,8 +70,8 @@ func NewInventoryImageCmd(kubeConfigFlags *genericclioptions.ConfigFlags, global
 
 	cmd := &cobra.Command{
 		Use:               "image PROVIDER",
-		Short:             "Get images from a provider (openstack)",
-		Long:              `Get images from a provider (openstack)`,
+		Short:             "Get images from a provider " + flags.ProvidersOpenStack,
+		Long:              `Get Glance images from an OpenStack provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -119,8 +119,8 @@ func NewInventoryFlavorCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 
 	cmd := &cobra.Command{
 		Use:               "flavor PROVIDER",
-		Short:             "Get flavors from a provider (openstack)",
-		Long:              `Get flavors from a provider (openstack)`,
+		Short:             "Get flavors from a provider " + flags.ProvidersOpenStack,
+		Long:              `Get instance flavors from an OpenStack provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -168,8 +168,8 @@ func NewInventoryProjectCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 
 	cmd := &cobra.Command{
 		Use:               "project PROVIDER",
-		Short:             "Get projects from a provider (openstack)",
-		Long:              `Get projects from a provider (openstack)`,
+		Short:             "Get projects from a provider " + flags.ProvidersOpenStack,
+		Long:              `Get Keystone projects from an OpenStack provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -217,8 +217,8 @@ func NewInventoryVolumeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 
 	cmd := &cobra.Command{
 		Use:               "volume PROVIDER",
-		Short:             "Get volumes from a provider (openstack)",
-		Long:              `Get volumes from a provider (openstack)`,
+		Short:             "Get volumes from a provider " + flags.ProvidersOpenStack,
+		Long:              `Get Cinder volumes from an OpenStack provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -266,8 +266,8 @@ func NewInventoryVolumeTypeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 
 	cmd := &cobra.Command{
 		Use:               "volumetype PROVIDER",
-		Short:             "Get volume types from a provider (openstack)",
-		Long:              `Get volume types from a provider (openstack)`,
+		Short:             "Get volume types from a provider " + flags.ProvidersOpenStack,
+		Long:              `Get Cinder volume types from an OpenStack provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -315,8 +315,8 @@ func NewInventorySnapshotCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glo
 
 	cmd := &cobra.Command{
 		Use:               "snapshot PROVIDER",
-		Short:             "Get snapshots from a provider (openstack)",
-		Long:              `Get snapshots from a provider (openstack)`,
+		Short:             "Get snapshots from a provider " + flags.ProvidersOpenStack,
+		Long:              `Get volume snapshots from an OpenStack provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -364,8 +364,8 @@ func NewInventorySubnetCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 
 	cmd := &cobra.Command{
 		Use:               "subnet PROVIDER",
-		Short:             "Get subnets from a provider (openstack)",
-		Long:              `Get subnets from a provider (openstack)`,
+		Short:             "Get subnets from a provider " + flags.ProvidersOpenStack,
+		Long:              `Get network subnets from an OpenStack provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),

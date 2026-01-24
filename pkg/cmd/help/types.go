@@ -35,6 +35,9 @@ type Command struct {
 	Aliases []string `json:"aliases,omitempty" yaml:"aliases,omitempty"`
 	// Category is one of: "read", "write", "admin"
 	Category string `json:"category" yaml:"category"`
+	// Providers lists which providers this command applies to (empty = all)
+	// Extracted from [providers: x, y] hints in the command description
+	Providers []string `json:"providers,omitempty" yaml:"providers,omitempty"`
 	// Flags are command-specific flags
 	Flags []Flag `json:"flags" yaml:"flags"`
 	// PositionalArgs are required/optional positional arguments
@@ -61,6 +64,12 @@ type Flag struct {
 	Enum []string `json:"enum,omitempty" yaml:"enum,omitempty"`
 	// Hidden indicates whether the flag is hidden from normal help
 	Hidden bool `json:"hidden,omitempty" yaml:"hidden,omitempty"`
+	// Providers lists which providers support this flag (empty = all)
+	// Extracted from [providers: x, y] hints in the flag description
+	Providers []string `json:"providers,omitempty" yaml:"providers,omitempty"`
+	// MigrationTypes lists which migration types this flag applies to (empty = all)
+	// Extracted from [migration: x, y] hints in the flag description
+	MigrationTypes []string `json:"migration_types,omitempty" yaml:"migration_types,omitempty"`
 }
 
 // PositionalArg represents a positional command argument.

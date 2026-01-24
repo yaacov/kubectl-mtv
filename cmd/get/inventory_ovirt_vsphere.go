@@ -21,7 +21,7 @@ func NewInventoryHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalC
 
 	cmd := &cobra.Command{
 		Use:   "host PROVIDER",
-		Short: "Get hosts from a provider (ovirt, vsphere)",
+		Short: "Get hosts from a provider " + flags.ProvidersVSphereOVirt,
 		Long: `Get hypervisor hosts from a provider's inventory.
 
 Lists ESXi hosts (vSphere) or hypervisor hosts (oVirt) from the source provider.
@@ -81,7 +81,7 @@ func NewInventoryDataCenterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 
 	cmd := &cobra.Command{
 		Use:   "datacenter PROVIDER",
-		Short: "Get datacenters from a provider (ovirt, vsphere)",
+		Short: "Get datacenters from a provider " + flags.ProvidersVSphereOVirt,
 		Long: `Get datacenters from a provider's inventory.
 
 Lists datacenters from vSphere or oVirt providers. Datacenters are the top-level
@@ -141,7 +141,7 @@ func NewInventoryClusterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 
 	cmd := &cobra.Command{
 		Use:   "cluster PROVIDER",
-		Short: "Get clusters from a provider (ovirt, vsphere)",
+		Short: "Get clusters from a provider " + flags.ProvidersVSphereOVirt,
 		Long: `Get clusters from a provider's inventory.
 
 Lists compute clusters from vSphere or oVirt providers. Clusters group hosts
@@ -201,7 +201,7 @@ func NewInventoryDiskCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalC
 
 	cmd := &cobra.Command{
 		Use:   "disk PROVIDER",
-		Short: "Get disks from a provider (ovirt, vsphere)",
+		Short: "Get disks from a provider " + flags.ProvidersVSphereOVirt,
 		Long: `Get disks from a provider's inventory.
 
 Lists virtual disks from vSphere or oVirt providers. Disk information includes

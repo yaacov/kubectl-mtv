@@ -21,8 +21,8 @@ func NewInventoryDiskProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, 
 
 	cmd := &cobra.Command{
 		Use:               "disk-profile PROVIDER",
-		Short:             "Get disk profiles from a provider (ovirt)",
-		Long:              `Get disk profiles from a provider (ovirt)`,
+		Short:             "Get disk profiles from a provider " + flags.ProvidersOVirt,
+		Long:              `Get disk profiles from an oVirt provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -72,8 +72,8 @@ func NewInventoryNICProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 
 	cmd := &cobra.Command{
 		Use:               "nic-profile PROVIDER",
-		Short:             "Get NIC profiles from a provider (ovirt)",
-		Long:              `Get NIC profiles from a provider (ovirt)`,
+		Short:             "Get NIC profiles from a provider " + flags.ProvidersOVirt,
+		Long:              `Get vNIC profiles from an oVirt provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),

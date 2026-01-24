@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/vddk"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewVddkCmd creates the VDDK image creation command
@@ -15,7 +16,7 @@ func NewVddkCmd(globalConfig GlobalConfigGetter) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "vddk-image",
-		Short: "Create a VDDK image for MTV",
+		Short: "Create a VDDK image for MTV " + flags.ProvidersVSphere,
 		Long: `Build a VDDK (Virtual Disk Development Kit) container image for vSphere migrations.
 
 VDDK is required for migrating VMs from vSphere. This command builds a container
