@@ -567,8 +567,7 @@ kubectl mtv -v=2 --kubeconfig=/path/to/config get providers
 
 ### Getting Help
 
-- **Documentation**: Check the [complete documentation](https://github.com/yaacov/kubectl-mtv/tree/main/docs)
-- **Examples**: Review [demo examples](https://github.com/yaacov/kubectl-mtv/blob/main/docs/README_demo)
+- **Documentation**: Check the [complete documentation](https://github.com/yaacov/kubectl-mtv/tree/main/guide)
 - **Issues**: Open an issue on [GitHub](https://github.com/yaacov/kubectl-mtv/issues)
 - **Community**: Join discussions on the Forklift community channels
 
