@@ -24,6 +24,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/cmd/unarchive"
 	"github.com/yaacov/kubectl-mtv/cmd/version"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	pkgversion "github.com/yaacov/kubectl-mtv/pkg/version"
 )
 
 // GlobalConfig holds global configuration flags that are passed to all subcommands
@@ -125,6 +126,9 @@ func Execute() error {
 }
 
 func init() {
+	// Export clientVersion to pkg/version for use by other packages
+	pkgversion.ClientVersion = clientVersion
+
 	kubeConfigFlags = genericclioptions.NewConfigFlags(true)
 
 	// Initialize global configuration
