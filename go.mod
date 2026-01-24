@@ -10,12 +10,12 @@ require (
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/kubev2v/forklift v0.0.0-20251107074458-39695befb20f
 	github.com/modelcontextprotocol/go-sdk v1.0.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/yaacov/karl-interpreter v0.0.1
-	github.com/yaacov/kubectl-mtv-mcp v0.0.7
 	github.com/yaacov/tree-search-language/v6 v6.0.8
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.32.5
@@ -57,7 +57,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.6 // indirect
-	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect

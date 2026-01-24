@@ -95,6 +95,17 @@ kubectl mtv mcp-server --sse \
 - **Use Cases**: Web applications, remote access, multi-user scenarios
 - **Endpoints**: `/sse` endpoint for MCP protocol communication
 
+#### SSE Mode HTTP Headers
+
+In SSE mode, the following HTTP headers are supported for Kubernetes authentication:
+
+| Header | Description |
+|--------|-------------|
+| `Authorization: Bearer <token>` | Kubernetes authentication token (passed to kubectl via `--token` flag) |
+| `X-Kubernetes-Server: <url>` | Kubernetes API server URL (passed to kubectl via `--server` flag) |
+
+If headers are not provided, the server falls back to the default kubeconfig behavior.
+
 ## Command Line Options
 
 ### Complete Flag Reference
@@ -145,8 +156,14 @@ kubectl mtv mcp-server --sse \
 # Test connectivity
 curl -N http://127.0.0.1:8080/sse
 
-# Test with authentication
+# Test with authentication token
 curl -N -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8080/sse
+
+# Test with token and specific API server
+curl -N \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Kubernetes-Server: https://api.example.com:6443" \
+  http://127.0.0.1:8080/sse
 
 # Validate TLS configuration
 openssl s_client -connect 127.0.0.1:8443 -servername mcp-server
@@ -337,13 +354,21 @@ import os
 from mcp import SSEClient, ClientSession
 
 async def main():
-    # Get authentication token
+    # Get authentication credentials
     token = os.getenv("KUBERNETES_TOKEN")
+    server = os.getenv("KUBERNETES_SERVER")  # Optional: API server URL
+    
+    # Build headers for authentication
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    if server:
+        headers["X-Kubernetes-Server"] = server
     
     # Create SSE client
     client = SSEClient(
         url="http://127.0.0.1:8080/sse",
-        headers={"Authorization": f"Bearer {token}"} if token else None
+        headers=headers if headers else None
     )
     
     async with client:
@@ -368,14 +393,28 @@ if __name__ == "__main__":
 // MCP client for web applications
 import { SSEClient, ClientSession } from '@modelcontextprotocol/sdk';
 
+interface KubeCredentials {
+    token?: string;
+    server?: string;
+}
+
 class MigrationDashboard {
     private client: SSEClient;
     private session: ClientSession | null = null;
 
-    constructor(serverUrl: string, token?: string) {
+    constructor(serverUrl: string, creds?: KubeCredentials) {
+        // Build headers for Kubernetes authentication
+        const headers: Record<string, string> = {};
+        if (creds?.token) {
+            headers['Authorization'] = `Bearer ${creds.token}`;
+        }
+        if (creds?.server) {
+            headers['X-Kubernetes-Server'] = creds.server;
+        }
+        
         this.client = new SSEClient({
             url: serverUrl,
-            headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+            headers: Object.keys(headers).length > 0 ? headers : undefined
         });
     }
 
@@ -420,7 +459,10 @@ class MigrationDashboard {
 // Usage
 const dashboard = new MigrationDashboard(
     "https://mcp-server.company.com:8443/sse",
-    process.env.KUBERNETES_TOKEN
+    {
+        token: process.env.KUBERNETES_TOKEN,
+        server: process.env.KUBERNETES_SERVER  // Optional: for remote cluster access
+    }
 );
 
 await dashboard.connect();
@@ -572,7 +614,52 @@ kubectl create token mcp-user -n migrations --duration=24h
 # Use token with HTTP client
 curl -N -H "Authorization: Bearer $TOKEN" \
   http://127.0.0.1:8080/sse
+
+# Use token with specific API server (for remote cluster access)
+curl -N \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Kubernetes-Server: https://api.example.com:6443" \
+  http://127.0.0.1:8080/sse
 ```
+
+#### Header Authentication Details
+
+The SSE mode supports two HTTP headers for Kubernetes authentication:
+
+**Authorization Header**
+```bash
+# Extract token from service account
+TOKEN=$(kubectl create token mcp-user -n migrations)
+
+# Use with curl
+curl -N -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8080/sse
+
+# Use with service account token from pod
+curl -N \
+  -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+  http://127.0.0.1:8080/sse
+```
+
+**X-Kubernetes-Server Header**
+```bash
+# Connect to a specific Kubernetes API server
+curl -N \
+  -H "X-Kubernetes-Server: https://kubernetes.default.svc" \
+  http://127.0.0.1:8080/sse
+
+# Combine with authentication for remote cluster access
+curl -N \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "X-Kubernetes-Server: https://remote-cluster.example.com:6443" \
+  http://127.0.0.1:8080/sse
+```
+
+**Fallback Behavior**
+
+When headers are not provided:
+- If `Authorization` header is missing: Uses credentials from the server's kubeconfig
+- If `X-Kubernetes-Server` header is missing: Uses the API server from the server's kubeconfig
+- If both headers are missing: Falls back entirely to the default kubeconfig
 
 ### Secure Production Setup
 
