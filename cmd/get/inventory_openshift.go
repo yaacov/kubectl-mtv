@@ -21,8 +21,8 @@ func NewInventoryNamespaceCmd(kubeConfigFlags *genericclioptions.ConfigFlags, gl
 
 	cmd := &cobra.Command{
 		Use:               "namespace PROVIDER",
-		Short:             "Get namespaces from a provider (openshift)",
-		Long:              `Get namespaces from a provider (openshift)`,
+		Short:             "Get namespaces from a provider " + flags.ProvidersOpenShift,
+		Long:              `Get namespaces from an OpenShift provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -70,8 +70,8 @@ func NewInventoryPVCCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalCo
 
 	cmd := &cobra.Command{
 		Use:               "pvc PROVIDER",
-		Short:             "Get PVCs from a provider (openshift)",
-		Long:              `Get PVCs from a provider (openshift)`,
+		Short:             "Get PVCs from a provider " + flags.ProvidersOpenShift,
+		Long:              `Get PersistentVolumeClaims from an OpenShift provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -119,8 +119,8 @@ func NewInventoryDataVolumeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 
 	cmd := &cobra.Command{
 		Use:               "data-volume PROVIDER",
-		Short:             "Get data volumes from a provider (openshift)",
-		Long:              `Get data volumes from a provider (openshift)`,
+		Short:             "Get data volumes from a provider " + flags.ProvidersOpenShift,
+		Long:              `Get DataVolumes from an OpenShift provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),

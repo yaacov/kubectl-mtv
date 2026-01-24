@@ -21,8 +21,8 @@ func NewInventoryDatastoreCmd(kubeConfigFlags *genericclioptions.ConfigFlags, gl
 
 	cmd := &cobra.Command{
 		Use:               "datastore PROVIDER",
-		Short:             "Get datastores from a provider (vsphere)",
-		Long:              `Get datastores from a provider (vsphere)`,
+		Short:             "Get datastores from a provider " + flags.ProvidersVSphere,
+		Long:              `Get datastores from a vSphere provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -70,8 +70,8 @@ func NewInventoryResourcePoolCmd(kubeConfigFlags *genericclioptions.ConfigFlags,
 
 	cmd := &cobra.Command{
 		Use:               "resource-pool PROVIDER",
-		Short:             "Get resource pools from a provider (vsphere)",
-		Long:              `Get resource pools from a provider (vsphere)`,
+		Short:             "Get resource pools from a provider " + flags.ProvidersVSphere,
+		Long:              `Get resource pools from a vSphere provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
@@ -119,8 +119,8 @@ func NewInventoryFolderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 
 	cmd := &cobra.Command{
 		Use:               "folder PROVIDER",
-		Short:             "Get folders from a provider (vsphere)",
-		Long:              `Get folders from a provider (vsphere)`,
+		Short:             "Get folders from a provider " + flags.ProvidersVSphere,
+		Long:              `Get folders from a vSphere provider's inventory.`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),

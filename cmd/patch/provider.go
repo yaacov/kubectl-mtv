@@ -11,6 +11,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/patch/provider"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewProviderCmd creates the patch provider command
@@ -64,27 +65,27 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	cmd.Flags().BoolVar(&opts.InsecureSkipTLS, "provider-insecure-skip-tls", false, "Skip TLS verification when connecting to the provider")
 
 	// OpenShift specific flags
-	cmd.Flags().StringVarP(&opts.Token, "token", "T", "", "Provider authentication token (used for openshift provider)")
+	cmd.Flags().StringVarP(&opts.Token, "token", "T", "", "Provider authentication token "+flags.ProvidersOpenShift)
 
-	// VSphere specific flags (editable VDDK settings)
-	cmd.Flags().StringVar(&opts.VddkInitImage, "vddk-init-image", "", "Virtual Disk Development Kit (VDDK) container init image path")
-	cmd.Flags().BoolVar(&opts.UseVddkAioOptimization, "use-vddk-aio-optimization", false, "Enable VDDK AIO optimization for vSphere provider")
-	cmd.Flags().IntVar(&opts.VddkBufSizeIn64K, "vddk-buf-size-in-64k", 0, "VDDK buffer size in 64K units (VixDiskLib.nfcAio.Session.BufSizeIn64K)")
-	cmd.Flags().IntVar(&opts.VddkBufCount, "vddk-buf-count", 0, "VDDK buffer count (VixDiskLib.nfcAio.Session.BufCount)")
+	// vSphere specific flags (editable VDDK settings)
+	cmd.Flags().StringVar(&opts.VddkInitImage, "vddk-init-image", "", "Virtual Disk Development Kit (VDDK) container init image path "+flags.ProvidersVSphere)
+	cmd.Flags().BoolVar(&opts.UseVddkAioOptimization, "use-vddk-aio-optimization", false, "Enable VDDK AIO optimization for improved disk transfer performance "+flags.ProvidersVSphere)
+	cmd.Flags().IntVar(&opts.VddkBufSizeIn64K, "vddk-buf-size-in-64k", 0, "VDDK buffer size in 64K units (VixDiskLib.nfcAio.Session.BufSizeIn64K) "+flags.ProvidersVSphere)
+	cmd.Flags().IntVar(&opts.VddkBufCount, "vddk-buf-count", 0, "VDDK buffer count (VixDiskLib.nfcAio.Session.BufCount) "+flags.ProvidersVSphere)
 
 	// OpenStack specific flags
-	cmd.Flags().StringVar(&opts.DomainName, "provider-domain-name", "", "OpenStack domain name")
-	cmd.Flags().StringVar(&opts.ProjectName, "provider-project-name", "", "OpenStack project name")
-	cmd.Flags().StringVar(&opts.RegionName, "provider-region-name", "", "OpenStack region name")
-	cmd.Flags().StringVar(&opts.RegionName, "region", "", "Region name (alias for --provider-region-name, also used for EC2)")
+	cmd.Flags().StringVar(&opts.DomainName, "provider-domain-name", "", "OpenStack domain name "+flags.ProvidersOpenStack)
+	cmd.Flags().StringVar(&opts.ProjectName, "provider-project-name", "", "OpenStack project name "+flags.ProvidersOpenStack)
+	cmd.Flags().StringVar(&opts.RegionName, "provider-region-name", "", "OpenStack region name "+flags.ProvidersOpenStack)
+	cmd.Flags().StringVar(&opts.RegionName, "region", "", "Region name (alias for --provider-region-name) "+flags.ProviderHint("openstack", "ec2"))
 
 	// EC2 specific flags
-	cmd.Flags().StringVar(&opts.EC2Region, "ec2-region", "", "EC2 region")
-	cmd.Flags().StringVar(&opts.EC2TargetRegion, "target-region", "", "EC2 target region for migrations (defaults to provider region)")
-	cmd.Flags().StringVar(&opts.EC2TargetAZ, "target-az", "", "EC2 target availability zone for migrations (defaults to target-region + 'a')")
-	cmd.Flags().StringVar(&opts.EC2TargetAccessKeyID, "target-access-key-id", "", "Target AWS account access key ID (for cross-account migrations)")
-	cmd.Flags().StringVar(&opts.EC2TargetSecretKey, "target-secret-access-key", "", "Target AWS account secret access key (for cross-account migrations)")
-	cmd.Flags().BoolVar(&opts.AutoTargetCredentials, "auto-target-credentials", false, "Automatically fetch target AWS credentials from cluster (kube-system/aws-creds) and target-az from worker nodes")
+	cmd.Flags().StringVar(&opts.EC2Region, "ec2-region", "", "AWS region where source EC2 instances are located "+flags.ProvidersEC2)
+	cmd.Flags().StringVar(&opts.EC2TargetRegion, "target-region", "", "Target region for migrations (defaults to provider region) "+flags.ProvidersEC2)
+	cmd.Flags().StringVar(&opts.EC2TargetAZ, "target-az", "", "Target availability zone for migrations (required - EBS volumes are AZ-specific) "+flags.ProvidersEC2)
+	cmd.Flags().StringVar(&opts.EC2TargetAccessKeyID, "target-access-key-id", "", "Target AWS account access key ID (for cross-account migrations) "+flags.ProvidersEC2)
+	cmd.Flags().StringVar(&opts.EC2TargetSecretKey, "target-secret-access-key", "", "Target AWS account secret access key (for cross-account migrations) "+flags.ProvidersEC2)
+	cmd.Flags().BoolVar(&opts.AutoTargetCredentials, "auto-target-credentials", false, "Automatically fetch target AWS credentials from cluster and target-az from worker nodes "+flags.ProvidersEC2)
 
 	return cmd
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/host"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewHostCmd creates the host creation command
@@ -29,7 +30,7 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 
 	cmd := &cobra.Command{
 		Use:   "host NAME [NAME...]",
-		Short: "Create migration hosts for vSphere providers",
+		Short: "Create migration hosts " + flags.ProvidersVSphere,
 		Long: `Create migration hosts for vSphere providers. Hosts enable direct data transfer from ESXi hosts, bypassing vCenter for improved performance.
 
 By creating host resources, Forklift can utilize ESXi host interfaces directly for network transfer to OpenShift, provided the OpenShift worker nodes and ESXi host interfaces have network connectivity. This is particularly beneficial when users want to control which specific ESXi interface is used for migration, even without direct access to ESXi host credentials.

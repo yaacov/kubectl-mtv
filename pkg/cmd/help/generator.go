@@ -10,7 +10,63 @@ import (
 )
 
 // SchemaVersion is the current version of the help schema format.
-const SchemaVersion = "1.0"
+// Version 1.1 adds providers and migration_types fields to flags and commands.
+const SchemaVersion = "1.1"
+
+// Regular expressions for parsing provider and migration type hints from descriptions.
+var (
+	// Matches [providers: vsphere, ovirt] or [providers: vsphere]
+	providerHintRegex = regexp.MustCompile(`\[providers:\s*([^\]]+)\]`)
+	// Matches [migration: warm, cold] or [migration: warm]
+	migrationHintRegex = regexp.MustCompile(`\[migration:\s*([^\]]+)\]`)
+)
+
+// parseProviderHints extracts provider names from a description string.
+// Returns the providers found and the description with the hint removed.
+func parseProviderHints(description string) ([]string, string) {
+	match := providerHintRegex.FindStringSubmatch(description)
+	if match == nil {
+		return nil, description
+	}
+
+	// Parse comma-separated provider list
+	providers := parseCommaSeparated(match[1])
+
+	// Remove the hint from the description
+	cleanDesc := strings.TrimSpace(providerHintRegex.ReplaceAllString(description, ""))
+
+	return providers, cleanDesc
+}
+
+// parseMigrationHints extracts migration types from a description string.
+// Returns the migration types found and the description with the hint removed.
+func parseMigrationHints(description string) ([]string, string) {
+	match := migrationHintRegex.FindStringSubmatch(description)
+	if match == nil {
+		return nil, description
+	}
+
+	// Parse comma-separated migration type list
+	types := parseCommaSeparated(match[1])
+
+	// Remove the hint from the description
+	cleanDesc := strings.TrimSpace(migrationHintRegex.ReplaceAllString(description, ""))
+
+	return types, cleanDesc
+}
+
+// parseCommaSeparated splits a comma-separated string into trimmed parts.
+func parseCommaSeparated(s string) []string {
+	parts := strings.Split(s, ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			result = append(result, p)
+		}
+	}
+	return result
+}
 
 // EnumValuer is an interface for flags that provide valid values.
 // Custom flag types can implement this to expose their allowed values.
@@ -76,14 +132,18 @@ func walkCommands(cmd *cobra.Command, path []string, visitor func(*cobra.Command
 
 // commandToSchema converts a Cobra command to our schema format.
 func commandToSchema(cmd *cobra.Command, path []string, opts Options) Command {
+	// Parse provider hints from command short description
+	providers, cleanShort := parseProviderHints(cmd.Short)
+
 	c := Command{
 		Name:            cmd.Name(),
 		Path:            path,
 		PathString:      strings.Join(path, " "),
-		Description:     cmd.Short,
+		Description:     cleanShort,
 		LongDescription: cmd.Long,
 		Usage:           cmd.UseLine(),
 		Category:        getCategory(path),
+		Providers:       providers,
 		Flags:           []Flag{},
 		PositionalArgs:  parsePositionalArgs(cmd.Use),
 		Examples:        parseExamples(cmd.Example),
@@ -121,12 +181,19 @@ func commandToSchema(cmd *cobra.Command, path []string, opts Options) Command {
 
 // flagToSchema converts a pflag.Flag to our schema format.
 func flagToSchema(f *pflag.Flag) Flag {
+	// Parse provider and migration hints from flag description
+	description := f.Usage
+	providers, description := parseProviderHints(description)
+	migrationTypes, description := parseMigrationHints(description)
+
 	flag := Flag{
-		Name:        f.Name,
-		Shorthand:   f.Shorthand,
-		Type:        f.Value.Type(),
-		Description: f.Usage,
-		Hidden:      f.Hidden,
+		Name:           f.Name,
+		Shorthand:      f.Shorthand,
+		Type:           f.Value.Type(),
+		Description:    description,
+		Hidden:         f.Hidden,
+		Providers:      providers,
+		MigrationTypes: migrationTypes,
 	}
 
 	// Set default value with proper typing based on flag type
