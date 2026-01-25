@@ -1,11 +1,18 @@
 package vddk
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+
+	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 
 // detectContainerRuntime checks for available container runtime (podman or docker).
@@ -196,5 +203,62 @@ func extractTarGz(tarGzPath, destDir string, verbosity int) error {
 		return fmt.Errorf("tar extraction failed: %w", err)
 	}
 
+	return nil
+}
+
+// SetControllerVddkImage configures the ForkliftController CR with the specified VDDK image.
+// This sets the global vddk_image setting that applies to all vSphere providers unless overridden.
+func SetControllerVddkImage(configFlags *genericclioptions.ConfigFlags, vddkImage string, verbosity int) error {
+	ctx := context.Background()
+
+	// Get the MTV operator namespace
+	operatorNamespace := client.GetMTVOperatorNamespace(ctx, configFlags)
+	if verbosity > 0 {
+		fmt.Printf("Using MTV operator namespace: %s\n", operatorNamespace)
+	}
+
+	// Get dynamic client
+	dynamicClient, err := client.GetDynamicClient(configFlags)
+	if err != nil {
+		return fmt.Errorf("failed to get Kubernetes client: %w", err)
+	}
+
+	// List ForkliftController resources in the operator namespace
+	controllerList, err := dynamicClient.Resource(client.ForkliftControllersGVR).Namespace(operatorNamespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to list ForkliftController resources: %w", err)
+	}
+
+	if len(controllerList.Items) == 0 {
+		return fmt.Errorf("no ForkliftController found in namespace %s", operatorNamespace)
+	}
+
+	// Use the first ForkliftController (typically there's only one named "forklift-controller")
+	controller := controllerList.Items[0]
+	controllerName := controller.GetName()
+
+	fmt.Printf("Configuring ForkliftController '%s' with VDDK image: %s\n", controllerName, vddkImage)
+
+	// Create the JSON patch to set spec.vddk_image
+	// The ForkliftController uses snake_case for its spec fields
+	patchData := []byte(fmt.Sprintf(`{"spec":{"vddk_image":"%s"}}`, vddkImage))
+
+	if verbosity > 0 {
+		fmt.Printf("Applying patch: %s\n", string(patchData))
+	}
+
+	// Apply the patch
+	_, err = dynamicClient.Resource(client.ForkliftControllersGVR).Namespace(operatorNamespace).Patch(
+		ctx,
+		controllerName,
+		types.MergePatchType,
+		patchData,
+		metav1.PatchOptions{},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to patch ForkliftController: %w", err)
+	}
+
+	fmt.Printf("Successfully configured ForkliftController with global VDDK image.\n")
 	return nil
 }
