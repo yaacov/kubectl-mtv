@@ -1,7 +1,8 @@
 source "https://rubygems.org"
 
 gem "jekyll", "~> 4.3.0"
-gem "minima", "2.5.0"  # Pinned to 2.5.0 - version 2.5.1 has a bug with custom-head.html (see https://github.com/jekyll/minima/issues/472)
+# Use minima from GitHub master branch (v3) which supports Jekyll 4 and custom-head.html
+gem "minima", github: "jekyll/minima"
 
 # Jekyll plugins
 group :jekyll_plugins do
