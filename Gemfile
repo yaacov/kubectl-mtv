@@ -1,7 +1,7 @@
 source "https://rubygems.org"
 
 gem "jekyll", "~> 4.3.0"
-gem "minima", "~> 2.5"
+gem "minima", "2.5.0"  # Pinned to 2.5.0 - version 2.5.1 has a bug with custom-head.html (see https://github.com/jekyll/minima/issues/472)
 
 # Jekyll plugins
 group :jekyll_plugins do

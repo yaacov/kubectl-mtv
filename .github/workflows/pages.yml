@@ -6,6 +6,7 @@ on:
     branches: ["main"]
     paths:
       - 'guide/**'
+      - '_includes/**'
       - '.github/workflows/pages.yml'
       - '_config.yml'
       - 'Gemfile'
