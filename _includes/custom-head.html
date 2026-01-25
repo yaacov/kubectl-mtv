@@ -1,0 +1,138 @@
+<!-- Anchor links for section headers -->
+<style>
+  /* Header anchor link styles */
+  .header-anchor {
+    opacity: 0;
+    margin-left: 0.5em;
+    font-size: 0.8em;
+    text-decoration: none;
+    color: #828282;
+    transition: opacity 0.2s ease-in-out;
+    vertical-align: middle;
+  }
+
+  .header-anchor:hover {
+    color: #2a7ae2;
+  }
+
+  h1:hover .header-anchor,
+  h2:hover .header-anchor,
+  h3:hover .header-anchor,
+  h4:hover .header-anchor,
+  h5:hover .header-anchor,
+  h6:hover .header-anchor,
+  .header-anchor:focus {
+    opacity: 1;
+  }
+
+  /* Toast notification for copy feedback */
+  .copy-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+  }
+
+  .copy-toast.show {
+    opacity: 1;
+  }
+
+  /* Make headers position relative for anchor positioning */
+  h1[id], h2[id], h3[id], h4[id], h5[id], h6[id] {
+    position: relative;
+  }
+
+  /* Ensure anchor links are keyboard accessible */
+  .header-anchor:focus {
+    outline: 2px solid #2a7ae2;
+    outline-offset: 2px;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Create toast element for copy notifications
+  var toast = document.createElement('div');
+  toast.className = 'copy-toast';
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
+  toast.textContent = 'Link copied to clipboard!';
+  document.body.appendChild(toast);
+
+  var toastTimeout;
+
+  function showToast() {
+    clearTimeout(toastTimeout);
+    toast.classList.add('show');
+    toastTimeout = setTimeout(function() {
+      toast.classList.remove('show');
+    }, 2000);
+  }
+
+  // Find all headers with IDs and add anchor links
+  var headers = document.querySelectorAll('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]');
+
+  headers.forEach(function(header) {
+    var id = header.getAttribute('id');
+    if (!id) return;
+
+    // Create anchor link element
+    var anchor = document.createElement('a');
+    anchor.className = 'header-anchor';
+    anchor.href = '#' + id;
+    anchor.setAttribute('aria-label', 'Copy link to this section: ' + header.textContent.trim());
+    anchor.setAttribute('title', 'Copy link to section');
+
+    // SVG link icon
+    anchor.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>';
+
+    // Handle click to copy link
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+
+      // Build the full URL with anchor
+      var url = window.location.origin + window.location.pathname + '#' + id;
+
+      // Copy to clipboard
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function() {
+          showToast();
+          // Update URL without scrolling
+          history.pushState(null, null, '#' + id);
+        }).catch(function() {
+          // Fallback: just navigate to the anchor
+          window.location.hash = id;
+        });
+      } else {
+        // Fallback for older browsers
+        var textArea = document.createElement('textarea');
+        textArea.value = url;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          showToast();
+          history.pushState(null, null, '#' + id);
+        } catch (err) {
+          window.location.hash = id;
+        }
+        document.body.removeChild(textArea);
+      }
+    });
+
+    // Append anchor to header
+    header.appendChild(anchor);
+  });
+});
+</script>
