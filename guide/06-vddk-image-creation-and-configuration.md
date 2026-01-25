@@ -125,6 +125,7 @@ kubectl mtv create vddk-image [OPTIONS]
 - `--platform ARCH`: Target platform (amd64, arm64) - default: amd64
 - `--dockerfile PATH`: Path to custom Dockerfile (uses default if not specified)
 - `--push`: Push image to registry after successful build
+- `--set-controller-image`: Configure the pushed image as the global `vddk_image` in ForkliftController (requires `--push`)
 
 ### Detailed Build Examples
 
@@ -139,6 +140,27 @@ kubectl mtv create vddk-image \
   --platform amd64 \
   --push
 ```
+
+#### Build, Push, and Configure ForkliftController
+
+The `--set-controller-image` flag automatically configures the ForkliftController CR with the pushed VDDK image, setting it as the global default for all vSphere providers:
+
+```bash
+# Build, push, and configure as global VDDK image
+kubectl mtv create vddk-image \
+  --tar ~/downloads/VMware-vix-disklib-distrib-8.0.1.tar.gz \
+  --tag quay.io/company/vddk:8.0.1 \
+  --runtime podman \
+  --push \
+  --set-controller-image
+```
+
+This single command:
+1. Builds the VDDK container image
+2. Pushes it to the registry
+3. Patches the ForkliftController CR to set `spec.vddk_image` to the pushed image
+
+The global `vddk_image` setting applies to all vSphere providers unless they have a per-provider `vddkInitImage` override configured.
 
 #### Custom Build Directory
 
@@ -235,11 +257,51 @@ podman run --rm quay.io/company/vddk:8.0.1 /usr/bin/vmware-vdiskmanager -h
 podman inspect quay.io/company/vddk:8.0.1
 ```
 
+## VDDK Configuration Hierarchy
+
+VDDK images can be configured at multiple levels. Understanding the hierarchy helps you choose the right approach:
+
+### Configuration Levels (in order of precedence)
+
+1. **Per-Provider Setting** (highest priority): Set via `--vddk-init-image` flag when creating a provider
+2. **ForkliftController Global Setting**: Set via `--set-controller-image` flag or by patching the ForkliftController CR
+3. **Environment Variable Default**: Set via `MTV_VDDK_INIT_IMAGE` (used as default when creating providers)
+
+### When to Use Each Level
+
+| Level | Use Case |
+|-------|----------|
+| Per-Provider | Different VDDK versions for specific vCenters, testing new versions |
+| ForkliftController | Organization-wide default, single source of truth for all migrations |
+| Environment Variable | Local development, CLI defaults for provider creation |
+
+### Configuring ForkliftController Global VDDK Image
+
+The ForkliftController CR can be configured with a global VDDK image that applies to all vSphere providers:
+
+```bash
+# Option 1: Set during VDDK image build (recommended)
+kubectl mtv create vddk-image \
+  --tar ~/VMware-vix-disklib-distrib-8.0.1.tar.gz \
+  --tag quay.io/company/vddk:8.0.1 \
+  --push \
+  --set-controller-image
+
+# Option 2: Manually patch the ForkliftController
+kubectl patch forkliftcontroller forklift-controller -n openshift-mtv \
+  --type merge \
+  -p '{"spec":{"vddk_image":"quay.io/company/vddk:8.0.1"}}'
+
+# Verify the configuration
+kubectl get forkliftcontroller forklift-controller -n openshift-mtv \
+  -o jsonpath='{.spec.vddk_image}'
+```
+
 ## Setting the MTV_VDDK_INIT_IMAGE Environment Variable
 
 ### Setting the Default VDDK Image
 
-The `MTV_VDDK_INIT_IMAGE` environment variable provides a global default for all vSphere provider creation:
+The `MTV_VDDK_INIT_IMAGE` environment variable provides a default for vSphere provider creation with `kubectl mtv`:
 
 ```bash
 # Set the default VDDK image
@@ -410,19 +472,20 @@ The `--vddk-buf-count` parameter controls the number of parallel buffers:
 # Step 1: Download VDDK from VMware
 # (Manual step - download VMware-vix-disklib-distrib-8.0.1.tar.gz)
 
-# Step 2: Build and push VDDK image
+# Step 2: Build, push, and configure ForkliftController with VDDK image
 kubectl mtv create vddk-image \
   --tar ~/downloads/VMware-vix-disklib-distrib-8.0.1.tar.gz \
   --tag harbor.company.com/migration/vddk:8.0.1 \
   --runtime podman \
   --platform amd64 \
-  --push
+  --push \
+  --set-controller-image
 
-# Step 3: Set global environment variable
+# Step 3: (Optional) Also set environment variable for CLI defaults
 export MTV_VDDK_INIT_IMAGE=harbor.company.com/migration/vddk:8.0.1
 echo 'export MTV_VDDK_INIT_IMAGE=harbor.company.com/migration/vddk:8.0.1' >> ~/.bashrc
 
-# Step 4: Create optimized vSphere provider
+# Step 4: Create optimized vSphere provider (will use global VDDK image from controller)
 kubectl mtv create provider vsphere-production --type vsphere \
   --url https://vcenter.prod.company.com/sdk \
   --username svc-migration@vsphere.local \
@@ -433,6 +496,10 @@ kubectl mtv create provider vsphere-production --type vsphere \
 
 # Step 5: Verify VDDK integration
 kubectl mtv describe provider vsphere-production | grep -i vddk
+
+# Step 6: Verify ForkliftController configuration
+kubectl get forkliftcontroller forklift-controller -n openshift-mtv \
+  -o jsonpath='{.spec.vddk_image}'
 ```
 
 ### Example 2: Multi-Architecture Deployment
