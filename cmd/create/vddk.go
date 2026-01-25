@@ -4,15 +4,16 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/vddk"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewVddkCmd creates the VDDK image creation command
-func NewVddkCmd(globalConfig GlobalConfigGetter) *cobra.Command {
+func NewVddkCmd(globalConfig GlobalConfigGetter, kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var vddkTarGz, vddkTag, vddkBuildDir, vddkRuntime, vddkPlatform, vddkDockerfile string
-	var vddkPush bool
+	var vddkPush, setControllerImage bool
 
 	cmd := &cobra.Command{
 		Use:   "vddk-image",
@@ -35,12 +36,24 @@ https://developer.vmware.com/web/sdk/8.0/vddk`,
     --tag quay.io/myorg/vddk:8.0.1 \
     --push
 
+  # Build, push, and configure as global VDDK image in ForkliftController
+  kubectl-mtv create vddk-image \
+    --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \
+    --tag quay.io/myorg/vddk:8.0.1 \
+    --push \
+    --set-controller-image
+
   # Use specific container runtime
   kubectl-mtv create vddk-image \
     --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \
     --tag quay.io/myorg/vddk:8.0.1 \
     --runtime docker`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate that --set-controller-image requires --push
+			if setControllerImage && !vddkPush {
+				return fmt.Errorf("--set-controller-image requires --push to be set")
+			}
+
 			verbosity := 0
 			if globalConfig != nil {
 				verbosity = globalConfig.GetVerbosity()
@@ -49,7 +62,17 @@ https://developer.vmware.com/web/sdk/8.0/vddk`,
 			if err != nil {
 				fmt.Printf("Error building VDDK image: %v\n", err)
 				fmt.Printf("You can use the '--help' flag for more information on usage.\n")
+				return nil
 			}
+
+			// Configure ForkliftController if requested
+			if setControllerImage {
+				if err := vddk.SetControllerVddkImage(kubeConfigFlags, vddkTag, verbosity); err != nil {
+					fmt.Printf("Error configuring ForkliftController: %v\n", err)
+					return nil
+				}
+			}
+
 			return nil
 		},
 	}
@@ -61,6 +84,7 @@ https://developer.vmware.com/web/sdk/8.0/vddk`,
 	cmd.Flags().StringVar(&vddkPlatform, "platform", "amd64", "Target platform for the image: amd64 or arm64. (default: amd64)")
 	cmd.Flags().StringVar(&vddkDockerfile, "dockerfile", "", "Path to custom Dockerfile (optional, uses default if not set)")
 	cmd.Flags().BoolVar(&vddkPush, "push", false, "Push image after build (optional)")
+	cmd.Flags().BoolVar(&setControllerImage, "set-controller-image", false, "Configure the pushed image as global vddk_image in ForkliftController (requires --push)")
 
 	// Add autocomplete for runtime flag
 	if err := cmd.RegisterFlagCompletionFunc("runtime", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
