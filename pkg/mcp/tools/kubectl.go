@@ -11,8 +11,8 @@ import (
 
 // KubectlDebugInput represents the input for the kubectl_debug tool.
 type KubectlDebugInput struct {
-	// Action is the kubectl action to perform: "logs" or "get"
-	Action string `json:"action" jsonschema:"kubectl action: logs for pod logs, get for listing resources, describe for resource details"`
+	// Action is the kubectl action to perform: "logs", "get", "describe", or "events"
+	Action string `json:"action" jsonschema:"kubectl action: logs for pod logs, get for listing resources, describe for resource details, events for event querying"`
 
 	// ResourceType is the Kubernetes resource type (for get/describe actions)
 	ResourceType string `json:"resource_type,omitempty" jsonschema:"Resource type for get/describe (e.g. pods, pvc, datavolume, virtualmachine, events)"`
@@ -46,6 +46,15 @@ type KubectlDebugInput struct {
 
 	// DryRun shows the command without executing
 	DryRun bool `json:"dry_run,omitempty" jsonschema:"Show command without executing (educational mode)"`
+
+	// FieldSelector filters resources by field (for events action)
+	FieldSelector string `json:"field_selector,omitempty" jsonschema:"Field selector for events (e.g. involvedObject.name=my-pod, type=Warning, reason=FailedScheduling)"`
+
+	// SortBy sorts the output by a JSONPath expression (for events action)
+	SortBy string `json:"sort_by,omitempty" jsonschema:"Sort events by JSONPath (e.g. .lastTimestamp, .metadata.creationTimestamp)"`
+
+	// ForResource gets events for a specific resource (for events action)
+	ForResource string `json:"for_resource,omitempty" jsonschema:"Get events for a specific resource (e.g. pod/my-pod, pvc/my-pvc)"`
 }
 
 // GetKubectlDebugTool returns the tool definition for kubectl debugging.
@@ -58,21 +67,28 @@ This tool provides access to kubectl for debugging migration issues:
 
 Actions:
 - logs: Get pod logs (useful for forklift-controller, virt-v2v pods)
-- get: List Kubernetes resources (pods, pvc, datavolume, virtualmachine, events)
+- get: List Kubernetes resources (pods, pvc, datavolume, virtualmachine)
 - describe: Get detailed resource information
+- events: Get Kubernetes events with specialized filtering for debugging
 
 Common use cases:
 - Get forklift controller logs: action="logs", name="forklift-controller-xxx", namespace="openshift-mtv"
 - List migration pods: action="get", resource_type="pods", labels="plan=my-plan"
 - Check PVC status: action="get", resource_type="pvc", labels="migration=xxx"
-- View migration events: action="get", resource_type="events", namespace="target-ns"
 - Debug failed pod: action="logs", name="virt-v2v-xxx", previous=true
+
+Events examples:
+- Get events for a pod: action="events", for_resource="pod/virt-v2v-xxx", namespace="target-ns"
+- Get warning events: action="events", field_selector="type=Warning", namespace="target-ns"
+- Get events sorted by time: action="events", sort_by=".lastTimestamp", namespace="target-ns"
+- Get events for failed scheduling: action="events", field_selector="reason=FailedScheduling"
 
 Tips:
 - Use labels to filter resources related to specific migrations
 - Use tail_lines to limit log output
 - Use previous=true to get logs from crashed containers
 - Use since to get recent logs (e.g., "1h" for last hour)
+- Use for_resource to get events related to a specific pod or PVC
 
 IMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., "Executed: kubectl get pods -n openshift-mtv").`,
 	}
@@ -111,8 +127,11 @@ func HandleKubectlDebug(ctx context.Context, req *mcp.CallToolRequest, input Kub
 			return nil, nil, fmt.Errorf("describe action requires 'resource_type' field (e.g., pods, pvc, events)")
 		}
 		args = buildDescribeArgs(input)
+	case "events":
+		// Events action - specialized event querying
+		args = buildEventsArgs(input)
 	default:
-		return nil, nil, fmt.Errorf("unknown action '%s'. Valid actions: logs, get, describe", input.Action)
+		return nil, nil, fmt.Errorf("unknown action '%s'. Valid actions: logs, get, describe, events", input.Action)
 	}
 
 	// Execute kubectl command
@@ -228,6 +247,42 @@ func buildDescribeArgs(input KubectlDebugInput) []string {
 	if input.Labels != "" {
 		args = append(args, "-l", input.Labels)
 	}
+
+	return args
+}
+
+// buildEventsArgs builds arguments for kubectl get events command with specialized filtering.
+func buildEventsArgs(input KubectlDebugInput) []string {
+	args := []string{"get", "events"}
+
+	// Namespace
+	if input.AllNamespaces {
+		args = append(args, "-A")
+	} else if input.Namespace != "" {
+		args = append(args, "-n", input.Namespace)
+	}
+
+	// For a specific resource (e.g., --for pod/my-pod)
+	if input.ForResource != "" {
+		args = append(args, "--for", input.ForResource)
+	}
+
+	// Field selector (e.g., involvedObject.name=my-pod, type=Warning)
+	if input.FieldSelector != "" {
+		args = append(args, "--field-selector", input.FieldSelector)
+	}
+
+	// Sort by (e.g., .lastTimestamp)
+	if input.SortBy != "" {
+		args = append(args, "--sort-by", input.SortBy)
+	}
+
+	// Output format - default to json
+	output := input.Output
+	if output == "" {
+		output = "json"
+	}
+	args = append(args, "-o", output)
 
 	return args
 }

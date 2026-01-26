@@ -255,7 +255,7 @@ func getCategory(path []string) string {
 		return "admin"
 	}
 	switch path[0] {
-	case "get", "describe":
+	case "get", "describe", "health":
 		return "read"
 	case "create", "delete", "patch", "start", "cancel", "archive", "unarchive", "cutover":
 		return "write"
