@@ -128,6 +128,13 @@ func Create(ctx context.Context, opts CreatePlanOptions) error {
 		planVMNames = append(planVMNames, planVM.Name)
 	}
 
+	// If target namespace is not provided, use the plan's namespace
+	// This must happen before creating network/storage maps so they can use it
+	if opts.PlanSpec.TargetNamespace == "" {
+		opts.PlanSpec.TargetNamespace = opts.Namespace
+		fmt.Printf("No target namespace specified, using plan namespace: %s\n", opts.PlanSpec.TargetNamespace)
+	}
+
 	// If network map is not provided, create a default network map
 	if opts.NetworkMapping == "" {
 		if opts.NetworkPairs != "" {
@@ -152,16 +159,18 @@ func Create(ctx context.Context, opts CreatePlanOptions) error {
 		} else {
 			// Create default network mapping using existing logic
 			networkMapName, err := network.CreateNetworkMap(ctx, network.NetworkMapperOptions{
-				Name:                    opts.Name,
-				Namespace:               opts.Namespace,
-				SourceProvider:          opts.SourceProvider,
-				SourceProviderNamespace: opts.SourceProviderNamespace,
-				TargetProvider:          opts.TargetProvider,
-				TargetProviderNamespace: opts.TargetProviderNamespace,
-				ConfigFlags:             opts.ConfigFlags,
-				InventoryURL:            opts.InventoryURL,
-				PlanVMNames:             planVMNames,
-				DefaultTargetNetwork:    opts.DefaultTargetNetwork,
+				Name:                     opts.Name,
+				Namespace:                opts.Namespace,
+				TargetNamespace:          opts.PlanSpec.TargetNamespace,
+				SourceProvider:           opts.SourceProvider,
+				SourceProviderNamespace:  opts.SourceProviderNamespace,
+				TargetProvider:           opts.TargetProvider,
+				TargetProviderNamespace:  opts.TargetProviderNamespace,
+				ConfigFlags:              opts.ConfigFlags,
+				InventoryURL:             opts.InventoryURL,
+				InventoryInsecureSkipTLS: opts.InventoryInsecureSkipTLS,
+				PlanVMNames:              planVMNames,
+				DefaultTargetNetwork:     opts.DefaultTargetNetwork,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to create default network map: %v", err)
@@ -248,12 +257,6 @@ func Create(ctx context.Context, opts CreatePlanOptions) error {
 			opts.StorageMapping = storageMapName
 			createdStorageMap = true
 		}
-	}
-
-	// If target namespace is not provided, use the plan's namespace
-	if opts.PlanSpec.TargetNamespace == "" {
-		opts.PlanSpec.TargetNamespace = opts.Namespace
-		fmt.Printf("No target namespace specified, using plan namespace: %s\n", opts.PlanSpec.TargetNamespace)
 	}
 
 	// Create a new Plan object using the PlanSpec

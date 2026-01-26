@@ -49,6 +49,7 @@ type NetworkMapperInterface interface {
 type NetworkMapperOptions struct {
 	Name                     string
 	Namespace                string
+	TargetNamespace          string // Where VMs will be created (plan.spec.targetNamespace)
 	SourceProvider           string
 	SourceProviderNamespace  string
 	TargetProvider           string
@@ -235,6 +236,10 @@ func CreateNetworkMap(ctx context.Context, opts NetworkMapperOptions) (string, e
 			return "", fmt.Errorf("failed to fetch target networks: %v", err)
 		}
 		klog.V(4).Infof("DEBUG: Fetched %d target networks", len(targetNetworks))
+
+		// Filter target networks to only include NADs in target namespace or "default" namespace
+		targetNetworks = filterTargetNetworksByNamespace(targetNetworks, opts.TargetNamespace)
+		klog.V(4).Infof("DEBUG: After filtering: %d target networks in namespace %s or default", len(targetNetworks), opts.TargetNamespace)
 	} else {
 		klog.V(4).Infof("DEBUG: Skipping target network fetch due to DefaultTargetNetwork='%s'", opts.DefaultTargetNetwork)
 	}
@@ -329,4 +334,26 @@ func createNetworkMap(opts NetworkMapperOptions, networkPairs []forkliftv1beta1.
 
 	klog.V(4).Infof("DEBUG: Created network map '%s' with %d network pairs", networkMapName, len(networkPairs))
 	return networkMapName, nil
+}
+
+// filterTargetNetworksByNamespace filters target networks to only include NADs
+// that are in the target namespace or the "default" namespace.
+// This ensures VMs can only use NADs that are accessible from their namespace.
+func filterTargetNetworksByNamespace(networks []forkliftv1beta1.DestinationNetwork, targetNamespace string) []forkliftv1beta1.DestinationNetwork {
+	var filtered []forkliftv1beta1.DestinationNetwork
+	for _, network := range networks {
+		if network.Type != "multus" {
+			// Keep non-multus networks (pod networking, etc.)
+			filtered = append(filtered, network)
+			continue
+		}
+		// Only keep multus networks in target namespace or "default" namespace
+		if network.Namespace == targetNamespace || network.Namespace == "default" {
+			filtered = append(filtered, network)
+			klog.V(4).Infof("DEBUG: Keeping NAD %s/%s (matches target namespace or default)", network.Namespace, network.Name)
+		} else {
+			klog.V(4).Infof("DEBUG: Filtering out NAD %s/%s (not in target namespace %s or default)", network.Namespace, network.Name, targetNamespace)
+		}
+	}
+	return filtered
 }

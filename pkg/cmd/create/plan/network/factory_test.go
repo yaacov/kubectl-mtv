@@ -3,6 +3,7 @@ package network
 import (
 	"testing"
 
+	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper"
 	openshiftMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/openshift"
 	openstackMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/openstack"
@@ -163,6 +164,104 @@ func TestNetworkMapperCreation(t *testing.T) {
 
 			if !tt.expectedNotNil && mapper != nil {
 				t.Errorf("Expected nil mapper, got non-nil")
+			}
+		})
+	}
+}
+
+// Test filterTargetNetworksByNamespace function
+func TestFilterTargetNetworksByNamespace(t *testing.T) {
+	tests := []struct {
+		name            string
+		networks        []forkliftv1beta1.DestinationNetwork
+		targetNamespace string
+		expectedCount   int
+		expectedNames   []string
+	}{
+		{
+			name: "Keep networks in target namespace and default",
+			networks: []forkliftv1beta1.DestinationNetwork{
+				{Type: "multus", Name: "net1", Namespace: "target-ns"},
+				{Type: "multus", Name: "net2", Namespace: "default"},
+				{Type: "multus", Name: "net3", Namespace: "other-ns"},
+			},
+			targetNamespace: "target-ns",
+			expectedCount:   2,
+			expectedNames:   []string{"net1", "net2"},
+		},
+		{
+			name: "Keep only default namespace when target has no NADs",
+			networks: []forkliftv1beta1.DestinationNetwork{
+				{Type: "multus", Name: "net1", Namespace: "other-ns"},
+				{Type: "multus", Name: "net2", Namespace: "default"},
+			},
+			targetNamespace: "target-ns",
+			expectedCount:   1,
+			expectedNames:   []string{"net2"},
+		},
+		{
+			name: "Keep non-multus networks regardless of namespace",
+			networks: []forkliftv1beta1.DestinationNetwork{
+				{Type: "pod"},
+				{Type: "multus", Name: "net1", Namespace: "other-ns"},
+				{Type: "multus", Name: "net2", Namespace: "target-ns"},
+			},
+			targetNamespace: "target-ns",
+			expectedCount:   2,
+			expectedNames:   []string{"", "net2"}, // pod network has empty name
+		},
+		{
+			name: "Filter out all multus networks when none match",
+			networks: []forkliftv1beta1.DestinationNetwork{
+				{Type: "multus", Name: "net1", Namespace: "ns1"},
+				{Type: "multus", Name: "net2", Namespace: "ns2"},
+			},
+			targetNamespace: "target-ns",
+			expectedCount:   0,
+			expectedNames:   []string{},
+		},
+		{
+			name:            "Empty networks list",
+			networks:        []forkliftv1beta1.DestinationNetwork{},
+			targetNamespace: "target-ns",
+			expectedCount:   0,
+			expectedNames:   []string{},
+		},
+		{
+			name: "All networks in target namespace",
+			networks: []forkliftv1beta1.DestinationNetwork{
+				{Type: "multus", Name: "net1", Namespace: "target-ns"},
+				{Type: "multus", Name: "net2", Namespace: "target-ns"},
+			},
+			targetNamespace: "target-ns",
+			expectedCount:   2,
+			expectedNames:   []string{"net1", "net2"},
+		},
+		{
+			name: "All networks in default namespace",
+			networks: []forkliftv1beta1.DestinationNetwork{
+				{Type: "multus", Name: "net1", Namespace: "default"},
+				{Type: "multus", Name: "net2", Namespace: "default"},
+			},
+			targetNamespace: "target-ns",
+			expectedCount:   2,
+			expectedNames:   []string{"net1", "net2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := filterTargetNetworksByNamespace(tt.networks, tt.targetNamespace)
+
+			if len(result) != tt.expectedCount {
+				t.Errorf("filterTargetNetworksByNamespace() returned %d networks, expected %d", len(result), tt.expectedCount)
+			}
+
+			// Verify the expected names are present
+			for i, expected := range tt.expectedNames {
+				if i < len(result) && result[i].Name != expected {
+					t.Errorf("filterTargetNetworksByNamespace() network[%d].Name = %s, expected %s", i, result[i].Name, expected)
+				}
 			}
 		})
 	}
