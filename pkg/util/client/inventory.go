@@ -13,6 +13,33 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// parseJSONResponse parses a JSON response, treating empty or null responses as empty arrays.
+// For malformed JSON, it provides a helpful error message with a preview of the response.
+func parseJSONResponse(responseBytes []byte) (interface{}, error) {
+	// Handle empty response as empty array (not an error)
+	if len(responseBytes) == 0 {
+		return []interface{}{}, nil
+	}
+
+	// Parse the response as JSON
+	var result interface{}
+	if err := json.Unmarshal(responseBytes, &result); err != nil {
+		// Provide more context for debugging malformed responses
+		preview := string(responseBytes)
+		if len(preview) > 100 {
+			preview = preview[:100] + "..."
+		}
+		return nil, fmt.Errorf("failed to parse inventory response as JSON: %v (response preview: %q)", err, preview)
+	}
+
+	// Handle JSON null as empty array
+	if result == nil {
+		return []interface{}{}, nil
+	}
+
+	return result, nil
+}
+
 // FetchProvidersWithDetailAndInsecure fetches lists of providers from the inventory server with specified detail level
 // and optional insecure TLS skip verification
 func FetchProvidersWithDetailAndInsecure(ctx context.Context, configFlags *genericclioptions.ConfigFlags, baseURL string, detail int, insecureSkipTLS bool) (interface{}, error) {
@@ -32,13 +59,7 @@ func FetchProvidersWithDetailAndInsecure(ctx context.Context, configFlags *gener
 		return nil, err
 	}
 
-	// Parse the response as JSON
-	var result interface{}
-	if err := json.Unmarshal(responseBytes, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse provider inventory response: %v", err)
-	}
-
-	return result, nil
+	return parseJSONResponse(responseBytes)
 }
 
 // FetchProviderInventoryWithInsecure fetches inventory for a specific provider with optional insecure TLS skip verification
@@ -78,13 +99,7 @@ func FetchProviderInventoryWithInsecure(ctx context.Context, configFlags *generi
 		return nil, err
 	}
 
-	// Parse the response as JSON
-	var result interface{}
-	if err := json.Unmarshal(responseBytes, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse provider inventory response: %v", err)
-	}
-
-	return result, nil
+	return parseJSONResponse(responseBytes)
 }
 
 // FetchSpecificProviderWithDetailAndInsecure fetches inventory for a specific provider by name with specified detail level
@@ -158,10 +173,9 @@ func FetchSpecificProviderWithDetailAndInsecure(ctx context.Context, configFlags
 		return nil, fmt.Errorf("failed to fetch provider inventory: %v", err)
 	}
 
-	// Parse the response as JSON
-	var result interface{}
-	if err := json.Unmarshal(responseBytes, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse provider inventory response: %v", err)
+	result, err := parseJSONResponse(responseBytes)
+	if err != nil {
+		return nil, err
 	}
 
 	// Wrap the result in the same structure as FetchProviders for consistency
