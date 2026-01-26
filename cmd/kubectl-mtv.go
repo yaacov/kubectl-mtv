@@ -17,6 +17,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/cmd/delete"
 	"github.com/yaacov/kubectl-mtv/cmd/describe"
 	"github.com/yaacov/kubectl-mtv/cmd/get"
+	"github.com/yaacov/kubectl-mtv/cmd/health"
 	"github.com/yaacov/kubectl-mtv/cmd/help"
 	"github.com/yaacov/kubectl-mtv/cmd/mcpserver"
 	"github.com/yaacov/kubectl-mtv/cmd/patch"
@@ -179,6 +180,9 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 
 	// Version command - directly using package function
 	rootCmd.AddCommand(version.NewVersionCmd(clientVersion, kubeConfigFlags, globalConfig))
+
+	// Health command - check MTV system health
+	rootCmd.AddCommand(health.NewHealthCmd(kubeConfigFlags, globalConfig))
 
 	// MCP Server command - start the Model Context Protocol server
 	rootCmd.AddCommand(mcpserver.NewMCPServerCmd())

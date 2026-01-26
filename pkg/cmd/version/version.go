@@ -39,6 +39,11 @@ func GetInventoryInfo(globalConfig config.InventoryConfigGetter) (string, string
 func GetMTVControllerInfo(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags) (string, string, string) {
 	operatorInfo := client.GetMTVOperatorInfo(ctx, kubeConfigFlags)
 
+	// Check for API/auth/network errors first
+	if operatorInfo.Error != "" {
+		return "unknown", "error: " + operatorInfo.Error, ""
+	}
+
 	if !operatorInfo.Found {
 		return "not found", "not available", ""
 	}
