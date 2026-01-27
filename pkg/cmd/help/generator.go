@@ -254,6 +254,15 @@ func getCategory(path []string) string {
 	if len(path) == 0 {
 		return "admin"
 	}
+
+	// Handle settings command specially - settings set/unset is write, settings get is read
+	if path[0] == "settings" {
+		if len(path) >= 2 && (path[1] == "set" || path[1] == "unset") {
+			return "write"
+		}
+		return "read"
+	}
+
 	switch path[0] {
 	case "get", "describe", "health":
 		return "read"

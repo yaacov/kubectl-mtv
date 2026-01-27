@@ -21,6 +21,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/cmd/help"
 	"github.com/yaacov/kubectl-mtv/cmd/mcpserver"
 	"github.com/yaacov/kubectl-mtv/cmd/patch"
+	"github.com/yaacov/kubectl-mtv/cmd/settings"
 	"github.com/yaacov/kubectl-mtv/cmd/start"
 	"github.com/yaacov/kubectl-mtv/cmd/unarchive"
 	"github.com/yaacov/kubectl-mtv/cmd/version"
@@ -183,6 +184,9 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 
 	// Health command - check MTV system health
 	rootCmd.AddCommand(health.NewHealthCmd(kubeConfigFlags, globalConfig))
+
+	// Settings command - view and manage ForkliftController settings
+	rootCmd.AddCommand(settings.NewSettingsCmd(kubeConfigFlags, globalConfig))
 
 	// MCP Server command - start the Model Context Protocol server
 	rootCmd.AddCommand(mcpserver.NewMCPServerCmd())
