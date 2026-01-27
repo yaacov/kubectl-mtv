@@ -13,7 +13,7 @@ import (
 // NewVddkCmd creates the VDDK image creation command
 func NewVddkCmd(globalConfig GlobalConfigGetter, kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var vddkTarGz, vddkTag, vddkBuildDir, vddkRuntime, vddkPlatform, vddkDockerfile string
-	var vddkPush, setControllerImage bool
+	var vddkPush, setControllerImage, vddkPushInsecureSkipTLS bool
 
 	cmd := &cobra.Command{
 		Use:   "vddk-image",
@@ -47,7 +47,14 @@ https://developer.vmware.com/web/sdk/8.0/vddk`,
   kubectl-mtv create vddk-image \
     --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \
     --tag quay.io/myorg/vddk:8.0.1 \
-    --runtime docker`,
+    --runtime docker
+
+  # Push to insecure registry (self-signed certificate)
+  kubectl-mtv create vddk-image \
+    --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \
+    --tag internal-registry.local:5000/vddk:8.0.1 \
+    --push \
+    --push-insecure-skip-tls`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Validate that --set-controller-image requires --push
 			if setControllerImage && !vddkPush {
@@ -58,7 +65,7 @@ https://developer.vmware.com/web/sdk/8.0/vddk`,
 			if globalConfig != nil {
 				verbosity = globalConfig.GetVerbosity()
 			}
-			err := vddk.BuildImage(vddkTarGz, vddkTag, vddkBuildDir, vddkRuntime, vddkPlatform, vddkDockerfile, verbosity, vddkPush)
+			err := vddk.BuildImage(vddkTarGz, vddkTag, vddkBuildDir, vddkRuntime, vddkPlatform, vddkDockerfile, verbosity, vddkPush, vddkPushInsecureSkipTLS)
 			if err != nil {
 				fmt.Printf("Error building VDDK image: %v\n", err)
 				fmt.Printf("You can use the '--help' flag for more information on usage.\n")
@@ -84,6 +91,7 @@ https://developer.vmware.com/web/sdk/8.0/vddk`,
 	cmd.Flags().StringVar(&vddkPlatform, "platform", "amd64", "Target platform for the image: amd64 or arm64. (default: amd64)")
 	cmd.Flags().StringVar(&vddkDockerfile, "dockerfile", "", "Path to custom Dockerfile (optional, uses default if not set)")
 	cmd.Flags().BoolVar(&vddkPush, "push", false, "Push image after build (optional)")
+	cmd.Flags().BoolVar(&vddkPushInsecureSkipTLS, "push-insecure-skip-tls", false, "Skip TLS verification when pushing to the registry (podman only, docker requires daemon config)")
 	cmd.Flags().BoolVar(&setControllerImage, "set-controller-image", false, "Configure the pushed image as global vddk_image in ForkliftController (requires --push)")
 
 	// Add autocomplete for runtime flag

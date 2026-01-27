@@ -70,7 +70,7 @@ ENTRYPOINT ["cp", "-r", "/vmware-vix-disklib-distrib", "/opt"]
 `
 
 // BuildImage builds (and optionally pushes) a VDDK image for MTV.
-func BuildImage(tarGzPath, tag, buildDir, runtimePreference, platform, dockerfilePath string, verbosity int, push bool) error {
+func BuildImage(tarGzPath, tag, buildDir, runtimePreference, platform, dockerfilePath string, verbosity int, push, pushInsecureSkipTLS bool) error {
 	// Select container runtime based on preference
 	runtime, err := selectContainerRuntime(runtimePreference)
 	if err != nil {
@@ -164,12 +164,27 @@ func BuildImage(tarGzPath, tag, buildDir, runtimePreference, platform, dockerfil
 	if push {
 		fmt.Printf("Pushing image with %s...\n", runtime)
 
+		// Construct push command with optional TLS skip
+		pushArgs := []string{"push"}
+		if pushInsecureSkipTLS {
+			if runtime == "podman" {
+				pushArgs = append(pushArgs, "--tls-verify=false")
+			} else {
+				// Docker does not support per-command TLS skip
+				fmt.Println("Warning: Docker does not support per-command TLS verification skip.")
+				fmt.Println("To push to an insecure registry with Docker, configure your daemon:")
+				fmt.Println("  Add to /etc/docker/daemon.json: {\"insecure-registries\": [\"your-registry:port\"]}")
+				fmt.Println("  Then restart Docker: sudo systemctl restart docker")
+			}
+		}
+		pushArgs = append(pushArgs, tag)
+
 		// Print command if verbose
 		if verbosity > 0 {
-			fmt.Printf("Running: %s push %s\n", runtime, tag)
+			fmt.Printf("Running: %s %s\n", runtime, strings.Join(pushArgs, " "))
 		}
 
-		pushCmd := exec.Command(runtime, "push", tag)
+		pushCmd := exec.Command(runtime, pushArgs...)
 		pushCmd.Stdout = os.Stdout
 		pushCmd.Stderr = os.Stderr
 		if err := pushCmd.Run(); err != nil {
