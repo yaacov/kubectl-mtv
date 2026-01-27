@@ -20,7 +20,7 @@ type GlobalConfigGetter interface {
 
 // NewHealthCmd creates the health command
 func NewHealthCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
-	var checkLogs bool
+	var skipLogs bool
 	var logLines int
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 
@@ -35,7 +35,7 @@ This command checks:
 - Forklift pod health (status, restarts, OOMKilled)
 - Provider connectivity and readiness
 - Migration plan status and issues
-- Optionally analyzes pod logs for errors and warnings
+- Pod logs for errors and warnings (can be skipped with --skip-logs)
 
 Namespace behavior:
   Forklift OPERATOR components (controller, pods, logs) are always checked in
@@ -51,7 +51,7 @@ Namespace behavior:
   Use -A to check all namespaces cluster-wide.
 
 Examples:
-  # Check health in the default MTV namespace
+  # Check health in the default MTV namespace (includes log analysis)
   kubectl mtv health
 
   # Check health with JSON output
@@ -63,11 +63,11 @@ Examples:
   # Check health across all namespaces (recommended for full cluster check)
   kubectl mtv health -A
 
-  # Check health including log analysis
-  kubectl mtv health --check-logs
+  # Check health without log analysis (faster)
+  kubectl mtv health --skip-logs
 
   # Check health with more log lines analyzed
-  kubectl mtv health --check-logs --log-lines 200`,
+  kubectl mtv health --log-lines 200`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create context with timeout
 			ctx, cancel := context.WithTimeout(cmd.Context(), 60*time.Second)
@@ -83,7 +83,7 @@ Examples:
 			opts := pkghealth.HealthCheckOptions{
 				Namespace:     namespace,
 				AllNamespaces: globalConfig.GetAllNamespaces(),
-				CheckLogs:     checkLogs,
+				CheckLogs:     !skipLogs,
 				LogLines:      logLines,
 				Verbose:       globalConfig.GetVerbosity() > 0,
 			}
@@ -101,7 +101,7 @@ Examples:
 
 	// Add flags
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
-	cmd.Flags().BoolVar(&checkLogs, "check-logs", false, "Include pod log analysis (may be slower)")
+	cmd.Flags().BoolVar(&skipLogs, "skip-logs", false, "Skip pod log analysis (faster but less thorough)")
 	cmd.Flags().IntVar(&logLines, "log-lines", 100, "Number of log lines to analyze per pod")
 
 	// Add completion for output format flag
