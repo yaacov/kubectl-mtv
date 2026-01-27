@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -143,7 +144,14 @@ func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
 		return string(jsonData), nil
 	}
 
-	cmd := exec.Command("kubectl-mtv", args...)
+	// Resolve environment variable references for sensitive flags (e.g., $VCENTER_PASSWORD)
+	// This is done after dry run check so dry run shows $VAR syntax, not resolved values
+	resolvedArgs, err := ResolveSensitiveFlagEnvVars(args)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve environment variables: %w", err)
+	}
+
+	cmd := exec.Command("kubectl-mtv", resolvedArgs...)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -155,7 +163,7 @@ func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
 	})
 	defer timer.Stop()
 
-	err := cmd.Run()
+	err = cmd.Run()
 
 	response := CommandResponse{
 		Command: formatShellCommand("kubectl-mtv", args),
@@ -265,16 +273,63 @@ func RunKubectlCommand(ctx context.Context, args []string) (string, error) {
 	return string(jsonData), nil
 }
 
+// sensitiveFlags defines flags whose values should be redacted in logs/output
+// and which support environment variable resolution (${ENV_VAR} syntax).
+var sensitiveFlags = map[string]bool{
+	"--password":                 true,
+	"-p":                         true, // shorthand for password
+	"--token":                    true,
+	"-T":                         true, // shorthand for token
+	"--offload-vsphere-password": true,
+	"--offload-storage-password": true,
+	"--target-secret-access-key": true, // AWS secret key for EC2
+}
+
+// resolveEnvVar resolves an environment variable reference.
+// Only values in ${VAR_NAME} format are treated as env var references.
+// This allows literal passwords starting with $ (e.g., "$ecureP@ss") to work correctly.
+// Returns the resolved value or an error if the env var is not set.
+func resolveEnvVar(value string) (string, error) {
+	// Only recognize ${VAR_NAME} syntax for env var references
+	// This allows literal passwords starting with $ to work correctly
+	if strings.HasPrefix(value, "${") && strings.HasSuffix(value, "}") {
+		envName := strings.TrimPrefix(strings.TrimSuffix(value, "}"), "${")
+		if envName == "" {
+			return "", fmt.Errorf("empty environment variable name in ${}")
+		}
+		resolved := os.Getenv(envName)
+		if resolved == "" {
+			return "", fmt.Errorf("environment variable %s is not set", envName)
+		}
+		return resolved, nil
+	}
+	return value, nil
+}
+
+// ResolveSensitiveFlagEnvVars resolves environment variable references for sensitive flag values.
+// This allows users to pass ${ENV_VAR_NAME} instead of actual secrets.
+// Only sensitive flags (passwords, tokens, etc.) are resolved to prevent unintended expansion.
+func ResolveSensitiveFlagEnvVars(args []string) ([]string, error) {
+	result := make([]string, len(args))
+	copy(result, args)
+
+	for i := 0; i < len(result)-1; i++ {
+		if sensitiveFlags[result[i]] {
+			resolved, err := resolveEnvVar(result[i+1])
+			if err != nil {
+				return nil, err
+			}
+			result[i+1] = resolved
+		}
+	}
+	return result, nil
+}
+
 // formatShellCommand formats a command and args into a display string
 // It sanitizes sensitive parameters like passwords and tokens
 // Note: This is for display/logging only. Actual command execution uses exec.Command()
 // which handles arguments directly without shell interpretation.
 func formatShellCommand(cmd string, args []string) string {
-	// Sensitive flags that should have their values redacted
-	sensitiveFlags := map[string]bool{
-		"--password": true,
-		"--token":    true,
-	}
 
 	// Build the display command with sanitization
 	sanitizedArgs := []string{}

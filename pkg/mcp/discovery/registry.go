@@ -157,6 +157,15 @@ func (r *Registry) GenerateReadWriteDescription() string {
 	sb.WriteString("\nCommon flags:\n")
 	sb.WriteString("- namespace: Target Kubernetes namespace\n")
 
+	sb.WriteString("\nSecurity - Environment Variable References:\n")
+	sb.WriteString("For sensitive values (passwords, tokens), you can pass environment variable references instead of actual values:\n")
+	sb.WriteString("- Use ${ENV_VAR_NAME} syntax with curly braces (e.g., password: \"${VCENTER_PASSWORD}\")\n")
+	sb.WriteString("- IMPORTANT: Only ${VAR} format is recognized as env var reference. Bare $VAR is treated as literal value.\n")
+	sb.WriteString("- This allows passwords starting with $ (e.g., \"$ecureP@ss\") to work correctly\n")
+	sb.WriteString("- The MCP server resolves the env var at execution time\n")
+	sb.WriteString("- The actual secret never appears in requests or logs\n")
+	sb.WriteString("- Supported flags: --password, -p, --token, -T, --offload-vsphere-password, --offload-storage-password, --target-secret-access-key\n")
+
 	sb.WriteString("\nIMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl-mtv create plan ...\").\n")
 
 	return sb.String()
