@@ -152,7 +152,7 @@ func GetAuthenticatedTransportWithInsecure(ctx context.Context, configFlags *gen
 	if NeedsBearerTokenForInventory(config) {
 		klog.V(5).Infof("Detected client certificate authentication without bearer token")
 
-		if token, ok := GetServiceAccountTokenForInventory(ctx, config); ok {
+		if token, ok := GetServiceAccountTokenForInventory(ctx, configFlags, config); ok {
 			config.BearerToken = token
 		} else {
 			klog.V(5).Infof("WARNING: Could not retrieve service account token, client certificate auth may not work with inventory service")
