@@ -6,10 +6,18 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 )
+
+// Fallback namespaces where Forklift/MTV controller may be deployed
+// Used only when auto-detection fails
+var fallbackForkliftNamespaces = []string{
+	"openshift-mtv",     // OpenShift MTV (most common)
+	"konveyor-forklift", // Community Forklift
+}
 
 // GetServiceAccountTokenForInventory attempts to retrieve a service account token
 // for use with the MTV inventory service when the kubeconfig uses client certificate authentication.
@@ -18,14 +26,14 @@ import (
 // - The kubeconfig uses client certificates for authentication
 // - The MTV inventory service validates bearer tokens, not client certificates
 //
-// The function tries to get the forklift-controller service account token which has
-// the necessary permissions to access the inventory API.
+// The function first tries to auto-detect the operator namespace from CRD annotations.
+// If that fails, it falls back to known namespace locations.
 //
 // RBAC Requirements: The service account running this code must have 'get' and 'list'
-// permissions on secrets in the konveyor-forklift namespace.
+// permissions on secrets in the forklift namespace.
 //
 // Returns: bearer token string (empty if not found), success boolean
-func GetServiceAccountTokenForInventory(ctx context.Context, config *rest.Config) (string, bool) {
+func GetServiceAccountTokenForInventory(ctx context.Context, configFlags *genericclioptions.ConfigFlags, config *rest.Config) (string, bool) {
 	// Defensive check: ensure config is not nil
 	if config == nil {
 		klog.V(5).Infof("Cannot retrieve service account token: config is nil")
@@ -41,9 +49,39 @@ func GetServiceAccountTokenForInventory(ctx context.Context, config *rest.Config
 		return "", false
 	}
 
-	namespace := "konveyor-forklift"
 	serviceAccountName := "forklift-controller"
 
+	// First, try to auto-detect the operator namespace from CRD annotations
+	if configFlags != nil {
+		operatorInfo := GetMTVOperatorInfo(ctx, configFlags)
+		if operatorInfo.Found && operatorInfo.Namespace != "" {
+			klog.V(5).Infof("Auto-detected operator namespace: %s", operatorInfo.Namespace)
+			if token, ok := getServiceAccountTokenInNamespace(ctx, clientset, operatorInfo.Namespace, serviceAccountName); ok {
+				return token, true
+			}
+			klog.V(5).Infof("No service account token found in auto-detected namespace %s, trying fallback namespaces", operatorInfo.Namespace)
+		} else {
+			klog.V(5).Infof("Could not auto-detect operator namespace (found=%v, error=%s), trying fallback namespaces",
+				operatorInfo.Found, operatorInfo.Error)
+		}
+	} else {
+		klog.V(5).Infof("configFlags is nil, skipping namespace auto-detection, trying fallback namespaces")
+	}
+
+	// Fallback: try known namespaces where forklift might be deployed
+	for _, namespace := range fallbackForkliftNamespaces {
+		klog.V(5).Infof("Trying fallback namespace: %s", namespace)
+		if token, ok := getServiceAccountTokenInNamespace(ctx, clientset, namespace, serviceAccountName); ok {
+			return token, true
+		}
+	}
+
+	klog.V(5).Infof("No service account token found in any forklift namespace")
+	return "", false
+}
+
+// getServiceAccountTokenInNamespace attempts to retrieve a service account token from a specific namespace
+func getServiceAccountTokenInNamespace(ctx context.Context, clientset *kubernetes.Clientset, namespace, serviceAccountName string) (string, bool) {
 	// Try method 1: Get a secret named exactly "forklift-controller-token"
 	// (older Kubernetes versions create this automatically)
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, serviceAccountName+"-token", metav1.GetOptions{})
@@ -59,7 +97,7 @@ func GetServiceAccountTokenForInventory(ctx context.Context, config *rest.Config
 	// This handles:
 	// - Auto-generated secrets with random suffixes (forklift-controller-token-xxxxx)
 	// - Manually created secrets with service account annotations
-	klog.V(5).Infof("Secret %s not found, listing all secrets in namespace %s", serviceAccountName+"-token", namespace)
+	klog.V(5).Infof("Secret %s not found in %s, listing all secrets", serviceAccountName+"-token", namespace)
 
 	secrets, err := clientset.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
