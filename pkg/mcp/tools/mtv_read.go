@@ -41,6 +41,22 @@ func GetMTVReadTool(registry *discovery.Registry) *mcp.Tool {
 	return &mcp.Tool{
 		Name:        "mtv_read",
 		Description: description,
+		OutputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"command":      map[string]any{"type": "string", "description": "The executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
+				"data": map[string]any{
+					"description": "Structured JSON response data (object or array)",
+					"oneOf": []map[string]any{
+						{"type": "object"},
+						{"type": "array"},
+					},
+				},
+				"output": map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
+				"stderr": map[string]any{"type": "string", "description": "Error output if any"},
+			},
+		},
 	}
 }
 
@@ -125,7 +141,7 @@ func buildArgs(cmdPath string, positionalArgs []string, flags map[string]any, na
 		args = append(args, "--inventory-url", inventoryURL)
 	}
 
-	// Add output format - default to json for MCP
+	// Add output format - use configured default from MCP server
 	hasOutput := false
 	if flags != nil {
 		if _, ok := flags["output"]; ok {
@@ -136,7 +152,11 @@ func buildArgs(cmdPath string, positionalArgs []string, flags map[string]any, na
 		}
 	}
 	if !hasOutput {
-		args = append(args, "-o", "json")
+		format := util.GetOutputFormat()
+		// For "text" format, don't add -o flag to use default table output
+		if format != "text" {
+			args = append(args, "-o", format)
+		}
 	}
 
 	// Skip set for already handled flags (namespace, output, inventory-url variants)
