@@ -15,15 +15,17 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yaacov/kubectl-mtv/pkg/mcp/discovery"
 	"github.com/yaacov/kubectl-mtv/pkg/mcp/tools"
+	"github.com/yaacov/kubectl-mtv/pkg/mcp/util"
 	"github.com/yaacov/kubectl-mtv/pkg/version"
 )
 
 var (
-	sse      bool
-	port     string
-	host     string
-	certFile string
-	keyFile  string
+	sse          bool
+	port         string
+	host         string
+	certFile     string
+	keyFile      string
+	outputFormat string
 )
 
 // NewMCPServerCmd creates the mcp-server command
@@ -63,6 +65,15 @@ Cursor IDE: Settings → MCP → Add Server (Name: kubectl-mtv, Command: kubectl
 Manual Claude config: Add to claude_desktop_config.json:
   "kubectl-mtv": {"command": "kubectl", "args": ["mtv", "mcp-server"]}`,
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
+			// Validate output format - only "json" and "text" are supported in MCP mode
+			validFormats := map[string]bool{"json": true, "text": true}
+			if !validFormats[outputFormat] {
+				return fmt.Errorf("invalid --output-format value %q: must be one of: json, text", outputFormat)
+			}
+
+			// Set the output format for MCP responses
+			util.SetOutputFormat(outputFormat)
+
 			// Create a context that listens for interrupt signals
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -161,6 +172,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 	mcpCmd.Flags().StringVar(&host, "host", "127.0.0.1", "Host address to bind to for SSE mode")
 	mcpCmd.Flags().StringVar(&certFile, "cert-file", "", "Path to TLS certificate file (enables TLS when used with --key-file)")
 	mcpCmd.Flags().StringVar(&keyFile, "key-file", "", "Path to TLS private key file (enables TLS when used with --cert-file)")
+	mcpCmd.Flags().StringVar(&outputFormat, "output-format", "json", "Default output format for commands: json or text")
 
 	return mcpCmd
 }

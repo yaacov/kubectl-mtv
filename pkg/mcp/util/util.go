@@ -96,6 +96,24 @@ func GetDryRun(ctx context.Context) bool {
 	return ok && dryRun
 }
 
+// outputFormat stores the configured output format for MCP responses
+var outputFormat = "json"
+
+// SetOutputFormat sets the output format for MCP responses.
+// Valid values are "json" (default) or "text".
+func SetOutputFormat(format string) {
+	if format == "" {
+		outputFormat = "json"
+	} else {
+		outputFormat = format
+	}
+}
+
+// GetOutputFormat returns the configured output format for MCP responses.
+func GetOutputFormat() string {
+	return outputFormat
+}
+
 // CommandResponse represents the structured response from command execution
 type CommandResponse struct {
 	Command     string `json:"command"`
@@ -355,12 +373,44 @@ func formatShellCommand(cmd string, args []string) string {
 	return cmd + " " + quotedArgs
 }
 
-// UnmarshalJSONResponse unmarshals a JSON string response into a native object
-// This is needed because the MCP SDK expects a native object, not a JSON string
+// UnmarshalJSONResponse unmarshals a JSON string response into a native object.
+// This is needed because the MCP SDK expects a native object, not a JSON string.
+//
+// The function also parses the stdout field if it contains JSON:
+//   - If stdout is a JSON object or array, it's parsed and moved to a "data" field
+//   - If stdout is plain text, it's renamed to "output" for clarity
+//
+// This makes responses clearer for LLMs by avoiding double-encoded strings.
 func UnmarshalJSONResponse(responseJSON string) (map[string]interface{}, error) {
-	var result map[string]interface{}
-	if err := json.Unmarshal([]byte(responseJSON), &result); err != nil {
+	var cmdResponse map[string]interface{}
+	if err := json.Unmarshal([]byte(responseJSON), &cmdResponse); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON response: %w", err)
 	}
-	return result, nil
+
+	// Try to parse stdout as JSON
+	if stdout, ok := cmdResponse["stdout"].(string); ok && stdout != "" {
+		stdout = strings.TrimSpace(stdout)
+
+		// Try parsing as JSON object
+		var jsonObj map[string]interface{}
+		if err := json.Unmarshal([]byte(stdout), &jsonObj); err == nil {
+			delete(cmdResponse, "stdout")
+			cmdResponse["data"] = jsonObj
+			return cmdResponse, nil
+		}
+
+		// Try parsing as JSON array
+		var jsonArr []interface{}
+		if err := json.Unmarshal([]byte(stdout), &jsonArr); err == nil {
+			delete(cmdResponse, "stdout")
+			cmdResponse["data"] = jsonArr
+			return cmdResponse, nil
+		}
+
+		// Not JSON - rename to "output" for clarity (plain text)
+		delete(cmdResponse, "stdout")
+		cmdResponse["output"] = stdout
+	}
+
+	return cmdResponse, nil
 }

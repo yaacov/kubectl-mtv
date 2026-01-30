@@ -120,6 +120,8 @@ func (r *Registry) IsReadWrite(pathKey string) bool {
 func (r *Registry) GenerateReadOnlyDescription() string {
 	var sb strings.Builder
 	sb.WriteString("Execute read-only kubectl-mtv commands to query MTV resources.\n\n")
+	sb.WriteString("USE THIS TOOL FOR: health checks, getting resources, describing resources, viewing settings.\n")
+	sb.WriteString("Commands: health, get, describe, settings get\n\n")
 	sb.WriteString("Available commands:\n")
 
 	commands := r.ListReadOnlyCommands()
@@ -145,6 +147,7 @@ func (r *Registry) GenerateReadWriteDescription() string {
 	var sb strings.Builder
 	sb.WriteString("Execute kubectl-mtv commands that modify cluster state.\n\n")
 	sb.WriteString("WARNING: These commands create, modify, or delete resources.\n\n")
+	sb.WriteString("NOTE: For read-only operations (health, get, describe, settings get), use the mtv_read tool instead.\n\n")
 	sb.WriteString("Available commands:\n")
 
 	commands := r.ListReadWriteCommands()

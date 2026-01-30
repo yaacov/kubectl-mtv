@@ -3,7 +3,9 @@ package tools
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/yaacov/kubectl-mtv/pkg/mcp/util"
@@ -55,6 +57,15 @@ type KubectlDebugInput struct {
 
 	// ForResource gets events for a specific resource (for events action)
 	ForResource string `json:"for_resource,omitempty" jsonschema:"Get events for a specific resource (e.g. pod/my-pod, pvc/my-pvc)"`
+
+	// Timestamps shows timestamps in log output
+	Timestamps bool `json:"timestamps,omitempty" jsonschema:"Show timestamps in log output"`
+
+	// Grep filters log lines by regex pattern (server-side filtering)
+	Grep string `json:"grep,omitempty" jsonschema:"Filter log lines by regex pattern (e.g. error|warning|failed)"`
+
+	// IgnoreCase makes grep pattern matching case-insensitive
+	IgnoreCase bool `json:"ignore_case,omitempty" jsonschema:"Case-insensitive grep pattern matching"`
 }
 
 // GetKubectlDebugTool returns the tool definition for kubectl debugging.
@@ -83,14 +94,31 @@ Events examples:
 - Get events sorted by time: action="events", sort_by=".lastTimestamp", namespace="target-ns"
 - Get events for failed scheduling: action="events", field_selector="reason=FailedScheduling"
 
+Log filtering (for scanning large logs):
+- Get error logs: action="logs", name="pod-name", grep="error|ERROR", tail_lines=1000
+- Case-insensitive search: action="logs", name="pod-name", grep="warning", ignore_case=true
+- With timestamps: action="logs", name="pod-name", timestamps=true, tail_lines=500
+- Find migration issues: action="logs", name="virt-v2v-xxx", grep="disk|transfer|failed"
+
 Tips:
 - Use labels to filter resources related to specific migrations
 - Use tail_lines to limit log output
 - Use previous=true to get logs from crashed containers
 - Use since to get recent logs (e.g., "1h" for last hour)
 - Use for_resource to get events related to a specific pod or PVC
+- Use grep with tail_lines to efficiently scan large log files
 
 IMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., "Executed: kubectl get pods -n openshift-mtv").`,
+		OutputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"command":      map[string]any{"type": "string", "description": "The executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
+				"data":         map[string]any{"type": "object", "description": "Structured JSON response data"},
+				"output":       map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
+				"stderr":       map[string]any{"type": "string", "description": "Error output if any"},
+			},
+		},
 	}
 }
 
@@ -146,6 +174,17 @@ func HandleKubectlDebug(ctx context.Context, req *mcp.CallToolRequest, input Kub
 		return nil, nil, err
 	}
 
+	// Apply grep filter for logs action
+	if input.Action == "logs" && input.Grep != "" {
+		if output, ok := data["output"].(string); ok {
+			filtered, err := filterLogsByPattern(output, input.Grep, input.IgnoreCase)
+			if err != nil {
+				return nil, nil, err
+			}
+			data["output"] = filtered
+		}
+	}
+
 	return nil, data, nil
 }
 
@@ -183,6 +222,11 @@ func buildLogsArgs(input KubectlDebugInput) []string {
 		args = append(args, "--since", input.Since)
 	}
 
+	// Timestamps
+	if input.Timestamps {
+		args = append(args, "--timestamps")
+	}
+
 	return args
 }
 
@@ -212,12 +256,15 @@ func buildGetArgs(input KubectlDebugInput) []string {
 		args = append(args, "-l", input.Labels)
 	}
 
-	// Output format - default to json
+	// Output format - use configured default from MCP server
 	output := input.Output
 	if output == "" {
-		output = "json"
+		output = util.GetOutputFormat()
 	}
-	args = append(args, "-o", output)
+	// For "text" format, don't add -o flag to use default output
+	if output != "text" {
+		args = append(args, "-o", output)
+	}
 
 	return args
 }
@@ -277,12 +324,44 @@ func buildEventsArgs(input KubectlDebugInput) []string {
 		args = append(args, "--sort-by", input.SortBy)
 	}
 
-	// Output format - default to json
+	// Output format - use configured default from MCP server
 	output := input.Output
 	if output == "" {
-		output = "json"
+		output = util.GetOutputFormat()
 	}
-	args = append(args, "-o", output)
+	// For "text" format, don't add -o flag to use default output
+	if output != "text" {
+		args = append(args, "-o", output)
+	}
 
 	return args
+}
+
+// filterLogsByPattern filters log lines by a regex pattern.
+// If pattern is empty, returns the original logs unchanged.
+// If ignoreCase is true, the pattern matching is case-insensitive.
+func filterLogsByPattern(logs string, pattern string, ignoreCase bool) (string, error) {
+	if pattern == "" {
+		return logs, nil
+	}
+
+	flags := ""
+	if ignoreCase {
+		flags = "(?i)"
+	}
+
+	re, err := regexp.Compile(flags + pattern)
+	if err != nil {
+		return "", fmt.Errorf("invalid grep pattern: %w", err)
+	}
+
+	var filtered []string
+	lines := strings.Split(logs, "\n")
+	for _, line := range lines {
+		if re.MatchString(line) {
+			filtered = append(filtered, line)
+		}
+	}
+
+	return strings.Join(filtered, "\n"), nil
 }
