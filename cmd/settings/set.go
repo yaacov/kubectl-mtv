@@ -41,9 +41,6 @@ Examples:
   # Increase virt-v2v memory limit for large VMs
   kubectl mtv settings set virt_v2v_container_limits_memory 16Gi
 
-  # Set additional virt-v2v arguments
-  kubectl mtv settings set virt_v2v_extra_args "--verbose"
-
   # Set a value starting with -- (use -- to stop flag parsing)
   kubectl mtv settings set virt_v2v_extra_args -- --machine-readable`,
 		Args:              cobra.ExactArgs(2),
