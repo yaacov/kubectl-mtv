@@ -22,6 +22,10 @@
 VERSION_GIT := $(shell git describe --tags 2>/dev/null || echo "0.0.0-dev")
 VERSION ?= ${VERSION_GIT}
 
+# Path to forklift repository for verify-defaults target
+# Override with: make verify-defaults FORKLIFT_PATH=/path/to/forklift
+FORKLIFT_PATH ?= ../../kubev2v/forklift
+
 all: kubectl-mtv
 
 .PHONY: install-tools
@@ -139,6 +143,11 @@ test:
 	go test -coverprofile=coverage.out ./pkg/... ./cmd/...
 	go tool cover -func=coverage.out
 	@rm coverage.out
+
+.PHONY: verify-defaults
+verify-defaults:
+	@echo "Verifying settings defaults against forklift..."
+	@./scripts/verify-defaults.sh $(FORKLIFT_PATH)
 
 .PHONY: test-e2e
 test-e2e: kubectl-mtv

@@ -24,6 +24,7 @@ type GlobalConfigGetter = config.GlobalConfigGetter
 // NewSettingsCmd creates the settings command with subcommands.
 func NewSettingsCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
+	var allSettings bool
 
 	cmd := &cobra.Command{
 		Use:   "settings",
@@ -39,9 +40,15 @@ that users commonly need to configure, including:
   - Container resource settings (virt-v2v, populator)
   - Debugging options (log level)
 
+Use --all to see all available ForkliftController settings, including advanced
+options for controller, inventory, API, validation, and other components.
+
 Examples:
-  # View all settings
+  # View common settings
   kubectl mtv settings
+
+  # View ALL settings (including advanced)
+  kubectl mtv settings --all
 
   # View settings in YAML format
   kubectl mtv settings -o yaml
@@ -61,6 +68,7 @@ Examples:
 
 			opts := settings.GetSettingsOptions{
 				ConfigFlags: kubeConfigFlags,
+				AllSettings: allSettings,
 			}
 
 			settingValues, err := settings.GetSettings(ctx, opts)
@@ -81,6 +89,9 @@ Examples:
 		_ = err
 	}
 
+	// Add --all flag
+	cmd.Flags().BoolVar(&allSettings, "all", false, "Show all ForkliftController settings (not just common ones)")
+
 	// Add subcommands
 	cmd.AddCommand(newGetCmd(kubeConfigFlags, globalConfig))
 	cmd.AddCommand(NewSetCmd(kubeConfigFlags, globalConfig))
@@ -92,6 +103,7 @@ Examples:
 // newGetCmd creates the 'settings get' subcommand.
 func newGetCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
+	var allSettings bool
 
 	cmd := &cobra.Command{
 		Use:   "get [SETTING]",
@@ -101,13 +113,20 @@ func newGetCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glob
 If no setting name is provided, all settings are displayed.
 If a setting name is provided, only that setting's value is shown.
 
+Use --all to see all available ForkliftController settings, including advanced
+options for controller, inventory, API, validation, and other components.
+
 Examples:
-  # Get all settings
+  # Get common settings
   kubectl mtv settings get
+
+  # Get ALL settings (including advanced)
+  kubectl mtv settings get --all
 
   # Get a specific setting
   kubectl mtv settings get vddk_image
-  kubectl mtv settings get controller_max_vm_inflight`,
+  kubectl mtv settings get controller_max_vm_inflight
+  kubectl mtv settings get controller_container_limits_cpu`,
 		Args:              cobra.MaximumNArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: settingNameCompletion,
@@ -117,6 +136,7 @@ Examples:
 
 			opts := settings.GetSettingsOptions{
 				ConfigFlags: kubeConfigFlags,
+				AllSettings: allSettings,
 			}
 
 			if len(args) > 0 {
@@ -148,17 +168,22 @@ Examples:
 		_ = err
 	}
 
+	// Add --all flag
+	cmd.Flags().BoolVar(&allSettings, "all", false, "Show all ForkliftController settings (not just common ones)")
+
 	return cmd
 }
 
 // settingNameCompletion provides completion for setting names.
+// It includes all settings (supported + extended) for better discoverability.
 func settingNameCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if len(args) > 0 {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
+	allSettings := settings.GetAllSettings()
 	var completions []string
-	for name := range settings.SupportedSettings {
+	for name := range allSettings {
 		if strings.HasPrefix(name, toComplete) {
 			completions = append(completions, name)
 		}
