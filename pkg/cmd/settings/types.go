@@ -37,6 +37,24 @@ const (
 	CategoryOVA SettingCategory = "ova"
 	// CategoryHyperV represents HyperV provider server container settings.
 	CategoryHyperV SettingCategory = "hyperv"
+	// CategoryController represents controller deployment resource settings.
+	CategoryController SettingCategory = "controller"
+	// CategoryInventory represents inventory container resource settings.
+	CategoryInventory SettingCategory = "inventory"
+	// CategoryAPI represents API service resource settings.
+	CategoryAPI SettingCategory = "api"
+	// CategoryUIPlugin represents UI plugin resource settings.
+	CategoryUIPlugin SettingCategory = "ui-plugin"
+	// CategoryValidation represents validation service resource settings.
+	CategoryValidation SettingCategory = "validation"
+	// CategoryCLIDownload represents CLI download service resource settings.
+	CategoryCLIDownload SettingCategory = "cli-download"
+	// CategoryOVAProxy represents OVA proxy resource settings.
+	CategoryOVAProxy SettingCategory = "ova-proxy"
+	// CategoryConfigMaps represents ConfigMap name settings.
+	CategoryConfigMaps SettingCategory = "configmaps"
+	// CategoryAdvanced represents advanced/misc settings.
+	CategoryAdvanced SettingCategory = "advanced"
 )
 
 // SettingDefinition defines metadata for a ForkliftController setting.
@@ -78,6 +96,15 @@ var CategoryOrder = []SettingCategory{
 	CategoryHook,
 	CategoryOVA,
 	CategoryHyperV,
+	CategoryController,
+	CategoryInventory,
+	CategoryAPI,
+	CategoryUIPlugin,
+	CategoryValidation,
+	CategoryCLIDownload,
+	CategoryOVAProxy,
+	CategoryConfigMaps,
+	CategoryAdvanced,
 }
 
 // SupportedSettings contains all supported ForkliftController settings.
@@ -117,7 +144,7 @@ var SupportedSettings = map[string]SettingDefinition{
 	"feature_copy_offload": {
 		Name:        "feature_copy_offload",
 		Type:        TypeBool,
-		Default:     false,
+		Default:     true,
 		Description: "Enable storage array offload (XCOPY)",
 		Category:    CategoryFeature,
 	},
@@ -417,6 +444,496 @@ var SupportedSettings = map[string]SettingDefinition{
 	},
 }
 
+// ExtendedSettings contains additional ForkliftController settings not in the curated SupportedSettings.
+// These are less commonly used settings that are available via the --all flag.
+var ExtendedSettings = map[string]SettingDefinition{
+	// Additional Feature Gates
+	"feature_ui_plugin": {
+		Name:        "feature_ui_plugin",
+		Type:        TypeBool,
+		Default:     true,
+		Description: "Enable OpenShift Console UI plugin",
+		Category:    CategoryFeature,
+	},
+	"feature_validation": {
+		Name:        "feature_validation",
+		Type:        TypeBool,
+		Default:     true,
+		Description: "Enable VM validation with OPA policies",
+		Category:    CategoryFeature,
+	},
+	"feature_volume_populator": {
+		Name:        "feature_volume_populator",
+		Type:        TypeBool,
+		Default:     true,
+		Description: "Enable volume populator for oVirt/OpenStack",
+		Category:    CategoryFeature,
+	},
+	"feature_auth_required": {
+		Name:        "feature_auth_required",
+		Type:        TypeBool,
+		Default:     true,
+		Description: "Require authentication for inventory API",
+		Category:    CategoryFeature,
+	},
+	"feature_cli_download": {
+		Name:        "feature_cli_download",
+		Type:        TypeBool,
+		Default:     true,
+		Description: "Enable kubectl-mtv CLI download service",
+		Category:    CategoryFeature,
+	},
+
+	// Controller Deployment Resources
+	"controller_container_limits_cpu": {
+		Name:        "controller_container_limits_cpu",
+		Type:        TypeString,
+		Default:     "2",
+		Description: "Controller container CPU limit",
+		Category:    CategoryController,
+	},
+	"controller_container_limits_memory": {
+		Name:        "controller_container_limits_memory",
+		Type:        TypeString,
+		Default:     "800Mi",
+		Description: "Controller container memory limit",
+		Category:    CategoryController,
+	},
+	"controller_container_requests_cpu": {
+		Name:        "controller_container_requests_cpu",
+		Type:        TypeString,
+		Default:     "100m",
+		Description: "Controller container CPU request",
+		Category:    CategoryController,
+	},
+	"controller_container_requests_memory": {
+		Name:        "controller_container_requests_memory",
+		Type:        TypeString,
+		Default:     "350Mi",
+		Description: "Controller container memory request",
+		Category:    CategoryController,
+	},
+	"controller_transfer_network": {
+		Name:        "controller_transfer_network",
+		Type:        TypeString,
+		Default:     "",
+		Description: "Optional NAD name for controller pod transfer network (format: namespace/network-name)",
+		Category:    CategoryController,
+	},
+
+	// Inventory Container Resources
+	"inventory_container_limits_cpu": {
+		Name:        "inventory_container_limits_cpu",
+		Type:        TypeString,
+		Default:     "2",
+		Description: "Inventory container CPU limit",
+		Category:    CategoryInventory,
+	},
+	"inventory_container_limits_memory": {
+		Name:        "inventory_container_limits_memory",
+		Type:        TypeString,
+		Default:     "1Gi",
+		Description: "Inventory container memory limit",
+		Category:    CategoryInventory,
+	},
+	"inventory_container_requests_cpu": {
+		Name:        "inventory_container_requests_cpu",
+		Type:        TypeString,
+		Default:     "500m",
+		Description: "Inventory container CPU request",
+		Category:    CategoryInventory,
+	},
+	"inventory_container_requests_memory": {
+		Name:        "inventory_container_requests_memory",
+		Type:        TypeString,
+		Default:     "500Mi",
+		Description: "Inventory container memory request",
+		Category:    CategoryInventory,
+	},
+	"inventory_route_timeout": {
+		Name:        "inventory_route_timeout",
+		Type:        TypeString,
+		Default:     "360s",
+		Description: "Inventory route timeout",
+		Category:    CategoryInventory,
+	},
+
+	// API Service Resources
+	"api_container_limits_cpu": {
+		Name:        "api_container_limits_cpu",
+		Type:        TypeString,
+		Default:     "1000m",
+		Description: "API service CPU limit",
+		Category:    CategoryAPI,
+	},
+	"api_container_limits_memory": {
+		Name:        "api_container_limits_memory",
+		Type:        TypeString,
+		Default:     "1Gi",
+		Description: "API service memory limit",
+		Category:    CategoryAPI,
+	},
+	"api_container_requests_cpu": {
+		Name:        "api_container_requests_cpu",
+		Type:        TypeString,
+		Default:     "100m",
+		Description: "API service CPU request",
+		Category:    CategoryAPI,
+	},
+	"api_container_requests_memory": {
+		Name:        "api_container_requests_memory",
+		Type:        TypeString,
+		Default:     "150Mi",
+		Description: "API service memory request",
+		Category:    CategoryAPI,
+	},
+
+	// UI Plugin Resources
+	"ui_plugin_container_limits_cpu": {
+		Name:        "ui_plugin_container_limits_cpu",
+		Type:        TypeString,
+		Default:     "100m",
+		Description: "UI plugin CPU limit",
+		Category:    CategoryUIPlugin,
+	},
+	"ui_plugin_container_limits_memory": {
+		Name:        "ui_plugin_container_limits_memory",
+		Type:        TypeString,
+		Default:     "800Mi",
+		Description: "UI plugin memory limit",
+		Category:    CategoryUIPlugin,
+	},
+	"ui_plugin_container_requests_cpu": {
+		Name:        "ui_plugin_container_requests_cpu",
+		Type:        TypeString,
+		Default:     "100m",
+		Description: "UI plugin CPU request",
+		Category:    CategoryUIPlugin,
+	},
+	"ui_plugin_container_requests_memory": {
+		Name:        "ui_plugin_container_requests_memory",
+		Type:        TypeString,
+		Default:     "150Mi",
+		Description: "UI plugin memory request",
+		Category:    CategoryUIPlugin,
+	},
+
+	// Validation Service Resources
+	"validation_container_limits_cpu": {
+		Name:        "validation_container_limits_cpu",
+		Type:        TypeString,
+		Default:     "1000m",
+		Description: "Validation service CPU limit",
+		Category:    CategoryValidation,
+	},
+	"validation_container_limits_memory": {
+		Name:        "validation_container_limits_memory",
+		Type:        TypeString,
+		Default:     "300Mi",
+		Description: "Validation service memory limit",
+		Category:    CategoryValidation,
+	},
+	"validation_container_requests_cpu": {
+		Name:        "validation_container_requests_cpu",
+		Type:        TypeString,
+		Default:     "400m",
+		Description: "Validation service CPU request",
+		Category:    CategoryValidation,
+	},
+	"validation_container_requests_memory": {
+		Name:        "validation_container_requests_memory",
+		Type:        TypeString,
+		Default:     "50Mi",
+		Description: "Validation service memory request",
+		Category:    CategoryValidation,
+	},
+	"validation_policy_agent_search_interval": {
+		Name:        "validation_policy_agent_search_interval",
+		Type:        TypeInt,
+		Default:     120,
+		Description: "Policy agent search interval in seconds",
+		Category:    CategoryValidation,
+	},
+	"validation_extra_volume_name": {
+		Name:        "validation_extra_volume_name",
+		Type:        TypeString,
+		Default:     "validation-extra-rules",
+		Description: "Volume name for extra validation rules",
+		Category:    CategoryValidation,
+	},
+	"validation_extra_volume_mountpath": {
+		Name:        "validation_extra_volume_mountpath",
+		Type:        TypeString,
+		Default:     "/usr/share/opa/policies/extra",
+		Description: "Mount path for extra validation rules",
+		Category:    CategoryValidation,
+	},
+
+	// CLI Download Service Resources
+	"cli_download_container_limits_cpu": {
+		Name:        "cli_download_container_limits_cpu",
+		Type:        TypeString,
+		Default:     "100m",
+		Description: "CLI download service CPU limit",
+		Category:    CategoryCLIDownload,
+	},
+	"cli_download_container_limits_memory": {
+		Name:        "cli_download_container_limits_memory",
+		Type:        TypeString,
+		Default:     "128Mi",
+		Description: "CLI download service memory limit",
+		Category:    CategoryCLIDownload,
+	},
+	"cli_download_container_requests_cpu": {
+		Name:        "cli_download_container_requests_cpu",
+		Type:        TypeString,
+		Default:     "50m",
+		Description: "CLI download service CPU request",
+		Category:    CategoryCLIDownload,
+	},
+	"cli_download_container_requests_memory": {
+		Name:        "cli_download_container_requests_memory",
+		Type:        TypeString,
+		Default:     "64Mi",
+		Description: "CLI download service memory request",
+		Category:    CategoryCLIDownload,
+	},
+
+	// OVA Proxy Resources
+	"ova_proxy_container_limits_cpu": {
+		Name:        "ova_proxy_container_limits_cpu",
+		Type:        TypeString,
+		Default:     "1000m",
+		Description: "OVA proxy CPU limit",
+		Category:    CategoryOVAProxy,
+	},
+	"ova_proxy_container_limits_memory": {
+		Name:        "ova_proxy_container_limits_memory",
+		Type:        TypeString,
+		Default:     "1Gi",
+		Description: "OVA proxy memory limit",
+		Category:    CategoryOVAProxy,
+	},
+	"ova_proxy_container_requests_cpu": {
+		Name:        "ova_proxy_container_requests_cpu",
+		Type:        TypeString,
+		Default:     "250m",
+		Description: "OVA proxy CPU request",
+		Category:    CategoryOVAProxy,
+	},
+	"ova_proxy_container_requests_memory": {
+		Name:        "ova_proxy_container_requests_memory",
+		Type:        TypeString,
+		Default:     "512Mi",
+		Description: "OVA proxy memory request",
+		Category:    CategoryOVAProxy,
+	},
+	"ova_proxy_route_timeout": {
+		Name:        "ova_proxy_route_timeout",
+		Type:        TypeString,
+		Default:     "360s",
+		Description: "OVA proxy route timeout",
+		Category:    CategoryOVAProxy,
+	},
+
+	// Additional Container Images (FQINs)
+	"controller_image_fqin": {
+		Name:        "controller_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "Controller pod image",
+		Category:    CategoryImage,
+	},
+	"api_image_fqin": {
+		Name:        "api_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "API service image",
+		Category:    CategoryImage,
+	},
+	"validation_image_fqin": {
+		Name:        "validation_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "Validation service image",
+		Category:    CategoryImage,
+	},
+	"ui_plugin_image_fqin": {
+		Name:        "ui_plugin_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "UI plugin image",
+		Category:    CategoryImage,
+	},
+	"cli_download_image_fqin": {
+		Name:        "cli_download_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "CLI download service image",
+		Category:    CategoryImage,
+	},
+	"populator_controller_image_fqin": {
+		Name:        "populator_controller_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "Volume populator controller image",
+		Category:    CategoryImage,
+	},
+	"populator_ovirt_image_fqin": {
+		Name:        "populator_ovirt_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "oVirt populator image",
+		Category:    CategoryImage,
+	},
+	"populator_openstack_image_fqin": {
+		Name:        "populator_openstack_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "OpenStack populator image",
+		Category:    CategoryImage,
+	},
+	"populator_vsphere_xcopy_volume_image_fqin": {
+		Name:        "populator_vsphere_xcopy_volume_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "vSphere xcopy populator image",
+		Category:    CategoryImage,
+	},
+	"ova_provider_server_fqin": {
+		Name:        "ova_provider_server_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "OVA provider server image",
+		Category:    CategoryImage,
+	},
+	"hyperv_provider_server_fqin": {
+		Name:        "hyperv_provider_server_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "HyperV provider server image",
+		Category:    CategoryImage,
+	},
+	"must_gather_image_fqin": {
+		Name:        "must_gather_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "Must-gather debugging image",
+		Category:    CategoryImage,
+	},
+	"ova_proxy_fqin": {
+		Name:        "ova_proxy_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "OVA inventory proxy image",
+		Category:    CategoryImage,
+	},
+
+	// ConfigMap Names
+	"ovirt_osmap_configmap_name": {
+		Name:        "ovirt_osmap_configmap_name",
+		Type:        TypeString,
+		Default:     "forklift-ovirt-osmap",
+		Description: "ConfigMap name for oVirt OS mappings",
+		Category:    CategoryConfigMaps,
+	},
+	"vsphere_osmap_configmap_name": {
+		Name:        "vsphere_osmap_configmap_name",
+		Type:        TypeString,
+		Default:     "forklift-vsphere-osmap",
+		Description: "ConfigMap name for vSphere OS mappings",
+		Category:    CategoryConfigMaps,
+	},
+	"virt_customize_configmap_name": {
+		Name:        "virt_customize_configmap_name",
+		Type:        TypeString,
+		Default:     "forklift-virt-customize",
+		Description: "ConfigMap name for virt-customize configuration",
+		Category:    CategoryConfigMaps,
+	},
+
+	// Advanced Settings
+	"controller_snapshot_status_check_rate_seconds": {
+		Name:        "controller_snapshot_status_check_rate_seconds",
+		Type:        TypeInt,
+		Default:     10,
+		Description: "Rate for checking snapshot status (seconds)",
+		Category:    CategoryAdvanced,
+	},
+	"controller_tls_connection_timeout_sec": {
+		Name:        "controller_tls_connection_timeout_sec",
+		Type:        TypeInt,
+		Default:     5,
+		Description: "TLS connection timeout (seconds)",
+		Category:    CategoryAdvanced,
+	},
+	"controller_max_parent_backing_retries": {
+		Name:        "controller_max_parent_backing_retries",
+		Type:        TypeInt,
+		Default:     10,
+		Description: "Maximum retries for parent backing lookup",
+		Category:    CategoryAdvanced,
+	},
+	"controller_cdi_export_token_ttl": {
+		Name:        "controller_cdi_export_token_ttl",
+		Type:        TypeInt,
+		Default:     720,
+		Description: "CDI export token TTL (minutes)",
+		Category:    CategoryAdvanced,
+	},
+	"image_pull_policy": {
+		Name:        "image_pull_policy",
+		Type:        TypeString,
+		Default:     "Always",
+		Description: "Image pull policy (Always, IfNotPresent, Never)",
+		Category:    CategoryAdvanced,
+	},
+	"k8s_cluster": {
+		Name:        "k8s_cluster",
+		Type:        TypeBool,
+		Default:     false,
+		Description: "Whether running on Kubernetes (vs OpenShift)",
+		Category:    CategoryAdvanced,
+	},
+	"metric_interval": {
+		Name:        "metric_interval",
+		Type:        TypeString,
+		Default:     "30s",
+		Description: "Metrics scrape interval",
+		Category:    CategoryAdvanced,
+	},
+}
+
+// GetAllSettings returns a merged map of SupportedSettings + ExtendedSettings.
+// This provides access to all known ForkliftController settings.
+func GetAllSettings() map[string]SettingDefinition {
+	all := make(map[string]SettingDefinition, len(SupportedSettings)+len(ExtendedSettings))
+	for k, v := range SupportedSettings {
+		all[k] = v
+	}
+	for k, v := range ExtendedSettings {
+		all[k] = v
+	}
+	return all
+}
+
+// GetAllSettingNames returns all setting names (supported + extended) in a consistent order.
+func GetAllSettingNames() []string {
+	allSettings := GetAllSettings()
+	var names []string
+	for _, category := range CategoryOrder {
+		var categoryNames []string
+		for name, def := range allSettings {
+			if def.Category == category {
+				categoryNames = append(categoryNames, name)
+			}
+		}
+		sort.Strings(categoryNames)
+		names = append(names, categoryNames...)
+	}
+	return names
+}
+
 // GetSettingNames returns all supported setting names in a consistent order.
 func GetSettingNames() []string {
 	var names []string
@@ -444,15 +961,35 @@ func GetSettingsByCategory() map[SettingCategory][]SettingDefinition {
 	return result
 }
 
-// IsValidSetting checks if a setting name is supported.
+// IsValidSetting checks if a setting name is in the curated SupportedSettings.
 func IsValidSetting(name string) bool {
 	_, ok := SupportedSettings[name]
 	return ok
 }
 
-// GetSettingDefinition returns the definition for a setting, or nil if not found.
+// IsValidAnySetting checks if a setting name is valid (in either SupportedSettings or ExtendedSettings).
+func IsValidAnySetting(name string) bool {
+	if _, ok := SupportedSettings[name]; ok {
+		return true
+	}
+	_, ok := ExtendedSettings[name]
+	return ok
+}
+
+// GetSettingDefinition returns the definition for a setting from SupportedSettings, or nil if not found.
 func GetSettingDefinition(name string) *SettingDefinition {
 	if def, ok := SupportedSettings[name]; ok {
+		return &def
+	}
+	return nil
+}
+
+// GetAnySettingDefinition returns the definition for a setting from all settings, or nil if not found.
+func GetAnySettingDefinition(name string) *SettingDefinition {
+	if def, ok := SupportedSettings[name]; ok {
+		return &def
+	}
+	if def, ok := ExtendedSettings[name]; ok {
 		return &def
 	}
 	return nil

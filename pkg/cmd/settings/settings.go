@@ -21,6 +21,7 @@ import (
 type GetSettingsOptions struct {
 	ConfigFlags *genericclioptions.ConfigFlags
 	SettingName string // optional: get a specific setting
+	AllSettings bool   // if true, return all settings (supported + extended)
 }
 
 // SetSettingOptions contains options for setting a value.
@@ -68,8 +69,9 @@ func wrapClusterError(err error, operation string) error {
 }
 
 // GetSettings retrieves the current ForkliftController settings.
-// If settingName is empty, all supported settings are returned.
+// If settingName is empty, settings are returned based on AllSettings flag.
 // If settingName is specified, only that setting is returned.
+// If AllSettings is true, all settings (supported + extended) are returned.
 func GetSettings(ctx context.Context, opts GetSettingsOptions) ([]SettingValue, error) {
 	// Get the MTV operator namespace
 	operatorNamespace := client.GetMTVOperatorNamespace(ctx, opts.ConfigFlags)
@@ -99,14 +101,22 @@ func GetSettings(ctx context.Context, opts GetSettingsOptions) ([]SettingValue, 
 		return nil, fmt.Errorf("failed to get ForkliftController spec: %w", err)
 	}
 
+	// Determine which settings map to use
+	settingsMap := SupportedSettings
+	if opts.AllSettings {
+		settingsMap = GetAllSettings()
+	}
+
 	// Build the result
 	var result []SettingValue
 
 	// If a specific setting is requested, only return that one
 	if opts.SettingName != "" {
-		def, ok := SupportedSettings[opts.SettingName]
+		// For specific setting lookups, check all settings (not just the filtered set)
+		allSettings := GetAllSettings()
+		def, ok := allSettings[opts.SettingName]
 		if !ok {
-			return nil, fmt.Errorf("unknown setting: %s", opts.SettingName)
+			return nil, fmt.Errorf("unknown setting: %s\nUse 'kubectl mtv settings --all' to see all available settings", opts.SettingName)
 		}
 		sv := extractSettingValue(spec, def)
 		return []SettingValue{sv}, nil
@@ -116,7 +126,7 @@ func GetSettings(ctx context.Context, opts GetSettingsOptions) ([]SettingValue, 
 	for _, category := range CategoryOrder {
 		// Collect names for this category
 		var categoryNames []string
-		for name, def := range SupportedSettings {
+		for name, def := range settingsMap {
 			if def.Category == category {
 				categoryNames = append(categoryNames, name)
 			}
@@ -125,7 +135,7 @@ func GetSettings(ctx context.Context, opts GetSettingsOptions) ([]SettingValue, 
 		sort.Strings(categoryNames)
 		// Iterate sorted names and build result
 		for _, name := range categoryNames {
-			def := SupportedSettings[name]
+			def := settingsMap[name]
 			sv := extractSettingValue(spec, def)
 			sv.Name = name
 			result = append(result, sv)
@@ -192,10 +202,11 @@ func extractSettingValue(spec map[string]interface{}, def SettingDefinition) Set
 
 // SetSetting updates a ForkliftController setting.
 func SetSetting(ctx context.Context, opts SetSettingOptions) error {
-	// Validate setting name
-	def, ok := SupportedSettings[opts.Name]
+	// Validate setting name against all known settings
+	allSettings := GetAllSettings()
+	def, ok := allSettings[opts.Name]
 	if !ok {
-		return fmt.Errorf("unknown setting: %s\nUse 'kubectl mtv settings' to see available settings", opts.Name)
+		return fmt.Errorf("unknown setting: %s\nUse 'kubectl mtv settings --all' to see available settings", opts.Name)
 	}
 
 	// Validate and convert the value
@@ -263,10 +274,11 @@ func SetSetting(ctx context.Context, opts SetSettingOptions) error {
 
 // UnsetSetting removes a ForkliftController setting (reverts to default).
 func UnsetSetting(ctx context.Context, opts UnsetSettingOptions) error {
-	// Validate setting name
-	_, ok := SupportedSettings[opts.Name]
+	// Validate setting name against all known settings
+	allSettings := GetAllSettings()
+	_, ok := allSettings[opts.Name]
 	if !ok {
-		return fmt.Errorf("unknown setting: %s\nUse 'kubectl mtv settings' to see available settings", opts.Name)
+		return fmt.Errorf("unknown setting: %s\nUse 'kubectl mtv settings --all' to see available settings", opts.Name)
 	}
 
 	// Get the MTV operator namespace
