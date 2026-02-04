@@ -19,6 +19,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
 	var vms bool
+	var disk bool
 
 	cmd := &cobra.Command{
 		Use:   "plan [NAME]",
@@ -26,7 +27,9 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 		Long: `Get migration plans from the cluster.
 
 Lists all plans in the namespace, or retrieves details for a specific plan.
-Use --vms to see the migration status of individual VMs within a plan.`,
+Use --vms to see the migration status of individual VMs within a plan.
+Use --disk to see the disk transfer status with individual disk details.
+Use both --vms and --disk together to see VMs with their disk details.`,
 		Example: `  # List all plans in current namespace
   kubectl-mtv get plan
 
@@ -40,7 +43,13 @@ Use --vms to see the migration status of individual VMs within a plan.`,
   kubectl-mtv get plan my-migration -w
 
   # Get VM migration status within a plan
-  kubectl-mtv get plan my-migration --vms`,
+  kubectl-mtv get plan my-migration --vms
+
+  # Get disk transfer status within a plan
+  kubectl-mtv get plan my-migration --disk
+
+  # Get both VM and disk transfer status
+  kubectl-mtv get plan my-migration --vms --disk`,
 		Args:              cobra.MaximumNArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
@@ -62,6 +71,18 @@ Use --vms to see the migration status of individual VMs within a plan.`,
 				planName = args[0]
 			}
 
+			// If both --vms and --disk flags are used, show combined view
+			if vms && disk {
+				if planName == "" {
+					return fmt.Errorf("plan NAME is required when using --vms and --disk flags")
+				}
+				// Log the operation being performed
+				logNamespaceOperation("Getting plan VMs with disk details", namespace, allNamespaces)
+				logOutputFormat(outputFormatFlag.GetValue())
+
+				return plan.ListVMsWithDisks(ctx, kubeConfigFlags, planName, namespace, watch)
+			}
+
 			// If --vms flag is used, switch to ListVMs behavior
 			if vms {
 				if planName == "" {
@@ -72,6 +93,18 @@ Use --vms to see the migration status of individual VMs within a plan.`,
 				logOutputFormat(outputFormatFlag.GetValue())
 
 				return plan.ListVMs(ctx, kubeConfigFlags, planName, namespace, watch)
+			}
+
+			// If --disk flag is used, switch to ListDisks behavior
+			if disk {
+				if planName == "" {
+					return fmt.Errorf("plan NAME is required when using --disk flag")
+				}
+				// Log the operation being performed
+				logNamespaceOperation("Getting plan disk transfers", namespace, allNamespaces)
+				logOutputFormat(outputFormatFlag.GetValue())
+
+				return plan.ListDisks(ctx, kubeConfigFlags, planName, namespace, watch)
 			}
 
 			// Default behavior: list plans
@@ -91,6 +124,7 @@ Use --vms to see the migration status of individual VMs within a plan.`,
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	cmd.Flags().BoolVar(&vms, "vms", false, "Get VMs status in the migration plan (requires plan NAME)")
+	cmd.Flags().BoolVar(&disk, "disk", false, "Get disk transfer status in the migration plan (requires plan NAME)")
 
 	// Add completion for output format flag
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

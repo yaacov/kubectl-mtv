@@ -164,7 +164,7 @@ func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
 
 	// Resolve environment variable references for sensitive flags (e.g., $VCENTER_PASSWORD)
 	// This is done after dry run check so dry run shows $VAR syntax, not resolved values
-	resolvedArgs, err := ResolveSensitiveFlagEnvVars(args)
+	resolvedArgs, err := ResolveEnvVars(args)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve environment variables: %w", err)
 	}
@@ -291,8 +291,8 @@ func RunKubectlCommand(ctx context.Context, args []string) (string, error) {
 	return string(jsonData), nil
 }
 
-// sensitiveFlags defines flags whose values should be redacted in logs/output
-// and which support environment variable resolution (${ENV_VAR} syntax).
+// sensitiveFlags defines flags whose values should be redacted in logs/output.
+// These are security-sensitive flags like passwords and tokens.
 var sensitiveFlags = map[string]bool{
 	"--password":                 true,
 	"-p":                         true, // shorthand for password
@@ -324,21 +324,23 @@ func resolveEnvVar(value string) (string, error) {
 	return value, nil
 }
 
-// ResolveSensitiveFlagEnvVars resolves environment variable references for sensitive flag values.
-// This allows users to pass ${ENV_VAR_NAME} instead of actual secrets.
-// Only sensitive flags (passwords, tokens, etc.) are resolved to prevent unintended expansion.
-func ResolveSensitiveFlagEnvVars(args []string) ([]string, error) {
+// ResolveEnvVars resolves environment variable references for all argument values.
+// This allows users to pass ${ENV_VAR_NAME} instead of literal values for any flag or argument.
+// Environment variables are resolved for any value matching the ${VAR_NAME} pattern.
+func ResolveEnvVars(args []string) ([]string, error) {
 	result := make([]string, len(args))
 	copy(result, args)
 
-	for i := 0; i < len(result)-1; i++ {
-		if sensitiveFlags[result[i]] {
-			resolved, err := resolveEnvVar(result[i+1])
-			if err != nil {
-				return nil, err
-			}
-			result[i+1] = resolved
+	for i := 0; i < len(result); i++ {
+		// Skip flags themselves (only resolve values)
+		if strings.HasPrefix(result[i], "-") {
+			continue
 		}
+		resolved, err := resolveEnvVar(result[i])
+		if err != nil {
+			return nil, err
+		}
+		result[i] = resolved
 	}
 	return result, nil
 }
