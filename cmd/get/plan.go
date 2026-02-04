@@ -28,7 +28,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 
 Lists all plans in the namespace, or retrieves details for a specific plan.
 Use --vms to see the migration status of individual VMs within a plan.
-Use --disk to see the disk transfer status with individual disk details.`,
+Use --disk to see the disk transfer status with individual disk details.
+Use both --vms and --disk together to see VMs with their disk details.`,
 		Example: `  # List all plans in current namespace
   kubectl-mtv get plan
 
@@ -45,7 +46,10 @@ Use --disk to see the disk transfer status with individual disk details.`,
   kubectl-mtv get plan my-migration --vms
 
   # Get disk transfer status within a plan
-  kubectl-mtv get plan my-migration --disk`,
+  kubectl-mtv get plan my-migration --disk
+
+  # Get both VM and disk transfer status
+  kubectl-mtv get plan my-migration --vms --disk`,
 		Args:              cobra.MaximumNArgs(1),
 		SilenceUsage:      true,
 		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
@@ -65,6 +69,18 @@ Use --disk to see the disk transfer status with individual disk details.`,
 			var planName string
 			if len(args) > 0 {
 				planName = args[0]
+			}
+
+			// If both --vms and --disk flags are used, show combined view
+			if vms && disk {
+				if planName == "" {
+					return fmt.Errorf("plan NAME is required when using --vms and --disk flags")
+				}
+				// Log the operation being performed
+				logNamespaceOperation("Getting plan VMs with disk details", namespace, allNamespaces)
+				logOutputFormat(outputFormatFlag.GetValue())
+
+				return plan.ListVMsWithDisks(ctx, kubeConfigFlags, planName, namespace, watch)
 			}
 
 			// If --vms flag is used, switch to ListVMs behavior
