@@ -12,21 +12,39 @@ jobs:
       contents: write
       
     steps:
+      - name: Check if assets already exist
+        id: check_assets
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          # Check if at least one main asset exists (linux-amd64 as representative)
+          url="https://github.com/yaacov/kubectl-mtv/releases/download/${VERSION}/kubectl-mtv-${VERSION}-linux-amd64.tar.gz"
+          if curl -sSL --fail -I "$url" > /dev/null 2>&1; then
+            echo "Assets already exist, skipping build and upload"
+            echo "assets_exist=true" >> $GITHUB_OUTPUT
+          else
+            echo "Assets do not exist, will build and upload"
+            echo "assets_exist=false" >> $GITHUB_OUTPUT
+          fi
+
       - uses: actions/checkout@v5
+        if: steps.check_assets.outputs.assets_exist != 'true'
         with:
           fetch-depth: 0
 
       - name: Set up Go
+        if: steps.check_assets.outputs.assets_exist != 'true'
         uses: actions/setup-go@v6
         with:
           go-version: '1.24'
 
       - name: Build kubectl-mtv multi-platform binaries and archives
+        if: steps.check_assets.outputs.assets_exist != 'true'
         run: make dist-all
         env:
           VERSION: ${{ github.event.release.tag_name }}
 
       - name: Upload kubectl-mtv release assets
+        if: steps.check_assets.outputs.assets_exist != 'true'
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631
         with:
           files: |
@@ -42,6 +60,7 @@ jobs:
             kubectl-mtv-${{ github.event.release.tag_name }}-windows-amd64.zip.sha256sum
 
       - name: Wait for assets to be available
+        if: steps.check_assets.outputs.assets_exist != 'true'
         run: |
           echo "Waiting 30 seconds for GitHub to propagate release assets..."
           sleep 30
