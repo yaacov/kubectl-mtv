@@ -138,8 +138,15 @@ Example use cases:
 - Track VM migration: filter_vm="web-server-01"
 - Monitor provider: filter_provider="vmware-prod", tail_lines=100
 
+JSON log auto-detection:
+- The tool automatically detects if logs are in JSON format by examining the first log line
+- JSON parsing is only applied when logs contain structured JSON entries (with "level" and "msg" fields)
+- Non-JSON logs (e.g., virt-v2v output) are returned as raw text without parsing
+- If JSON filters are specified but logs are not JSON, a warning is returned and filters are ignored
+
 Default behavior:
-- log_format=json by default (use log_format="text" for raw JSONL, log_format="pretty" for human-readable)
+- log_format=json by default for JSON logs (use log_format="text" for raw JSONL, log_format="pretty" for human-readable)
+- Non-JSON logs are always returned as raw text in the "output" field
 - timestamps=true by default (use no_timestamps=true to disable)
 - tail_lines=500 by default (use tail_lines=-1 for all logs)
 
@@ -230,29 +237,59 @@ func HandleKubectlDebug(ctx context.Context, req *mcp.CallToolRequest, input Kub
 				output = filtered
 			}
 
-			// Apply JSON filtering and formatting
-			formatted, err := filterAndFormatJSONLogs(output, input)
-			if err != nil {
-				return nil, nil, err
+			// Check if logs appear to be JSON formatted by inspecting the first line
+			isJSONLogs := looksLikeJSONLogs(output)
+			hasFilters := hasJSONFilters(input)
+
+			// Warn if JSON filters are requested but logs don't appear to be JSON
+			if hasFilters && !isJSONLogs {
+				data["warning"] = "JSON filters were specified but logs do not appear to be in JSON format. Filters will be ignored."
 			}
 
-			// Set the appropriate output field based on format
-			format := input.LogFormat
-			if format == "" {
-				format = "json"
-			}
-
-			if format == "json" {
-				// For JSON format, put parsed entries in "data" field
-				delete(data, "output")
-				data["logs"] = formatted
-			} else {
-				// For text/pretty formats, keep as "output" string
-				if str, ok := formatted.(string); ok {
-					data["output"] = str
-				} else {
-					data["output"] = formatted
+			if isJSONLogs {
+				// Normalize LogFormat to a valid value before processing
+				// Valid formats: "json", "text", "pretty"
+				format := input.LogFormat
+				switch format {
+				case "json", "text", "pretty":
+					// Valid format, use as-is
+				case "":
+					format = "json"
+				default:
+					// Invalid format specified, default to "json" and warn
+					data["warning"] = fmt.Sprintf("Invalid log_format '%s' specified, defaulting to 'json'. Valid formats: json, text, pretty", format)
+					format = "json"
 				}
+
+				// Update input with normalized format for filterAndFormatJSONLogs
+				normalizedInput := input
+				normalizedInput.LogFormat = format
+
+				// Apply JSON filtering and formatting for JSON-formatted logs
+				formatted, err := filterAndFormatJSONLogs(output, normalizedInput)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				// Set the appropriate output field based on format
+				if format == "json" {
+					// For JSON format, put parsed entries in "logs" field
+					delete(data, "output")
+					data["logs"] = formatted
+				} else {
+					// For text/pretty formats, keep as "output" string
+					// Both text and pretty formats return strings from filterAndFormatJSONLogs
+					if str, ok := formatted.(string); ok {
+						data["output"] = str
+					} else {
+						// Fallback: convert to JSON string if somehow not a string
+						jsonBytes, _ := json.Marshal(formatted)
+						data["output"] = string(jsonBytes)
+					}
+				}
+			} else {
+				// Non-JSON logs: return as raw text, skip JSON parsing entirely
+				data["output"] = output
 			}
 		}
 	}
@@ -476,6 +513,56 @@ func hasJSONFilters(input KubectlDebugInput) bool {
 		input.FilterMigration != "" ||
 		input.FilterLevel != "" ||
 		input.FilterLogger != ""
+}
+
+// looksLikeJSONLogs checks if the logs appear to be in JSON format by examining up to 5 non-empty lines.
+// It handles the kubectl --timestamps prefix (e.g., "2026-02-05T10:45:52.123Z {\"level\":...}")
+// Returns true as soon as any scanned line contains valid JSON with expected log fields (level, msg).
+// Returns false if none of the scanned lines yield a valid JSON entry.
+func looksLikeJSONLogs(logs string) bool {
+	lines := strings.Split(logs, "\n")
+
+	// Check up to 5 non-empty lines for JSON format
+	const maxLinesToCheck = 5
+	checkedLines := 0
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		checkedLines++
+		if checkedLines > maxLinesToCheck {
+			break
+		}
+
+		// Extract JSON part (skip timestamp prefix if present)
+		idx := strings.Index(trimmed, "{")
+		if idx < 0 {
+			// No JSON object found in this line, try next
+			continue
+		}
+		jsonPart := trimmed[idx:]
+
+		// Try to parse as JSON
+		var entry map[string]interface{}
+		if err := json.Unmarshal([]byte(jsonPart), &entry); err != nil {
+			// Not valid JSON, try next line
+			continue
+		}
+
+		// Check for expected JSON log fields (forklift controller format)
+		// A valid JSON log should have at least "level" and "msg" fields
+		_, hasLevel := entry["level"]
+		_, hasMsg := entry["msg"]
+
+		if hasLevel && hasMsg {
+			return true
+		}
+	}
+
+	return false
 }
 
 // matchesJSONFilters checks if a log entry matches all specified filters.
