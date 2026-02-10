@@ -395,7 +395,7 @@ kubectl mtv get inventory vms "$PROVIDER" \
 
 # Export large VMs (>50GB total disk)
 kubectl mtv get inventory vms "$PROVIDER" \
-  -q "where sum disks.capacityGB > 50" \
+  -q "where sum disks[*].capacityGB > 50" \
   -o json > "$OUTPUT_DIR/large-vms.json"
 
 # Export network information

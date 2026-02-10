@@ -259,7 +259,7 @@ kubectl mtv create plan transfer-net-migration \
 kubectl mtv create plan cross-ns-transfer \
   --source vsphere-prod \
   --transfer-network network-system/high-bandwidth \
-  --vms "where sum disks.capacityGB > 500"
+  --vms "where sum disks[*].capacityGB > 500"
 ```
 
 ### Naming Templates
@@ -606,7 +606,7 @@ kubectl mtv create plan offload-migration \
   --offload-storage-password FlashSystemPassword \
   --offload-storage-endpoint https://flashsystem.company.com \
   --migration-type warm \
-  --vms "where sum disks.capacityGB > 500"
+  --vms "where sum disks[*].capacityGB > 500"
 ```
 
 ## Plan Validation and Testing

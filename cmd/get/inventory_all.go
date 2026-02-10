@@ -30,7 +30,7 @@ Use --query (-q) to filter results using TSL query syntax.`,
   kubectl-mtv get inventory network vsphere-prod
 
   # Filter networks by name
-  kubectl-mtv get inventory network vsphere-prod -q "where name ~= 'VM Network*'"
+  kubectl-mtv get inventory network vsphere-prod -q "where name ~= 'VM Network.*'"
 
   # Output as JSON
   kubectl-mtv get inventory network vsphere-prod -o json`,
@@ -61,7 +61,7 @@ Use --query (-q) to filter results using TSL query syntax.`,
 	}
 
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
-	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-*' and cpuCount > 4\")")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount > 4\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
 	// Add completion for output format flag
@@ -91,7 +91,7 @@ or storage classes (OpenShift) available in the source provider.`,
   kubectl-mtv get inventory storage vsphere-prod
 
   # Filter storage by name pattern
-  kubectl-mtv get inventory storage ovirt-prod -q "where name ~= 'data*'"
+  kubectl-mtv get inventory storage ovirt-prod -q "where name ~= 'data.*'"
 
   # Output as YAML
   kubectl-mtv get inventory storage vsphere-prod -o yaml`,
@@ -122,7 +122,7 @@ or storage classes (OpenShift) available in the source provider.`,
 	}
 
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
-	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-*' and cpuCount > 4\")")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount > 4\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
 	// Add completion for output format flag
@@ -159,12 +159,15 @@ Query Language (TSL) Syntax:
   Structure: [SELECT fields] WHERE condition [ORDER BY field [ASC|DESC]] [LIMIT n]
 
   Comparison:     =  !=  <>  <  <=  >  >=
-  String match:   like (% wildcard), ilike (case-insensitive), ~= (regex), !~ (not regex)
+  Arithmetic:     +  -  *  /  %
+  String match:   like (% wildcard), ilike (case-insensitive), ~= (regex), ~! (not regex)
   Logical:        and, or, not
-  Set/range:      in ('val1','val2'), between X and Y
+  Set/range:      in ('val1','val2'), not in ('val1','val2'), between X and Y
   Null checks:    is null, is not null
-  Array funcs:    len(field), sum(field.sub), any field.sub > N, all field.sub >= N
-  Field access:   dot notation (e.g. parent.id, disks.datastore.id, guest.distribution)
+  Array funcs:    len(field), sum(field[*].sub), any field[*].sub > N, all field[*].sub >= N
+  Array access:   field[index], field[*] (wildcard), implicit field.sub traversal
+  SI units:       Ki, Mi, Gi, Ti, Pi suffixes for numeric literals (e.g. 4Gi = 4294967296)
+  Field access:   dot notation (e.g. parent.id, disks[*].datastore.id, guest.distribution)
 
   Discovering available fields:
     Inventory items are dynamic JSON from the provider. Field names vary by provider
@@ -198,28 +201,34 @@ Query Language (TSL) Syntax:
     Placement.AvailabilityZone, PublicIpAddress, PrivateIpAddress, VpcId, SubnetId
 
   Examples:
-    where name ~= 'prod-*'
+    where name ~= 'prod-.*'
     where powerState = 'poweredOn' and memoryMB > 4096       (vSphere)
     where status = 'up' and memory > 4294967296              (oVirt, memory in bytes)
     where isTemplate = false and firmware = 'efi'            (vSphere)
     where guestId ~= 'rhel.*' and storageUsed > 53687091200
     where len(disks) > 1 and cpuCount <= 8
+    where len(networks) = 2                                  (VMs with exactly 2 networks)
+    where len(disks) = 2 and len(nics) = 2                   (multi-disk, multi-NIC VMs)
     where name like '%web%' order by memoryMB desc limit 10
     where path ~= '/Production/.*'`,
 		Example: `  # List all VMs from a vSphere provider
   kubectl-mtv get inventory vm vsphere-prod
 
   # Filter VMs by name pattern
-  kubectl-mtv get inventory vm vsphere-prod -q "where name ~= 'web-*'"
+  kubectl-mtv get inventory vm vsphere-prod -q "where name ~= 'web-.*'"
 
   # Get VMs with more than 4 CPUs and 8GB memory
   kubectl-mtv get inventory vm vsphere-prod -q "where cpuCount > 4 and memoryMB > 8192"
+
+  # Find VMs with multiple disks or networks
+  kubectl-mtv get inventory vm vsphere-prod -q "where len(disks) = 2"
+  kubectl-mtv get inventory vm vsphere-prod -q "where len(networks) = 2"
 
   # Show extended VM details
   kubectl-mtv get inventory vm vsphere-prod --extended
 
   # Export VMs for plan creation
-  kubectl-mtv get inventory vm vsphere-prod -q "where name ~= 'prod-*'" -o planvms > vms.yaml
+  kubectl-mtv get inventory vm vsphere-prod -q "where name ~= 'prod-.*'" -o planvms > vms.yaml
   kubectl-mtv create plan my-migration --vms @vms.yaml`,
 		Args:              cobra.ExactArgs(1),
 		SilenceUsage:      true,
@@ -249,7 +258,7 @@ Query Language (TSL) Syntax:
 
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml, planvms)")
 	cmd.Flags().BoolVar(&extendedOutput, "extended", false, "Show extended output")
-	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-*' and cpuCount > 4\")")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount > 4\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
 	// Custom completion for inventory VM output format that includes planvms

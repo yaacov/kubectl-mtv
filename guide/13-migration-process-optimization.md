@@ -118,7 +118,7 @@ kubectl mtv create plan storage-optimized \
 kubectl mtv create plan nvme-conversion \
   --source vsphere-prod \
   --convertor-node-selector "storage=nvme,conversion=optimized" \
-  --vms "where sum disks.capacityGB > 500"
+  --vms "where sum disks[*].capacityGB > 500"
 
 # Local SSD for temporary conversion files
 kubectl mtv create plan local-ssd \
@@ -270,7 +270,7 @@ kubectl mtv create plan nvme-optimized \
   --convertor-affinity "REQUIRE pods(storage-controller=nvme) on node" \
   --convertor-labels "performance=extreme,storage=nvme" \
   --migration-type warm \
-  --vms "where sum disks.capacityGB > 1000"
+  --vms "where sum disks[*].capacityGB > 1000"
 
 # Results: Convertors use fastest available storage for temporary files
 ```
@@ -418,14 +418,14 @@ kubectl mtv create plan high-iops-conversion \
   --convertor-node-selector "iops=high,storage=dedicated" \
   --convertor-affinity "REQUIRE pods(storage=high-iops) on node" \
   --convertor-labels "iops=high,storage=performance" \
-  --vms "where any disks.iops > 10000"
+  --vms "where any disks[*].iops > 10000"
 
 # Sequential I/O optimization for large files
 kubectl mtv create plan sequential-io \
   --source vsphere-prod \
   --convertor-node-selector "io-pattern=sequential,throughput=high" \
   --convertor-labels "io=sequential,throughput=optimized" \
-  --vms "where any disks.capacityGB > 500"
+  --vms "where any disks[*].capacityGB > 500"
 ```
 
 ## Advanced Convertor Optimization Scenarios
