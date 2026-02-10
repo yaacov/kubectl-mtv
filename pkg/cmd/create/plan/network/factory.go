@@ -21,6 +21,7 @@ import (
 	openstackFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/openstack"
 	ovaFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/ova"
 	ovirtFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/ovirt"
+	hypervFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/hyperv"
 	vsphereFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/fetchers/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper"
 	ec2Mapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/ec2"
@@ -28,6 +29,7 @@ import (
 	openstackMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/openstack"
 	ovaMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/ova"
 	ovirtMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/ovirt"
+	hypervMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/hyperv"
 	vsphereMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/network/mapper/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
@@ -99,6 +101,9 @@ func GetSourceNetworkFetcher(ctx context.Context, configFlags *genericclioptions
 	case "ovirt":
 		klog.V(4).Infof("DEBUG: Using oVirt source network fetcher for %s", providerName)
 		return ovirtFetcher.NewOvirtNetworkFetcher(), nil
+	case "hyperv":
+		klog.V(4).Infof("DEBUG: Using HyperV source network fetcher for %s", providerName)
+		return hypervFetcher.NewHyperVNetworkFetcher(), nil
 	default:
 		return nil, fmt.Errorf("unsupported source provider type: %s", providerType)
 	}
@@ -139,6 +144,9 @@ func GetTargetNetworkFetcher(ctx context.Context, configFlags *genericclioptions
 	case "ovirt":
 		klog.V(4).Infof("DEBUG: Using oVirt target network fetcher for %s", providerName)
 		return ovirtFetcher.NewOvirtNetworkFetcher(), nil
+	case "hyperv":
+		klog.V(4).Infof("DEBUG: Using HyperV target network fetcher for %s", providerName)
+		return hypervFetcher.NewHyperVNetworkFetcher(), nil
 	default:
 		return nil, fmt.Errorf("unsupported target provider type: %s", providerType)
 	}
@@ -194,6 +202,9 @@ func GetNetworkMapper(ctx context.Context, configFlags *genericclioptions.Config
 	case "ovirt":
 		klog.V(4).Infof("DEBUG: Using oVirt network mapper for source %s", sourceProviderName)
 		return ovirtMapper.NewOvirtNetworkMapper(), sourceProviderType, targetProviderType, nil
+	case "hyperv":
+		klog.V(4).Infof("DEBUG: Using HyperV network mapper for source %s", sourceProviderName)
+		return hypervMapper.NewHyperVNetworkMapper(), sourceProviderType, targetProviderType, nil
 	default:
 		return nil, "", "", fmt.Errorf("unsupported source provider type: %s", sourceProviderType)
 	}

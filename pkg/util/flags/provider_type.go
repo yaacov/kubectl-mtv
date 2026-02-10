@@ -2,9 +2,30 @@ package flags
 
 import (
 	"fmt"
+	"strings"
 
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 )
+
+// staticProviderTypes is the single source of truth for built-in provider types.
+var staticProviderTypes = []forkliftv1beta1.ProviderType{
+	forkliftv1beta1.OpenShift,
+	forkliftv1beta1.VSphere,
+	forkliftv1beta1.OVirt,
+	forkliftv1beta1.OpenStack,
+	forkliftv1beta1.Ova,
+	forkliftv1beta1.HyperV,
+	forkliftv1beta1.EC2,
+}
+
+// staticProviderTypeStrings returns the string representations of static provider types.
+func staticProviderTypeStrings() []string {
+	strs := make([]string, len(staticProviderTypes))
+	for i, t := range staticProviderTypes {
+		strs[i] = string(t)
+	}
+	return strs
+}
 
 // ProviderTypeFlag implements pflag.Value interface for provider type validation
 type ProviderTypeFlag struct {
@@ -17,20 +38,9 @@ func (p *ProviderTypeFlag) String() string {
 }
 
 func (p *ProviderTypeFlag) Set(value string) error {
-	// Static provider types
-	staticTypes := []forkliftv1beta1.ProviderType{
-		forkliftv1beta1.OpenShift,
-		forkliftv1beta1.VSphere,
-		forkliftv1beta1.OVirt,
-		forkliftv1beta1.OpenStack,
-		forkliftv1beta1.Ova,
-		"hyperv",
-		"ec2",
-	}
-
 	// Check static types
 	isValid := false
-	for _, validType := range staticTypes {
+	for _, validType := range staticProviderTypes {
 		if forkliftv1beta1.ProviderType(value) == validType {
 			isValid = true
 			break
@@ -48,27 +58,15 @@ func (p *ProviderTypeFlag) Set(value string) error {
 	}
 
 	if !isValid {
-		validTypesStr := "openshift, vsphere, ovirt, openstack, ova, hyperv, ec2"
+		validTypesStr := strings.Join(staticProviderTypeStrings(), ", ")
 		if len(p.dynamicTypes) > 0 {
-			validTypesStr = fmt.Sprintf("%s, %s", validTypesStr, joinStrings(p.dynamicTypes, ", "))
+			validTypesStr = fmt.Sprintf("%s, %s", validTypesStr, strings.Join(p.dynamicTypes, ", "))
 		}
 		return fmt.Errorf("invalid provider type: %s. Valid types are: %s", value, validTypesStr)
 	}
 
 	p.value = value
 	return nil
-}
-
-// joinStrings joins a slice of strings with a separator
-func joinStrings(strs []string, sep string) string {
-	if len(strs) == 0 {
-		return ""
-	}
-	result := strs[0]
-	for i := 1; i < len(strs); i++ {
-		result += sep + strs[i]
-	}
-	return result
 }
 
 func (p *ProviderTypeFlag) Type() string {
@@ -82,11 +80,11 @@ func (p *ProviderTypeFlag) GetValue() string {
 
 // GetValidValues returns all valid provider type values for auto-completion
 func (p *ProviderTypeFlag) GetValidValues() []string {
-	staticTypes := []string{"openshift", "vsphere", "ovirt", "openstack", "ova", "hyperv", "ec2"}
+	staticStrs := staticProviderTypeStrings()
 
 	// Combine static and dynamic types
-	allTypes := make([]string, 0, len(staticTypes)+len(p.dynamicTypes))
-	allTypes = append(allTypes, staticTypes...)
+	allTypes := make([]string, 0, len(staticStrs)+len(p.dynamicTypes))
+	allTypes = append(allTypes, staticStrs...)
 	allTypes = append(allTypes, p.dynamicTypes...)
 
 	return allTypes

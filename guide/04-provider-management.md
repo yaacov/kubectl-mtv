@@ -10,7 +10,7 @@ For detailed information about provider prerequisites and requirements, see the 
 ## Overview of Providers
 
 Providers define the connection and authentication details for virtualization platforms. Each migration requires:
-- **Source Provider**: Your current virtualization platform (vSphere, oVirt, OpenStack, KubeVirt, or OVA)
+- **Source Provider**: Your current virtualization platform (vSphere, oVirt, OpenStack, KubeVirt, OVA, or HyperV)
 - **Target Provider**: Your destination KubeVirt cluster (typically OpenShift/Kubernetes)
 
 ### Supported Provider Types
@@ -24,6 +24,7 @@ kubectl-mtv supports the following provider types:
 | `ovirt` | oVirt/Red Hat Virtualization | Source provider for oVirt/RHV environments |
 | `openstack` | OpenStack platforms | Source provider for OpenStack environments |
 | `ec2` | Amazon EC2 | Source provider for AWS environments |
+| `hyperv` | Microsoft Hyper-V | Source provider for Hyper-V environments |
 | `ova` | OVA/OVF files | Source provider for VM image files |
 
 ## Listing, Describing, and Deleting Providers
@@ -280,6 +281,61 @@ kubectl mtv create provider datacenter-ova --type ova \
   --url 192.168.1.100:/exports/vm-images
 ```
 
+
+### HyperV Provider
+
+Create providers for Microsoft Hyper-V environments. HyperV providers require an SMB share URL for VM disk access.
+
+```bash
+# Basic HyperV provider
+kubectl mtv create provider my-hyperv --type hyperv \
+  --url https://192.168.1.100 \
+  --username Administrator \
+  --password YourSecurePassword \
+  --smb-url '//192.168.1.100/VMShare'
+
+# HyperV provider with separate SMB credentials
+kubectl mtv create provider my-hyperv --type hyperv \
+  --url https://192.168.1.100 \
+  --username Administrator \
+  --password YourSecurePassword \
+  --smb-url '//192.168.1.100/VMShare' \
+  --smb-user smbuser \
+  --smb-password SmbPassword123
+
+# HyperV provider with TLS verification disabled
+kubectl mtv create provider my-hyperv --type hyperv \
+  --url https://192.168.1.100 \
+  --username Administrator \
+  --password YourSecurePassword \
+  --smb-url '//192.168.1.100/VMShare' \
+  --provider-insecure-skip-tls
+
+# HyperV provider with CA certificate
+kubectl mtv create provider my-hyperv --type hyperv \
+  --url https://192.168.1.100 \
+  --username Administrator \
+  --password YourSecurePassword \
+  --smb-url '//192.168.1.100/VMShare' \
+  --cacert @/path/to/ca-certificate.pem
+
+# HyperV provider with inline CA certificate
+kubectl mtv create provider my-hyperv --type hyperv \
+  --url https://192.168.1.100 \
+  --username Administrator \
+  --password YourSecurePassword \
+  --smb-url '//192.168.1.100/VMShare' \
+  --cacert "-----BEGIN CERTIFICATE-----
+MIIGBzCCA++gAwIBAgIJAKt...
+-----END CERTIFICATE-----"
+```
+
+**HyperV Provider Settings**:
+- `--url`: HyperV host IP or URL (e.g., `https://192.168.1.100`)
+- `--smb-url`: Required SMB share path for VM disk access (e.g., `//server/share`)
+- `--smb-user`: Optional separate SMB username (defaults to HyperV username)
+- `--smb-password`: Optional separate SMB password (defaults to HyperV password)
+
 ### Using Environment Variables
 
 You can use the `MTV_VDDK_INIT_IMAGE` environment variable to set a default VDDK image:
@@ -374,6 +430,17 @@ kubectl mtv patch provider ec2-prod \
   --username NEW_ACCESS_KEY_ID \
   --password NEW_SECRET_ACCESS_KEY \
   --region eu-west-1
+
+# Update HyperV credentials
+kubectl mtv patch provider my-hyperv \
+  --username NewAdmin \
+  --password NewPassword
+
+# Update HyperV SMB share URL and credentials
+kubectl mtv patch provider my-hyperv \
+  --smb-url '//new-server/share' \
+  --smb-user new-smb-user \
+  --smb-password NewSmbPassword
 ```
 
 **Note**: Use `--region` as a convenient alias that works for both `--provider-region-name` (OpenStack) and `--ec2-region` (EC2).

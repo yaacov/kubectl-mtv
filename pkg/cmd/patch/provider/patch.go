@@ -54,6 +54,11 @@ type PatchProviderOptions struct {
 	EC2TargetAccessKeyID  string
 	EC2TargetSecretKey    string
 	AutoTargetCredentials bool
+
+	// HyperV settings
+	SMBUrl      string
+	SMBUser     string
+	SMBPassword string
 }
 
 // PatchProvider patches an existing provider
@@ -99,7 +104,8 @@ func PatchProvider(opts PatchProviderOptions) error {
 	// Note: AutoTargetCredentials for EC2 providers will populate EC2TargetAccessKeyID and EC2TargetSecretKey above
 	needsCredentialUpdate := opts.Username != "" || opts.Password != "" || opts.Token != "" || opts.CACert != "" ||
 		opts.DomainName != "" || opts.ProjectName != "" || opts.RegionName != "" || opts.EC2Region != "" ||
-		opts.EC2TargetAccessKeyID != "" || opts.EC2TargetSecretKey != "" || opts.InsecureSkipTLSChanged
+		opts.EC2TargetAccessKeyID != "" || opts.EC2TargetSecretKey != "" || opts.InsecureSkipTLSChanged ||
+		opts.SMBUrl != "" || opts.SMBUser != "" || opts.SMBPassword != ""
 
 	// Get and validate secret ownership if credentials need updating
 	var secret *corev1.Secret
@@ -191,10 +197,7 @@ func PatchProvider(opts PatchProviderOptions) error {
 	// Update credentials if provided and secret is owned by provider
 	secretUpdated := false
 	if needsCredentialUpdate && secret != nil {
-		secretUpdated, err = updateSecretCredentials(opts.ConfigFlags, secret, providerType,
-			opts.Username, opts.Password, opts.CACert, opts.Token, opts.DomainName, opts.ProjectName, opts.RegionName,
-			opts.EC2Region, opts.EC2TargetAccessKeyID, opts.EC2TargetSecretKey,
-			opts.InsecureSkipTLS, opts.InsecureSkipTLSChanged)
+		secretUpdated, err = updateSecretCredentials(opts.ConfigFlags, secret, providerType, opts)
 		if err != nil {
 			return fmt.Errorf("failed to update credentials: %v", err)
 		}
@@ -296,10 +299,7 @@ func getAndValidateSecret(configFlags *genericclioptions.ConfigFlags, provider *
 }
 
 // updateSecretCredentials updates the secret with new credential values
-func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret *corev1.Secret, providerType string,
-	username, password, cacert, token, domainName, projectName, regionName, ec2Region, ec2TargetAccessKeyID, ec2TargetSecretKey string,
-	insecureSkipTLS, insecureSkipTLSChanged bool) (bool, error) {
-
+func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret *corev1.Secret, providerType string, opts PatchProviderOptions) (bool, error) {
 	updated := false
 
 	if secret.Data == nil {
@@ -307,95 +307,120 @@ func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret 
 	}
 
 	// Update credentials based on provider type
-
 	switch providerType {
 	case "openshift":
-		if token != "" {
-			secret.Data["token"] = []byte(token)
+		if opts.Token != "" {
+			secret.Data["token"] = []byte(opts.Token)
 			klog.V(2).Infof("Updated OpenShift token")
 			updated = true
 		}
 	case "vsphere", "ovirt", "ova":
-		if username != "" {
-			secret.Data["user"] = []byte(username)
+		if opts.Username != "" {
+			secret.Data["user"] = []byte(opts.Username)
 			klog.V(2).Infof("Updated username")
 			updated = true
 		}
-		if password != "" {
-			secret.Data["password"] = []byte(password)
+		if opts.Password != "" {
+			secret.Data["password"] = []byte(opts.Password)
 			klog.V(2).Infof("Updated password")
 			updated = true
 		}
 	case "openstack":
-		if username != "" {
-			secret.Data["username"] = []byte(username)
+		if opts.Username != "" {
+			secret.Data["username"] = []byte(opts.Username)
 			klog.V(2).Infof("Updated OpenStack username")
 			updated = true
 		}
-		if password != "" {
-			secret.Data["password"] = []byte(password)
+		if opts.Password != "" {
+			secret.Data["password"] = []byte(opts.Password)
 			klog.V(2).Infof("Updated OpenStack password")
 			updated = true
 		}
-		if domainName != "" {
-			secret.Data["domainName"] = []byte(domainName)
+		if opts.DomainName != "" {
+			secret.Data["domainName"] = []byte(opts.DomainName)
 			klog.V(2).Infof("Updated OpenStack domain name")
 			updated = true
 		}
-		if projectName != "" {
-			secret.Data["projectName"] = []byte(projectName)
+		if opts.ProjectName != "" {
+			secret.Data["projectName"] = []byte(opts.ProjectName)
 			klog.V(2).Infof("Updated OpenStack project name")
 			updated = true
 		}
-		if regionName != "" {
-			secret.Data["regionName"] = []byte(regionName)
+		if opts.RegionName != "" {
+			secret.Data["regionName"] = []byte(opts.RegionName)
 			klog.V(2).Infof("Updated OpenStack region name")
 			updated = true
 		}
 	case "ec2":
-		if username != "" {
-			secret.Data["accessKeyId"] = []byte(username)
+		if opts.Username != "" {
+			secret.Data["accessKeyId"] = []byte(opts.Username)
 			klog.V(2).Infof("Updated EC2 access key ID")
 			updated = true
 		}
-		if password != "" {
-			secret.Data["secretAccessKey"] = []byte(password)
+		if opts.Password != "" {
+			secret.Data["secretAccessKey"] = []byte(opts.Password)
 			klog.V(2).Infof("Updated EC2 secret access key")
 			updated = true
 		}
-		if ec2Region != "" {
-			secret.Data["region"] = []byte(ec2Region)
+		if opts.EC2Region != "" {
+			secret.Data["region"] = []byte(opts.EC2Region)
 			klog.V(2).Infof("Updated EC2 region")
 			updated = true
 		}
-		if ec2TargetAccessKeyID != "" {
-			secret.Data["targetAccessKeyId"] = []byte(ec2TargetAccessKeyID)
+		if opts.EC2TargetAccessKeyID != "" {
+			secret.Data["targetAccessKeyId"] = []byte(opts.EC2TargetAccessKeyID)
 			klog.V(2).Infof("Updated EC2 target account access key ID (cross-account)")
 			updated = true
 		}
-		if ec2TargetSecretKey != "" {
-			secret.Data["targetSecretAccessKey"] = []byte(ec2TargetSecretKey)
+		if opts.EC2TargetSecretKey != "" {
+			secret.Data["targetSecretAccessKey"] = []byte(opts.EC2TargetSecretKey)
 			klog.V(2).Infof("Updated EC2 target account secret access key (cross-account)")
+			updated = true
+		}
+	case "hyperv":
+		if opts.Username != "" {
+			secret.Data["username"] = []byte(opts.Username)
+			klog.V(2).Infof("Updated HyperV username")
+			updated = true
+		}
+		if opts.Password != "" {
+			secret.Data["password"] = []byte(opts.Password)
+			klog.V(2).Infof("Updated HyperV password")
+			updated = true
+		}
+		if opts.SMBUrl != "" {
+			secret.Data["smbUrl"] = []byte(opts.SMBUrl)
+			klog.V(2).Infof("Updated HyperV SMB URL")
+			updated = true
+		}
+		if opts.SMBUser != "" {
+			secret.Data["smbUser"] = []byte(opts.SMBUser)
+			klog.V(2).Infof("Updated HyperV SMB username")
+			updated = true
+		}
+		if opts.SMBPassword != "" {
+			secret.Data["smbPassword"] = []byte(opts.SMBPassword)
+			klog.V(2).Infof("Updated HyperV SMB password")
 			updated = true
 		}
 	}
 
 	// Update CA certificate for all types (if applicable)
-	if cacert != "" {
-		secret.Data["cacert"] = []byte(cacert)
+	if opts.CACert != "" {
+		secret.Data["cacert"] = []byte(opts.CACert)
 		klog.V(2).Infof("Updated CA certificate")
 		updated = true
 	}
 
 	// Update insecureSkipVerify for all types (if changed)
-	if insecureSkipTLSChanged {
-		if insecureSkipTLS {
+	if opts.InsecureSkipTLSChanged {
+		if opts.InsecureSkipTLS {
 			secret.Data["insecureSkipVerify"] = []byte("true")
 		} else {
 			// Remove the key if insecureSkipTLS is false
 			delete(secret.Data, "insecureSkipVerify")
 		}
-		klog.V(2).Infof("Updated insecureSkipVerify to %t", insecureSkipTLS)
+		klog.V(2).Infof("Updated insecureSkipVerify to %t", opts.InsecureSkipTLS)
 		updated = true
 	}
 
