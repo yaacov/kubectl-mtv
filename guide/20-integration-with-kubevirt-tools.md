@@ -785,4 +785,4 @@ This complete toolchain enables organizations to migrate from traditional virtua
 ---
 
 *Previous: [Chapter 19: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/19-model-context-protocol-mcp-server-integration)*  
-*Next: [Chapter 21: Command Reference](/kubectl-mtv/21-command-reference)*
+*Next: [Chapter 21: System Health Checks](/kubectl-mtv/21-system-health-checks)*
