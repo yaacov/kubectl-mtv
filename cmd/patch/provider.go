@@ -79,6 +79,11 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	cmd.Flags().StringVar(&opts.RegionName, "provider-region-name", "", "OpenStack region name "+flags.ProvidersOpenStack)
 	cmd.Flags().StringVar(&opts.RegionName, "region", "", "Region name (alias for --provider-region-name) "+flags.ProviderHint("openstack", "ec2"))
 
+	// HyperV specific flags
+	cmd.Flags().StringVar(&opts.SMBUrl, "smb-url", "", "SMB share URL for HyperV (e.g., //server/share) "+flags.ProvidersHyperV)
+	cmd.Flags().StringVar(&opts.SMBUser, "smb-user", "", "SMB username (defaults to HyperV username) "+flags.ProvidersHyperV)
+	cmd.Flags().StringVar(&opts.SMBPassword, "smb-password", "", "SMB password (defaults to HyperV password) "+flags.ProvidersHyperV)
+
 	// EC2 specific flags
 	cmd.Flags().StringVar(&opts.EC2Region, "ec2-region", "", "AWS region where source EC2 instances are located "+flags.ProvidersEC2)
 	cmd.Flags().StringVar(&opts.EC2TargetRegion, "target-region", "", "Target region for migrations (defaults to provider region) "+flags.ProvidersEC2)

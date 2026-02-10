@@ -11,21 +11,42 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/providerutil"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 )
 
 // Helper function to create a HyperV secret
-func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName, username, password string) (*corev1.Secret, error) {
+func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName string, options providerutil.ProviderOptions) (*corev1.Secret, error) {
 	// Get the Kubernetes client using configFlags
 	k8sClient, err := client.GetKubernetesClientset(configFlags)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kubernetes client: %v", err)
 	}
 
+	// Validate required credentials
+	if options.Username == "" || options.Password == "" {
+		return nil, fmt.Errorf("username and password are required for HyperV provider")
+	}
+
 	// Create secret data without base64 encoding (the API handles this automatically)
 	secretData := map[string][]byte{
-		"username": []byte(username),
-		"password": []byte(password),
+		"username": []byte(options.Username),
+		"password": []byte(options.Password),
+	}
+	if options.SMBUrl != "" {
+		secretData["smbUrl"] = []byte(options.SMBUrl)
+	}
+	if options.SMBUser != "" {
+		secretData["smbUser"] = []byte(options.SMBUser)
+	}
+	if options.SMBPassword != "" {
+		secretData["smbPassword"] = []byte(options.SMBPassword)
+	}
+	if options.InsecureSkipTLS {
+		secretData["insecureSkipVerify"] = []byte("true")
+	}
+	if options.CACert != "" {
+		secretData["cacert"] = []byte(options.CACert)
 	}
 
 	// Generate a name prefix for the secret

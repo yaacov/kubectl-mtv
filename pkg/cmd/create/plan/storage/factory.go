@@ -21,6 +21,7 @@ import (
 	openstackFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/openstack"
 	ovaFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/ova"
 	ovirtFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/ovirt"
+	hypervFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/hyperv"
 	vsphereFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper"
 	ec2Mapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/ec2"
@@ -28,6 +29,7 @@ import (
 	openstackMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/openstack"
 	ovaMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/ova"
 	ovirtMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/ovirt"
+	hypervMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/hyperv"
 	vsphereMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
@@ -230,6 +232,9 @@ func GetSourceStorageFetcher(ctx context.Context, configFlags *genericclioptions
 	case "ovirt":
 		klog.V(4).Infof("DEBUG: Using oVirt source storage fetcher for %s", providerName)
 		return ovirtFetcher.NewOvirtStorageFetcher(), nil
+	case "hyperv":
+		klog.V(4).Infof("DEBUG: Using HyperV source storage fetcher for %s", providerName)
+		return hypervFetcher.NewHyperVStorageFetcher(), nil
 	default:
 		return nil, fmt.Errorf("unsupported source provider type: %s", providerType)
 	}
@@ -275,6 +280,9 @@ func GetTargetStorageFetcher(ctx context.Context, configFlags *genericclioptions
 	case "ovirt":
 		klog.V(4).Infof("DEBUG: Using oVirt target storage fetcher for %s", providerName)
 		return ovirtFetcher.NewOvirtStorageFetcher(), nil
+	case "hyperv":
+		klog.V(4).Infof("DEBUG: Using HyperV target storage fetcher for %s", providerName)
+		return hypervFetcher.NewHyperVStorageFetcher(), nil
 	default:
 		return nil, fmt.Errorf("unsupported target provider type: %s", providerType)
 	}
@@ -331,6 +339,9 @@ func GetStorageMapper(ctx context.Context, configFlags *genericclioptions.Config
 	case "ovirt":
 		klog.V(4).Infof("DEBUG: Using oVirt storage mapper for source %s", sourceProviderName)
 		return ovirtMapper.NewOvirtStorageMapper(), sourceProviderType, targetProviderType, nil
+	case "hyperv":
+		klog.V(4).Infof("DEBUG: Using HyperV storage mapper for source %s", sourceProviderName)
+		return hypervMapper.NewHyperVStorageMapper(), sourceProviderType, targetProviderType, nil
 	default:
 		return nil, "", "", fmt.Errorf("unsupported source provider type: %s", sourceProviderType)
 	}

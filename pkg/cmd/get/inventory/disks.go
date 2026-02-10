@@ -49,6 +49,13 @@ func listDisksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Confi
 			{DisplayName: "SIZE", JSONPath: "sizeHuman"},
 			{DisplayName: "VM-COUNT", JSONPath: "vmCount"},
 		}
+	case "hyperv":
+		defaultHeaders = []output.Header{
+			{DisplayName: "NAME", JSONPath: "name"},
+			{DisplayName: "ID", JSONPath: "id"},
+			{DisplayName: "SIZE", JSONPath: "provisionedSizeHuman"},
+			{DisplayName: "PATH", JSONPath: "filePath"},
+		}
 	default:
 		defaultHeaders = []output.Header{
 			{DisplayName: "NAME", JSONPath: "name"},
@@ -70,6 +77,8 @@ func listDisksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Confi
 		data, err = providerClient.GetVolumes(ctx, 4)
 	case "ova":
 		data, err = providerClient.GetOVAFiles(ctx, 4)
+	case "hyperv":
+		data, err = providerClient.GetDisks(ctx, 4)
 	default:
 		return fmt.Errorf("provider type '%s' does not support disk inventory", providerType)
 	}
@@ -78,8 +87,8 @@ func listDisksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Confi
 		return fmt.Errorf("failed to get disks from provider: %v", err)
 	}
 
-	// Process data to add human-readable sizes for oVirt
-	if providerType == "ovirt" {
+	// Process data to add human-readable sizes for oVirt and HyperV
+	if providerType == "ovirt" || providerType == "hyperv" {
 		data = addHumanReadableSizes(data)
 	}
 

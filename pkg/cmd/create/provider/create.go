@@ -19,41 +19,11 @@ import (
 )
 
 // Create creates a new provider
-func Create(configFlags *genericclioptions.ConfigFlags, providerType, name, namespace, secret string,
-	url, username, password, cacert string, insecureSkipTLS bool, vddkInitImage, sdkEndpoint string, token string,
-	domainName, projectName, regionName string, useVddkAioOptimization bool, vddkBufSizeIn64K, vddkBufCount int,
-	ec2Region, ec2TargetRegion, ec2TargetAZ, ec2TargetAccessKeyID, ec2TargetSecretKey string, autoTargetCredentials bool) error {
+func Create(configFlags *genericclioptions.ConfigFlags, providerType string, options providerutil.ProviderOptions) error {
 	// For EC2 provider, use regionName (from --provider-region-name) if ec2Region is empty
 	// This allows using --provider-region-name for EC2 regions as shown in documentation
-	if providerType == "ec2" && ec2Region == "" && regionName != "" {
-		ec2Region = regionName
-	}
-
-	// Create provider options
-	options := providerutil.ProviderOptions{
-		Name:                   name,
-		Namespace:              namespace,
-		Secret:                 secret,
-		URL:                    url,
-		Username:               username,
-		Password:               password,
-		CACert:                 cacert,
-		InsecureSkipTLS:        insecureSkipTLS,
-		VddkInitImage:          vddkInitImage,
-		SdkEndpoint:            sdkEndpoint,
-		Token:                  token,
-		DomainName:             domainName,
-		ProjectName:            projectName,
-		RegionName:             regionName,
-		UseVddkAioOptimization: useVddkAioOptimization,
-		VddkBufSizeIn64K:       vddkBufSizeIn64K,
-		VddkBufCount:           vddkBufCount,
-		EC2Region:              ec2Region,
-		EC2TargetRegion:        ec2TargetRegion,
-		EC2TargetAZ:            ec2TargetAZ,
-		EC2TargetAccessKeyID:   ec2TargetAccessKeyID,
-		EC2TargetSecretKey:     ec2TargetSecretKey,
-		AutoTargetCredentials:  autoTargetCredentials,
+	if providerType == "ec2" && options.EC2Region == "" && options.RegionName != "" {
+		options.EC2Region = options.RegionName
 	}
 
 	var providerResource *forkliftv1beta1.Provider

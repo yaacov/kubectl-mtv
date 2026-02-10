@@ -8,6 +8,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/providerutil"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
@@ -35,6 +36,9 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	var ec2TargetAccessKeyID, ec2TargetSecretKey string
 	var autoTargetCredentials bool
 
+	// HyperV specific flags
+	var smbUrl, smbUser, smbPassword string
+
 	// Check if MTV_VDDK_INIT_IMAGE environment variable is set
 	if envVddkInitImage := os.Getenv("MTV_VDDK_INIT_IMAGE"); envVddkInitImage != "" {
 		vddkInitImage = envVddkInitImage
@@ -52,6 +56,7 @@ Providers represent source or target environments for VM migrations. Supported t
   - ova: OVA files from NFS share
   - openshift: Target OpenShift cluster (usually named 'host')
   - ec2: Amazon EC2 instances
+  - hyperv: Microsoft Hyper-V
 
 Credentials can be provided directly via flags or through an existing Kubernetes secret.`,
 		Example: `  # Create a vSphere provider
@@ -82,7 +87,15 @@ Credentials can be provided directly via flags or through an existing Kubernetes
     --username admin \
     --password 'secret' \
     --provider-domain-name Default \
-    --provider-project-name admin`,
+    --provider-project-name admin
+
+  # Create a HyperV provider
+  kubectl-mtv create provider my-hyperv \
+    --type hyperv \
+    --url https://192.168.1.100 \
+    --username Administrator \
+    --password 'MyPassword' \
+    --smb-url '//192.168.1.100/VMShare'`,
 		Args:         cobra.ExactArgs(1),
 		SilenceUsage: true,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -116,14 +129,40 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 				cacert = string(fileContent)
 			}
 
-			return provider.Create(kubeConfigFlags, providerType.GetValue(), name, namespace, secret,
-				url, username, password, cacert, insecureSkipTLS, vddkInitImage, sdkEndpointType.GetValue(), token,
-				domainName, projectName, regionName, useVddkAioOptimization, vddkBufSizeIn64K, vddkBufCount,
-				ec2Region, ec2TargetRegion, ec2TargetAZ, ec2TargetAccessKeyID, ec2TargetSecretKey, autoTargetCredentials)
+			options := providerutil.ProviderOptions{
+				Name:                   name,
+				Namespace:              namespace,
+				Secret:                 secret,
+				URL:                    url,
+				Username:               username,
+				Password:               password,
+				CACert:                 cacert,
+				InsecureSkipTLS:        insecureSkipTLS,
+				VddkInitImage:          vddkInitImage,
+				SdkEndpoint:            sdkEndpointType.GetValue(),
+				Token:                  token,
+				DomainName:             domainName,
+				ProjectName:            projectName,
+				RegionName:             regionName,
+				UseVddkAioOptimization: useVddkAioOptimization,
+				VddkBufSizeIn64K:       vddkBufSizeIn64K,
+				VddkBufCount:           vddkBufCount,
+				EC2Region:              ec2Region,
+				EC2TargetRegion:        ec2TargetRegion,
+				EC2TargetAZ:            ec2TargetAZ,
+				EC2TargetAccessKeyID:   ec2TargetAccessKeyID,
+				EC2TargetSecretKey:     ec2TargetSecretKey,
+				AutoTargetCredentials:  autoTargetCredentials,
+				SMBUrl:                 smbUrl,
+				SMBUser:                smbUser,
+				SMBPassword:            smbPassword,
+			}
+
+			return provider.Create(kubeConfigFlags, providerType.GetValue(), options)
 		},
 	}
 
-	cmd.Flags().VarP(providerType, "type", "t", "Provider type (openshift, vsphere, ovirt, openstack, ova, ec2)")
+	cmd.Flags().VarP(providerType, "type", "t", "Provider type (openshift, vsphere, ovirt, openstack, ova, ec2, hyperv)")
 	cmd.Flags().StringVar(&secret, "secret", "", "Secret containing provider credentials")
 
 	// Provider credential flags
@@ -156,6 +195,11 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 	cmd.Flags().StringVar(&ec2TargetAccessKeyID, "target-access-key-id", "", "Target AWS account access key ID (for cross-account migrations) "+flags.ProvidersEC2)
 	cmd.Flags().StringVar(&ec2TargetSecretKey, "target-secret-access-key", "", "Target AWS account secret access key (for cross-account migrations) "+flags.ProvidersEC2)
 	cmd.Flags().BoolVar(&autoTargetCredentials, "auto-target-credentials", false, "Automatically fetch target AWS credentials from cluster and target-az from worker nodes "+flags.ProvidersEC2)
+
+	// HyperV specific flags
+	cmd.Flags().StringVar(&smbUrl, "smb-url", "", "SMB share URL for HyperV (e.g., //server/share) "+flags.ProvidersHyperV)
+	cmd.Flags().StringVar(&smbUser, "smb-user", "", "SMB username (defaults to HyperV username) "+flags.ProvidersHyperV)
+	cmd.Flags().StringVar(&smbPassword, "smb-password", "", "SMB password (defaults to HyperV password) "+flags.ProvidersHyperV)
 
 	// Add completion for provider type flag
 	if err := cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

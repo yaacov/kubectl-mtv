@@ -25,13 +25,21 @@ func validateProviderOptions(options providerutil.ProviderOptions) error {
 		return fmt.Errorf("provider namespace is required")
 	}
 	if options.URL == "" {
-		return fmt.Errorf("provider URL is required (SMB share path like //server/share)")
+		return fmt.Errorf("provider URL is required (HyperV host IP or URL, e.g. 192.168.1.100)")
 	}
-	if options.Username == "" {
-		return fmt.Errorf("username is required for HyperV provider")
+	if options.SMBUrl == "" {
+		return fmt.Errorf("--smb-url is required for HyperV provider (SMB share path, e.g. //server/share)")
 	}
-	if options.Password == "" {
-		return fmt.Errorf("password is required for HyperV provider")
+	if options.Secret == "" {
+		if options.Username == "" {
+			return fmt.Errorf("username is required for HyperV provider")
+		}
+		if options.Password == "" {
+			return fmt.Errorf("password is required for HyperV provider")
+		}
+	}
+	if options.Secret != "" && (options.Username != "" || options.Password != "") {
+		return fmt.Errorf("if a secret is provided, username and password should not be specified")
 	}
 
 	return nil
@@ -112,7 +120,7 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 
 	if options.Secret == "" {
 		// Create a new secret if none is provided
-		createdSecret, err = createSecret(configFlags, options.Namespace, options.Name, options.Username, options.Password)
+		createdSecret, err = createSecret(configFlags, options.Namespace, options.Name, options)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create HyperV secret: %v", err)
 		}
