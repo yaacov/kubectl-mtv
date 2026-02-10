@@ -1,8 +1,56 @@
 package discovery
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 )
+
+// testdataPath returns the path to the help_machine_output.json fixture
+// located in the testdata/ directory alongside this test file.
+func testdataPath() string {
+	_, thisFile, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(thisFile), "testdata", "help_machine_output.json")
+}
+
+// loadRealRegistry loads a Registry from the real help_machine_output.json file.
+// It skips the test if the file is not available.
+func loadRealRegistry(t *testing.T) *Registry {
+	t.Helper()
+
+	data, err := os.ReadFile(testdataPath())
+	if err != nil {
+		t.Skipf("Skipping: could not read help_machine_output.json: %v", err)
+	}
+
+	var schema HelpSchema
+	if err := json.Unmarshal(data, &schema); err != nil {
+		t.Fatalf("Failed to parse help_machine_output.json: %v", err)
+	}
+
+	registry := &Registry{
+		ReadOnly:        make(map[string]*Command),
+		ReadWrite:       make(map[string]*Command),
+		GlobalFlags:     schema.GlobalFlags,
+		RootDescription: schema.Description,
+	}
+
+	for i := range schema.Commands {
+		cmd := &schema.Commands[i]
+		pathKey := cmd.PathKey()
+		switch cmd.Category {
+		case "read":
+			registry.ReadOnly[pathKey] = cmd
+		default:
+			registry.ReadWrite[pathKey] = cmd
+		}
+	}
+
+	return registry
+}
 
 func TestCommand_PathKey(t *testing.T) {
 	tests := []struct {
@@ -399,7 +447,7 @@ func TestFormatUsageShort(t *testing.T) {
 	}
 }
 
-func TestRegistry_GenerateReadOnlyDescription(t *testing.T) {
+func TestRegistry_GenerateReadOnlyDescription_Synthetic(t *testing.T) {
 	registry := &Registry{
 		ReadOnly: map[string]*Command{
 			"get/plan": {
@@ -415,19 +463,18 @@ func TestRegistry_GenerateReadOnlyDescription(t *testing.T) {
 
 	result := registry.GenerateReadOnlyDescription()
 
-	// Check that it contains expected content
-	if !contains(result, "read-only") {
+	if !strings.Contains(result, "read-only") {
 		t.Error("Description should mention read-only")
 	}
-	if !contains(result, "get plan [NAME]") {
+	if !strings.Contains(result, "get plan [NAME]") {
 		t.Error("Description should include command with args")
 	}
-	if !contains(result, "Get migration plans") {
+	if !strings.Contains(result, "Get migration plans") {
 		t.Error("Description should include command description")
 	}
 }
 
-func TestRegistry_GenerateReadWriteDescription(t *testing.T) {
+func TestRegistry_GenerateReadWriteDescription_Synthetic(t *testing.T) {
 	registry := &Registry{
 		ReadOnly: map[string]*Command{},
 		ReadWrite: map[string]*Command{
@@ -443,28 +490,308 @@ func TestRegistry_GenerateReadWriteDescription(t *testing.T) {
 
 	result := registry.GenerateReadWriteDescription()
 
-	// Check that it contains expected content
-	if !contains(result, "WARNING") {
+	if !strings.Contains(result, "WARNING") {
 		t.Error("Description should include WARNING")
 	}
-	if !contains(result, "create plan NAME") {
+	if !strings.Contains(result, "create plan NAME") {
 		t.Error("Description should include command with args")
 	}
-	if !contains(result, "Create a migration plan") {
+	if !strings.Contains(result, "Create a migration plan") {
 		t.Error("Description should include command description")
 	}
 }
 
-// Helper function
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
-}
+// --- Tests using real help --machine output ---
 
-func containsHelper(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
+func TestRegistry_RealHelpMachine_ReadOnlyDescription(t *testing.T) {
+	registry := loadRealRegistry(t)
+
+	result := registry.GenerateReadOnlyDescription()
+
+	// Should contain key read-only commands
+	for _, expected := range []string{
+		"health",
+		"get plan",
+		"get provider",
+		"get inventory vm",
+		"describe plan",
+		"settings get",
+	} {
+		if !strings.Contains(result, expected) {
+			t.Errorf("Read-only description should contain %q", expected)
 		}
 	}
-	return false
+
+	// Should NOT contain write commands
+	for _, notExpected := range []string{
+		"create provider",
+		"delete plan",
+		"start plan",
+	} {
+		if strings.Contains(result, notExpected) {
+			t.Errorf("Read-only description should NOT contain write command %q", notExpected)
+		}
+	}
+}
+
+func TestRegistry_RealHelpMachine_ReadWriteDescription(t *testing.T) {
+	registry := loadRealRegistry(t)
+
+	result := registry.GenerateReadWriteDescription()
+
+	// Should contain key write commands
+	for _, expected := range []string{
+		"create provider",
+		"create plan",
+		"delete plan",
+		"start plan",
+		"patch provider",
+		"cancel plan",
+	} {
+		if !strings.Contains(result, expected) {
+			t.Errorf("Read-write description should contain %q", expected)
+		}
+	}
+
+	// Should contain env var documentation with embedded support
+	if !strings.Contains(result, "${ENV_VAR_NAME}") {
+		t.Error("Description should document env var syntax")
+	}
+	if !strings.Contains(result, "${GOVC_URL}/sdk") {
+		t.Error("Description should document embedded env var references")
+	}
+}
+
+func TestRegistry_RealHelpMachine_FlagReference(t *testing.T) {
+	registry := loadRealRegistry(t)
+
+	result := registry.GenerateReadWriteDescription()
+
+	// Should contain the flag reference section
+	if !strings.Contains(result, "Flag reference for complex commands:") {
+		t.Fatal("Description should contain flag reference section")
+	}
+
+	// Should surface required flags that previously caused 100% failure
+	requiredFlags := []struct {
+		command string
+		flag    string
+	}{
+		{"create provider", "--type"},
+		{"create provider", "[REQUIRED]"},
+		{"create provider", "[enum:"},
+		{"cancel plan", "--vms"},
+		{"cancel plan", "[REQUIRED]"},
+		{"create host", "--provider"},
+		{"create host", "[REQUIRED]"},
+		{"create vddk-image", "--tag"},
+		{"create vddk-image", "--tar"},
+	}
+
+	for _, rf := range requiredFlags {
+		if !strings.Contains(result, rf.flag) {
+			t.Errorf("Flag reference should contain %q (for %s)", rf.flag, rf.command)
+		}
+	}
+
+	// Should surface key flags that the LLM needs for common operations
+	keyFlags := []string{
+		"--provider-insecure-skip-tls",
+		"--url",
+		"--username",
+		"--password",
+		"--sdk-endpoint",
+		"--vddk-init-image",
+		"--source",
+		"--target",
+		"--migration-type",
+	}
+
+	for _, flag := range keyFlags {
+		if !strings.Contains(result, flag) {
+			t.Errorf("Flag reference should contain key flag %q", flag)
+		}
+	}
+
+	// Should surface enum values for constrained flags
+	enumValues := []string{
+		"openshift",
+		"vsphere",
+		"ovirt",
+		"openstack",
+		"cold",
+		"warm",
+	}
+
+	for _, val := range enumValues {
+		if !strings.Contains(result, val) {
+			t.Errorf("Flag reference should contain enum value %q", val)
+		}
+	}
+}
+
+func TestRegistry_RealHelpMachine_CommandCounts(t *testing.T) {
+	registry := loadRealRegistry(t)
+
+	readCount := len(registry.ReadOnly)
+	writeCount := len(registry.ReadWrite)
+
+	// Sanity check: the real data should have a reasonable number of commands
+	if readCount < 30 {
+		t.Errorf("Expected at least 30 read-only commands, got %d", readCount)
+	}
+	if writeCount < 20 {
+		t.Errorf("Expected at least 20 read-write commands, got %d", writeCount)
+	}
+
+	// Verify key commands exist
+	keyReadCommands := []string{"health", "get/plan", "get/provider", "get/inventory/vm", "describe/plan"}
+	for _, cmd := range keyReadCommands {
+		if registry.ReadOnly[cmd] == nil {
+			t.Errorf("Expected read-only command %q to exist", cmd)
+		}
+	}
+
+	keyWriteCommands := []string{"create/provider", "create/plan", "delete/plan", "start/plan", "patch/provider", "cancel/plan"}
+	for _, cmd := range keyWriteCommands {
+		if registry.ReadWrite[cmd] == nil {
+			t.Errorf("Expected read-write command %q to exist", cmd)
+		}
+	}
+}
+
+func TestRegistry_RealHelpMachine_KARLReference(t *testing.T) {
+	registry := loadRealRegistry(t)
+
+	result := registry.GenerateReadWriteDescription()
+
+	// KARL syntax reference should be surfaced via LongDescription of create plan and patch plan
+	karlKeywords := []string{
+		"Affinity Syntax (KARL)",
+		"REQUIRE",
+		"PREFER",
+		"AVOID",
+		"REPEL",
+		"pods(",
+		"weight=",
+		"Topology keys:",
+		"key=value",
+		"key in [v1,v2,v3]",
+		"has key",
+		"not has key",
+	}
+
+	for _, keyword := range karlKeywords {
+		if !strings.Contains(result, keyword) {
+			t.Errorf("Read-write description should contain KARL keyword %q", keyword)
+		}
+	}
+}
+
+func TestRegistry_RealHelpMachine_QueryLanguageReference(t *testing.T) {
+	registry := loadRealRegistry(t)
+
+	// Query language reference should appear in the write description (via create plan LongDescription)
+	writeResult := registry.GenerateReadWriteDescription()
+	tslKeywords := []string{
+		"Query Language (TSL)",
+		"where",
+		"like",
+		"~=",
+		"ORDER BY",
+		"between",
+		"is null",
+		"len(field)",
+		"dot notation",
+		// Field discovery hint and common field names
+		"Discovering available fields",
+		"-o json",
+		"cpuCount",
+		"memoryMB",
+		"powerState",
+		"guestId",
+		"isTemplate",
+		"disks.capacity",
+		"disks.datastore.id",
+		"concerns.category",
+		"concerns.label",
+		"cpuSockets",         // oVirt-specific
+		"guest.distribution", // oVirt-specific
+		"flavor.name",        // OpenStack
+		"InstanceType",       // EC2
+		"State.Name",         // EC2
+	}
+
+	for _, keyword := range tslKeywords {
+		if !strings.Contains(writeResult, keyword) {
+			t.Errorf("Read-write description should contain TSL keyword %q", keyword)
+		}
+	}
+
+	// Query language reference should also appear in the read-only description
+	// (via get inventory vm LongDescription)
+	readResult := registry.GenerateReadOnlyDescription()
+	readTSLKeywords := []string{
+		"Query Language (TSL)",
+		"where",
+		"like",
+		"~=",
+		"ORDER BY",
+		// Field discovery hint should be in read description too
+		"Discovering available fields",
+		"-o json",
+		"cpuCount",
+		"isTemplate",
+	}
+
+	for _, keyword := range readTSLKeywords {
+		if !strings.Contains(readResult, keyword) {
+			t.Errorf("Read-only description should contain TSL keyword %q", keyword)
+		}
+	}
+}
+
+func TestRegistry_RealHelpMachine_CreateProviderFlags(t *testing.T) {
+	registry := loadRealRegistry(t)
+
+	cmd := registry.ReadWrite["create/provider"]
+	if cmd == nil {
+		t.Fatal("create/provider command not found in registry")
+	}
+
+	// Should have a reasonable number of flags
+	if len(cmd.Flags) < 10 {
+		t.Errorf("create provider should have at least 10 flags, got %d", len(cmd.Flags))
+	}
+
+	// --type should be required with enum values
+	var typeFlag *Flag
+	for i := range cmd.Flags {
+		if cmd.Flags[i].Name == "type" {
+			typeFlag = &cmd.Flags[i]
+			break
+		}
+	}
+
+	if typeFlag == nil {
+		t.Fatal("create provider should have a --type flag")
+	}
+	if !typeFlag.Required {
+		t.Error("--type flag should be marked as required")
+	}
+	if len(typeFlag.Enum) == 0 {
+		t.Error("--type flag should have enum values")
+	}
+
+	// --provider-insecure-skip-tls should exist
+	found := false
+	for _, f := range cmd.Flags {
+		if f.Name == "provider-insecure-skip-tls" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("create provider should have --provider-insecure-skip-tls flag")
+	}
 }

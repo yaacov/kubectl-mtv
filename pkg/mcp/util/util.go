@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -303,25 +304,45 @@ var sensitiveFlags = map[string]bool{
 	"--target-secret-access-key": true, // AWS secret key for EC2
 }
 
-// resolveEnvVar resolves an environment variable reference.
-// Only values in ${VAR_NAME} format are treated as env var references.
-// This allows literal passwords starting with $ (e.g., "$ecureP@ss") to work correctly.
-// Returns the resolved value or an error if the env var is not set.
+// envVarPattern matches ${VAR_NAME} references embedded anywhere in a string.
+// Only the ${VAR} syntax (with curly braces) is recognized as an env var reference.
+// This allows literal values starting with $ (e.g., "$ecureP@ss") to pass through unchanged.
+var envVarPattern = regexp.MustCompile(`\$\{([^}]+)\}`)
+
+// resolveEnvVar resolves environment variable references within a string value.
+// It supports both whole-value references (e.g., "${GOVC_URL}") and embedded references
+// (e.g., "${GOVC_URL}/sdk", "https://${HOST}:${PORT}/api").
+// Only the ${VAR_NAME} syntax with curly braces is recognized, so bare $VAR or literal
+// values starting with $ (e.g., "$ecureP@ss") pass through unchanged.
+// Returns an error if any referenced env var is not set.
 func resolveEnvVar(value string) (string, error) {
-	// Only recognize ${VAR_NAME} syntax for env var references
-	// This allows literal passwords starting with $ to work correctly
-	if strings.HasPrefix(value, "${") && strings.HasSuffix(value, "}") {
-		envName := strings.TrimPrefix(strings.TrimSuffix(value, "}"), "${")
+	if !strings.Contains(value, "${") {
+		return value, nil
+	}
+
+	var resolveErr error
+	result := envVarPattern.ReplaceAllStringFunc(value, func(match string) string {
+		if resolveErr != nil {
+			return match
+		}
+		// Extract the variable name from ${VAR_NAME}
+		envName := match[2 : len(match)-1]
 		if envName == "" {
-			return "", fmt.Errorf("empty environment variable name in ${}")
+			resolveErr = fmt.Errorf("empty environment variable name in ${}")
+			return match
 		}
 		resolved := os.Getenv(envName)
 		if resolved == "" {
-			return "", fmt.Errorf("environment variable %s is not set", envName)
+			resolveErr = fmt.Errorf("environment variable %s is not set", envName)
+			return match
 		}
-		return resolved, nil
+		return resolved
+	})
+
+	if resolveErr != nil {
+		return "", resolveErr
 	}
-	return value, nil
+	return result, nil
 }
 
 // ResolveEnvVars resolves environment variable references for all argument values.

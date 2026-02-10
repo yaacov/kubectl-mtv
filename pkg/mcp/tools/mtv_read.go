@@ -141,17 +141,20 @@ func buildArgs(cmdPath string, positionalArgs []string, flags map[string]any, na
 		args = append(args, "--inventory-url", inventoryURL)
 	}
 
-	// Add output format - use configured default from MCP server
-	hasOutput := false
+	// Add output format - prefer user-specified, then configured default
+	var userOutput string
 	if flags != nil {
-		if _, ok := flags["output"]; ok {
-			hasOutput = true
-		}
-		if _, ok := flags["o"]; ok {
-			hasOutput = true
+		if v, ok := flags["output"]; ok {
+			userOutput = fmt.Sprintf("%v", v)
+		} else if v, ok := flags["o"]; ok {
+			userOutput = fmt.Sprintf("%v", v)
 		}
 	}
-	if !hasOutput {
+	if userOutput != "" {
+		// User explicitly requested an output format
+		args = append(args, "-o", userOutput)
+	} else {
+		// Use configured default from MCP server
 		format := util.GetOutputFormat()
 		// For "text" format, don't add -o flag to use default table output
 		if format != "text" {
