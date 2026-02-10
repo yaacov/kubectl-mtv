@@ -130,6 +130,8 @@ See [VDDK Setup Guide](guide/06-vddk-image-creation-and-configuration.md) for de
 - **VDDK Support**: Optimized VMware disk transfers
 - **Real-time Monitoring**: Track migration progress live
 - **Timezone-Aware Display**: View timestamps in local time or UTC with `--use-utc` flag
+- **System Health Checks**: Comprehensive health diagnostics for the MTV/Forklift system with actionable recommendations
+- **Settings Management**: View and configure ForkliftController settings (feature flags, performance tuning, resource limits)
 
 ## Documentation
 
@@ -145,7 +147,7 @@ See [VDDK Setup Guide](guide/06-vddk-image-creation-and-configuration.md) for de
 - [Migration Plan Creation](guide/10-migration-plan-creation.md)
 - [Migration Hooks](guide/14-migration-hooks.md)
 - [MCP Server Integration](guide/19-model-context-protocol-mcp-server-integration.md)
-- [Command Reference](guide/21-command-reference.md)
+- [Command Reference](guide/23-command-reference.md)
 
 ## Environment Variables
 

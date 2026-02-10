@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Chapter 21: Command Reference"
+title: "Chapter 23: Command Reference"
 ---
 
 This chapter provides a comprehensive reference for all `kubectl-mtv` commands, subcommands, and their flags. Commands are organized by functionality to help you quickly find the right tool for your migration tasks.
@@ -709,6 +709,121 @@ kubectl mtv mcp-server --sse --port 8443 \
   --key-file /path/to/key.pem
 ```
 
+## Health and Settings Commands
+
+### health - System Health Check
+
+Run comprehensive diagnostics on the MTV/Forklift system.
+
+```bash
+kubectl mtv health [flags]
+```
+
+**Flags:**
+- `--output, -o`: Output format (table, json, yaml)
+- `--skip-logs`: Skip pod log analysis for faster execution
+- `--log-lines`: Number of log lines per pod to analyze (default: 100)
+- `--namespace, -n`: Scope providers and plans to a namespace
+- `--all-namespaces, -A`: Scan providers and plans across all namespaces
+
+**Checks performed:**
+1. Operator installation and version
+2. ForkliftController status and feature flags
+3. Forklift pod health (status, restarts, OOM)
+4. Pod log analysis (errors and warnings)
+5. Provider connectivity and readiness
+6. Migration plan status
+
+**Examples:**
+```bash
+# Quick health check
+kubectl mtv health
+
+# JSON output for automation
+kubectl mtv health -o json
+
+# Fast check without log analysis
+kubectl mtv health --skip-logs
+
+# Cluster-wide check
+kubectl mtv health -A
+
+# Namespace-scoped check
+kubectl mtv health -n production
+```
+
+### settings - ForkliftController Settings Management
+
+View and configure ForkliftController settings.
+
+#### settings get [SETTING]
+
+Get current setting values.
+
+```bash
+kubectl mtv settings [flags]
+kubectl mtv settings get [setting-name] [flags]
+```
+
+**Flags:**
+- `--output, -o`: Output format (table, json, yaml)
+- `--all`: Include all settings (supported + extended)
+
+**Examples:**
+```bash
+# View all supported settings
+kubectl mtv settings
+
+# View all settings including extended ones
+kubectl mtv settings --all
+
+# Get a specific setting
+kubectl mtv settings get controller_max_vm_inflight
+
+# Output as JSON
+kubectl mtv settings -o json
+```
+
+#### settings set SETTING VALUE
+
+Set a ForkliftController setting value.
+
+```bash
+kubectl mtv settings set <setting-name> <value>
+```
+
+**Examples:**
+```bash
+# Increase concurrent VM migrations
+kubectl mtv settings set controller_max_vm_inflight 40
+
+# Enable a feature flag
+kubectl mtv settings set feature_ocp_live_migration true
+
+# Change log level
+kubectl mtv settings set controller_log_level 5
+
+# Set virt-v2v memory limit
+kubectl mtv settings set virt_v2v_container_limits_memory 16Gi
+```
+
+#### settings unset SETTING
+
+Remove a setting to revert it to the default value.
+
+```bash
+kubectl mtv settings unset <setting-name>
+```
+
+**Examples:**
+```bash
+# Revert max concurrent VMs to default
+kubectl mtv settings unset controller_max_vm_inflight
+
+# Revert log level to default
+kubectl mtv settings unset controller_log_level
+```
+
 ## Utility Commands
 
 ### version - Version Information
@@ -865,4 +980,4 @@ kubectl mtv get inventory vm vsphere-source -v=3
 
 ---
 
-*Previous: [Chapter 20: Integration with KubeVirt Tools](/kubectl-mtv/20-integration-with-kubevirt-tools)*
+*Previous: [Chapter 22: Settings Management](/kubectl-mtv/22-settings-management)*

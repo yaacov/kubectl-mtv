@@ -214,15 +214,31 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
     *   Relationship between `kubectl-mtv` and `virtctl`.
     *   Using `virtctl` for post-migration VM lifecycle management (start, stop, console, ssh).
 
+24. **[System Health Checks](/kubectl-mtv/21-system-health-checks)**
+    *   Overview: Checking operator, controller, pods, providers, plans, and log analysis.
+    *   Running Health Checks (`kubectl mtv health`).
+    *   Output Formats (table, JSON, YAML).
+    *   Flags (`--skip-logs`, `--log-lines`, `-n`, `-A`).
+    *   Understanding the Report (Operator, Controller, Pods, Providers, Plans, Summary).
+    *   Overall Status Values (Healthy, Warning, Critical, Unknown).
+
+25. **[Settings Management](/kubectl-mtv/22-settings-management)**
+    *   Overview: Managing ForkliftController configuration.
+    *   Subcommands (`settings get`, `settings set`, `settings unset`).
+    *   Commonly Used Settings (feature flags, performance tuning, container images, resources).
+    *   Supported vs Extended Settings (`--all`).
+    *   Example Workflows (view, get, set, unset, export as JSON).
+
 ### VII. Reference and Appendices
 
-24. **[Command Reference](/kubectl-mtv/21-command-reference)**
+26. **[Command Reference](/kubectl-mtv/23-command-reference)**
     *   **Global Flags** (verbose, all-namespaces, kubeconfig, context, namespace).
     *   **Resource Management Commands** (get, describe, delete with all subcommands).
     *   **Inventory Commands** (get inventory vm/network/storage/host/namespace with TSL query syntax).
     *   **Creation Commands** (create provider/plan/mapping/host/hook/vddk-image with all flags).
     *   **Plan Lifecycle Commands** (start, cancel, cutover, archive, unarchive).
     *   **Modification Commands** (patch plan/planvm/mapping/provider).
+    *   **Health and Settings Commands** (health checks, settings get/set/unset).
     *   **AI Integration Commands** (mcp-server with stdio and SSE modes).
     *   **Query Language Reference** (TSL operators, functions, examples).
     *   **KARL Syntax Reference** (affinity rules, topology keys, examples).
