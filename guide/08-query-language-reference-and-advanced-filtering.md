@@ -150,7 +150,7 @@ kubectl mtv get inventory vms vsphere-prod -q "where powerState != 'poweredOff'"
 | **LIKE** | Case-sensitive pattern matching (SQL LIKE) | `name like 'web-%'` |
 | **ILIKE** | Case-insensitive pattern matching | `name ilike 'WEB-%'` |
 | **REQ** | Regular expression equals (`~=`) | `name ~= 'prod-.*'` |
-| **RNE** | Regular expression not equals (`!~`) | `name !~ 'test-.*'` |
+| **RNE** | Regular expression not equals (`~!`) | `name ~! 'test-.*'` |
 
 ```bash
 # String matching examples
@@ -229,16 +229,16 @@ Tests if any element in an array matches a condition:
 
 ```sql
 -- Check if any disk meets condition
-any disks.capacityGB > 500
+any disks[*].capacityGB > 500
 
 -- Check if any network matches
-any networks.name = 'Production Network'
+any networks[*].name = 'Production Network'
 ```
 
 ```bash
 # ANY function examples
-kubectl mtv get inventory vms vsphere-prod -q "where any disks.capacityGB > 100"
-kubectl mtv get inventory vms vsphere-prod -q "where any networks.name ~= '.*-prod'"
+kubectl mtv get inventory vms vsphere-prod -q "where any disks[*].capacityGB > 100"
+kubectl mtv get inventory vms vsphere-prod -q "where any networks[*].name ~= '.*-prod'"
 ```
 
 ### ALL Function
@@ -247,16 +247,16 @@ Tests if all elements in an array match a condition:
 
 ```sql
 -- Check if all disks are large
-all disks.capacityGB > 50
+all disks[*].capacityGB > 50
 
 -- Check if all networks are production
-all networks.name ~= '.*-prod'
+all networks[*].name ~= '.*-prod'
 ```
 
 ```bash
 # ALL function examples
-kubectl mtv get inventory vms vsphere-prod -q "where all disks.capacityGB >= 20"
-kubectl mtv get inventory vms vsphere-prod -q "where all networks.type = 'standard'"
+kubectl mtv get inventory vms vsphere-prod -q "where all disks[*].capacityGB >= 20"
+kubectl mtv get inventory vms vsphere-prod -q "where all networks[*].type = 'standard'"
 ```
 
 ### SUM Function
@@ -265,16 +265,16 @@ Calculates the sum of numeric values in an array:
 
 ```sql
 -- Total disk capacity
-sum disks.capacityGB > 1000
+sum disks[*].capacityGB > 1000
 
 -- Total CPU count
-sum hosts.numCpu > 50
+sum hosts[*].numCpu > 50
 ```
 
 ```bash
 # SUM function examples
-kubectl mtv get inventory vms vsphere-prod -q "where sum disks.capacityGB > 500"
-kubectl mtv get inventory clusters vsphere-prod -q "where sum hosts.memoryGB > 100000"
+kubectl mtv get inventory vms vsphere-prod -q "where sum disks[*].capacityGB > 500"
+kubectl mtv get inventory clusters vsphere-prod -q "where sum hosts[*].memoryGB > 100000"
 ```
 
 ## Advanced Query Examples
@@ -317,7 +317,7 @@ kubectl mtv get inventory vms vsphere-prod -q "where name ~= '^prod-.*'"
 kubectl mtv get inventory vms vsphere-prod -q "where name ~= '^web-[0-9]+$'"
 
 # Exclude test and development VMs
-kubectl mtv get inventory vms vsphere-prod -q "where name !~ '.*(test|dev|tmp).*'"
+kubectl mtv get inventory vms vsphere-prod -q "where name ~! '.*(test|dev|tmp).*'"
 
 # VMs containing specific keywords
 kubectl mtv get inventory vms vsphere-prod -q "where name ilike '%database%' or name ilike '%db%'"
@@ -332,10 +332,10 @@ kubectl mtv get inventory vms vsphere-prod -q "where name ilike '%database%' or 
 kubectl mtv get inventory vms vsphere-prod -q "where powerState = 'poweredOn' and memoryMB >= 2048 and not template and len disks <= 4"
 
 # Large VMs requiring special handling
-kubectl mtv get inventory vms vsphere-prod -q "where memoryMB > 32768 or sum disks.capacityGB > 2000"
+kubectl mtv get inventory vms vsphere-prod -q "where memoryMB > 32768 or sum disks[*].capacityGB > 2000"
 
 # VMs with migration concerns
-kubectl mtv get inventory vms vsphere-prod -q "where len disks > 8 or memoryMB > 65536 or any disks.capacityGB > 2000"
+kubectl mtv get inventory vms vsphere-prod -q "where len disks > 8 or memoryMB > 65536 or any disks[*].capacityGB > 2000"
 ```
 
 #### Environment-Specific Filtering
@@ -357,16 +357,16 @@ kubectl mtv get inventory vms vsphere-prod -q "where datacenter.name = 'DC-East'
 
 ```bash
 # VMs with large storage requirements
-kubectl mtv get inventory vms vsphere-prod -q "where sum disks.capacityGB > 500"
+kubectl mtv get inventory vms vsphere-prod -q "where sum disks[*].capacityGB > 500"
 
 # VMs with multiple disks
 kubectl mtv get inventory vms vsphere-prod -q "where len disks > 2"
 
 # VMs on specific datastores
-kubectl mtv get inventory vms vsphere-prod -q "where any disks.datastore.name = 'SSD-Datastore-01'"
+kubectl mtv get inventory vms vsphere-prod -q "where any disks[*].datastore.name = 'SSD-Datastore-01'"
 
 # VMs with thin-provisioned disks
-kubectl mtv get inventory vms vsphere-prod -q "where any disks.thinProvisioned = true"
+kubectl mtv get inventory vms vsphere-prod -q "where any disks[*].thinProvisioned = true"
 ```
 
 #### Network-Based Queries
@@ -376,10 +376,10 @@ kubectl mtv get inventory vms vsphere-prod -q "where any disks.thinProvisioned =
 kubectl mtv get inventory vms vsphere-prod -q "where len networks > 1"
 
 # VMs on specific networks
-kubectl mtv get inventory vms vsphere-prod -q "where any networks.name = 'Production Network'"
+kubectl mtv get inventory vms vsphere-prod -q "where any networks[*].name = 'Production Network'"
 
 # VMs with static IP assignments
-kubectl mtv get inventory vms vsphere-prod -q "where any networks.ipAddress is not null"
+kubectl mtv get inventory vms vsphere-prod -q "where any networks[*].ipAddress is not null"
 ```
 
 ### Querying Provider Status and Resource Counts
@@ -435,7 +435,7 @@ kubectl mtv get inventory vms vsphere-prod -q "where folder.name ~= '.*Productio
 kubectl mtv get inventory vms ovirt-prod -q "where highAvailability = true"
 
 # VMs using specific disk profiles
-kubectl mtv get inventory vms ovirt-prod -q "where any disks.profile.name = 'high-performance'"
+kubectl mtv get inventory vms ovirt-prod -q "where any disks[*].profile.name = 'high-performance'"
 
 # VMs with ballooning enabled
 kubectl mtv get inventory vms ovirt-prod -q "where memoryBalloon = true"
@@ -646,7 +646,7 @@ kubectl mtv get inventory vms vsphere-prod -q "where host.cluster.name = 'Produc
 kubectl mtv get inventory vms vsphere-prod -q "where disks[0].capacityGB > 100"
 
 # Complex nested queries
-kubectl mtv get inventory vms vsphere-prod -q "where host.datacenter.name = 'DC1' and any networks.vlan > 100"
+kubectl mtv get inventory vms vsphere-prod -q "where host.datacenter.name = 'DC1' and any networks[*].vlan > 100"
 ```
 
 ### Regular Expression Patterns

@@ -851,13 +851,20 @@ kubectl mtv get inventory vm <provider> --query "where <condition>"
 | **Operator** | **Description** | **Example** |
 |--------------|-----------------|-------------|
 | `=` | Equal | `name = 'vm-01'` |
-| `!=` | Not equal | `powerState != 'poweredOff'` |
-| `>`, `>=` | Greater than | `memory.size > 4096` |
-| `<`, `<=` | Less than | `disks.count <= 2` |
-| `like` | Pattern match (case-sensitive) | `name like 'web-%'` |
+| `!=`, `<>` | Not equal | `powerState != 'poweredOff'` |
+| `>`, `>=` | Greater than (or equal) | `memoryMB > 4096` |
+| `<`, `<=` | Less than (or equal) | `cpuCount <= 2` |
+| `+`, `-`, `*`, `/`, `%` | Arithmetic | `memoryMB / 1024 > 4` |
+| `like` | Pattern match (case-sensitive, `%` wildcard) | `name like 'web-%'` |
 | `ilike` | Pattern match (case-insensitive) | `name ilike 'WEB-%'` |
+| `~=` | Regex match | `name ~= 'prod-.*'` |
+| `~!` | Regex not match | `name ~! 'test-.*'` |
 | `in` | In list | `powerState in ('poweredOn', 'suspended')` |
-| `and` | Logical AND | `powerState = 'poweredOn' and memory.size > 2048` |
+| `not in` | Not in list | `powerState not in ('poweredOff')` |
+| `between` | Range | `memoryMB between 4096 and 16384` |
+| `is null` | Null check | `description is null` |
+| `is not null` | Not null check | `guestIP is not null` |
+| `and` | Logical AND | `powerState = 'poweredOn' and memoryMB > 2048` |
 | `or` | Logical OR | `name like 'web-%' or name like 'app-%'` |
 | `not` | Logical NOT | `not powerState = 'poweredOff'` |
 
@@ -866,25 +873,38 @@ kubectl mtv get inventory vm <provider> --query "where <condition>"
 | **Function** | **Description** | **Example** |
 |--------------|-----------------|-------------|
 | `len(field)` | Length of array | `len(disks) > 1` |
-| `sum(field)` | Sum of numeric values | `sum(disks.capacityInBytes) > 107374182400` |
+| `sum(field[*].sub)` | Sum of numeric values | `sum(disks[*].capacityInBytes) > 107374182400` |
+| `any field[*].sub` | Any element matches | `any disks[*].shared = true` |
+| `all field[*].sub` | All elements match | `all disks[*].capacityGB >= 20` |
+
+### Array Access and SI Units
+
+| **Feature** | **Syntax** | **Example** |
+|-------------|------------|-------------|
+| Index access | `field[N]` | `disks[0].capacityGB > 100` |
+| Wildcard | `field[*].sub` | `disks[*].datastore.id` |
+| SI units | `Ki, Mi, Gi, Ti, Pi` | `memory > 4Gi` (= 4294967296) |
 
 ### Query Examples
 
 ```bash
 # Powered-on VMs with more than 4GB RAM
-kubectl mtv get inventory vm vsphere-prod -q "where powerState = 'poweredOn' and memory.size > 4096"
+kubectl mtv get inventory vm vsphere-prod -q "where powerState = 'poweredOn' and memoryMB > 4096"
 
 # VMs with names starting with "prod-"
 kubectl mtv get inventory vm vsphere-prod -q "where name like 'prod-%'"
 
 # VMs with multiple disks and large total capacity
-kubectl mtv get inventory vm vsphere-prod -q "where len(disks) > 1 and sum(disks.capacityInBytes) > 53687091200"
+kubectl mtv get inventory vm vsphere-prod -q "where len(disks) > 1 and sum(disks[*].capacityInBytes) > 53687091200"
 
 # VMs in specific power states
 kubectl mtv get inventory vm vsphere-prod -q "where powerState in ('poweredOn', 'suspended')"
 
 # Complex query with multiple conditions
-kubectl mtv get inventory vm vsphere-prod -q "where (name like 'web-%' or name like 'app-%') and powerState = 'poweredOn' and memory.size between 2048 and 8192"
+kubectl mtv get inventory vm vsphere-prod -q "where (name like 'web-%' or name like 'app-%') and powerState = 'poweredOn' and memoryMB between 2048 and 8192"
+
+# Regex match and not-match
+kubectl mtv get inventory vm vsphere-prod -q "where name ~= 'prod-.*' and name ~! 'test-.*'"
 ```
 
 ## KARL Syntax (Kubernetes Affinity Rule Language)

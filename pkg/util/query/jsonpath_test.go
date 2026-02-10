@@ -42,6 +42,8 @@ func TestGetValueByPathString(t *testing.T) {
 		{"int value", "intVal", 42, false},
 		{"float value", "floatVal", 3.14, false},
 		{"date value", "date", time.Date(2020, time.January, 2, 15, 4, 5, 0, time.UTC), false},
+		{"implicit wildcard", "spec.containers.name", []interface{}{"c1", "c2"}, false},
+		{"implicit equals explicit wildcard", "spec.containers[*].name", []interface{}{"c1", "c2"}, false},
 		{"missing field", "nonexistent.field", nil, false},
 		{"out of bounds", "spec.containers[10].name", nil, true},
 		{"bad index", "spec.containers[foo].name", nil, true},

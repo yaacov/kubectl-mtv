@@ -273,6 +273,8 @@ github.com/yaacov/karl-interpreter v0.0.1 h1:gq+j69BBBj0Lv6SwOfvWou0fsfySpyfPyl1
 github.com/yaacov/karl-interpreter v0.0.1/go.mod h1:5QRw50uhYw3KMQRU38D3ir9IobE7lIpU4DwlHWNXjmI=
 github.com/yaacov/tree-search-language/v6 v6.0.8 h1:BnrvqOOh/VS84EH0MSKaZHZEBTYOf6tAMUCdzOdOxuU=
 github.com/yaacov/tree-search-language/v6 v6.0.8/go.mod h1:ZXSpcgyyUZswjeC/OOYBnrvUWhhENumaV4+Xeg59NFk=
+github.com/yaacov/tree-search-language/v6 v6.0.9 h1:Ty++oVzJcnQNtBQH3nCZmeMwTm10k/Af40dC5WZmjwQ=
+github.com/yaacov/tree-search-language/v6 v6.0.9/go.mod h1:ZXSpcgyyUZswjeC/OOYBnrvUWhhENumaV4+Xeg59NFk=
 github.com/yosida95/uritemplate/v3 v3.0.2 h1:Ed3Oyj9yrmi9087+NczuL5BwkIc4wvTb5zIM+UJPGz4=
 github.com/yosida95/uritemplate/v3 v3.0.2/go.mod h1:ILOh0sOhIJR3+L/8afwt/kE++YT040gmv5BQTMR2HP4=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

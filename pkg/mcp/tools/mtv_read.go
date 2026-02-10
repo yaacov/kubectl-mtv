@@ -19,7 +19,7 @@ type MTVReadInput struct {
 	Args []string `json:"args,omitempty" jsonschema:"Positional arguments (e.g. resource name, provider name)"`
 
 	// Flags are command-specific flags as key-value pairs (values can be strings, numbers, or booleans)
-	Flags map[string]any `json:"flags,omitempty" jsonschema:"Command flags as key-value pairs (e.g. output: json, watch: true)"`
+	Flags map[string]any `json:"flags,omitempty" jsonschema:"Command flags as key-value pairs (e.g. output: json, query: \"where len(disks) > 1\", extended: true)"`
 
 	// Namespace is the Kubernetes namespace (shortcut for -n flag)
 	Namespace string `json:"namespace,omitempty" jsonschema:"Target Kubernetes namespace"`

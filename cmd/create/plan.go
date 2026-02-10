@@ -89,7 +89,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 A plan defines which VMs to migrate, the source and target providers, and
 network/storage mappings. VMs can be specified as:
   - Comma-separated names: --vms "vm1,vm2,vm3"
-  - TSL query: --vms "where name ~= 'prod-*' and cpuCount <= 8"
+  - TSL query: --vms "where name ~= 'prod-.*' and cpuCount <= 8"
   - YAML/JSON file: --vms @vms.yaml
 
 Network and storage mappings can be created inline using --network-pairs and
@@ -103,12 +103,15 @@ Query Language (TSL) Syntax:
   For --vms flag, use: where <condition>
 
   Comparison:     =  !=  <>  <  <=  >  >=
-  String match:   like (% wildcard), ilike (case-insensitive), ~= (regex), !~ (not regex)
+  Arithmetic:     +  -  *  /  %
+  String match:   like (% wildcard), ilike (case-insensitive), ~= (regex), ~! (not regex)
   Logical:        and, or, not
-  Set/range:      in ('val1','val2'), between X and Y
+  Set/range:      in ('val1','val2'), not in ('val1','val2'), between X and Y
   Null checks:    is null, is not null
-  Array funcs:    len(field), sum(field.sub), any field.sub > N, all field.sub >= N
-  Field access:   dot notation (e.g. parent.id, disks.datastore.id, guest.distribution)
+  Array funcs:    len(field), sum(field[*].sub), any field[*].sub > N, all field[*].sub >= N
+  Array access:   field[index], field[*] (wildcard), implicit field.sub traversal
+  SI units:       Ki, Mi, Gi, Ti, Pi suffixes for numeric literals (e.g. 4Gi = 4294967296)
+  Field access:   dot notation (e.g. parent.id, disks[*].datastore.id, guest.distribution)
 
   Discovering available fields:
     Inventory items are dynamic JSON from the provider. Field names vary by provider
@@ -142,13 +145,13 @@ Query Language (TSL) Syntax:
     Placement.AvailabilityZone, PublicIpAddress, PrivateIpAddress, VpcId, SubnetId
 
   Examples:
-    where name ~= 'prod-*'
+    where name ~= 'prod-.*'
     where powerState = 'poweredOn' and memoryMB > 4096       (vSphere)
     where status = 'up' and memory > 4294967296              (oVirt, memory in bytes)
     where isTemplate = false and firmware = 'efi'            (vSphere)
     where guestId ~= 'rhel.*' and storageUsed > 53687091200
     where len(disks) > 1 and cpuCount <= 8
-    where any disks.shared = true
+    where any disks[*].shared = true
     where path ~= '/Production/.*'
 
 Affinity Syntax (KARL):
@@ -189,7 +192,7 @@ Affinity Syntax (KARL):
   kubectl-mtv create plan batch-migration \
     --source vsphere-prod \
     --target host \
-    --vms "where name ~= 'legacy-*'" \
+    --vms "where name ~= 'legacy-.*'" \
     --default-target-network default \
     --default-target-storage-class standard
 
