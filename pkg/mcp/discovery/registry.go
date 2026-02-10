@@ -137,6 +137,9 @@ func (r *Registry) GenerateReadOnlyDescription() string {
 	sb.WriteString("- all_namespaces: Query across all namespaces\n")
 	sb.WriteString("- output: Output format (table, json, yaml)\n")
 
+	// Include extended notes from commands that have substantial LongDescription
+	sb.WriteString(r.generateReadOnlyCommandNotes())
+
 	sb.WriteString("\nIMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl-mtv get plan -A\").\n")
 
 	return sb.String()
@@ -160,15 +163,136 @@ func (r *Registry) GenerateReadWriteDescription() string {
 	sb.WriteString("\nCommon flags:\n")
 	sb.WriteString("- namespace: Target Kubernetes namespace\n")
 
+	// Append per-command flag reference for complex write commands
+	sb.WriteString(r.generateFlagReference())
+
 	sb.WriteString("\nEnvironment Variable References:\n")
 	sb.WriteString("You can pass environment variable references instead of literal values for any flag:\n")
 	sb.WriteString("- Use ${ENV_VAR_NAME} syntax with curly braces (e.g., url: \"${GOVC_URL}\", password: \"${VCENTER_PASSWORD}\")\n")
+	sb.WriteString("- Env vars can be embedded in strings (e.g., url: \"${GOVC_URL}/sdk\", endpoint: \"https://${HOST}:${PORT}/api\")\n")
 	sb.WriteString("- IMPORTANT: Only ${VAR} format is recognized as env var reference. Bare $VAR is treated as literal value.\n")
-	sb.WriteString("- This allows values starting with $ (e.g., \"$ecureP@ss\") to work correctly as literals\n")
 	sb.WriteString("- The MCP server resolves the env var at execution time\n")
 	sb.WriteString("- Sensitive values (passwords, tokens) are masked in command output for security\n")
 
 	sb.WriteString("\nIMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl-mtv create plan ...\").\n")
+
+	return sb.String()
+}
+
+// generateFlagReference builds a concise per-command flag reference for write commands.
+// It includes all flags for commands that have required flags or many flags (complex commands),
+// so the LLM can construct valid calls without guessing flag names.
+func (r *Registry) generateFlagReference() string {
+	var sb strings.Builder
+
+	// Collect commands that need flag documentation:
+	// 1. Commands with any required flags (these fail 100% without flag knowledge)
+	// 2. Key complex commands (create/patch provider, create plan, create mapping)
+	type commandEntry struct {
+		pathKey string
+		cmd     *Command
+	}
+
+	// Get sorted list of write commands
+	keys := r.ListReadWriteCommands()
+
+	// First pass: identify commands with required flags or many flags
+	var flaggedCommands []commandEntry
+	for _, key := range keys {
+		cmd := r.ReadWrite[key]
+		if cmd == nil || len(cmd.Flags) == 0 {
+			continue
+		}
+
+		hasRequired := false
+		for _, f := range cmd.Flags {
+			if f.Required {
+				hasRequired = true
+				break
+			}
+		}
+
+		// Include if: has required flags, or is a complex command (>5 flags)
+		if hasRequired || len(cmd.Flags) > 5 {
+			flaggedCommands = append(flaggedCommands, commandEntry{key, cmd})
+		}
+	}
+
+	if len(flaggedCommands) == 0 {
+		return ""
+	}
+
+	sb.WriteString("\nFlag reference for complex commands:\n")
+
+	for _, entry := range flaggedCommands {
+		cmd := entry.cmd
+		cmdPath := strings.ReplaceAll(entry.pathKey, "/", " ")
+
+		// Include the command's LongDescription when available, as it may contain
+		// syntax references (e.g., KARL affinity syntax, TSL query language)
+		if cmd.LongDescription != "" {
+			sb.WriteString(fmt.Sprintf("\n%s notes:\n%s\n", cmdPath, cmd.LongDescription))
+		}
+
+		sb.WriteString(fmt.Sprintf("\n%s flags:\n", cmdPath))
+
+		for _, f := range cmd.Flags {
+			if f.Hidden {
+				continue
+			}
+
+			// Format: "  --name (type) - description [REQUIRED] [enum: a|b|c]"
+			line := fmt.Sprintf("  --%s", f.Name)
+
+			// Add type for non-bool flags
+			if f.Type != "bool" {
+				line += fmt.Sprintf(" (%s)", f.Type)
+			}
+
+			line += fmt.Sprintf(" - %s", f.Description)
+
+			if f.Required {
+				line += " [REQUIRED]"
+			}
+
+			if len(f.Enum) > 0 {
+				line += fmt.Sprintf(" [enum: %s]", strings.Join(f.Enum, "|"))
+			}
+
+			sb.WriteString(line + "\n")
+		}
+	}
+
+	return sb.String()
+}
+
+// generateReadOnlyCommandNotes includes LongDescription from read-only commands
+// that have substantial documentation (e.g., query language syntax references).
+// This surfaces documentation that was added to Cobra Long descriptions into the
+// MCP tool description, so AI clients can discover syntax without external docs.
+func (r *Registry) generateReadOnlyCommandNotes() string {
+	var sb strings.Builder
+
+	// Minimum length threshold to avoid including trivial one-liner descriptions
+	const minLongDescLength = 200
+
+	commands := r.ListReadOnlyCommands()
+	var hasNotes bool
+
+	for _, key := range commands {
+		cmd := r.ReadOnly[key]
+		if cmd == nil || len(cmd.LongDescription) < minLongDescLength {
+			continue
+		}
+
+		if !hasNotes {
+			sb.WriteString("\nCommand notes:\n")
+			hasNotes = true
+		}
+
+		cmdPath := strings.ReplaceAll(key, "/", " ")
+		sb.WriteString(fmt.Sprintf("\n%s:\n%s\n", cmdPath, cmd.LongDescription))
+	}
 
 	return sb.String()
 }

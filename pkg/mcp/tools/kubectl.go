@@ -20,8 +20,9 @@ type KubectlDebugInput struct {
 	// ResourceType is the Kubernetes resource type (for get/describe actions)
 	ResourceType string `json:"resource_type,omitempty" jsonschema:"Resource type for get/describe (e.g. pods, pvc, datavolume, virtualmachine, events)"`
 
-	// Name is the specific resource name (optional for get, required for logs)
-	Name string `json:"name,omitempty" jsonschema:"Resource name (required for logs, optional for get/describe)"`
+	// Name is the specific resource name (optional for get, required for logs).
+	// For logs, supports pod names or resource/name format (e.g. "deployments/forklift-controller").
+	Name string `json:"name,omitempty" jsonschema:"Resource name (required for logs, optional for get/describe). For logs, use deployments/name (e.g. deployments/forklift-controller) to avoid looking up pod names, or use a pod name directly."`
 
 	// Namespace is the Kubernetes namespace
 	Namespace string `json:"namespace,omitempty" jsonschema:"Target Kubernetes namespace"`
@@ -109,10 +110,14 @@ Actions:
 - events: Get Kubernetes events with specialized filtering for debugging
 
 Common use cases:
-- Get forklift controller logs: action="logs", name="forklift-controller-xxx", namespace="openshift-mtv"
+- Get forklift controller logs: action="logs", name="deployments/forklift-controller", namespace="openshift-mtv"
 - List migration pods: action="get", resource_type="pods", labels="plan=my-plan"
 - Check PVC status: action="get", resource_type="pvc", labels="migration=xxx"
 - Debug failed pod: action="logs", name="virt-v2v-xxx", previous=true
+
+Log name formats:
+- Use deployments/name for stable names (e.g. name="deployments/forklift-controller")
+- Use pod names directly when targeting specific pods (e.g. name="virt-v2v-cold-xyz")
 
 Events examples:
 - Get events for a pod: action="events", for_resource="pod/virt-v2v-xxx", namespace="target-ns"
@@ -121,8 +126,8 @@ Events examples:
 - Get events for failed scheduling: action="events", field_selector="reason=FailedScheduling"
 
 Log filtering (for scanning large logs):
-- Get error logs: action="logs", name="pod-name", grep="error|ERROR", tail_lines=1000
-- Case-insensitive search: action="logs", name="pod-name", grep="warning", ignore_case=true
+- Get error logs: action="logs", name="deployments/forklift-controller", grep="error|ERROR", tail_lines=1000
+- Case-insensitive search: action="logs", name="deployments/forklift-controller", grep="warning", ignore_case=true
 - Find migration issues: action="logs", name="virt-v2v-xxx", grep="disk|transfer|failed"
 
 JSON log filtering (for forklift controller structured logs):
@@ -137,6 +142,20 @@ Example use cases:
 - Debug plan execution: filter_plan="my-plan", filter_level="error"
 - Track VM migration: filter_vm="web-server-01"
 - Monitor provider: filter_provider="vmware-prod", tail_lines=100
+
+JSON log response format:
+The response shape changes depending on whether logs are JSON and which log_format is used:
+- log_format="json" (default for JSON logs): response has "logs" array in data (data.logs) instead of "output". Each entry is a parsed object with fields: level, ts, logger, msg, and optional context: plan (object with name, namespace), provider (object with name, namespace), map (object with name, namespace), migration (object with name, namespace), vm, vmName, vmID, reQ.
+- log_format="text": response has "output" string in data containing filtered raw JSONL lines.
+- log_format="pretty": response has "output" string in data with human-readable formatted lines like "[LEVEL] timestamp logger: message context".
+- Non-JSON logs (e.g., virt-v2v pods): response always has "output" string in data with raw text. JSON filters are ignored.
+- If JSON filters are specified but logs are not JSON, a "warning" field is added to data.
+
+Example raw forklift controller JSON log line:
+{"level":"info","ts":"2026-02-05 10:45:52","logger":"plan|zw4bt","msg":"Reconcile started.","plan":{"name":"my-plan","namespace":"demo"}}
+
+When log_format="json", this is parsed into data.logs as:
+{"level":"info","ts":"2026-02-05 10:45:52","logger":"plan|zw4bt","msg":"Reconcile started.","plan":{"name":"my-plan","namespace":"demo"}}
 
 JSON log auto-detection:
 - The tool automatically detects if logs are in JSON format by examining the first log line
@@ -165,9 +184,26 @@ IMPORTANT: When responding, always start by showing the user the executed comman
 			"properties": map[string]any{
 				"command":      map[string]any{"type": "string", "description": "The executed command"},
 				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
-				"data":         map[string]any{"type": "object", "description": "Structured JSON response data"},
-				"output":       map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
-				"stderr":       map[string]any{"type": "string", "description": "Error output if any"},
+				"data": map[string]any{
+					"type":        "object",
+					"description": "Structured response data. Contains different fields depending on log format.",
+					"properties": map[string]any{
+						"logs": map[string]any{
+							"type":        "array",
+							"description": "Array of parsed JSON log entries (present when log_format=json and logs are JSON). Each entry has: level, ts, logger, msg, and optional plan, provider, map, migration (objects with name/namespace), vm, vmName, vmID, reQ fields. Malformed lines appear as {raw: string}.",
+						},
+						"output": map[string]any{
+							"type":        "string",
+							"description": "Raw text output (present for non-JSON logs, or when log_format=text or log_format=pretty)",
+						},
+						"warning": map[string]any{
+							"type":        "string",
+							"description": "Warning message, e.g. when JSON filters are specified but logs are not in JSON format",
+						},
+					},
+				},
+				"output": map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
+				"stderr": map[string]any{"type": "string", "description": "Error output if any"},
 			},
 		},
 	}
@@ -189,9 +225,9 @@ func HandleKubectlDebug(ctx context.Context, req *mcp.CallToolRequest, input Kub
 
 	switch input.Action {
 	case "logs":
-		// Logs action requires a pod name
+		// Logs action requires a resource name (pod name or resource/name like deployments/forklift-controller)
 		if input.Name == "" {
-			return nil, nil, fmt.Errorf("logs action requires 'name' field (pod name)")
+			return nil, nil, fmt.Errorf("logs action requires 'name' field (e.g. 'deployments/forklift-controller' or a pod name)")
 		}
 		args = buildLogsArgs(input)
 	case "get":
@@ -301,7 +337,7 @@ func HandleKubectlDebug(ctx context.Context, req *mcp.CallToolRequest, input Kub
 func buildLogsArgs(input KubectlDebugInput) []string {
 	args := []string{"logs"}
 
-	// Pod name is required for logs
+	// Resource name is required for logs (supports pod names or resource/name like deployments/forklift-controller)
 	if input.Name != "" {
 		args = append(args, input.Name)
 	}

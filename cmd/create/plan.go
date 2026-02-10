@@ -94,7 +94,89 @@ network/storage mappings. VMs can be specified as:
 
 Network and storage mappings can be created inline using --network-pairs and
 --storage-pairs, or reference existing mapping resources with --network-mapping
-and --storage-mapping.`,
+and --storage-mapping.
+
+Query Language (TSL) Syntax:
+  Used by --vms "where ..." to select VMs, and -q "where ..." in get inventory.
+
+  Structure: [SELECT fields] WHERE condition [ORDER BY field [ASC|DESC]] [LIMIT n]
+  For --vms flag, use: where <condition>
+
+  Comparison:     =  !=  <>  <  <=  >  >=
+  String match:   like (% wildcard), ilike (case-insensitive), ~= (regex), !~ (not regex)
+  Logical:        and, or, not
+  Set/range:      in ('val1','val2'), between X and Y
+  Null checks:    is null, is not null
+  Array funcs:    len(field), sum(field.sub), any field.sub > N, all field.sub >= N
+  Field access:   dot notation (e.g. parent.id, disks.datastore.id, guest.distribution)
+
+  Discovering available fields:
+    Inventory items are dynamic JSON from the provider. Field names vary by provider
+    type. To see all available fields for your environment, run:
+      kubectl-mtv get inventory vm <provider> -o json
+    Any field visible in the JSON output can be used in queries with dot notation.
+
+  Common VM fields (vSphere):
+    name, id, powerState, cpuCount, memoryMB, guestId, guestName, isTemplate
+    firmware, storageUsed, ipAddress, hostName, host, path, uuid, connectionState
+    changeTrackingEnabled, coresPerSocket, secureBoot, tpmEnabled
+    parent.id, parent.kind (folder reference)
+    disks (array): disks.capacity, disks.datastore.id, disks.file, disks.shared
+    nics (array): nics.mac, nics.network.id
+    networks (array): networks.id, networks.kind
+    concerns (array): concerns.category, concerns.assessment, concerns.label
+
+  Common VM fields (oVirt):
+    name, id, status, memory, cpuSockets, cpuCores, cpuThreads, osType, guestName
+    cluster, host, path, haEnabled, stateless, placementPolicyAffinity, display
+    guest.distribution, guest.fullVersion
+    diskAttachments (array): diskAttachments.disk, diskAttachments.interface
+    nics (array): nics.name, nics.mac, nics.interface, nics.ipAddress, nics.profile
+    concerns (array): concerns.category, concerns.assessment, concerns.label
+
+  Common VM fields (OpenStack):
+    name, id, status, flavor.name, image.name, project.name
+
+  Common VM fields (EC2, PascalCase):
+    name, InstanceType, State.Name, PlatformDetails
+    Placement.AvailabilityZone, PublicIpAddress, PrivateIpAddress, VpcId, SubnetId
+
+  Examples:
+    where name ~= 'prod-*'
+    where powerState = 'poweredOn' and memoryMB > 4096       (vSphere)
+    where status = 'up' and memory > 4294967296              (oVirt, memory in bytes)
+    where isTemplate = false and firmware = 'efi'            (vSphere)
+    where guestId ~= 'rhel.*' and storageUsed > 53687091200
+    where len(disks) > 1 and cpuCount <= 8
+    where any disks.shared = true
+    where path ~= '/Production/.*'
+
+Affinity Syntax (KARL):
+  Used by --target-affinity and --convertor-affinity to define pod affinity rules.
+
+  Syntax: RULE_TYPE pods(selector[,selector...]) on TOPOLOGY [weight=N]
+
+  Rule types:
+    REQUIRE  - hard affinity (must co-locate with matching pods)
+    PREFER   - soft affinity (prefer co-location, weight=1-100, default 100)
+    AVOID    - hard anti-affinity (must not co-locate)
+    REPEL    - soft anti-affinity (prefer not co-locating, weight=1-100)
+
+  Topology keys: node, zone, region, rack
+
+  Label selectors (inside pods(...)):
+    key=value            equality match
+    key in [v1,v2,v3]   value in set
+    key not in [v1,v2]  value not in set
+    has key              label exists
+    not has key          label does not exist
+  Multiple selectors are AND-ed: pods(app=web,tier=frontend,has monitoring)
+
+  Examples:
+    REQUIRE pods(app=database) on node
+    PREFER pods(app=cache) on zone weight=80
+    AVOID pods(app=web) on node
+    REPEL pods(tier in [batch,worker]) on zone weight=50`,
 		Example: `  # Create a plan with specific VMs
   kubectl-mtv create plan my-migration \
     --source vsphere-prod \
