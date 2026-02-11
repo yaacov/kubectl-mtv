@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Chapter 4: Provider Management"
+title: "Chapter 6: Provider Management"
 ---
 
 Providers are the core resources in kubectl-mtv that represent source and target virtualization platforms. This chapter covers complete provider lifecycle management including creation, configuration, patching, and deletion.
@@ -737,12 +737,12 @@ kubectl get provider vsphere-prod -o yaml
 
 After mastering provider management:
 
-1. **Explore Inventory**: Learn to discover and query VMs in [Chapter 7: Inventory Management](/kubectl-mtv/07-inventory-management)
-2. **Create Migration Hosts**: Set up direct ESXi connections in [Chapter 5: Migration Host Management](/kubectl-mtv/05-migration-host-management)
-3. **Configure VDDK**: Optimize VMware transfers in [Chapter 6: VDDK Image Creation and Configuration](/kubectl-mtv/06-vddk-image-creation-and-configuration)
-4. **Plan Migrations**: Create migration plans in [Chapter 10: Migration Plan Creation](/kubectl-mtv/10-migration-plan-creation)
+1. **Explore Inventory**: Learn to discover and query VMs in [Chapter 9: Inventory Management](/kubectl-mtv/09-inventory-management)
+2. **Create Migration Hosts**: Set up direct ESXi connections in [Chapter 7: Migration Host Management](/kubectl-mtv/07-migration-host-management)
+3. **Configure VDDK**: Optimize VMware transfers in [Chapter 8: VDDK Image Creation and Configuration](/kubectl-mtv/08-vddk-image-creation-and-configuration)
+4. **Plan Migrations**: Create migration plans in [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)
 
 ---
 
-*Previous: [Chapter 3: Quick Start - First Migration Workflow](/kubectl-mtv/03-quick-start-first-migration-workflow)*  
-*Next: [Chapter 5: Migration Host Management](/kubectl-mtv/05-migration-host-management)*
+*Previous: [Chapter 5: Conversion Migration](/kubectl-mtv/05-conversion-migration)*  
+*Next: [Chapter 7: Migration Host Management](/kubectl-mtv/07-migration-host-management)*

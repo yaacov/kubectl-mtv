@@ -122,6 +122,35 @@ func Generate(rootCmd *cobra.Command, cliVersion string, opts Options) *HelpSche
 	return schema
 }
 
+// FilterByPath filters a schema to only include commands whose path starts with
+// the given prefix. For example, FilterByPath(schema, ["get"]) keeps all "get *"
+// commands, and FilterByPath(schema, ["get", "plan"]) keeps only "get plan".
+// Returns the number of commands remaining after filtering.
+func FilterByPath(schema *HelpSchema, prefix []string) int {
+	if len(prefix) == 0 {
+		return len(schema.Commands)
+	}
+
+	filtered := make([]Command, 0, len(schema.Commands))
+	for _, cmd := range schema.Commands {
+		if len(cmd.Path) < len(prefix) {
+			continue
+		}
+		match := true
+		for i, seg := range prefix {
+			if cmd.Path[i] != seg {
+				match = false
+				break
+			}
+		}
+		if match {
+			filtered = append(filtered, cmd)
+		}
+	}
+	schema.Commands = filtered
+	return len(filtered)
+}
+
 // walkCommands recursively visits all commands in the tree.
 func walkCommands(cmd *cobra.Command, path []string, visitor func(*cobra.Command, []string)) {
 	visitor(cmd, path)
@@ -136,17 +165,21 @@ func commandToSchema(cmd *cobra.Command, path []string, opts Options) Command {
 	providers, cleanShort := parseProviderHints(cmd.Short)
 
 	c := Command{
-		Name:            cmd.Name(),
-		Path:            path,
-		PathString:      strings.Join(path, " "),
-		Description:     cleanShort,
-		LongDescription: cmd.Long,
-		Usage:           cmd.UseLine(),
-		Category:        getCategory(path),
-		Providers:       providers,
-		Flags:           []Flag{},
-		PositionalArgs:  parsePositionalArgs(cmd.Use),
-		Examples:        parseExamples(cmd.Example),
+		Name:           cmd.Name(),
+		Path:           path,
+		PathString:     strings.Join(path, " "),
+		Description:    cleanShort,
+		Usage:          cmd.UseLine(),
+		Category:       getCategory(path),
+		Providers:      providers,
+		Flags:          []Flag{},
+		PositionalArgs: parsePositionalArgs(cmd.Use),
+	}
+
+	// Include verbose fields only when not in short mode
+	if !opts.Short {
+		c.LongDescription = cmd.Long
+		c.Examples = parseExamples(cmd.Example)
 	}
 
 	// Copy aliases

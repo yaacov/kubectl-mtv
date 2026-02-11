@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Chapter 8: Query Language Reference and Advanced Filtering"
+title: "Chapter 10: Query Language Reference and Advanced Filtering"
 ---
 
 kubectl-mtv integrates the powerful Tree Search Language (TSL), developed by Yaacov Zamir, which provides SQL-like filtering capabilities for inventory resources. This chapter provides a complete reference for TSL syntax and advanced query techniques.
@@ -23,7 +23,7 @@ name = 'web-server-01'
 name = 'vm1' or name = 'vm2'
 
 -- Pattern matching
-city in ('paris', 'rome', 'milan') and state != 'france'
+city in ['paris', 'rome', 'milan'] and state != 'france'
 
 -- Range queries
 pages between 100 and 200 and author.name ~= 'Hilbert'
@@ -98,9 +98,9 @@ powerOn = false
 ### Array Literals
 
 ```sql
--- Array values for IN operations
-name in ('vm1', 'vm2', 'vm3')
-powerState in ('poweredOn', 'suspended')
+-- Array values for IN operations (use square brackets)
+name in ['vm1', 'vm2', 'vm3']
+powerState in ['poweredOn', 'suspended']
 ```
 
 ### Date and Timestamp Literals
@@ -178,12 +178,12 @@ kubectl mtv get inventory vms vsphere-prod -q "where not template"
 
 | Operator | Description | Example |
 |----------|-------------|---------|
-| **IN** | Value in array | `name in ('vm1', 'vm2', 'vm3')` |
+| **IN** | Value in array | `name in ['vm1', 'vm2', 'vm3']` |
 | **BETWEEN** | Value between two values | `memoryMB between 4096 and 16384` |
 
 ```bash
 # Array and range examples
-kubectl mtv get inventory vms vsphere-prod -q "where powerState in ('poweredOn', 'suspended')"
+kubectl mtv get inventory vms vsphere-prod -q "where powerState in ['poweredOn', 'suspended']"
 kubectl mtv get inventory vms vsphere-prod -q "where memoryMB between 8192 and 32768"
 ```
 
@@ -206,21 +206,19 @@ TSL provides built-in functions for complex data analysis:
 
 ### LEN Function
 
-Returns the length of arrays or strings:
+Returns the length of arrays or strings. The comparison operator is placed **outside** the parentheses:
 
 ```sql
 -- Array length
-len disks > 2
-len networks = 1
-
--- String length  
-len name > 10
+len(disks) > 2
+len(networks) = 1
+len(nics) >= 2
 ```
 
 ```bash
 # LEN function examples
-kubectl mtv get inventory vms vsphere-prod -q "where len disks > 2"
-kubectl mtv get inventory vms vsphere-prod -q "where len name >= 12"
+kubectl mtv get inventory vms vsphere-prod -q "where len(disks) > 2"
+kubectl mtv get inventory vms vsphere-prod -q "where len(nics) >= 2"
 ```
 
 ### ANY Function
@@ -228,17 +226,17 @@ kubectl mtv get inventory vms vsphere-prod -q "where len name >= 12"
 Tests if any element in an array matches a condition:
 
 ```sql
--- Check if any disk meets condition
-any disks[*].capacityGB > 500
-
--- Check if any network matches
-any networks[*].name = 'Production Network'
+any(disks[*].capacity > 100Gi)
+any(networks[*].name = 'Production Network')
+any(concerns[*].category = 'Critical')
+any(disks[*].shared = true)
 ```
 
 ```bash
 # ANY function examples
-kubectl mtv get inventory vms vsphere-prod -q "where any disks[*].capacityGB > 100"
-kubectl mtv get inventory vms vsphere-prod -q "where any networks[*].name ~= '.*-prod'"
+kubectl mtv get inventory vms vsphere-prod -q "where any(disks[*].capacityGB > 100)"
+kubectl mtv get inventory vms vsphere-prod -q "where any(networks[*].name ~= '.*-prod')"
+kubectl mtv get inventory vms vsphere-prod -q "where any(concerns[*].category = 'Critical')"
 ```
 
 ### ALL Function
@@ -246,17 +244,15 @@ kubectl mtv get inventory vms vsphere-prod -q "where any networks[*].name ~= '.*
 Tests if all elements in an array match a condition:
 
 ```sql
--- Check if all disks are large
-all disks[*].capacityGB > 50
-
--- Check if all networks are production
-all networks[*].name ~= '.*-prod'
+all(disks[*].shared = false)
+all(disks[*].capacityGB > 50)
+all(networks[*].name ~= '.*-prod')
 ```
 
 ```bash
 # ALL function examples
-kubectl mtv get inventory vms vsphere-prod -q "where all disks[*].capacityGB >= 20"
-kubectl mtv get inventory vms vsphere-prod -q "where all networks[*].type = 'standard'"
+kubectl mtv get inventory vms vsphere-prod -q "where all(disks[*].capacityGB >= 20)"
+kubectl mtv get inventory vms vsphere-prod -q "where all(networks[*].type = 'standard')"
 ```
 
 ### SUM Function
@@ -265,16 +261,16 @@ Calculates the sum of numeric values in an array:
 
 ```sql
 -- Total disk capacity
-sum disks[*].capacityGB > 1000
+sum(disks[*].capacityGB) > 1000
 
 -- Total CPU count
-sum hosts[*].numCpu > 50
+sum(hosts[*].numCpu) > 50
 ```
 
 ```bash
 # SUM function examples
-kubectl mtv get inventory vms vsphere-prod -q "where sum disks[*].capacityGB > 500"
-kubectl mtv get inventory clusters vsphere-prod -q "where sum hosts[*].memoryGB > 100000"
+kubectl mtv get inventory vms vsphere-prod -q "where sum(disks[*].capacityGB) > 500"
+kubectl mtv get inventory clusters vsphere-prod -q "where sum(hosts[*].memoryGB) > 100000"
 ```
 
 ## Advanced Query Examples
@@ -291,7 +287,7 @@ kubectl mtv get inventory vms vsphere-prod -q "where powerState = 'poweredOn'"
 kubectl mtv get inventory vms vsphere-prod -q "where powerState != 'poweredOff'"
 
 # Find suspended or powered-on VMs
-kubectl mtv get inventory vms vsphere-prod -q "where powerState in ('poweredOn', 'suspended')"
+kubectl mtv get inventory vms vsphere-prod -q "where powerState in ['poweredOn', 'suspended']"
 ```
 
 #### Memory-Based Filtering
@@ -329,13 +325,13 @@ kubectl mtv get inventory vms vsphere-prod -q "where name ilike '%database%' or 
 
 ```bash
 # VMs ready for migration (powered on, sufficient resources, not templates)
-kubectl mtv get inventory vms vsphere-prod -q "where powerState = 'poweredOn' and memoryMB >= 2048 and not template and len disks <= 4"
+kubectl mtv get inventory vms vsphere-prod -q "where powerState = 'poweredOn' and memoryMB >= 2048 and not template and len(disks) <= 4"
 
 # Large VMs requiring special handling
-kubectl mtv get inventory vms vsphere-prod -q "where memoryMB > 32768 or sum disks[*].capacityGB > 2000"
+kubectl mtv get inventory vms vsphere-prod -q "where memoryMB > 32768 or sum(disks[*].capacityGB) > 2000"
 
 # VMs with migration concerns
-kubectl mtv get inventory vms vsphere-prod -q "where len disks > 8 or memoryMB > 65536 or any disks[*].capacityGB > 2000"
+kubectl mtv get inventory vms vsphere-prod -q "where len(disks) > 8 or memoryMB > 65536 or any(disks[*].capacityGB > 2000)"
 ```
 
 #### Environment-Specific Filtering
@@ -345,7 +341,7 @@ kubectl mtv get inventory vms vsphere-prod -q "where len disks > 8 or memoryMB >
 kubectl mtv get inventory vms vsphere-prod -q "where cluster.name ilike '%production%' and powerState = 'poweredOn'"
 
 # VMs on specific hosts
-kubectl mtv get inventory vms vsphere-prod -q "where host.name in ('esxi-01.prod.com', 'esxi-02.prod.com')"
+kubectl mtv get inventory vms vsphere-prod -q "where host.name in ['esxi-01.prod.com', 'esxi-02.prod.com']"
 
 # VMs in specific datacenters
 kubectl mtv get inventory vms vsphere-prod -q "where datacenter.name = 'DC-East' and not template"
@@ -357,29 +353,29 @@ kubectl mtv get inventory vms vsphere-prod -q "where datacenter.name = 'DC-East'
 
 ```bash
 # VMs with large storage requirements
-kubectl mtv get inventory vms vsphere-prod -q "where sum disks[*].capacityGB > 500"
+kubectl mtv get inventory vms vsphere-prod -q "where sum(disks[*].capacityGB) > 500"
 
 # VMs with multiple disks
-kubectl mtv get inventory vms vsphere-prod -q "where len disks > 2"
+kubectl mtv get inventory vms vsphere-prod -q "where len(disks) > 2"
 
 # VMs on specific datastores
-kubectl mtv get inventory vms vsphere-prod -q "where any disks[*].datastore.name = 'SSD-Datastore-01'"
+kubectl mtv get inventory vms vsphere-prod -q "where any(disks[*].datastore.name = 'SSD-Datastore-01')"
 
 # VMs with thin-provisioned disks
-kubectl mtv get inventory vms vsphere-prod -q "where any disks[*].thinProvisioned = true"
+kubectl mtv get inventory vms vsphere-prod -q "where any(disks[*].thinProvisioned = true)"
 ```
 
 #### Network-Based Queries
 
 ```bash
 # VMs with multiple network adapters
-kubectl mtv get inventory vms vsphere-prod -q "where len networks > 1"
+kubectl mtv get inventory vms vsphere-prod -q "where len(networks) > 1"
 
 # VMs on specific networks
-kubectl mtv get inventory vms vsphere-prod -q "where any networks[*].name = 'Production Network'"
+kubectl mtv get inventory vms vsphere-prod -q "where any(networks[*].name = 'Production Network')"
 
 # VMs with static IP assignments
-kubectl mtv get inventory vms vsphere-prod -q "where any networks[*].ipAddress is not null"
+kubectl mtv get inventory vms vsphere-prod -q "where any(networks[*].ipAddress is not null)"
 ```
 
 ### Querying Provider Status and Resource Counts
@@ -419,7 +415,7 @@ kubectl mtv get inventory resourcepools vsphere-prod -q "where memoryUsageGB > 5
 kubectl mtv get inventory vms vsphere-prod -q "where vmwareToolsStatus = 'toolsOk'"
 
 # VMs requiring VMware Tools updates
-kubectl mtv get inventory vms vsphere-prod -q "where vmwareToolsStatus in ('toolsOld', 'toolsNotInstalled')"
+kubectl mtv get inventory vms vsphere-prod -q "where vmwareToolsStatus in ['toolsOld', 'toolsNotInstalled']"
 
 # VMs with snapshots
 kubectl mtv get inventory vms vsphere-prod -q "where snapshotCount > 0"
@@ -435,7 +431,7 @@ kubectl mtv get inventory vms vsphere-prod -q "where folder.name ~= '.*Productio
 kubectl mtv get inventory vms ovirt-prod -q "where highAvailability = true"
 
 # VMs using specific disk profiles
-kubectl mtv get inventory vms ovirt-prod -q "where any disks[*].profile.name = 'high-performance'"
+kubectl mtv get inventory vms ovirt-prod -q "where any(disks[*].profile.name = 'high-performance')"
 
 # VMs with ballooning enabled
 kubectl mtv get inventory vms ovirt-prod -q "where memoryBalloon = true"
@@ -468,7 +464,7 @@ kubectl mtv get inventory instances openstack-prod -q "where status = 'ACTIVE'"
 kubectl mtv get inventory vms vsphere-prod -q "where cluster.name = 'Prod-Cluster' and powerState = 'poweredOn'"
 
 # Less efficient: Broad queries with complex conditions
-kubectl mtv get inventory vms vsphere-prod -q "where len name > 5 and memoryMB > 1024"
+kubectl mtv get inventory vms vsphere-prod -q "where len(name) > 5 and memoryMB > 1024"
 ```
 
 #### Leverage Indexes
@@ -486,7 +482,7 @@ kubectl mtv get inventory vms vsphere-prod -q "where host.name = 'esxi-01.exampl
 
 ```bash
 # Good: Combine related VM criteria
-kubectl mtv get inventory vms vsphere-prod -q "where powerState = 'poweredOn' and memoryMB >= 4096 and len disks <= 3"
+kubectl mtv get inventory vms vsphere-prod -q "where powerState = 'poweredOn' and memoryMB >= 4096 and len(disks) <= 3"
 
 # Better structure for complex queries
 kubectl mtv get inventory vms vsphere-prod -q "where (name ~= '^prod-.*' or name ~= '^web-.*') and powerState != 'poweredOff'"
@@ -599,7 +595,7 @@ kubectl logs -n konveyor-forklift deployment/forklift-inventory -f
 ```bash
 # Create migration plans based on queries
 kubectl mtv get inventory vms vsphere-prod \
-  -q "where powerState = 'poweredOn' and memoryMB <= 8192 and len disks <= 2" \
+  -q "where powerState = 'poweredOn' and memoryMB <= 8192 and len(disks) <= 2" \
   -o planvms > small-vms.yaml
 
 kubectl mtv create plan small-vm-migration \
@@ -646,7 +642,7 @@ kubectl mtv get inventory vms vsphere-prod -q "where host.cluster.name = 'Produc
 kubectl mtv get inventory vms vsphere-prod -q "where disks[0].capacityGB > 100"
 
 # Complex nested queries
-kubectl mtv get inventory vms vsphere-prod -q "where host.datacenter.name = 'DC1' and any networks[*].vlan > 100"
+kubectl mtv get inventory vms vsphere-prod -q "where host.datacenter.name = 'DC1' and any(networks[*].vlan > 100)"
 ```
 
 ### Regular Expression Patterns
@@ -690,12 +686,12 @@ TSL provides a powerful, SQL-like query interface for kubectl-mtv inventory oper
 
 After mastering TSL queries:
 
-1. **Apply to Mappings**: Use queries for mapping creation in [Chapter 9: Mapping Management](/kubectl-mtv/09-mapping-management)
-2. **Plan Creation**: Leverage queries for plan development in [Chapter 10: Migration Plan Creation](/kubectl-mtv/10-migration-plan-creation)
-3. **VM Customization**: Use query results for VM customization in [Chapter 11: Customizing Individual VMs](/kubectl-mtv/11-customizing-individual-vms-planvms-format)
-4. **Optimization**: Apply query insights in [Chapter 13: Migration Process Optimization](/kubectl-mtv/13-migration-process-optimization)
+1. **Apply to Mappings**: Use queries for mapping creation in [Chapter 11: Mapping Management](/kubectl-mtv/11-mapping-management)
+2. **Plan Creation**: Leverage queries for plan development in [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)
+3. **VM Customization**: Use query results for VM customization in [Chapter 14: Customizing Individual VMs](/kubectl-mtv/14-customizing-individual-vms-planvms-format)
+4. **Optimization**: Apply query insights in [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
 
 ---
 
-*Previous: [Chapter 7: Inventory Management](/kubectl-mtv/07-inventory-management)*  
-*Next: [Chapter 9: Mapping Management](/kubectl-mtv/09-mapping-management)*
+*Previous: [Chapter 9: Inventory Management](/kubectl-mtv/09-inventory-management)*  
+*Next: [Chapter 11: Mapping Management](/kubectl-mtv/11-mapping-management)*

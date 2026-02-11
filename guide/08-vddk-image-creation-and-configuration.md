@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Chapter 6: VDDK Image Creation and Configuration"
+title: "Chapter 8: VDDK Image Creation and Configuration"
 ---
 
 VMware Virtual Disk Development Kit (VDDK) provides optimized disk transfer capabilities for VMware vSphere migrations. This chapter covers creating VDDK container images and configuring them for maximum performance.
@@ -791,12 +791,12 @@ podman run --rm quay.io/company/vddk:8.0.1 \
 
 After configuring VDDK:
 
-1. **Explore Inventory**: Discover VMs and resources in [Chapter 7: Inventory Management](/kubectl-mtv/07-inventory-management)
-2. **Create Mappings**: Configure resource mappings in [Chapter 9: Mapping Management](/kubectl-mtv/09-mapping-management)
-3. **Optimize Performance**: Learn advanced techniques in [Chapter 13: Migration Process Optimization](/kubectl-mtv/13-migration-process-optimization)
-4. **Plan Migrations**: Create optimized plans in [Chapter 10: Migration Plan Creation](/kubectl-mtv/10-migration-plan-creation)
+1. **Explore Inventory**: Discover VMs and resources in [Chapter 9: Inventory Management](/kubectl-mtv/09-inventory-management)
+2. **Create Mappings**: Configure resource mappings in [Chapter 11: Mapping Management](/kubectl-mtv/11-mapping-management)
+3. **Optimize Performance**: Learn advanced techniques in [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
+4. **Plan Migrations**: Create optimized plans in [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)
 
 ---
 
-*Previous: [Chapter 5: Migration Host Management](/kubectl-mtv/05-migration-host-management)*  
-*Next: [Chapter 7: Inventory Management](/kubectl-mtv/07-inventory-management)*
+*Previous: [Chapter 7: Migration Host Management](/kubectl-mtv/07-migration-host-management)*  
+*Next: [Chapter 9: Inventory Management](/kubectl-mtv/09-inventory-management)*

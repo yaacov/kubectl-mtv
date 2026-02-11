@@ -26,7 +26,7 @@ See [Installation Guide](guide/02-installation-and-prerequisites.md) for more op
 
 kubectl-mtv includes a built-in MCP (Model Context Protocol) server for AI agents that support MCP add‑ons, such as Cursor IDE and Claude Desktop.
 
-See [MCP Server Guide](guide/19-model-context-protocol-mcp-server-integration.md) for detailed setup instructions and usage examples.
+See [MCP Server Guide](guide/22-model-context-protocol-mcp-server-integration.md) for detailed setup instructions and usage examples.
 
 ## Quick Start
 
@@ -101,7 +101,7 @@ kubectl mtv get inventory networks vsphere-01
 kubectl mtv get inventory storage vsphere-01
 ```
 
-See [Inventory Management Guide](guide/07-inventory-management.md) for advanced queries and filtering.
+See [Inventory Management Guide](guide/09-inventory-management.md) for advanced queries and filtering.
 
 ## VDDK Support
 
@@ -119,7 +119,26 @@ kubectl mtv create provider vsphere-01 --type vsphere \
   --vddk-init-image quay.io/myorg/vddk:8.0.1
 ```
 
-See [VDDK Setup Guide](guide/06-vddk-image-creation-and-configuration.md) for detailed instructions.
+See [VDDK Setup Guide](guide/08-vddk-image-creation-and-configuration.md) for detailed instructions.
+
+## Help and Reference Topics
+
+The built-in help system includes machine-readable output and reference topics for domain-specific query languages:
+
+```bash
+# Get help for any command
+kubectl mtv help create plan
+
+# Learn the TSL query language or KARL affinity syntax
+kubectl mtv help tsl
+kubectl mtv help karl
+
+# Machine-readable command schema (JSON/YAML) for automation and AI agents
+kubectl mtv help --machine
+kubectl mtv help --machine --short get plan
+```
+
+See [Command Reference](guide/26-command-reference.md) for the full help command documentation.
 
 ## Features
 
@@ -132,6 +151,7 @@ See [VDDK Setup Guide](guide/06-vddk-image-creation-and-configuration.md) for de
 - **Timezone-Aware Display**: View timestamps in local time or UTC with `--use-utc` flag
 - **System Health Checks**: Comprehensive health diagnostics for the MTV/Forklift system with actionable recommendations
 - **Settings Management**: View and configure ForkliftController settings (feature flags, performance tuning, resource limits)
+- **Machine-Readable Help**: Full command schema available as JSON/YAML for automation, MCP servers, and AI agents
 
 ## Documentation
 
@@ -141,13 +161,13 @@ See [VDDK Setup Guide](guide/06-vddk-image-creation-and-configuration.md) for de
 
 - [Installation & Prerequisites](guide/02-installation-and-prerequisites.md)
 - [Quick Start Tutorial](guide/03-quick-start-first-migration-workflow.md)
-- [Provider Management](guide/04-provider-management.md)
-- [Inventory Management](guide/07-inventory-management.md)
-- [Mapping Management](guide/09-mapping-management.md)
-- [Migration Plan Creation](guide/10-migration-plan-creation.md)
-- [Migration Hooks](guide/14-migration-hooks.md)
-- [MCP Server Integration](guide/19-model-context-protocol-mcp-server-integration.md)
-- [Command Reference](guide/23-command-reference.md)
+- [Provider Management](guide/06-provider-management.md)
+- [Inventory Management](guide/09-inventory-management.md)
+- [Mapping Management](guide/11-mapping-management.md)
+- [Migration Plan Creation](guide/13-migration-plan-creation.md)
+- [Migration Hooks](guide/17-migration-hooks.md)
+- [MCP Server Integration](guide/22-model-context-protocol-mcp-server-integration.md)
+- [Command Reference](guide/26-command-reference.md)
 
 ## Environment Variables
 

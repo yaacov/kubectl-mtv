@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Chapter 12: Target VM Placement (Operational Lifetime)"
+title: "Chapter 15: Target VM Placement (Operational Lifetime)"
 ---
 
 Target VM placement controls where and how VMs run in the target Kubernetes cluster after migration. This chapter covers comprehensive VM scheduling, affinity rules, and operational configuration for the target environment.
@@ -17,7 +17,7 @@ kubectl-mtv provides two distinct categories of placement control:
 - **Scope**: Target VM pods, their scheduling, and long-term placement
 - **Examples**: Production workload distribution, availability requirements
 
-#### Migration Process Optimization (Chapter 13)
+#### Migration Process Optimization (Chapter 16)
 - **Purpose**: Optimize temporary migration infrastructure during the process
 - **Lifespan**: Only during the migration operation
 - **Scope**: Convertor pods, temporary resources, migration performance
@@ -158,7 +158,7 @@ kubectl mtv create plan backup-offline \
 kubectl mtv create plan preserve-state \
   --source vsphere-prod \
   --target-power-state auto \
-  --vms "where powerState in ('poweredOn', 'poweredOff')"
+  --vms "where powerState in ['poweredOn', 'poweredOff']"
 ```
 
 ## Target Affinity with KARL Syntax
@@ -633,12 +633,12 @@ kubectl mtv create plan cpu-distribution \
 
 After mastering target VM placement:
 
-1. **Optimize Migration Process**: Learn convertor optimization in [Chapter 13: Migration Process Optimization](/kubectl-mtv/13-migration-process-optimization)
-2. **Create Hooks**: Develop migration automation in [Chapter 14: Migration Hooks](/kubectl-mtv/14-migration-hooks)
-3. **Advanced Plan Modification**: Learn plan patching in [Chapter 15: Advanced Plan Patching](/kubectl-mtv/15-advanced-plan-patching)
-4. **Execute Migrations**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)
+1. **Optimize Migration Process**: Learn convertor optimization in [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
+2. **Create Hooks**: Develop migration automation in [Chapter 17: Migration Hooks](/kubectl-mtv/17-migration-hooks)
+3. **Advanced Plan Modification**: Learn plan patching in [Chapter 18: Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching)
+4. **Execute Migrations**: Manage plan lifecycle in [Chapter 19: Plan Lifecycle Execution](/kubectl-mtv/19-plan-lifecycle-execution)
 
 ---
 
-*Previous: [Chapter 11: Customizing Individual VMs (PlanVMS Format)](/kubectl-mtv/11-customizing-individual-vms-planvms-format)*  
-*Next: [Chapter 13: Migration Process Optimization](/kubectl-mtv/13-migration-process-optimization)*
+*Previous: [Chapter 14: Customizing Individual VMs (PlanVMS Format)](/kubectl-mtv/14-customizing-individual-vms-planvms-format)*  
+*Next: [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)*

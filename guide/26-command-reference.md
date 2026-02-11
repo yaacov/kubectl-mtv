@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Chapter 23: Command Reference"
+title: "Chapter 26: Command Reference"
 ---
 
 This chapter provides a comprehensive reference for all `kubectl-mtv` commands, subcommands, and their flags. Commands are organized by functionality to help you quickly find the right tool for your migration tasks.
@@ -836,6 +836,81 @@ kubectl mtv version [flags]
 
 Shows the `kubectl-mtv` version, build information, and runtime details.
 
+### help - Help and Reference
+
+Get help for any command, browse help topics, or output machine-readable command schemas.
+
+```bash
+kubectl mtv help [command]
+kubectl mtv help [topic]
+kubectl mtv help --machine [command] [flags]
+```
+
+#### Human-Readable Help
+
+```bash
+# Show general help
+kubectl mtv help
+
+# Get help for a specific command
+kubectl mtv help get plan
+kubectl mtv help create provider
+```
+
+#### Help Topics
+
+Built-in reference topics are available for domain-specific languages:
+
+| **Topic** | **Description** |
+|-----------|-----------------|
+| `tsl` | Tree Search Language (TSL) query syntax reference |
+| `karl` | Kubernetes Affinity Rule Language (KARL) syntax reference |
+
+```bash
+# Learn about the TSL query language
+kubectl mtv help tsl
+
+# Learn about the KARL affinity syntax
+kubectl mtv help karl
+```
+
+#### Machine-Readable Output
+
+Use `--machine` to output command schemas in JSON or YAML for integration with
+MCP servers, automation tools, and AI assistants.
+
+| **Flag** | **Type** | **Default** | **Description** |
+|----------|----------|-------------|-----------------|
+| `--machine` | bool | false | Enable machine-readable output |
+| `--short` | bool | false | Omit long descriptions and examples (with `--machine`) |
+| `-o`, `--output` | string | `json` | Output format: `json` or `yaml` |
+| `--read-only` | bool | false | Include only read-only commands |
+| `--write` | bool | false | Include only write commands |
+| `--include-global-flags` | bool | true | Include global flags in output |
+
+```bash
+# Output complete command schema as JSON
+kubectl mtv help --machine
+
+# Output schema for a single command
+kubectl mtv help --machine get plan
+
+# Output schema for all "get" commands
+kubectl mtv help --machine get
+
+# Condensed schema without long descriptions or examples
+kubectl mtv help --machine --short
+
+# Output in YAML format
+kubectl mtv help --machine -o yaml
+
+# Only read-only commands
+kubectl mtv help --machine --read-only
+
+# Get TSL reference in machine-readable format
+kubectl mtv help --machine tsl
+```
+
 ## Query Language (TSL) Syntax
 
 The Tree Search Language (TSL) is used with inventory commands for advanced filtering:
@@ -859,8 +934,8 @@ kubectl mtv get inventory vm <provider> --query "where <condition>"
 | `ilike` | Pattern match (case-insensitive) | `name ilike 'WEB-%'` |
 | `~=` | Regex match | `name ~= 'prod-.*'` |
 | `~!` | Regex not match | `name ~! 'test-.*'` |
-| `in` | In list | `powerState in ('poweredOn', 'suspended')` |
-| `not in` | Not in list | `powerState not in ('poweredOff')` |
+| `in` | In list | `powerState in ['poweredOn', 'suspended']` |
+| `not in` | Not in list | `powerState not in ['poweredOff']` |
 | `between` | Range | `memoryMB between 4096 and 16384` |
 | `is null` | Null check | `description is null` |
 | `is not null` | Not null check | `guestIP is not null` |
@@ -874,8 +949,8 @@ kubectl mtv get inventory vm <provider> --query "where <condition>"
 |--------------|-----------------|-------------|
 | `len(field)` | Length of array | `len(disks) > 1` |
 | `sum(field[*].sub)` | Sum of numeric values | `sum(disks[*].capacityInBytes) > 107374182400` |
-| `any field[*].sub` | Any element matches | `any disks[*].shared = true` |
-| `all field[*].sub` | All elements match | `all disks[*].capacityGB >= 20` |
+| `any(field[*].sub)` | Any element matches | `any(concerns[*].category = 'Critical')` |
+| `all(field[*].sub)` | All elements match | `all(disks[*].capacityGB >= 20)` |
 
 ### Array Access and SI Units
 
@@ -898,7 +973,7 @@ kubectl mtv get inventory vm vsphere-prod -q "where name like 'prod-%'"
 kubectl mtv get inventory vm vsphere-prod -q "where len(disks) > 1 and sum(disks[*].capacityInBytes) > 53687091200"
 
 # VMs in specific power states
-kubectl mtv get inventory vm vsphere-prod -q "where powerState in ('poweredOn', 'suspended')"
+kubectl mtv get inventory vm vsphere-prod -q "where powerState in ['poweredOn', 'suspended']"
 
 # Complex query with multiple conditions
 kubectl mtv get inventory vm vsphere-prod -q "where (name like 'web-%' or name like 'app-%') and powerState = 'poweredOn' and memoryMB between 2048 and 8192"
@@ -1000,4 +1075,4 @@ kubectl mtv get inventory vm vsphere-source -v=3
 
 ---
 
-*Previous: [Chapter 22: Settings Management](/kubectl-mtv/22-settings-management)*
+*Previous: [Chapter 25: Settings Management](/kubectl-mtv/25-settings-management)*

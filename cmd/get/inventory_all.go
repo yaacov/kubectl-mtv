@@ -153,64 +153,20 @@ flag shows additional VM details.
 
 Output format 'planvms' generates YAML suitable for use with 'create plan --vms @file'.
 
-Query Language (TSL) Syntax:
-  Used by -q "where ..." to filter inventory results.
+Query Language (TSL):
+  Use -q "where ..." to filter inventory results with TSL query syntax:
+    -q "where name ~= 'prod-.*'"
+    -q "where powerState = 'poweredOn' and memoryMB > 4096"
+    -q "where len(disks) > 1 and cpuCount <= 8"
+    -q "where name like '%web%' order by memoryMB desc limit 10"
 
-  Structure: [SELECT fields] WHERE condition [ORDER BY field [ASC|DESC]] [LIMIT n]
+  Supports comparison, regex, logical operators, array functions (len(), any(), all()),
+  SI units (Ki, Mi, Gi), sorting (ORDER BY), and limiting (LIMIT).
 
-  Comparison:     =  !=  <>  <  <=  >  >=
-  Arithmetic:     +  -  *  /  %
-  String match:   like (% wildcard), ilike (case-insensitive), ~= (regex), ~! (not regex)
-  Logical:        and, or, not
-  Set/range:      in ('val1','val2'), not in ('val1','val2'), between X and Y
-  Null checks:    is null, is not null
-  Array funcs:    len(field), sum(field[*].sub), any field[*].sub > N, all field[*].sub >= N
-  Array access:   field[index], field[*] (wildcard), implicit field.sub traversal
-  SI units:       Ki, Mi, Gi, Ti, Pi suffixes for numeric literals (e.g. 4Gi = 4294967296)
-  Field access:   dot notation (e.g. parent.id, disks[*].datastore.id, guest.distribution)
+  To discover available fields for your provider, run:
+    kubectl-mtv get inventory vm <provider> -o json
 
-  Discovering available fields:
-    Inventory items are dynamic JSON from the provider. Field names vary by provider
-    type. To see all available fields, run:
-      kubectl-mtv get inventory vm <provider> -o json
-    Any field visible in the JSON output can be used in queries with dot notation.
-
-  Common VM fields (vSphere):
-    name, id, powerState, cpuCount, memoryMB, guestId, guestName, isTemplate
-    firmware, storageUsed, ipAddress, hostName, host, path, uuid, connectionState
-    changeTrackingEnabled, coresPerSocket, secureBoot, tpmEnabled
-    parent.id, parent.kind (folder reference)
-    disks (array): disks.capacity, disks.datastore.id, disks.file, disks.shared
-    nics (array): nics.mac, nics.network.id
-    networks (array): networks.id, networks.kind
-    concerns (array): concerns.category, concerns.assessment, concerns.label
-
-  Common VM fields (oVirt):
-    name, id, status, memory, cpuSockets, cpuCores, cpuThreads, osType, guestName
-    cluster, host, path, haEnabled, stateless, placementPolicyAffinity, display
-    guest.distribution, guest.fullVersion
-    diskAttachments (array): diskAttachments.disk, diskAttachments.interface
-    nics (array): nics.name, nics.mac, nics.interface, nics.ipAddress, nics.profile
-    concerns (array): concerns.category, concerns.assessment, concerns.label
-
-  Common VM fields (OpenStack):
-    name, id, status, flavor.name, image.name, project.name
-
-  Common VM fields (EC2, PascalCase):
-    name, InstanceType, State.Name, PlatformDetails
-    Placement.AvailabilityZone, PublicIpAddress, PrivateIpAddress, VpcId, SubnetId
-
-  Examples:
-    where name ~= 'prod-.*'
-    where powerState = 'poweredOn' and memoryMB > 4096       (vSphere)
-    where status = 'up' and memory > 4294967296              (oVirt, memory in bytes)
-    where isTemplate = false and firmware = 'efi'            (vSphere)
-    where guestId ~= 'rhel.*' and storageUsed > 53687091200
-    where len(disks) > 1 and cpuCount <= 8
-    where len(networks) = 2                                  (VMs with exactly 2 networks)
-    where len(disks) = 2 and len(nics) = 2                   (multi-disk, multi-NIC VMs)
-    where name like '%web%' order by memoryMB desc limit 10
-    where path ~= '/Production/.*'`,
+  Run 'kubectl-mtv help tsl' for the full syntax reference and field list.`,
 		Example: `  # List all VMs from a vSphere provider
   kubectl-mtv get inventory vm vsphere-prod
 

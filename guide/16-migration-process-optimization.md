@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Chapter 13: Migration Process Optimization (Convertor Pod Scheduling)"
+title: "Chapter 16: Migration Process Optimization (Convertor Pod Scheduling)"
 ---
 
 Migration process optimization focuses on optimizing the temporary infrastructure used during VM conversion and migration, particularly the virt-v2v convertor pods. This chapter covers performance tuning, resource management, and strategic placement of migration workloads.
@@ -118,7 +118,7 @@ kubectl mtv create plan storage-optimized \
 kubectl mtv create plan nvme-conversion \
   --source vsphere-prod \
   --convertor-node-selector "storage=nvme,conversion=optimized" \
-  --vms "where sum disks[*].capacityGB > 500"
+  --vms "where sum(disks[*].capacityGB) > 500"
 
 # Local SSD for temporary conversion files
 kubectl mtv create plan local-ssd \
@@ -270,7 +270,7 @@ kubectl mtv create plan nvme-optimized \
   --convertor-affinity "REQUIRE pods(storage-controller=nvme) on node" \
   --convertor-labels "performance=extreme,storage=nvme" \
   --migration-type warm \
-  --vms "where sum disks[*].capacityGB > 1000"
+  --vms "where sum(disks[*].capacityGB) > 1000"
 
 # Results: Convertors use fastest available storage for temporary files
 ```
@@ -384,7 +384,7 @@ kubectl mtv create plan multi-disk-conversion \
   --source vsphere-prod \
   --convertor-node-selector "cpu=performance,parallel=supported" \
   --convertor-labels "disk-count=multiple,cpu=parallel" \
-  --vms "where len disks > 4"
+  --vms "where len(disks) > 4"
 ```
 
 ### Memory Requirements
@@ -418,14 +418,14 @@ kubectl mtv create plan high-iops-conversion \
   --convertor-node-selector "iops=high,storage=dedicated" \
   --convertor-affinity "REQUIRE pods(storage=high-iops) on node" \
   --convertor-labels "iops=high,storage=performance" \
-  --vms "where any disks[*].iops > 10000"
+  --vms "where any(disks[*].iops > 10000)"
 
 # Sequential I/O optimization for large files
 kubectl mtv create plan sequential-io \
   --source vsphere-prod \
   --convertor-node-selector "io-pattern=sequential,throughput=high" \
   --convertor-labels "io=sequential,throughput=optimized" \
-  --vms "where any disks[*].capacityGB > 500"
+  --vms "where any(disks[*].capacityGB > 500)"
 ```
 
 ## Advanced Convertor Optimization Scenarios
@@ -679,12 +679,12 @@ kubectl mtv create plan cold-cost-optimized \
 
 After mastering migration process optimization:
 
-1. **Implement Hooks**: Add custom automation in [Chapter 14: Migration Hooks](/kubectl-mtv/14-migration-hooks)
-2. **Advanced Plan Management**: Learn plan patching in [Chapter 15: Advanced Plan Patching](/kubectl-mtv/15-advanced-plan-patching)
-3. **Execute Migrations**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)
-4. **Troubleshooting**: Master debugging in [Chapter 17: Debugging and Troubleshooting](/kubectl-mtv/17-debugging-and-troubleshooting)
+1. **Implement Hooks**: Add custom automation in [Chapter 17: Migration Hooks](/kubectl-mtv/17-migration-hooks)
+2. **Advanced Plan Management**: Learn plan patching in [Chapter 18: Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching)
+3. **Execute Migrations**: Manage plan lifecycle in [Chapter 19: Plan Lifecycle Execution](/kubectl-mtv/19-plan-lifecycle-execution)
+4. **Troubleshooting**: Master debugging in [Chapter 20: Debugging and Troubleshooting](/kubectl-mtv/20-debugging-and-troubleshooting)
 
 ---
 
-*Previous: [Chapter 12: Target VM Placement](/kubectl-mtv/12-target-vm-placement)*  
-*Next: [Chapter 14: Migration Hooks](/kubectl-mtv/14-migration-hooks)*
+*Previous: [Chapter 15: Target VM Placement](/kubectl-mtv/15-target-vm-placement)*  
+*Next: [Chapter 17: Migration Hooks](/kubectl-mtv/17-migration-hooks)*

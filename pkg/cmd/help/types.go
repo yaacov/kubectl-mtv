@@ -102,6 +102,8 @@ type Options struct {
 	IncludeGlobalFlags bool
 	// IncludeHidden includes hidden flags and commands
 	IncludeHidden bool
+	// Short omits long_description and examples from command output
+	Short bool
 }
 
 // DefaultOptions returns the default generation options.

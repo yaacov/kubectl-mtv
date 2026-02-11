@@ -66,31 +66,11 @@ Use this to update plan settings like migration type, transfer network,
 target labels, node selectors, or convertor pod configuration.
 
 Affinity Syntax (KARL):
-  Used by --target-affinity and --convertor-affinity to define pod affinity rules.
-
-  Syntax: RULE_TYPE pods(selector[,selector...]) on TOPOLOGY [weight=N]
-
-  Rule types:
-    REQUIRE  - hard affinity (must co-locate with matching pods)
-    PREFER   - soft affinity (prefer co-location, weight=1-100, default 100)
-    AVOID    - hard anti-affinity (must not co-locate)
-    REPEL    - soft anti-affinity (prefer not co-locating, weight=1-100)
-
-  Topology keys: node, zone, region, rack
-
-  Label selectors (inside pods(...)):
-    key=value            equality match
-    key in [v1,v2,v3]   value in set
-    key not in [v1,v2]  value not in set
-    has key              label exists
-    not has key          label does not exist
-  Multiple selectors are AND-ed: pods(app=web,tier=frontend,has monitoring)
-
-  Examples:
-    REQUIRE pods(app=database) on node
-    PREFER pods(app=cache) on zone weight=80
-    AVOID pods(app=web) on node
-    REPEL pods(tier in [batch,worker]) on zone weight=50`,
+  The --target-affinity and --convertor-affinity flags use KARL syntax:
+    --target-affinity "REQUIRE pods(app=database) on node"
+    --convertor-affinity "PREFER pods(app=cache) on zone weight=80"
+  Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.
+  Run 'kubectl-mtv help karl' for the full syntax reference.`,
 		Example: `  # Change migration type to warm
   kubectl-mtv patch plan my-migration --migration-type warm
 

@@ -665,7 +665,8 @@ func TestRegistry_RealHelpMachine_KARLReference(t *testing.T) {
 
 	result := registry.GenerateReadWriteDescription()
 
-	// KARL syntax reference should be surfaced via LongDescription of create plan and patch plan
+	// KARL syntax reference should be surfaced via LongDescription of create plan and patch plan.
+	// Detailed KARL syntax is available via 'help karl'; command descriptions contain a summary.
 	karlKeywords := []string{
 		"Affinity Syntax (KARL)",
 		"REQUIRE",
@@ -674,11 +675,8 @@ func TestRegistry_RealHelpMachine_KARLReference(t *testing.T) {
 		"REPEL",
 		"pods(",
 		"weight=",
-		"Topology keys:",
-		"key=value",
-		"key in [v1,v2,v3]",
-		"has key",
-		"not has key",
+		"Topology:",
+		"help karl",
 	}
 
 	for _, keyword := range karlKeywords {
@@ -691,35 +689,18 @@ func TestRegistry_RealHelpMachine_KARLReference(t *testing.T) {
 func TestRegistry_RealHelpMachine_QueryLanguageReference(t *testing.T) {
 	registry := loadRealRegistry(t)
 
-	// Query language reference should appear in the write description (via create plan LongDescription)
+	// Query language reference should appear in the write description (via create plan LongDescription).
+	// Detailed TSL syntax and field lists are available via 'help tsl'; command descriptions contain a summary.
 	writeResult := registry.GenerateReadWriteDescription()
 	tslKeywords := []string{
 		"Query Language (TSL)",
 		"where",
-		"like",
 		"~=",
-		"ORDER BY",
-		"between",
-		"is null",
-		"len(field)",
-		"dot notation",
-		// Field discovery hint and common field names
-		"Discovering available fields",
-		"-o json",
 		"cpuCount",
 		"memoryMB",
 		"powerState",
-		"guestId",
-		"isTemplate",
-		"disks.capacity",
-		"disks.datastore.id",
-		"concerns.category",
-		"concerns.label",
-		"cpuSockets",         // oVirt-specific
-		"guest.distribution", // oVirt-specific
-		"flavor.name",        // OpenStack
-		"InstanceType",       // EC2
-		"State.Name",         // EC2
+		"len(disks)",
+		"help tsl",
 	}
 
 	for _, keyword := range tslKeywords {
@@ -737,11 +718,9 @@ func TestRegistry_RealHelpMachine_QueryLanguageReference(t *testing.T) {
 		"like",
 		"~=",
 		"ORDER BY",
-		// Field discovery hint should be in read description too
-		"Discovering available fields",
 		"-o json",
 		"cpuCount",
-		"isTemplate",
+		"help tsl",
 	}
 
 	for _, keyword := range readTSLKeywords {

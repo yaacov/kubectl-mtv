@@ -507,18 +507,18 @@ kubectl mtv create plan dev-migration \
 # Migrate VMs with specific characteristics
 kubectl mtv create plan memory-migration \
   --source vsphere-source \
-  --vms "where memoryMB > 8192 and len disks <= 2"
+  --vms "where memoryMB > 8192 and len(disks) <= 2"
 ```
 
 ## Next Steps
 
 After completing your first migration:
 
-1. **Explore Advanced Features**: Learn about [Provider Management](/kubectl-mtv/04-provider-management) and [VDDK Optimization](/kubectl-mtv/06-vddk-image-creation-and-configuration)
-2. **Master Query Language**: Dive into [Advanced Filtering](/kubectl-mtv/08-query-language-reference-and-advanced-filtering)
-3. **Optimize Performance**: Study [Migration Process Optimization](/kubectl-mtv/13-migration-process-optimization)
-4. **Add Automation**: Implement [Migration Hooks](/kubectl-mtv/14-migration-hooks)
-5. **Scale Up**: Plan larger migrations with [Best Practices](/kubectl-mtv/18-best-practices-and-security)
+1. **Explore Advanced Features**: Learn about [Provider Management](/kubectl-mtv/06-provider-management) and [VDDK Optimization](/kubectl-mtv/08-vddk-image-creation-and-configuration)
+2. **Master Query Language**: Dive into [Advanced Filtering](/kubectl-mtv/10-query-language-reference-and-advanced-filtering)
+3. **Optimize Performance**: Study [Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
+4. **Add Automation**: Implement [Migration Hooks](/kubectl-mtv/17-migration-hooks)
+5. **Scale Up**: Plan larger migrations with [Best Practices](/kubectl-mtv/21-best-practices-and-security)
 
 ## Troubleshooting Quick Reference
 
@@ -552,4 +552,4 @@ kubectl logs -n konveyor-forklift deployment/forklift-controller
 ---
 
 *Previous: [Chapter 2: Installation and Prerequisites](/kubectl-mtv/02-installation-and-prerequisites)*  
-*Next: [Chapter 4: Provider Management](/kubectl-mtv/04-provider-management)*
+*Next: [Chapter 4: Migration Types and Strategy Selection](/kubectl-mtv/04-migration-types-and-strategy-selection)*

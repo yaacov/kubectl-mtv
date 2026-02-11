@@ -41,14 +41,14 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
     *   Step 4: Creating the Migration Plan.
     *   Step 5: Executing and Monitoring the Migration (`start plan`, `get plan --watch`).
 
-4.  **[Migration Types and Strategy Selection](/kubectl-mtv/03.5-migration-types-and-strategy-selection)**
+4.  **[Migration Types and Strategy Selection](/kubectl-mtv/04-migration-types-and-strategy-selection)**
     *   Cold Migration (Complete offline process, highest reliability).
     *   Warm Migration (Two-stage precopy/cutover, minimal downtime).
     *   Live Migration (Near-zero downtime, KubeVirt sources only).
     *   Migration Selection Decision Framework.
     *   Performance Considerations and Official Testing Data.
 
-5.  **[Conversion Migration](/kubectl-mtv/03.6-conversion-migration)**
+5.  **[Conversion Migration](/kubectl-mtv/05-conversion-migration)**
     *   Overview and Architecture (External storage vendor integration).
     *   Platform Requirements and Limitations (VMware vSphere only).
     *   Prerequisites and PVC Metadata Requirements.
@@ -58,7 +58,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
 
 ### II. Provider, Host, and VDDK Management
 
-6.  **[Provider Management](/kubectl-mtv/04-provider-management)**
+6.  **[Provider Management](/kubectl-mtv/06-provider-management)**
     *   Listing, Describing, and Deleting Providers.
     *   **How-To: Creating Providers** (Syntax and Required Flags).
         *   vSphere Provider (URL, Credentials, VDDK Image).
@@ -69,7 +69,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
         *   Updating URL, Credentials, and CA Certificates.
         *   Understanding Secret Ownership and Protection (Owned vs. Shared Secrets).
 
-7.  **[Migration Host Management (vSphere Specific)](/kubectl-mtv/05-migration-host-management)**
+7.  **[Migration Host Management (vSphere Specific)](/kubectl-mtv/07-migration-host-management)**
     *   Overview and Purpose of Migration Hosts (Direct ESXi access, optimization).
     *   **How-To: Creating Hosts** (`kubectl mtv create host`).
         *   IP Address Resolution (Direct IP vs. Network Adapter Lookup).
@@ -77,7 +77,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
     *   Listing, Describing, and Deleting Hosts.
     *   Best Practices for Host Creation.
 
-8.  **[VDDK Image Creation and Configuration](/kubectl-mtv/06-vddk-image-creation-and-configuration)**
+8.  **[VDDK Image Creation and Configuration](/kubectl-mtv/08-vddk-image-creation-and-configuration)**
     *   Why VDDK is recommended for VMware disk transfers.
     *   Prerequisites for Building the Image.
     *   **How-To: Building the VDDK Image** (`kubectl mtv create vddk-image`).
@@ -86,14 +86,14 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
 
 ### III. Inventory and Advanced Query Language
 
-9.  **[Inventory Management](/kubectl-mtv/07-inventory-management)**
+9.  **[Inventory Management](/kubectl-mtv/09-inventory-management)**
     *   Overview of Resources Available for Querying (VMs, Networks, Storage, Hosts, Providers).
     *   General Syntax: `kubectl mtv get inventory <resource> <provider>`.
     *   Common Inventory Examples (Listing VMs, Networks, Storage).
     *   Output Formats (Table, JSON, YAML).
     *   **How-To: Exporting VMs for Migration Planning** (`-o planvms`).
 
-10. **[Query Language Reference and Advanced Filtering](/kubectl-mtv/08-query-language-reference-and-advanced-filtering)**
+10. **[Query Language Reference and Advanced Filtering](/kubectl-mtv/10-query-language-reference-and-advanced-filtering)**
     *   Query Structure (SELECT, WHERE, ORDER BY, LIMIT clauses).
     *   **Detailed Syntax and Features**
         *   WHERE Clause (Tree Search Language - TSL).
@@ -108,7 +108,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
 
 ### IV. Mapping and Plan Configuration
 
-11. **[Mapping Management](/kubectl-mtv/09-mapping-management)**
+11. **[Mapping Management](/kubectl-mtv/11-mapping-management)**
     *   Overview (Defining source-to-target resource relationships).
     *   Listing, Viewing, and Deleting Mappings.
     *   **How-To: Creating Mappings** (`kubectl mtv create mapping`).
@@ -117,14 +117,14 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
         *   **Enhanced Storage Options** (volumeMode, accessMode, offloadPlugin, offloadVendor).
     *   **How-To: Patching Mappings** (Adding, Updating, and Removing pairs).
 
-12. **[Storage Array Offloading and Optimization](/kubectl-mtv/09.5-storage-array-offloading-and-optimization)**
+12. **[Storage Array Offloading and Optimization](/kubectl-mtv/12-storage-array-offloading-and-optimization)**
     *   Overview and Benefits (10x faster migrations, reduced network overhead).
     *   **Supported Storage Vendors** (IBM FlashSystem, NetApp ONTAP, Pure Storage, Dell PowerMax, HPE Primera).
     *   **How-To: Configuration and Setup** (vSphere XCopy integration, credential management).
     *   **Vendor-Specific Configurations** (FlashSystem, ONTAP, Pure Storage, PowerMax optimizations).
     *   **Performance Tuning and Monitoring** (Best practices, troubleshooting, metrics analysis).
 
-13. **[Migration Plan Creation](/kubectl-mtv/10-migration-plan-creation)**
+13. **[Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)**
     *   **VM Selection Methods**.
         *   Method 1: Comma-separated List of VM Names.
         *   Method 2: File Reference (`--vms @file.yaml`).
@@ -138,7 +138,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
         *   Target Namespace and Transfer Network.
         *   Naming Templates (`--pvc-name-template`, `--volume-name-template`).
 
-14. **[Customizing Individual VMs (The PlanVMS Format)](/kubectl-mtv/11-customizing-individual-vms-planvms-format)**
+14. **[Customizing Individual VMs (The PlanVMS Format)](/kubectl-mtv/14-customizing-individual-vms-planvms-format)**
     *   Detailed VM List Format.
     *   Editable Fields for Customization (targetName, rootDisk, instanceType, templates, LUKS secrets).
     *   Go Template Variables Reference (PVC, Volume, Network templates).
@@ -146,7 +146,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
 
 ### V. Advanced Migration Customization and Optimization
 
-15. **[Target VM Placement (Operational Lifetime)](/kubectl-mtv/12-target-vm-placement)**
+15. **[Target VM Placement (Operational Lifetime)](/kubectl-mtv/15-target-vm-placement)**
     *   Distinction: Target VM Configuration vs. Migration Process Optimization.
     *   Flags: `--target-labels`, `--target-node-selector`, `--target-power-state`.
     *   **Target Affinity with KARL Syntax**.
@@ -154,7 +154,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
         *   Topology Keys (node, zone, region).
         *   **Detailed Examples** (Co-locating with database pods, avoiding cache nodes).
 
-16. **[Migration Process Optimization (Convertor Pod Scheduling)](/kubectl-mtv/13-migration-process-optimization)**
+16. **[Migration Process Optimization (Convertor Pod Scheduling)](/kubectl-mtv/16-migration-process-optimization)**
     *   Overview: Optimizing temporary virt-v2v convertor pods.
     *   Flags: `--convertor-labels`, `--convertor-node-selector`, `--convertor-affinity`.
     *   Why Optimize? (Performance, Resource Management, Network Proximity).
@@ -162,7 +162,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
     *   Common Use Cases (High-Performance Storage Access, Resource Isolation).
     *   Resource Sizing Considerations (CPU, Memory, I/O).
 
-17. **[Migration Hooks](/kubectl-mtv/14-migration-hooks)**
+17. **[Migration Hooks](/kubectl-mtv/17-migration-hooks)**
     *   Overview: Enabling custom automation (pre-migration and post-migration).
     *   Accessing Migration Context (`plan.yml`, `workload.yml`).
     *   Parameters (`--image`, `--playbook`, `--service-account`, `--deadline`).
@@ -172,7 +172,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
         *   Adding Hooks via Plan Creation Flags.
         *   Managing Hooks via `patch planvm`.
 
-18. **[Advanced Plan Patching](/kubectl-mtv/15-advanced-plan-patching)**
+18. **[Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching)**
     *   **How-To: Patching Plan Settings** (`kubectl mtv patch plan`).
         *   Updating Migration Type, Transfer Network, and Placement settings.
         *   Updating Convertor Pod Optimization settings.
@@ -183,13 +183,13 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
 
 ### VI. Operational Excellence, Debugging, and AI Integration
 
-19. **[Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)**
+19. **[Plan Lifecycle Execution](/kubectl-mtv/19-plan-lifecycle-execution)**
     *   Starting a Migration (`kubectl mtv start plan`).
     *   Warm Migration Cutover (`kubectl mtv cutover plan`).
     *   Canceling Workloads (`kubectl mtv cancel plan`).
     *   Archiving and Unarchiving Plans.
 
-20. **[Debugging and Troubleshooting](/kubectl-mtv/17-debugging-and-troubleshooting)**
+20. **[Debugging and Troubleshooting](/kubectl-mtv/20-debugging-and-troubleshooting)**
     *   Enabling Debug Output (`--v=N`).
     *   Troubleshooting Common Issues.
         *   Build/Installation Failures.
@@ -198,23 +198,23 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
         *   Mapping Issues (Source/Target Not Found).
     *   Monitoring Techniques (Describing resources, checking Kubernetes events).
 
-21. **[Best Practices and Security](/kubectl-mtv/18-best-practices-and-security)**
+21. **[Best Practices and Security](/kubectl-mtv/21-best-practices-and-security)**
     *   Plan Management Strategies (Testing, Warm Migrations, Archiving).
     *   Provider Security (Credentials, TLS verification, RBAC).
     *   Query Optimization Tips.
     *   Secure Service Account Setup for Admin Access.
 
-22. **[Model Context Protocol (MCP) Server Integration](/kubectl-mtv/19-model-context-protocol-mcp-server-integration)**
+22. **[Model Context Protocol (MCP) Server Integration](/kubectl-mtv/22-model-context-protocol-mcp-server-integration)**
     *   Overview: Providing AI assistants (Claude, Cursor IDE) access to migration resources.
     *   Server Modes (Stdio Mode vs. SSE Mode).
     *   Command Line Options (`--sse`, `--host`, `--port`).
     *   **How-To: Integrating with AI Assistants** (Claude Desktop, Cursor IDE).
 
-23. **[Integration with KubeVirt Tools](/kubectl-mtv/20-integration-with-kubevirt-tools)**
+23. **[Integration with KubeVirt Tools](/kubectl-mtv/23-integration-with-kubevirt-tools)**
     *   Relationship between `kubectl-mtv` and `virtctl`.
     *   Using `virtctl` for post-migration VM lifecycle management (start, stop, console, ssh).
 
-24. **[System Health Checks](/kubectl-mtv/21-system-health-checks)**
+24. **[System Health Checks](/kubectl-mtv/24-system-health-checks)**
     *   Overview: Checking operator, controller, pods, providers, plans, and log analysis.
     *   Running Health Checks (`kubectl mtv health`).
     *   Output Formats (table, JSON, YAML).
@@ -222,7 +222,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
     *   Understanding the Report (Operator, Controller, Pods, Providers, Plans, Summary).
     *   Overall Status Values (Healthy, Warning, Critical, Unknown).
 
-25. **[Settings Management](/kubectl-mtv/22-settings-management)**
+25. **[Settings Management](/kubectl-mtv/25-settings-management)**
     *   Overview: Managing ForkliftController configuration.
     *   Subcommands (`settings get`, `settings set`, `settings unset`).
     *   Commonly Used Settings (feature flags, performance tuning, container images, resources).
@@ -231,7 +231,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
 
 ### VII. Reference and Appendices
 
-26. **[Command Reference](/kubectl-mtv/23-command-reference)**
+26. **[Command Reference](/kubectl-mtv/26-command-reference)**
     *   **Global Flags** (verbose, all-namespaces, kubeconfig, context, namespace).
     *   **Resource Management Commands** (get, describe, delete with all subcommands).
     *   **Inventory Commands** (get inventory vm/network/storage/host/namespace with TSL query syntax).
@@ -240,6 +240,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
     *   **Modification Commands** (patch plan/planvm/mapping/provider).
     *   **Health and Settings Commands** (health checks, settings get/set/unset).
     *   **AI Integration Commands** (mcp-server with stdio and SSE modes).
+    *   **Utility Commands** (version, help with machine-readable output and help topics).
     *   **Query Language Reference** (TSL operators, functions, examples).
     *   **KARL Syntax Reference** (affinity rules, topology keys, examples).
     *   **Common Command Patterns** (complete migration workflows, troubleshooting).
