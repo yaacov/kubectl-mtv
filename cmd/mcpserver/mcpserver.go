@@ -191,10 +191,12 @@ func createMCPServer() (*mcp.Server, error) {
 		Version: version.ClientVersion,
 	}, nil)
 
-	// Register the three dynamic tools
-	mcp.AddTool(server, tools.GetMTVReadTool(registry), tools.HandleMTVRead(registry))
-	mcp.AddTool(server, tools.GetMTVWriteTool(registry), tools.HandleMTVWrite(registry))
-	mcp.AddTool(server, tools.GetKubectlDebugTool(), tools.HandleKubectlDebug)
+	// Register tools with minimal descriptions (the input schema covers parameter usage).
+	// The mtv_help tool provides on-demand detailed help for any command or topic.
+	mcp.AddTool(server, tools.GetMinimalMTVReadTool(registry), tools.HandleMTVRead(registry))
+	mcp.AddTool(server, tools.GetMinimalMTVWriteTool(registry), tools.HandleMTVWrite(registry))
+	mcp.AddTool(server, tools.GetMinimalKubectlDebugTool(), tools.HandleKubectlDebug)
+	mcp.AddTool(server, tools.GetMTVHelpTool(), tools.HandleMTVHelp)
 
 	return server, nil
 }

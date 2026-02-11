@@ -48,6 +48,28 @@ func GetMTVWriteTool(registry *discovery.Registry) *mcp.Tool {
 	}
 }
 
+// GetMinimalMTVWriteTool returns a minimal tool definition for read-write MTV commands.
+// The input schema (jsonschema tags on MTVWriteInput) already describes parameters.
+// The description only lists available commands and hints to use mtv_help.
+func GetMinimalMTVWriteTool(registry *discovery.Registry) *mcp.Tool {
+	description := registry.GenerateMinimalReadWriteDescription()
+
+	return &mcp.Tool{
+		Name:        "mtv_write",
+		Description: description,
+		OutputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"command":      map[string]any{"type": "string", "description": "The executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
+				"data":         map[string]any{"type": "object", "description": "Structured JSON response data"},
+				"output":       map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
+				"stderr":       map[string]any{"type": "string", "description": "Error output if any"},
+			},
+		},
+	}
+}
+
 // HandleMTVWrite returns a handler function for the mtv_write tool.
 func HandleMTVWrite(registry *discovery.Registry) func(context.Context, *mcp.CallToolRequest, MTVWriteInput) (*mcp.CallToolResult, any, error) {
 	return func(ctx context.Context, req *mcp.CallToolRequest, input MTVWriteInput) (*mcp.CallToolResult, any, error) {

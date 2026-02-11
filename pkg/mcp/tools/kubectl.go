@@ -209,6 +209,29 @@ IMPORTANT: When responding, always start by showing the user the executed comman
 	}
 }
 
+// GetMinimalKubectlDebugTool returns a minimal tool definition for kubectl debugging.
+// The input schema (jsonschema tags on KubectlDebugInput) already describes each parameter.
+// The description only needs to list valid action values since action is a free-form string.
+func GetMinimalKubectlDebugTool() *mcp.Tool {
+	return &mcp.Tool{
+		Name:        "kubectl_debug",
+		Description: "IMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl get pods -n openshift-mtv\").\n\nDebug MTV migrations using standard kubectl commands.\nActions: logs, get, describe, events",
+		OutputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"command":      map[string]any{"type": "string", "description": "The executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
+				"data": map[string]any{
+					"type":        "object",
+					"description": "Structured response data",
+				},
+				"output": map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
+				"stderr": map[string]any{"type": "string", "description": "Error output if any"},
+			},
+		},
+	}
+}
+
 // HandleKubectlDebug handles the kubectl_debug tool invocation.
 func HandleKubectlDebug(ctx context.Context, req *mcp.CallToolRequest, input KubectlDebugInput) (*mcp.CallToolResult, any, error) {
 	// Extract K8s credentials from HTTP headers (for SSE mode)
