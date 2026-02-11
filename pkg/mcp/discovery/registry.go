@@ -140,6 +140,9 @@ func (r *Registry) GenerateReadOnlyDescription() string {
 	// Include extended notes from commands that have substantial LongDescription
 	sb.WriteString(r.generateReadOnlyCommandNotes())
 
+	sb.WriteString("\nEnvironment Variable References:\n")
+	sb.WriteString("- Use ${ENV_VAR_NAME} syntax to pass environment variable references as flag values\n")
+
 	sb.WriteString("\nIMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl-mtv get plan -A\").\n")
 
 	return sb.String()
@@ -175,6 +178,58 @@ func (r *Registry) GenerateReadWriteDescription() string {
 	sb.WriteString("- Sensitive values (passwords, tokens) are masked in command output for security\n")
 
 	sb.WriteString("\nIMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl-mtv create plan ...\").\n")
+
+	return sb.String()
+}
+
+// GenerateMinimalReadOnlyDescription generates a minimal description for the read-only tool.
+// It includes only the command list and a hint to use mtv_help for details.
+// The input schema (jsonschema tags on MTVReadInput) already describes parameters.
+func (r *Registry) GenerateMinimalReadOnlyDescription() string {
+	var sb strings.Builder
+	sb.WriteString("IMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl-mtv get plan -A\").\n\n")
+	sb.WriteString("Execute read-only kubectl-mtv commands to query MTV resources.\n\n")
+	sb.WriteString("Available commands:\n")
+
+	commands := r.ListReadOnlyCommands()
+	for _, key := range commands {
+		cmd := r.ReadOnly[key]
+		usage := formatUsageShort(cmd)
+		sb.WriteString(fmt.Sprintf("- %s - %s\n", usage, cmd.Description))
+	}
+
+	sb.WriteString("\nUse mtv_help to get detailed flags, query syntax, and examples for any command.\n")
+	sb.WriteString("Use the 'fields' parameter to limit JSON response size (e.g. fields: [\"name\", \"id\", \"concerns\"]).\n")
+
+	sb.WriteString("\nEnvironment Variable References:\n")
+	sb.WriteString("- Use ${ENV_VAR_NAME} syntax to pass environment variable references as flag values\n")
+
+	return sb.String()
+}
+
+// GenerateMinimalReadWriteDescription generates a minimal description for the read-write tool.
+// It includes only the command list and hints to use mtv_help for details.
+// The input schema (jsonschema tags on MTVWriteInput) already describes parameters.
+func (r *Registry) GenerateMinimalReadWriteDescription() string {
+	var sb strings.Builder
+	sb.WriteString("IMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl-mtv create plan ...\").\n\n")
+	sb.WriteString("Execute kubectl-mtv commands that modify cluster state.\n\n")
+	sb.WriteString("Available commands:\n")
+
+	commands := r.ListReadWriteCommands()
+	for _, key := range commands {
+		cmd := r.ReadWrite[key]
+		usage := formatUsageShort(cmd)
+		sb.WriteString(fmt.Sprintf("- %s - %s\n", usage, cmd.Description))
+	}
+
+	sb.WriteString("\nAlways call mtv_help before using create or patch commands to learn required flags.\n")
+	sb.WriteString("Use mtv_help for query syntax (TSL) and affinity rules (KARL).\n")
+
+	sb.WriteString("\nEnvironment Variable References:\n")
+	sb.WriteString("- Use ${ENV_VAR_NAME} syntax to pass environment variable references as flag values\n")
+	sb.WriteString("- Env vars can be embedded in strings (e.g., url: \"${GOVC_URL}/sdk\", password: \"${VCENTER_PASSWORD}\")\n")
+	sb.WriteString("- IMPORTANT: Only ${VAR} format is recognized. Bare $VAR is treated as literal value.\n")
 
 	return sb.String()
 }

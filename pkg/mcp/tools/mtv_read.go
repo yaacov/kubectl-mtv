@@ -32,11 +32,43 @@ type MTVReadInput struct {
 
 	// DryRun shows the command without executing
 	DryRun bool `json:"dry_run,omitempty" jsonschema:"Show command without executing (educational mode)"`
+
+	// Fields optionally filters JSON response to include only the specified top-level fields.
+	// Example: ["name", "id", "concerns", "powerState"] to get a compact response.
+	Fields []string `json:"fields,omitempty" jsonschema:"Optional list of field names to include in JSON response (e.g. [name, id, concerns]). When set, only these top-level fields are returned per item, reducing response size for large queries."`
 }
 
 // GetMTVReadTool returns the tool definition for read-only MTV commands.
 func GetMTVReadTool(registry *discovery.Registry) *mcp.Tool {
 	description := registry.GenerateReadOnlyDescription()
+
+	return &mcp.Tool{
+		Name:        "mtv_read",
+		Description: description,
+		OutputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"command":      map[string]any{"type": "string", "description": "The executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
+				"data": map[string]any{
+					"description": "Structured JSON response data (object or array)",
+					"oneOf": []map[string]any{
+						{"type": "object"},
+						{"type": "array"},
+					},
+				},
+				"output": map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
+				"stderr": map[string]any{"type": "string", "description": "Error output if any"},
+			},
+		},
+	}
+}
+
+// GetMinimalMTVReadTool returns a minimal tool definition for read-only MTV commands.
+// The input schema (jsonschema tags on MTVReadInput) already describes parameters.
+// The description only lists available commands and a hint to use mtv_help.
+func GetMinimalMTVReadTool(registry *discovery.Registry) *mcp.Tool {
+	description := registry.GenerateMinimalReadOnlyDescription()
 
 	return &mcp.Tool{
 		Name:        "mtv_read",
@@ -104,8 +136,65 @@ func HandleMTVRead(registry *discovery.Registry) func(context.Context, *mcp.Call
 			return nil, nil, err
 		}
 
+		// Apply field filtering if requested
+		if len(input.Fields) > 0 {
+			data = filterResponseFields(data, input.Fields)
+		}
+
 		return nil, data, nil
 	}
+}
+
+// filterResponseFields filters the "data" field of a response to include only the specified fields.
+// It handles both array responses ([]interface{}) and single object responses (map[string]interface{}).
+// Envelope fields (command, return_value, stderr, output) are always preserved.
+func filterResponseFields(data map[string]interface{}, fields []string) map[string]interface{} {
+	if len(fields) == 0 {
+		return data
+	}
+
+	// Build a set of allowed field names for fast lookup
+	allowed := make(map[string]bool, len(fields))
+	for _, f := range fields {
+		allowed[f] = true
+	}
+
+	// Filter the "data" field only, preserving envelope fields
+	rawData, ok := data["data"]
+	if !ok {
+		return data
+	}
+
+	switch items := rawData.(type) {
+	case []interface{}:
+		// Array of items: filter each item
+		filtered := make([]interface{}, 0, len(items))
+		for _, item := range items {
+			if m, ok := item.(map[string]interface{}); ok {
+				filtered = append(filtered, filterMapFields(m, allowed))
+			} else {
+				// Non-object items are kept as-is
+				filtered = append(filtered, item)
+			}
+		}
+		data["data"] = filtered
+	case map[string]interface{}:
+		// Single object: filter its fields
+		data["data"] = filterMapFields(items, allowed)
+	}
+
+	return data
+}
+
+// filterMapFields returns a new map containing only keys present in the allowed set.
+func filterMapFields(m map[string]interface{}, allowed map[string]bool) map[string]interface{} {
+	result := make(map[string]interface{}, len(allowed))
+	for key, val := range m {
+		if allowed[key] {
+			result[key] = val
+		}
+	}
+	return result
 }
 
 // normalizeCommandPath converts a command string to a path key.
