@@ -244,3 +244,28 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
     *   **Query Language Reference** (TSL operators, functions, examples).
     *   **KARL Syntax Reference** (affinity rules, topology keys, examples).
     *   **Common Command Patterns** (complete migration workflows, troubleshooting).
+
+27. **[TSL - Tree Search Language Reference](/kubectl-mtv/27-tsl-tree-search-language-reference)**
+    *   What is TSL? (SQL-like query language for structured data filtering).
+    *   Where TSL is Used (inventory filtering with `-q`, query-driven VM selection with `--vms`).
+    *   Query Structure (`WHERE`, `ORDER BY`, `LIMIT`).
+    *   Data Types and Literals (strings, numbers, SI units, booleans, arrays, null).
+    *   Operators Reference (comparison, arithmetic, string matching, logical, set/range, null).
+    *   Functions Reference (`len`, `any`, `all`, `sum`).
+    *   Field Access (dot notation, array indexing, wildcards, implicit traversal).
+    *   VM Fields by Provider (vSphere, oVirt, OpenStack, EC2, computed fields).
+    *   Examples by Category (filtering, compute, disks, concerns, sorting).
+    *   Quick Reference Card.
+
+28. **[KARL - Kubernetes Affinity Rule Language Reference](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference)**
+    *   What is KARL? (Concise syntax for Kubernetes pod affinity rules).
+    *   Where KARL is Used (`--target-affinity`, `--convertor-affinity`).
+    *   KARL Syntax (`RULE_TYPE pods(selector) on TOPOLOGY [weight=N]`).
+    *   Rule Types (`REQUIRE`, `PREFER`, `AVOID`, `REPEL` with Kubernetes mappings).
+    *   Topology Keys (`node`, `zone`, `region`, `rack`).
+    *   Label Selectors (equality, set membership, existence checks).
+    *   Weight for Soft Rules (1-100 range, scheduling priority).
+    *   Examples (co-location, anti-affinity, zone placement, convertor optimization).
+    *   Multi-Tier Application Example.
+    *   Troubleshooting (Pending pods, relaxing rules, verifying generated affinity).
+    *   Quick Reference Card.

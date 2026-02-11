@@ -38,7 +38,7 @@ All convertor flags are verified from the kubectl-mtv command code:
 # Convertor node selector for infrastructure targeting
 --convertor-node-selector "key1=value1,key2=value2"
 
-# Convertor affinity using KARL syntax
+# Convertor affinity using KARL syntax (see Chapter 28 for full reference)
 --convertor-affinity "REQUIRE pods(app=storage) on node"
 ```
 
@@ -167,7 +167,7 @@ kubectl mtv create plan storage-network \
 
 ## Convertor Affinity with KARL Syntax
 
-KARL affinity rules provide advanced convertor placement control using the same syntax as target VM affinity:
+[KARL](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference) affinity rules provide advanced convertor placement control using the same syntax as target VM affinity (see [Chapter 28: KARL Reference](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference) for complete syntax details):
 
 ### Storage Co-location Patterns
 

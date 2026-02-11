@@ -94,7 +94,7 @@ kubectl mtv patch plan production-apps \
 kubectl mtv patch plan gpu-workloads \
   --target-node-selector "accelerator=nvidia-tesla-v100,node-type=compute"
 
-# Apply advanced affinity rules using KARL
+# Apply advanced affinity rules using KARL (see Chapter 28 for syntax reference)
 kubectl mtv patch plan database-cluster \
   --target-affinity "REQUIRE nodes(node-role.kubernetes.io/database=true) on node"
 

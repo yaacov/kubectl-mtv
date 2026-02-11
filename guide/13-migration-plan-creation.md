@@ -78,7 +78,7 @@ kubectl mtv create plan json-migration \
 
 ### Method 3: Query String Selection (`--vms "where ..."`)
 
-Use Tree Search Language (TSL) queries for dynamic VM selection:
+Use [Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-reference) queries for dynamic VM selection:
 
 #### Basic Query Selection
 
@@ -341,7 +341,7 @@ kubectl mtv create plan full-scheduling \
   --vms "database-cluster-01"
 ```
 
-#### VM Affinity with KARL (Kubernetes Affinity Rule Language)
+#### VM Affinity with [KARL (Kubernetes Affinity Rule Language)](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference)
 
 ```bash
 # Require co-location with specific pods
@@ -438,7 +438,7 @@ kubectl mtv create plan convertor-config \
   --convertor-node-selector "conversion=true,cpu=high" \
   --vms "large-workload-01"
 
-# Convertor affinity with KARL
+# Convertor affinity with KARL (see Chapter 28)
 kubectl mtv create plan convertor-affinity \
   --source vsphere-prod \
   --convertor-affinity "REQUIRE nodes(conversion=dedicated)" \
@@ -771,7 +771,7 @@ kubectl mtv create plan mixed-mappings \
 
 1. **Start Small**: Begin with test/development VMs
 2. **Batch by Similarity**: Group VMs with similar requirements
-3. **Use Queries Effectively**: Leverage TSL for dynamic VM selection
+3. **Use Queries Effectively**: Leverage [TSL](/kubectl-mtv/27-tsl-tree-search-language-reference) for dynamic VM selection
 4. **Plan Resource Capacity**: Ensure target resources can handle the workload
 
 ### Configuration Best Practices

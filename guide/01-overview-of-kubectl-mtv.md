@@ -45,7 +45,7 @@ For detailed information about migration types, see:
 
 ### 1. Advanced Query Language Integration
 
-`kubectl-mtv` incorporates the powerful **Tree Search Language (TSL)**, developed by Yaacov Zamir, which enables sophisticated filtering and searching of inventory resources. This is a kubectl-mtv-specific enhancement not available in the base Forklift web interface:
+`kubectl-mtv` incorporates the powerful **[Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-reference)**, developed by Yaacov Zamir, which enables sophisticated filtering and searching of inventory resources. This is a kubectl-mtv-specific enhancement not available in the base Forklift web interface:
 
 - **SQL-like syntax** for intuitive resource queries
 - **Complex filtering** with support for logical operators (AND, OR, NOT)
@@ -87,7 +87,7 @@ Comprehensive lifecycle management for migrations:
 
 ### 5. Kubernetes-native Resource Management (KARL)
 
-Integration with the **Kubernetes Affinity Rule Language (KARL)** for advanced pod placement. This is a kubectl-mtv-specific enhancement that simplifies complex Kubernetes affinity expressions:
+Integration with the **[Kubernetes Affinity Rule Language (KARL)](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference)** for advanced pod placement. This is a kubectl-mtv-specific enhancement that simplifies complex Kubernetes affinity expressions:
 
 - **Declarative Affinity Rules** - Express complex placement requirements using natural language syntax
 - **Topology-aware Placement** - Support for node, zone, region, and rack-level affinity
@@ -132,7 +132,7 @@ Advanced AI assistant integration for enhanced user experience. This is a kubect
 - **User Interface** - Provides intuitive command-line access to Forklift functionality
 - **Resource Management** - Simplifies creation, modification, and monitoring of migration resources
 - **Workflow Orchestration** - Streamlines complex migration workflows into simple command sequences
-- **Advanced Features** - Adds sophisticated query capabilities (TSL), affinity management (KARL), hooks, and AI integration
+- **Advanced Features** - Adds sophisticated query capabilities ([TSL](/kubectl-mtv/27-tsl-tree-search-language-reference)), affinity management ([KARL](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference)), hooks, and AI integration
 
 ### Migration Toolkit for Virtualization (MTV)
 - **Product Integration** - MTV is Red Hat's supported product offering that includes Forklift

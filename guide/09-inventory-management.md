@@ -91,7 +91,7 @@ kubectl mtv get inventory <resource> <provider> [flags]
 ### Common Flags
 
 - `-o, --output`: Output format (table, json, yaml, planvms for VMs)
-- `-q, --query`: Query filter using Tree Search Language (TSL)
+- `-q, --query`: Query filter using [Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-reference)
 - `-w, --watch`: Watch for real-time changes
 - `--extended`: Show extended information (where supported)
 - `--inventory-url`: Custom inventory service URL
@@ -304,7 +304,7 @@ items:
 
 ### Query-Based VM Discovery
 
-Use the Tree Search Language (TSL) for sophisticated filtering:
+Use the [Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-reference) for sophisticated filtering:
 
 ```bash
 # Find powered-on VMs with high memory
