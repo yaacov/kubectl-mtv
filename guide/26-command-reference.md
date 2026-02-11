@@ -106,7 +106,7 @@ kubectl mtv get inventory vms <provider-name> [flags]  # Alias
 ```
 
 **Flags:**
-- `--query, -q`: TSL query filter (e.g., "where powerState = 'poweredOn'")
+- `--query, -q`: [TSL](/kubectl-mtv/27-tsl-tree-search-language-reference) query filter (e.g., "where powerState = 'poweredOn'")
 - `--output, -o`: Output format (table, json, yaml, planvms)
 - `--watch, -w`: Watch for changes
 - `--inventory-url`: Inventory service URL override
@@ -328,13 +328,13 @@ kubectl mtv create plan <name> [flags]
 **Target VM Placement Flags:**
 - `--target-labels, -L`: Target labels for VMs (key1=value1,key2=value2)
 - `--target-node-selector`: Target node selector for VM scheduling
-- `--target-affinity`: Target affinity using KARL syntax
+- `--target-affinity`: Target affinity using [KARL](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference) syntax
 - `--target-power-state`: Target power state (on, off, auto)
 
 **Convertor Pod Optimization Flags:**
 - `--convertor-labels`: Labels for virt-v2v convertor pods
 - `--convertor-node-selector`: Node selector for convertor pod scheduling
-- `--convertor-affinity`: Convertor affinity using KARL syntax
+- `--convertor-affinity`: Convertor affinity using [KARL](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference) syntax
 
 **Template and Customization Flags:**
 - `--pvc-name-template`: PVC name template for VM disks
@@ -913,7 +913,9 @@ kubectl mtv help --machine tsl
 
 ## Query Language (TSL) Syntax
 
-The Tree Search Language (TSL) is used with inventory commands for advanced filtering:
+> **Full Reference**: See [Chapter 27: TSL - Tree Search Language Reference](/kubectl-mtv/27-tsl-tree-search-language-reference) for the complete TSL reference.
+
+The [Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-reference) is used with inventory commands for advanced filtering:
 
 ### Basic Syntax
 
@@ -984,7 +986,9 @@ kubectl mtv get inventory vm vsphere-prod -q "where name ~= 'prod-.*' and name ~
 
 ## KARL Syntax (Kubernetes Affinity Rule Language)
 
-KARL is used for advanced scheduling with `--target-affinity` and `--convertor-affinity` flags:
+> **Full Reference**: See [Chapter 28: KARL - Kubernetes Affinity Rule Language Reference](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference) for the complete KARL reference.
+
+[KARL](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference) is used for advanced scheduling with `--target-affinity` and `--convertor-affinity` flags:
 
 ### Rule Types
 
@@ -1075,4 +1079,5 @@ kubectl mtv get inventory vm vsphere-source -v=3
 
 ---
 
-*Previous: [Chapter 25: Settings Management](/kubectl-mtv/25-settings-management)*
+*Previous: [Chapter 25: Settings Management](/kubectl-mtv/25-settings-management)*  
+*Next: [Chapter 27: TSL - Tree Search Language Reference](/kubectl-mtv/27-tsl-tree-search-language-reference)*

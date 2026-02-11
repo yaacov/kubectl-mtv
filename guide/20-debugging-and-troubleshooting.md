@@ -291,7 +291,7 @@ kubectl describe pvc convertor-pvc-name
 # Debug affinity rule interpretation
 kubectl describe pod convertor-pod | grep -A20 "Node-Selectors\|Affinity"
 
-# Check KARL rule validation
+# Check KARL rule validation (see Chapter 28 for KARL syntax reference)
 kubectl mtv create plan test-affinity \
   --convertor-affinity "REQUIRE nodes(invalid-selector=true) on node" \
   -v=2
