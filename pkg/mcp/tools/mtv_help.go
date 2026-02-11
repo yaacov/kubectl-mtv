@@ -20,9 +20,7 @@ type MTVHelpInput struct {
 func GetMTVHelpTool() *mcp.Tool {
 	return &mcp.Tool{
 		Name: "mtv_help",
-		Description: `IMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response.
-
-Get detailed help for kubectl-mtv commands and syntax references.
+		Description: `Get detailed help for kubectl-mtv commands and syntax references.
 
 Returns flags, usage, and examples for any command, or full syntax references for topics.
 

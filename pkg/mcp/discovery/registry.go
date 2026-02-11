@@ -143,8 +143,6 @@ func (r *Registry) GenerateReadOnlyDescription() string {
 	sb.WriteString("\nEnvironment Variable References:\n")
 	sb.WriteString("- Use ${ENV_VAR_NAME} syntax to pass environment variable references as flag values\n")
 
-	sb.WriteString("\nIMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl-mtv get plan -A\").\n")
-
 	return sb.String()
 }
 
@@ -177,8 +175,6 @@ func (r *Registry) GenerateReadWriteDescription() string {
 	sb.WriteString("- The MCP server resolves the env var at execution time\n")
 	sb.WriteString("- Sensitive values (passwords, tokens) are masked in command output for security\n")
 
-	sb.WriteString("\nIMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl-mtv create plan ...\").\n")
-
 	return sb.String()
 }
 
@@ -187,7 +183,6 @@ func (r *Registry) GenerateReadWriteDescription() string {
 // The input schema (jsonschema tags on MTVReadInput) already describes parameters.
 func (r *Registry) GenerateMinimalReadOnlyDescription() string {
 	var sb strings.Builder
-	sb.WriteString("IMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl-mtv get plan -A\").\n\n")
 	sb.WriteString("Execute read-only kubectl-mtv commands to query MTV resources.\n\n")
 	sb.WriteString("Available commands:\n")
 
@@ -212,7 +207,6 @@ func (r *Registry) GenerateMinimalReadOnlyDescription() string {
 // The input schema (jsonschema tags on MTVWriteInput) already describes parameters.
 func (r *Registry) GenerateMinimalReadWriteDescription() string {
 	var sb strings.Builder
-	sb.WriteString("IMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl-mtv create plan ...\").\n\n")
 	sb.WriteString("Execute kubectl-mtv commands that modify cluster state.\n\n")
 	sb.WriteString("Available commands:\n")
 

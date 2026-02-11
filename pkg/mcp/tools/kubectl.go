@@ -176,9 +176,7 @@ Tips:
 - Use since to get recent logs (e.g., "1h" for last hour)
 - Use for_resource to get events related to a specific pod or PVC
 - Use grep with tail_lines to efficiently scan large log files
-- Combine JSON filters with grep for complex queries
-
-IMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., "Executed: kubectl get pods -n openshift-mtv").`,
+- Combine JSON filters with grep for complex queries`,
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -215,7 +213,7 @@ IMPORTANT: When responding, always start by showing the user the executed comman
 func GetMinimalKubectlDebugTool() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        "kubectl_debug",
-		Description: "IMPORTANT: When responding, always start by showing the user the executed command from the 'command' field in the response (e.g., \"Executed: kubectl get pods -n openshift-mtv\").\n\nDebug MTV migrations using standard kubectl commands.\nActions: logs, get, describe, events",
+		Description: "Debug MTV migrations using standard kubectl commands.\nActions: logs, get, describe, events",
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
