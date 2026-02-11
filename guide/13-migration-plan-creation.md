@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Chapter 10: Migration Plan Creation"
+title: "Chapter 13: Migration Plan Creation"
 ---
 
 Migration plans are the core orchestration resources that define which VMs to migrate, how to map their resources, and what settings to apply during migration. This chapter covers comprehensive plan creation with all supported configuration options.
@@ -100,7 +100,7 @@ kubectl mtv create plan production-vms \
 # Select VMs by resource criteria
 kubectl mtv create plan small-vms \
   --source vsphere-prod \
-  --vms "where powerState = 'poweredOn' and memoryMB <= 8192 and len disks <= 3"
+  --vms "where powerState = 'poweredOn' and memoryMB <= 8192 and len(disks) <= 3"
 
 # Select VMs in specific infrastructure
 kubectl mtv create plan cluster-migration \
@@ -197,7 +197,7 @@ kubectl-mtv supports four migration types (see [Forklift Migration Types](https:
 | `live` | Live migration (KubeVirt sources only) | Zero-downtime migration between KubeVirt clusters |
 | `conversion` | Guest conversion only (VMware only) | When storage vendors provide pre-populated PVCs |
 
-For detailed information about conversion migration, including prerequisites, workflow, and integration requirements, see [Chapter 3.6: Conversion Migration](/kubectl-mtv/03.6-conversion-migration).
+For detailed information about conversion migration, including prerequisites, workflow, and integration requirements, see [Chapter 5: Conversion Migration](/kubectl-mtv/05-conversion-migration).
 
 #### Migration Type Examples
 
@@ -259,7 +259,7 @@ kubectl mtv create plan transfer-net-migration \
 kubectl mtv create plan cross-ns-transfer \
   --source vsphere-prod \
   --transfer-network network-system/high-bandwidth \
-  --vms "where sum disks[*].capacityGB > 500"
+  --vms "where sum(disks[*].capacityGB) > 500"
 ```
 
 ### Naming Templates
@@ -382,7 +382,7 @@ kubectl mtv create plan online-migration \
 kubectl mtv create plan auto-power \
   --source vsphere-prod \
   --target-power-state auto \
-  --vms "where powerState in ('poweredOn', 'suspended')"
+  --vms "where powerState in ['poweredOn', 'suspended']"
 ```
 
 ### Guest OS and Compatibility Settings
@@ -563,7 +563,7 @@ kubectl mtv create plan batch-small-vms \
   --convertor-node-selector "batch-processing=true" \
   --pvc-name-template "batch-{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.VmName}}{% endraw %}-disk{% raw %}{{.DiskIndex}}{% endraw %}" \
   --delete-vm-on-fail-migration \
-  --vms "where powerState = 'poweredOn' and memoryMB <= 4096 and len disks <= 2 and not template"
+  --vms "where powerState = 'poweredOn' and memoryMB <= 4096 and len(disks) <= 2 and not template"
 ```
 
 ### Example 4: Multi-Provider Migration
@@ -606,7 +606,7 @@ kubectl mtv create plan offload-migration \
   --offload-storage-password FlashSystemPassword \
   --offload-storage-endpoint https://flashsystem.company.com \
   --migration-type warm \
-  --vms "where sum disks[*].capacityGB > 500"
+  --vms "where sum(disks[*].capacityGB) > 500"
 ```
 
 ## Plan Validation and Testing
@@ -668,7 +668,7 @@ kubectl get plan original-plan -o yaml > modified-plan.yaml
 # Edit modified-plan.yaml
 kubectl apply -f modified-plan.yaml
 
-# 2. Use plan patching (covered in Chapter 15)
+# 2. Use plan patching (covered in Chapter 18)
 kubectl mtv patch plan enterprise-production --archived=true
 ```
 
@@ -792,12 +792,12 @@ kubectl mtv create plan mixed-mappings \
 
 After mastering plan creation:
 
-1. **Customize VMs**: Learn detailed VM customization in [Chapter 11: Customizing Individual VMs (PlanVMS Format)](/kubectl-mtv/11-customizing-individual-vms-planvms-format)
-2. **Optimize Placement**: Configure advanced placement in [Chapter 12: Target VM Placement](/kubectl-mtv/12-target-vm-placement)
-3. **Execute Plans**: Manage plan lifecycle in [Chapter 16: Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)
-4. **Advanced Patching**: Modify existing plans in [Chapter 15: Advanced Plan Patching](/kubectl-mtv/15-advanced-plan-patching)
+1. **Customize VMs**: Learn detailed VM customization in [Chapter 14: Customizing Individual VMs (PlanVMS Format)](/kubectl-mtv/14-customizing-individual-vms-planvms-format)
+2. **Optimize Placement**: Configure advanced placement in [Chapter 15: Target VM Placement](/kubectl-mtv/15-target-vm-placement)
+3. **Execute Plans**: Manage plan lifecycle in [Chapter 19: Plan Lifecycle Execution](/kubectl-mtv/19-plan-lifecycle-execution)
+4. **Advanced Patching**: Modify existing plans in [Chapter 18: Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching)
 
 ---
 
-*Previous: [Chapter 9.5: Storage Array Offloading and Optimization](/kubectl-mtv/09.5-storage-array-offloading-and-optimization)*  
-*Next: [Chapter 11: Customizing Individual VMs (PlanVMS Format)](/kubectl-mtv/11-customizing-individual-vms-planvms-format)*
+*Previous: [Chapter 12: Storage Array Offloading and Optimization](/kubectl-mtv/12-storage-array-offloading-and-optimization)*  
+*Next: [Chapter 14: Customizing Individual VMs (PlanVMS Format)](/kubectl-mtv/14-customizing-individual-vms-planvms-format)*

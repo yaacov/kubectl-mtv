@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Chapter 15: Advanced Plan Patching"
+title: "Chapter 18: Advanced Plan Patching"
 ---
 
 Once migration plans are created, you often need to modify their configuration as migration requirements evolve. This chapter covers comprehensive plan modification techniques using `kubectl-mtv` patching capabilities, enabling dynamic updates without recreating plans.
@@ -587,12 +587,12 @@ kubectl mtv patch plan secure-migration \
 
 After mastering plan patching techniques:
 
-1. **Execute Migrations**: Learn to start and manage migration execution in [Chapter 16: Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)
-2. **Handle Problems**: Master troubleshooting in [Chapter 17: Debugging and Troubleshooting](/kubectl-mtv/17-debugging-and-troubleshooting)
-3. **Optimize Operations**: Learn best practices in [Chapter 18: Best Practices and Security](/kubectl-mtv/18-best-practices-and-security)
-4. **AI Integration**: Explore advanced automation in [Chapter 19: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/19-model-context-protocol-mcp-server-integration)
+1. **Execute Migrations**: Learn to start and manage migration execution in [Chapter 19: Plan Lifecycle Execution](/kubectl-mtv/19-plan-lifecycle-execution)
+2. **Handle Problems**: Master troubleshooting in [Chapter 20: Debugging and Troubleshooting](/kubectl-mtv/20-debugging-and-troubleshooting)
+3. **Optimize Operations**: Learn best practices in [Chapter 21: Best Practices and Security](/kubectl-mtv/21-best-practices-and-security)
+4. **AI Integration**: Explore advanced automation in [Chapter 22: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/22-model-context-protocol-mcp-server-integration)
 
 ---
 
-*Previous: [Chapter 14: Migration Hooks](/kubectl-mtv/14-migration-hooks)*  
-*Next: [Chapter 16: Plan Lifecycle Execution](/kubectl-mtv/16-plan-lifecycle-execution)*
+*Previous: [Chapter 17: Migration Hooks](/kubectl-mtv/17-migration-hooks)*  
+*Next: [Chapter 19: Plan Lifecycle Execution](/kubectl-mtv/19-plan-lifecycle-execution)*

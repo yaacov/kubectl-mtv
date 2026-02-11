@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Chapter 21: System Health Checks"
+title: "Chapter 24: System Health Checks"
 ---
 
 The `health` command provides comprehensive diagnostics for the MTV/Forklift migration system. It checks every layer of the stack -- from the operator and controller to pods, providers, and migration plans -- and produces a report with actionable recommendations. All command examples are verified against the implementation.
@@ -159,10 +159,10 @@ kubectl mtv health -n production-migrations
 
 After verifying system health:
 
-1. **Manage ForkliftController Settings**: Tune performance and enable features in [Chapter 22: Settings Management](/kubectl-mtv/22-settings-management)
-2. **Review Command Reference**: See all available commands in [Chapter 23: Command Reference](/kubectl-mtv/23-command-reference)
+1. **Manage ForkliftController Settings**: Tune performance and enable features in [Chapter 25: Settings Management](/kubectl-mtv/25-settings-management)
+2. **Review Command Reference**: See all available commands in [Chapter 26: Command Reference](/kubectl-mtv/26-command-reference)
 
 ---
 
-*Previous: [Chapter 20: Integration with KubeVirt Tools](/kubectl-mtv/20-integration-with-kubevirt-tools)*
-*Next: [Chapter 22: Settings Management](/kubectl-mtv/22-settings-management)*
+*Previous: [Chapter 23: Integration with KubeVirt Tools](/kubectl-mtv/23-integration-with-kubevirt-tools)*
+*Next: [Chapter 25: Settings Management](/kubectl-mtv/25-settings-management)*

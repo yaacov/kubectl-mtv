@@ -1,6 +1,6 @@
 ---
 layout: page
-title: "Chapter 7: Inventory Management"
+title: "Chapter 9: Inventory Management"
 ---
 
 Inventory management is a core feature of kubectl-mtv that allows you to discover, explore, and query resources from various virtualization providers. This chapter covers comprehensive inventory operations for migration planning and resource discovery.
@@ -317,7 +317,7 @@ kubectl mtv get inventory vms vsphere-prod \
 
 # Find VMs with multiple disks
 kubectl mtv get inventory vms vsphere-prod \
-  -q "where len disks > 1"
+  -q "where len(disks) > 1"
 
 # Complex queries with multiple conditions
 kubectl mtv get inventory vms vsphere-prod \
@@ -395,7 +395,7 @@ kubectl mtv get inventory vms "$PROVIDER" \
 
 # Export large VMs (>50GB total disk)
 kubectl mtv get inventory vms "$PROVIDER" \
-  -q "where sum disks[*].capacityGB > 50" \
+  -q "where sum(disks[*].capacityGB) > 50" \
   -o json > "$OUTPUT_DIR/large-vms.json"
 
 # Export network information
@@ -418,7 +418,7 @@ PLAN_NAME="auto-migration-$(date +%Y%m%d)"
 
 # Discover migration candidates
 kubectl mtv get inventory vms "$PROVIDER" \
-  -q "where powerState = 'poweredOn' and memoryMB <= 8192 and len disks <= 2" \
+  -q "where powerState = 'poweredOn' and memoryMB <= 8192 and len(disks) <= 2" \
   -o planvms > "small-vms.yaml"
 
 # Create migration plan
@@ -628,7 +628,7 @@ kubectl mtv get inventory vms vsphere-prod \
 
 # 2. Analyze resource requirements
 kubectl mtv get inventory vms vsphere-prod \
-  -q "where name in ('vm1', 'vm2', 'vm3')" \
+  -q "where name in ['vm1', 'vm2', 'vm3']" \
   -o json | jq '.items[] | {name, memory: .memoryMB, disks: [.disks[].capacityGB]}'
 
 # 3. Check network and storage availability
@@ -661,12 +661,12 @@ kubectl mtv get inventory datastores vsphere-prod \
 
 After mastering inventory management:
 
-1. **Learn Query Language**: Master advanced filtering in [Chapter 8: Query Language Reference and Advanced Filtering](/kubectl-mtv/08-query-language-reference-and-advanced-filtering)
-2. **Create Mappings**: Define resource mappings in [Chapter 9: Mapping Management](/kubectl-mtv/09-mapping-management)
-3. **Plan Migrations**: Use inventory data for planning in [Chapter 10: Migration Plan Creation](/kubectl-mtv/10-migration-plan-creation)
-4. **Optimize Performance**: Apply inventory insights in [Chapter 13: Migration Process Optimization](/kubectl-mtv/13-migration-process-optimization)
+1. **Learn Query Language**: Master advanced filtering in [Chapter 10: Query Language Reference and Advanced Filtering](/kubectl-mtv/10-query-language-reference-and-advanced-filtering)
+2. **Create Mappings**: Define resource mappings in [Chapter 11: Mapping Management](/kubectl-mtv/11-mapping-management)
+3. **Plan Migrations**: Use inventory data for planning in [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)
+4. **Optimize Performance**: Apply inventory insights in [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
 
 ---
 
-*Previous: [Chapter 6: VDDK Image Creation and Configuration](/kubectl-mtv/06-vddk-image-creation-and-configuration)*  
-*Next: [Chapter 8: Query Language Reference and Advanced Filtering](/kubectl-mtv/08-query-language-reference-and-advanced-filtering)*
+*Previous: [Chapter 8: VDDK Image Creation and Configuration](/kubectl-mtv/08-vddk-image-creation-and-configuration)*  
+*Next: [Chapter 10: Query Language Reference and Advanced Filtering](/kubectl-mtv/10-query-language-reference-and-advanced-filtering)*

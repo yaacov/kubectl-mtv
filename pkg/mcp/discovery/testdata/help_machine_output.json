@@ -556,7 +556,7 @@
       ],
       "path_string": "create plan",
       "description": "Create a migration plan",
-      "long_description": "Create a migration plan to move VMs from a source provider to OpenShift.\n\nA plan defines which VMs to migrate, the source and target providers, and\nnetwork/storage mappings. VMs can be specified as:\n  - Comma-separated names: --vms \"vm1,vm2,vm3\"\n  - TSL query: --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n  - YAML/JSON file: --vms @vms.yaml\n\nNetwork and storage mappings can be created inline using --network-pairs and\n--storage-pairs, or reference existing mapping resources with --network-mapping\nand --storage-mapping.\n\nQuery Language (TSL) Syntax:\n  Used by --vms \"where ...\" to select VMs, and -q \"where ...\" in get inventory.\n\n  Structure: [SELECT fields] WHERE condition [ORDER BY field [ASC|DESC]] [LIMIT n]\n  For --vms flag, use: where \u003ccondition\u003e\n\n  Comparison:     =  !=  \u003c\u003e  \u003c  \u003c=  \u003e  \u003e=\n  Arithmetic:     +  -  *  /  %\n  String match:   like (% wildcard), ilike (case-insensitive), ~= (regex), ~! (not regex)\n  Logical:        and, or, not\n  Set/range:      in ('val1','val2'), not in ('val1','val2'), between X and Y\n  Null checks:    is null, is not null\n  Array funcs:    len(field), sum(field[*].sub), any field[*].sub \u003e N, all field[*].sub \u003e= N\n  Array access:   field[index], field[*] (wildcard), implicit field.sub traversal\n  SI units:       Ki, Mi, Gi, Ti, Pi suffixes for numeric literals (e.g. 4Gi = 4294967296)\n  Field access:   dot notation (e.g. parent.id, disks[*].datastore.id, guest.distribution)\n\n  Discovering available fields:\n    Inventory items are dynamic JSON from the provider. Field names vary by provider\n    type. To see all available fields for your environment, run:\n      kubectl-mtv get inventory vm \u003cprovider\u003e -o json\n    Any field visible in the JSON output can be used in queries with dot notation.\n\n  Common VM fields (vSphere):\n    name, id, powerState, cpuCount, memoryMB, guestId, guestName, isTemplate\n    firmware, storageUsed, ipAddress, hostName, host, path, uuid, connectionState\n    changeTrackingEnabled, coresPerSocket, secureBoot, tpmEnabled\n    parent.id, parent.kind (folder reference)\n    disks (array): disks.capacity, disks.datastore.id, disks.file, disks.shared\n    nics (array): nics.mac, nics.network.id\n    networks (array): networks.id, networks.kind\n    concerns (array): concerns.category, concerns.assessment, concerns.label\n\n  Common VM fields (oVirt):\n    name, id, status, memory, cpuSockets, cpuCores, cpuThreads, osType, guestName\n    cluster, host, path, haEnabled, stateless, placementPolicyAffinity, display\n    guest.distribution, guest.fullVersion\n    diskAttachments (array): diskAttachments.disk, diskAttachments.interface\n    nics (array): nics.name, nics.mac, nics.interface, nics.ipAddress, nics.profile\n    concerns (array): concerns.category, concerns.assessment, concerns.label\n\n  Common VM fields (OpenStack):\n    name, id, status, flavor.name, image.name, project.name\n\n  Common VM fields (EC2, PascalCase):\n    name, InstanceType, State.Name, PlatformDetails\n    Placement.AvailabilityZone, PublicIpAddress, PrivateIpAddress, VpcId, SubnetId\n\n  Examples:\n    where name ~= 'prod-.*'\n    where powerState = 'poweredOn' and memoryMB \u003e 4096       (vSphere)\n    where status = 'up' and memory \u003e 4294967296              (oVirt, memory in bytes)\n    where isTemplate = false and firmware = 'efi'            (vSphere)\n    where guestId ~= 'rhel.*' and storageUsed \u003e 53687091200\n    where len(disks) \u003e 1 and cpuCount \u003c= 8\n    where any disks[*].shared = true\n    where path ~= '/Production/.*'\n\nAffinity Syntax (KARL):\n  Used by --target-affinity and --convertor-affinity to define pod affinity rules.\n\n  Syntax: RULE_TYPE pods(selector[,selector...]) on TOPOLOGY [weight=N]\n\n  Rule types:\n    REQUIRE  - hard affinity (must co-locate with matching pods)\n    PREFER   - soft affinity (prefer co-location, weight=1-100, default 100)\n    AVOID    - hard anti-affinity (must not co-locate)\n    REPEL    - soft anti-affinity (prefer not co-locating, weight=1-100)\n\n  Topology keys: node, zone, region, rack\n\n  Label selectors (inside pods(...)):\n    key=value            equality match\n    key in [v1,v2,v3]   value in set\n    key not in [v1,v2]  value not in set\n    has key              label exists\n    not has key          label does not exist\n  Multiple selectors are AND-ed: pods(app=web,tier=frontend,has monitoring)\n\n  Examples:\n    REQUIRE pods(app=database) on node\n    PREFER pods(app=cache) on zone weight=80\n    AVOID pods(app=web) on node\n    REPEL pods(tier in [batch,worker]) on zone weight=50",
+      "long_description": "Create a migration plan to move VMs from a source provider to OpenShift.\n\nA plan defines which VMs to migrate, the source and target providers, and\nnetwork/storage mappings. VMs can be specified as:\n  - Comma-separated names: --vms \"vm1,vm2,vm3\"\n  - TSL query: --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n  - YAML/JSON file: --vms @vms.yaml\n\nNetwork and storage mappings can be created inline using --network-pairs and\n--storage-pairs, or reference existing mapping resources with --network-mapping\nand --storage-mapping.\n\nQuery Language (TSL):\n  The --vms flag accepts TSL queries to select VMs dynamically:\n    --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n    --vms \"where powerState = 'poweredOn' and memoryMB \u003e 4096\"\n    --vms \"where len(disks) \u003e 1\"\n  Run 'kubectl-mtv help tsl' for the full syntax reference and field list.\n\nAffinity Syntax (KARL):\n  The --target-affinity and --convertor-affinity flags use KARL syntax:\n    --target-affinity \"REQUIRE pods(app=database) on node\"\n    --convertor-affinity \"PREFER pods(app=cache) on zone weight=80\"\n  Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.\n  Run 'kubectl-mtv help karl' for the full syntax reference.",
       "usage": "kubectl-mtv create plan NAME [flags]",
       "category": "write",
       "flags": [
@@ -3745,7 +3745,7 @@
       ],
       "path_string": "get inventory vm",
       "description": "Get VMs from a provider",
-      "long_description": "Get virtual machines from a provider's inventory.\n\nQueries the MTV inventory service to list VMs available for migration.\nUse --query (-q) to filter results using TSL query syntax. The --extended\nflag shows additional VM details.\n\nOutput format 'planvms' generates YAML suitable for use with 'create plan --vms @file'.\n\nQuery Language (TSL) Syntax:\n  Used by -q \"where ...\" to filter inventory results.\n\n  Structure: [SELECT fields] WHERE condition [ORDER BY field [ASC|DESC]] [LIMIT n]\n\n  Comparison:     =  !=  \u003c\u003e  \u003c  \u003c=  \u003e  \u003e=\n  Arithmetic:     +  -  *  /  %\n  String match:   like (% wildcard), ilike (case-insensitive), ~= (regex), ~! (not regex)\n  Logical:        and, or, not\n  Set/range:      in ('val1','val2'), not in ('val1','val2'), between X and Y\n  Null checks:    is null, is not null\n  Array funcs:    len(field), sum(field[*].sub), any field[*].sub \u003e N, all field[*].sub \u003e= N\n  Array access:   field[index], field[*] (wildcard), implicit field.sub traversal\n  SI units:       Ki, Mi, Gi, Ti, Pi suffixes for numeric literals (e.g. 4Gi = 4294967296)\n  Field access:   dot notation (e.g. parent.id, disks[*].datastore.id, guest.distribution)\n\n  Discovering available fields:\n    Inventory items are dynamic JSON from the provider. Field names vary by provider\n    type. To see all available fields, run:\n      kubectl-mtv get inventory vm \u003cprovider\u003e -o json\n    Any field visible in the JSON output can be used in queries with dot notation.\n\n  Common VM fields (vSphere):\n    name, id, powerState, cpuCount, memoryMB, guestId, guestName, isTemplate\n    firmware, storageUsed, ipAddress, hostName, host, path, uuid, connectionState\n    changeTrackingEnabled, coresPerSocket, secureBoot, tpmEnabled\n    parent.id, parent.kind (folder reference)\n    disks (array): disks.capacity, disks.datastore.id, disks.file, disks.shared\n    nics (array): nics.mac, nics.network.id\n    networks (array): networks.id, networks.kind\n    concerns (array): concerns.category, concerns.assessment, concerns.label\n\n  Common VM fields (oVirt):\n    name, id, status, memory, cpuSockets, cpuCores, cpuThreads, osType, guestName\n    cluster, host, path, haEnabled, stateless, placementPolicyAffinity, display\n    guest.distribution, guest.fullVersion\n    diskAttachments (array): diskAttachments.disk, diskAttachments.interface\n    nics (array): nics.name, nics.mac, nics.interface, nics.ipAddress, nics.profile\n    concerns (array): concerns.category, concerns.assessment, concerns.label\n\n  Common VM fields (OpenStack):\n    name, id, status, flavor.name, image.name, project.name\n\n  Common VM fields (EC2, PascalCase):\n    name, InstanceType, State.Name, PlatformDetails\n    Placement.AvailabilityZone, PublicIpAddress, PrivateIpAddress, VpcId, SubnetId\n\n  Examples:\n    where name ~= 'prod-.*'\n    where powerState = 'poweredOn' and memoryMB \u003e 4096       (vSphere)\n    where status = 'up' and memory \u003e 4294967296              (oVirt, memory in bytes)\n    where isTemplate = false and firmware = 'efi'            (vSphere)\n    where guestId ~= 'rhel.*' and storageUsed \u003e 53687091200\n    where len(disks) \u003e 1 and cpuCount \u003c= 8\n    where len(networks) = 2                                  (VMs with exactly 2 networks)\n    where len(disks) = 2 and len(nics) = 2                   (multi-disk, multi-NIC VMs)\n    where name like '%web%' order by memoryMB desc limit 10\n    where path ~= '/Production/.*'",
+      "long_description": "Get virtual machines from a provider's inventory.\n\nQueries the MTV inventory service to list VMs available for migration.\nUse --query (-q) to filter results using TSL query syntax. The --extended\nflag shows additional VM details.\n\nOutput format 'planvms' generates YAML suitable for use with 'create plan --vms @file'.\n\nQuery Language (TSL):\n  Use -q \"where ...\" to filter inventory results with TSL query syntax:\n    -q \"where name ~= 'prod-.*'\"\n    -q \"where powerState = 'poweredOn' and memoryMB \u003e 4096\"\n    -q \"where len(disks) \u003e 1 and cpuCount \u003c= 8\"\n    -q \"where name like '%web%' order by memoryMB desc limit 10\"\n\n  Supports comparison, regex, logical operators, array functions (len(), any(), all()),\n  SI units (Ki, Mi, Gi), sorting (ORDER BY), and limiting (LIMIT).\n\n  To discover available fields for your provider, run:\n    kubectl-mtv get inventory vm \u003cprovider\u003e -o json\n\n  Run 'kubectl-mtv help tsl' for the full syntax reference and field list.",
       "usage": "kubectl-mtv get inventory vm PROVIDER [flags]",
       "aliases": [
         "vms"
@@ -4273,7 +4273,7 @@
       ],
       "path_string": "help",
       "description": "Help about any command",
-      "long_description": "Help provides help for any command in the application.\n\nSimply type kubectl-mtv help [path to command] for full details.\n\nUse --machine to output the complete command schema in a machine-readable\nformat (JSON or YAML) for integration with MCP servers and automation tools.",
+      "long_description": "Help provides help for any command in the application.\n\nSimply type kubectl-mtv help [path to command] for full details.\n\nUse --machine to output the command schema in a machine-readable format\n(JSON or YAML) for integration with MCP servers and automation tools.\nYou can scope --machine output to a specific command or subtree by passing\nthe command path (e.g., help --machine get plan). Use --short with --machine\nto omit long descriptions and examples for a condensed view.\n\nHelp topics are also available for domain-specific languages:\n  tsl   - Tree Search Language query syntax reference\n  karl  - Kubernetes Affinity Rule Language syntax reference",
       "usage": "kubectl-mtv help [command] [flags]",
       "category": "admin",
       "flags": [
@@ -4315,6 +4315,13 @@
           "required": false
         },
         {
+          "name": "short",
+          "type": "bool",
+          "default": false,
+          "description": "Omit long descriptions and examples from machine output (with --machine)",
+          "required": false
+        },
+        {
           "name": "write",
           "type": "bool",
           "default": false,
@@ -4328,8 +4335,28 @@
           "command": "kubectl-mtv help get plan"
         },
         {
+          "description": "Learn about the TSL query language",
+          "command": "kubectl-mtv help tsl"
+        },
+        {
+          "description": "Learn about the KARL affinity syntax",
+          "command": "kubectl-mtv help karl"
+        },
+        {
           "description": "Output complete command schema as JSON",
           "command": "kubectl-mtv help --machine"
+        },
+        {
+          "description": "Output schema for a single command",
+          "command": "kubectl-mtv help --machine get plan"
+        },
+        {
+          "description": "Output schema for all \"get\" commands",
+          "command": "kubectl-mtv help --machine get"
+        },
+        {
+          "description": "Condensed schema without long descriptions or examples",
+          "command": "kubectl-mtv help --machine --short"
         },
         {
           "description": "Output schema in YAML format",
@@ -4342,6 +4369,10 @@
         {
           "description": "Output only write commands",
           "command": "kubectl-mtv help --machine --write"
+        },
+        {
+          "description": "Get TSL reference in machine-readable format",
+          "command": "kubectl-mtv help --machine tsl"
         }
       ]
     },
@@ -4541,7 +4572,7 @@
       ],
       "path_string": "patch plan",
       "description": "Patch a migration plan",
-      "long_description": "Patch an existing migration plan without modifying its VM list.\n\nUse this to update plan settings like migration type, transfer network,\ntarget labels, node selectors, or convertor pod configuration.\n\nAffinity Syntax (KARL):\n  Used by --target-affinity and --convertor-affinity to define pod affinity rules.\n\n  Syntax: RULE_TYPE pods(selector[,selector...]) on TOPOLOGY [weight=N]\n\n  Rule types:\n    REQUIRE  - hard affinity (must co-locate with matching pods)\n    PREFER   - soft affinity (prefer co-location, weight=1-100, default 100)\n    AVOID    - hard anti-affinity (must not co-locate)\n    REPEL    - soft anti-affinity (prefer not co-locating, weight=1-100)\n\n  Topology keys: node, zone, region, rack\n\n  Label selectors (inside pods(...)):\n    key=value            equality match\n    key in [v1,v2,v3]   value in set\n    key not in [v1,v2]  value not in set\n    has key              label exists\n    not has key          label does not exist\n  Multiple selectors are AND-ed: pods(app=web,tier=frontend,has monitoring)\n\n  Examples:\n    REQUIRE pods(app=database) on node\n    PREFER pods(app=cache) on zone weight=80\n    AVOID pods(app=web) on node\n    REPEL pods(tier in [batch,worker]) on zone weight=50",
+      "long_description": "Patch an existing migration plan without modifying its VM list.\n\nUse this to update plan settings like migration type, transfer network,\ntarget labels, node selectors, or convertor pod configuration.\n\nAffinity Syntax (KARL):\n  The --target-affinity and --convertor-affinity flags use KARL syntax:\n    --target-affinity \"REQUIRE pods(app=database) on node\"\n    --convertor-affinity \"PREFER pods(app=cache) on zone weight=80\"\n  Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.\n  Run 'kubectl-mtv help karl' for the full syntax reference.",
       "usage": "kubectl-mtv patch plan PLAN_NAME [flags]",
       "category": "write",
       "flags": [
