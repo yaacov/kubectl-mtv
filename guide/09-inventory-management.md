@@ -324,6 +324,46 @@ kubectl mtv get inventory vms vsphere-prod \
   -q "where powerState = 'poweredOn' and memoryMB >= 4096 and name ~= 'prod-.*'"
 ```
 
+### Sorting and Limiting Results
+
+Use `order by` and `limit` to control how many results are returned and in what order:
+
+```bash
+# Top 10 largest VMs by memory (sorted descending, limited to 10)
+kubectl mtv get inventory vms vsphere-prod \
+  -q "where powerState = 'poweredOn' order by memoryMB desc limit 10"
+
+# First 50 powered-on VMs alphabetically
+kubectl mtv get inventory vms vsphere-prod \
+  -q "where powerState = 'poweredOn' order by name limit 50"
+
+# Smallest VMs first (candidates for quick migration)
+kubectl mtv get inventory vms vsphere-prod \
+  -q "where powerState = 'poweredOn' order by memoryMB asc limit 20"
+
+# Datastores with >100 GB free (use free in bytes with SI units)
+kubectl mtv get inventory datastores vsphere-prod \
+  -q "where free > 100Gi order by free asc limit 5"
+```
+
+### Selecting Specific Fields
+
+Use the `select` clause to return only the fields you need, reducing output size:
+
+```bash
+# Return only name, memory, and CPU (compact output)
+kubectl mtv get inventory vms vsphere-prod \
+  -q "select name, memoryMB, cpuCount where powerState = 'poweredOn' limit 10"
+
+# Select with aliases and combined with order/limit
+kubectl mtv get inventory vms vsphere-prod \
+  -q "select name, memoryMB as mem, cpuCount where memoryMB > 4096 order by memoryMB desc limit 5"
+
+# Sum of disk capacity with select
+kubectl mtv get inventory vms vsphere-prod \
+  -q "select name, sum(disks[*].capacityGB) as totalDisk where powerState = 'poweredOn' order by totalDisk desc limit 10"
+```
+
 ### Provider-Specific Resource Queries
 
 #### vSphere Resource Discovery
@@ -541,9 +581,9 @@ kubectl mtv get inventory vms vsphere-prod \
 kubectl mtv get inventory vms vsphere-prod \
   -q "where cluster.name = 'Production-Cluster'"
 
-# Limit results with targeted queries
+# Limit results with targeted queries (order by + limit)
 kubectl mtv get inventory vms vsphere-prod \
-  -q "where memoryMB >= 4096 and powerState = 'poweredOn'" \
+  -q "where memoryMB >= 4096 and powerState = 'poweredOn' order by memoryMB desc limit 25" \
   --extended
 ```
 

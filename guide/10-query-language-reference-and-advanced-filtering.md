@@ -56,13 +56,29 @@ kubectl mtv get inventory <resource> <provider> -q "where <TSL_EXPRESSION>"
 
 ### Basic Query Components
 
-1. **WHERE Clause**: The `where` keyword starts the filter expression
-2. **Field References**: Access object fields using dot notation (e.g., `name`, `host.cluster.name`)
-3. **Operators**: Comparison, logical, and pattern matching operators
-4. **Literals**: String, numeric, boolean, and array values
-5. **Functions**: Built-in functions for complex operations
-6. **ORDER BY**: Sort results by a field ascending or descending
-7. **LIMIT**: Restrict the number of results returned
+1. **SELECT Clause** (optional): Select specific fields to return (e.g., `select name, memoryMB`)
+2. **WHERE Clause**: The `where` keyword starts the filter expression
+3. **Field References**: Access object fields using dot notation (e.g., `name`, `host.cluster.name`)
+4. **Operators**: Comparison, logical, and pattern matching operators
+5. **Literals**: String, numeric, boolean, and array values
+6. **Functions**: Built-in functions for complex operations
+7. **ORDER BY**: Sort results by a field ascending or descending
+8. **LIMIT**: Restrict the number of results returned
+
+### Selecting Fields with SELECT
+
+Use the optional `select` clause to return only the fields you need, reducing output size:
+
+```bash
+# Return only name, memory, and CPU (compact table output)
+kubectl mtv get inventory vm vsphere-prod -q "select name, memoryMB, cpuCount where powerState = 'poweredOn' limit 10"
+
+# Select with aliases
+kubectl mtv get inventory vm vsphere-prod -q "select name, memoryMB as mem, cpuCount as cpus where memoryMB > 4096"
+
+# Use reducers in select (sum, len)
+kubectl mtv get inventory vm vsphere-prod -q "select name, sum(disks[*].capacityGB) as totalDisk where powerState = 'poweredOn' order by totalDisk desc limit 10"
+```
 
 ### Sorting with ORDER BY
 

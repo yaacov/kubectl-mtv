@@ -53,6 +53,12 @@ where powerState = 'poweredOn' order by memoryMB desc
 
 -- Filter with sorting and limit
 where memoryMB > 1024 order by memoryMB desc limit 10
+
+-- Select specific fields (reduces output size)
+select name, memoryMB, cpuCount where powerState = 'poweredOn' limit 10
+
+-- Full query: select, where, order by, limit
+select name, memoryMB as mem where memoryMB > 4096 order by memoryMB desc limit 5
 ```
 
 ## Data Types and Literals
@@ -216,6 +222,70 @@ not (isTemplate = true or status = 'down')
 | `is null` | Field is null | `description is null` |
 | `is not null` | Field is not null | `guestIP is not null` |
 
+## SELECT, ORDER BY, and LIMIT
+
+### SELECT Clause
+
+The optional `SELECT` clause limits which fields are returned, reducing output size:
+
+```sql
+-- Select specific fields
+select name, memoryMB, cpuCount where powerState = 'poweredOn'
+
+-- Field with alias (as)
+select memoryMB as mem, cpuCount as cpus where memoryMB > 4096
+
+-- Reducers: sum, len, any, all
+select name, sum(disks[*].capacityGB) as totalDisk where powerState = 'poweredOn'
+select name, len(disks) as diskCount where len(disks) > 1
+```
+
+### ORDER BY Clause
+
+Sort results by field in ascending (default) or descending order:
+
+```sql
+-- Ascending (default)
+where powerState = 'poweredOn' order by name
+
+-- Descending
+where memoryMB > 1024 order by memoryMB desc
+
+-- Multiple sort keys
+where powerState = 'poweredOn' order by memoryMB desc, name asc
+
+-- Order by alias
+select name, memoryMB as mem where memoryMB > 0 order by mem desc
+```
+
+### LIMIT Clause
+
+Restrict the number of results returned:
+
+```sql
+-- Top 10
+where powerState = 'poweredOn' order by memoryMB desc limit 10
+
+-- First 50 alphabetically
+where powerState = 'poweredOn' order by name limit 50
+
+-- Limit without order (first N matching)
+where name ~= 'prod-.*' limit 5
+```
+
+### Combined Examples (kubectl-mtv)
+
+```bash
+# Top 10 largest VMs by memory
+kubectl mtv get inventory vm vsphere-prod -q "where powerState = 'poweredOn' order by memoryMB desc limit 10"
+
+# Compact output: only name, memory, CPU
+kubectl mtv get inventory vm vsphere-prod -q "select name, memoryMB, cpuCount where powerState = 'poweredOn' limit 10"
+
+# Full query: select + where + order + limit
+kubectl mtv get inventory vm vsphere-prod -q "select name, memoryMB as mem where memoryMB > 4096 order by mem desc limit 5"
+```
+
 ## Functions
 
 ### `len(field)`
@@ -315,6 +385,11 @@ disks[*].capacity
 ```
 QUERY STRUCTURE
   [SELECT fields] WHERE condition [ORDER BY field [ASC|DESC]] [LIMIT n]
+
+EXAMPLES
+  where name = 'vm1'
+  where memoryMB > 4096 order by memoryMB desc limit 10
+  select name, memoryMB where powerState = 'poweredOn' order by name limit 5
 
 DATA TYPES
   Strings       'single quoted'
