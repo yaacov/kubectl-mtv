@@ -1,0 +1,246 @@
+package tools
+
+import (
+	"context"
+	"strings"
+	"testing"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/yaacov/kubectl-mtv/pkg/mcp/discovery"
+)
+
+// --- Tool definition tests ---
+
+func TestGetMTVWriteTool(t *testing.T) {
+	registry := testRegistry()
+	tool := GetMTVWriteTool(registry)
+
+	if tool.Name != "mtv_write" {
+		t.Errorf("Name = %q, want %q", tool.Name, "mtv_write")
+	}
+
+	if tool.Description == "" {
+		t.Error("Description should not be empty")
+	}
+
+	// Description should reference write commands
+	for _, keyword := range []string{"create provider", "create plan"} {
+		if !strings.Contains(tool.Description, keyword) {
+			t.Errorf("Description should contain %q", keyword)
+		}
+	}
+
+	// OutputSchema should have expected properties
+	schema, ok := tool.OutputSchema.(map[string]any)
+	if !ok {
+		t.Fatal("OutputSchema should be a map")
+	}
+	props, ok := schema["properties"].(map[string]any)
+	if !ok {
+		t.Fatal("OutputSchema should have properties")
+	}
+	for _, key := range []string{"command", "return_value", "data", "output", "stderr"} {
+		if _, exists := props[key]; !exists {
+			t.Errorf("OutputSchema.properties should contain %q", key)
+		}
+	}
+}
+
+// --- buildWriteArgs tests ---
+
+func TestBuildWriteArgs(t *testing.T) {
+	tests := []struct {
+		name         string
+		cmdPath      string
+		args         []string
+		flags        map[string]any
+		namespace    string
+		wantContains []string
+		wantMissing  []string
+	}{
+		{
+			name:         "simple command",
+			cmdPath:      "create/provider",
+			wantContains: []string{"create", "provider"},
+		},
+		{
+			name:         "with positional arg",
+			cmdPath:      "delete/plan",
+			args:         []string{"my-plan"},
+			wantContains: []string{"delete", "plan", "my-plan"},
+		},
+		{
+			name:         "with namespace",
+			cmdPath:      "start/plan",
+			args:         []string{"my-plan"},
+			namespace:    "demo",
+			wantContains: []string{"start", "plan", "my-plan", "-n", "demo"},
+		},
+		{
+			name:    "with flags",
+			cmdPath: "create/provider",
+			args:    []string{"my-provider"},
+			flags: map[string]any{
+				"type":                       "vsphere",
+				"url":                        "https://vcenter.example.com",
+				"provider-insecure-skip-tls": true,
+			},
+			wantContains: []string{"create", "provider", "my-provider", "--type", "vsphere", "--url", "--provider-insecure-skip-tls"},
+		},
+		{
+			name:         "does not auto-add output format",
+			cmdPath:      "create/plan",
+			args:         []string{"test-plan"},
+			wantContains: []string{"create", "plan", "test-plan"},
+			wantMissing:  []string{"-o"},
+		},
+		{
+			name:         "namespace in flags is skipped",
+			cmdPath:      "start/plan",
+			args:         []string{"my-plan"},
+			namespace:    "real-ns",
+			flags:        map[string]any{"namespace": "ignored"},
+			wantContains: []string{"-n", "real-ns"},
+			wantMissing:  []string{"ignored"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := buildWriteArgs(tt.cmdPath, tt.args, tt.flags, tt.namespace)
+			joined := strings.Join(result, " ")
+
+			for _, want := range tt.wantContains {
+				if !strings.Contains(joined, want) {
+					t.Errorf("buildWriteArgs() = %v, should contain %q", result, want)
+				}
+			}
+			for _, notWant := range tt.wantMissing {
+				if strings.Contains(joined, notWant) {
+					t.Errorf("buildWriteArgs() = %v, should NOT contain %q", result, notWant)
+				}
+			}
+		})
+	}
+}
+
+// --- Handler validation error tests ---
+
+func TestHandleMTVWrite_ValidationErrors(t *testing.T) {
+	registry := testRegistry()
+	handler := HandleMTVWrite(registry)
+	ctx := context.Background()
+	req := &mcp.CallToolRequest{}
+
+	tests := []struct {
+		name      string
+		input     MTVWriteInput
+		wantError string
+	}{
+		{
+			name:      "unknown command",
+			input:     MTVWriteInput{Command: "nonexistent command"},
+			wantError: "unknown command",
+		},
+		{
+			name:      "read command rejected",
+			input:     MTVWriteInput{Command: "get plan"},
+			wantError: "read-only operation",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := handler(ctx, req, tt.input)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), tt.wantError) {
+				t.Errorf("error = %q, should contain %q", err.Error(), tt.wantError)
+			}
+		})
+	}
+}
+
+// --- Handler DryRun tests ---
+
+func TestHandleMTVWrite_DryRun(t *testing.T) {
+	registry := &discovery.Registry{
+		ReadOnly: map[string]*discovery.Command{
+			"get/plan": {Path: []string{"get", "plan"}, PathString: "get plan", Description: "Get plans"},
+		},
+		ReadWrite: map[string]*discovery.Command{
+			"create/provider": {Path: []string{"create", "provider"}, PathString: "create provider", Description: "Create provider"},
+			"delete/plan":     {Path: []string{"delete", "plan"}, PathString: "delete plan", Description: "Delete plan"},
+			"start/plan":      {Path: []string{"start", "plan"}, PathString: "start plan", Description: "Start plan"},
+		},
+	}
+
+	handler := HandleMTVWrite(registry)
+	ctx := context.Background()
+	req := &mcp.CallToolRequest{}
+
+	tests := []struct {
+		name         string
+		input        MTVWriteInput
+		wantContains []string
+	}{
+		{
+			name: "create provider with flags",
+			input: MTVWriteInput{
+				Command: "create provider",
+				Args:    []string{"my-vsphere"},
+				Flags: map[string]any{
+					"type": "vsphere",
+					"url":  "https://vcenter.example.com",
+				},
+				DryRun: true,
+			},
+			wantContains: []string{"kubectl-mtv", "create", "provider", "my-vsphere", "--type", "vsphere", "--url"},
+		},
+		{
+			name: "delete plan with namespace",
+			input: MTVWriteInput{
+				Command:   "delete plan",
+				Args:      []string{"old-plan"},
+				Namespace: "demo",
+				DryRun:    true,
+			},
+			wantContains: []string{"kubectl-mtv", "delete", "plan", "old-plan", "-n", "demo"},
+		},
+		{
+			name: "start plan",
+			input: MTVWriteInput{
+				Command: "start plan",
+				Args:    []string{"my-plan"},
+				DryRun:  true,
+			},
+			wantContains: []string{"kubectl-mtv", "start", "plan", "my-plan"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, data, err := handler(ctx, req, tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			dataMap, ok := data.(map[string]interface{})
+			if !ok {
+				t.Fatalf("expected map[string]interface{}, got %T", data)
+			}
+
+			command, ok := dataMap["command"].(string)
+			if !ok {
+				t.Fatal("response should have 'command' string field")
+			}
+
+			for _, want := range tt.wantContains {
+				if !strings.Contains(command, want) {
+					t.Errorf("command = %q, should contain %q", command, want)
+				}
+			}
+		})
+	}
+}

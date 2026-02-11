@@ -1,7 +1,10 @@
 package util
 
 import (
+	"context"
+	"net/http"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -163,5 +166,324 @@ func TestResolveEnvVars(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// --- UnmarshalJSONResponse tests ---
+
+func TestUnmarshalJSONResponse(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		wantData   bool // expect "data" key in result
+		wantOutput bool // expect "output" key in result
+		wantErr    bool
+		checkData  func(t *testing.T, data interface{})
+	}{
+		{
+			name:     "stdout is JSON object",
+			input:    `{"command":"kubectl-mtv get plan","return_value":0,"stdout":"{\"items\":[],\"kind\":\"PlanList\"}","stderr":""}`,
+			wantData: true,
+			checkData: func(t *testing.T, data interface{}) {
+				m, ok := data.(map[string]interface{})
+				if !ok {
+					t.Fatalf("expected map, got %T", data)
+				}
+				if _, exists := m["kind"]; !exists {
+					t.Error("parsed data should contain 'kind'")
+				}
+			},
+		},
+		{
+			name:     "stdout is JSON array",
+			input:    `{"command":"test","return_value":0,"stdout":"[{\"name\":\"plan1\"},{\"name\":\"plan2\"}]","stderr":""}`,
+			wantData: true,
+			checkData: func(t *testing.T, data interface{}) {
+				arr, ok := data.([]interface{})
+				if !ok {
+					t.Fatalf("expected array, got %T", data)
+				}
+				if len(arr) != 2 {
+					t.Errorf("expected 2 items, got %d", len(arr))
+				}
+			},
+		},
+		{
+			name:       "stdout is plain text",
+			input:      `{"command":"test","return_value":0,"stdout":"NAME    STATUS\nplan1   Ready","stderr":""}`,
+			wantOutput: true,
+		},
+		{
+			name:  "empty stdout",
+			input: `{"command":"test","return_value":0,"stdout":"","stderr":""}`,
+		},
+		{
+			name:    "invalid JSON input",
+			input:   `not json at all`,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := UnmarshalJSONResponse(tt.input)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if tt.wantData {
+				data, exists := result["data"]
+				if !exists {
+					t.Fatal("expected 'data' key in result")
+				}
+				if _, hasStdout := result["stdout"]; hasStdout {
+					t.Error("'stdout' should be removed when 'data' is set")
+				}
+				if tt.checkData != nil {
+					tt.checkData(t, data)
+				}
+			}
+
+			if tt.wantOutput {
+				output, exists := result["output"]
+				if !exists {
+					t.Fatal("expected 'output' key in result")
+				}
+				if _, ok := output.(string); !ok {
+					t.Errorf("output should be a string, got %T", output)
+				}
+				if _, hasStdout := result["stdout"]; hasStdout {
+					t.Error("'stdout' should be removed when 'output' is set")
+				}
+			}
+		})
+	}
+}
+
+// --- formatShellCommand tests ---
+
+func TestFormatShellCommand(t *testing.T) {
+	tests := []struct {
+		name        string
+		cmd         string
+		args        []string
+		wantContain string
+		wantMissing string
+	}{
+		{
+			name:        "simple command",
+			cmd:         "kubectl-mtv",
+			args:        []string{"get", "plan", "-n", "demo"},
+			wantContain: "kubectl-mtv get plan -n demo",
+		},
+		{
+			name:        "password is sanitized",
+			cmd:         "kubectl-mtv",
+			args:        []string{"create", "provider", "--password", "s3cret"},
+			wantContain: "--password",
+			wantMissing: "s3cret",
+		},
+		{
+			name:        "token is sanitized",
+			cmd:         "kubectl",
+			args:        []string{"--token", "my-secret-token", "get", "pods"},
+			wantContain: "--token",
+			wantMissing: "my-secret-token",
+		},
+		{
+			name:        "offload password is sanitized",
+			cmd:         "kubectl-mtv",
+			args:        []string{"create", "mapping", "--offload-vsphere-password", "pass123"},
+			wantContain: "--offload-vsphere-password",
+			wantMissing: "pass123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatShellCommand(tt.cmd, tt.args)
+
+			if tt.wantContain != "" && !strings.Contains(result, tt.wantContain) {
+				t.Errorf("formatShellCommand() = %q, should contain %q", result, tt.wantContain)
+			}
+			if tt.wantMissing != "" && strings.Contains(result, tt.wantMissing) {
+				t.Errorf("formatShellCommand() = %q, should NOT contain %q", result, tt.wantMissing)
+			}
+		})
+	}
+}
+
+// --- Context helpers tests ---
+
+func TestWithKubeToken(t *testing.T) {
+	ctx := context.Background()
+
+	// No token in fresh context
+	token, ok := GetKubeToken(ctx)
+	if ok || token != "" {
+		t.Error("fresh context should not have a token")
+	}
+
+	// Add token
+	ctx = WithKubeToken(ctx, "my-token")
+	token, ok = GetKubeToken(ctx)
+	if !ok || token != "my-token" {
+		t.Errorf("expected token 'my-token', got %q (ok=%v)", token, ok)
+	}
+}
+
+func TestWithKubeServer(t *testing.T) {
+	ctx := context.Background()
+
+	// No server in fresh context
+	server, ok := GetKubeServer(ctx)
+	if ok || server != "" {
+		t.Error("fresh context should not have a server")
+	}
+
+	// Add server
+	ctx = WithKubeServer(ctx, "https://api.example.com:6443")
+	server, ok = GetKubeServer(ctx)
+	if !ok || server != "https://api.example.com:6443" {
+		t.Errorf("expected server URL, got %q (ok=%v)", server, ok)
+	}
+}
+
+func TestWithDryRun(t *testing.T) {
+	ctx := context.Background()
+
+	// Default is false
+	if GetDryRun(ctx) {
+		t.Error("fresh context should not have dry run enabled")
+	}
+
+	// Enable dry run
+	ctx = WithDryRun(ctx, true)
+	if !GetDryRun(ctx) {
+		t.Error("dry run should be enabled after setting true")
+	}
+
+	// Disable dry run
+	ctx = WithDryRun(ctx, false)
+	if GetDryRun(ctx) {
+		t.Error("dry run should be disabled after setting false")
+	}
+}
+
+func TestGetKubeToken_NilContext(t *testing.T) {
+	token, ok := GetKubeToken(nil) //nolint:staticcheck // intentionally testing nil context behavior
+	if ok || token != "" {
+		t.Error("nil context should return empty token")
+	}
+}
+
+func TestGetKubeServer_NilContext(t *testing.T) {
+	server, ok := GetKubeServer(nil) //nolint:staticcheck // intentionally testing nil context behavior
+	if ok || server != "" {
+		t.Error("nil context should return empty server")
+	}
+}
+
+func TestGetDryRun_NilContext(t *testing.T) {
+	if GetDryRun(nil) { //nolint:staticcheck // intentionally testing nil context behavior
+		t.Error("nil context should return false for dry run")
+	}
+}
+
+// --- WithKubeCredsFromHeaders tests ---
+
+func TestWithKubeCredsFromHeaders(t *testing.T) {
+	tests := []struct {
+		name       string
+		headers    http.Header
+		wantToken  string
+		wantServer string
+	}{
+		{
+			name:    "nil headers",
+			headers: nil,
+		},
+		{
+			name:    "empty headers",
+			headers: http.Header{},
+		},
+		{
+			name: "bearer token",
+			headers: http.Header{
+				"Authorization": []string{"Bearer my-k8s-token"},
+			},
+			wantToken: "my-k8s-token",
+		},
+		{
+			name: "kubernetes server",
+			headers: http.Header{
+				"X-Kubernetes-Server": []string{"https://api.cluster.local:6443"},
+			},
+			wantServer: "https://api.cluster.local:6443",
+		},
+		{
+			name: "both token and server",
+			headers: http.Header{
+				"Authorization":       []string{"Bearer both-token"},
+				"X-Kubernetes-Server": []string{"https://api.example.com"},
+			},
+			wantToken:  "both-token",
+			wantServer: "https://api.example.com",
+		},
+		{
+			name: "non-bearer auth header ignored",
+			headers: http.Header{
+				"Authorization": []string{"Basic dXNlcjpwYXNz"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			ctx = WithKubeCredsFromHeaders(ctx, tt.headers)
+
+			token, _ := GetKubeToken(ctx)
+			if token != tt.wantToken {
+				t.Errorf("token = %q, want %q", token, tt.wantToken)
+			}
+
+			server, _ := GetKubeServer(ctx)
+			if server != tt.wantServer {
+				t.Errorf("server = %q, want %q", server, tt.wantServer)
+			}
+		})
+	}
+}
+
+// --- Output format tests ---
+
+func TestOutputFormat(t *testing.T) {
+	// Save and restore
+	orig := GetOutputFormat()
+	defer SetOutputFormat(orig)
+
+	// Default is "json"
+	SetOutputFormat("")
+	if got := GetOutputFormat(); got != "json" {
+		t.Errorf("SetOutputFormat(\"\") should default to \"json\", got %q", got)
+	}
+
+	// Set to text
+	SetOutputFormat("text")
+	if got := GetOutputFormat(); got != "text" {
+		t.Errorf("SetOutputFormat(\"text\") = %q, want \"text\"", got)
+	}
+
+	// Set back to json
+	SetOutputFormat("json")
+	if got := GetOutputFormat(); got != "json" {
+		t.Errorf("SetOutputFormat(\"json\") = %q, want \"json\"", got)
 	}
 }
