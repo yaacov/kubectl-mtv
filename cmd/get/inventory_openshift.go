@@ -18,14 +18,14 @@ func NewInventoryNamespaceCmd(kubeConfigFlags *genericclioptions.ConfigFlags, gl
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:               "namespace PROVIDER",
-		Short:             "Get namespaces from a provider " + flags.ProvidersOpenShift,
-		Long:              `Get namespaces from an OpenShift provider's inventory.`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+		Use:          "namespace",
+		Short:        "Get namespaces from a provider",
+		Long:         `Get namespaces from an OpenShift provider's inventory.`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -33,8 +33,6 @@ func NewInventoryNamespaceCmd(kubeConfigFlags *genericclioptions.ConfigFlags, gl
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -48,11 +46,16 @@ func NewInventoryNamespaceCmd(kubeConfigFlags *genericclioptions.ConfigFlags, gl
 			return inventory.ListNamespacesWithInsecure(ctx, globalConfig.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -67,14 +70,14 @@ func NewInventoryPVCCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalCo
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:               "pvc PROVIDER",
-		Short:             "Get PVCs from a provider " + flags.ProvidersOpenShift,
-		Long:              `Get PersistentVolumeClaims from an OpenShift provider's inventory.`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+		Use:          "pvc",
+		Short:        "Get PVCs from a provider",
+		Long:         `Get PersistentVolumeClaims from an OpenShift provider's inventory.`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -82,8 +85,6 @@ func NewInventoryPVCCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalCo
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -97,11 +98,16 @@ func NewInventoryPVCCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalCo
 			return inventory.ListPersistentVolumeClaimsWithInsecure(ctx, globalConfig.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -116,14 +122,14 @@ func NewInventoryDataVolumeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:               "data-volume PROVIDER",
-		Short:             "Get data volumes from a provider " + flags.ProvidersOpenShift,
-		Long:              `Get DataVolumes from an OpenShift provider's inventory.`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+		Use:          "data-volume",
+		Short:        "Get data volumes from a provider",
+		Long:         `Get DataVolumes from an OpenShift provider's inventory.`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -131,8 +137,6 @@ func NewInventoryDataVolumeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -146,11 +150,16 @@ func NewInventoryDataVolumeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 			return inventory.ListDataVolumesWithInsecure(ctx, globalConfig.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {

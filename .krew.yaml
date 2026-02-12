@@ -24,14 +24,14 @@ spec:
     
     Examples:
       # Create a VMware provider
-      kubectl mtv create provider vmware --type vsphere -U https://vcenter.com/sdk -u admin
+      kubectl mtv create provider --name vmware --type vsphere --url https://vcenter.com/sdk --username admin
       
       # List available VMs
-      kubectl mtv get inventory vms vmware -q "where name ~= 'web-.*'"
+      kubectl mtv get inventory vms --provider vmware --query "where name ~= 'web-.*'"
       
       # Create and start a migration plan
-      kubectl mtv create plan my-migration --source vmware --vms vm1,vm2
-      kubectl mtv start plan my-migration
+      kubectl mtv create plan --name my-migration --source vmware --vms vm1,vm2
+      kubectl mtv start plan --name my-migration
   platforms:
   - selector:
       matchLabels:

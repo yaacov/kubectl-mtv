@@ -52,7 +52,6 @@ func TestBuildWriteArgs(t *testing.T) {
 	tests := []struct {
 		name         string
 		cmdPath      string
-		args         []string
 		flags        map[string]any
 		wantContains []string
 		wantMissing  []string
@@ -63,49 +62,46 @@ func TestBuildWriteArgs(t *testing.T) {
 			wantContains: []string{"create", "provider"},
 		},
 		{
-			name:         "with positional arg",
+			name:         "with name in flags",
 			cmdPath:      "delete/plan",
-			args:         []string{"my-plan"},
-			wantContains: []string{"delete", "plan", "my-plan"},
+			flags:        map[string]any{"name": "my-plan"},
+			wantContains: []string{"delete", "plan", "--name", "my-plan"},
 		},
 		{
 			name:         "with namespace in flags",
 			cmdPath:      "start/plan",
-			args:         []string{"my-plan"},
-			flags:        map[string]any{"namespace": "demo"},
-			wantContains: []string{"start", "plan", "my-plan", "-n", "demo"},
+			flags:        map[string]any{"name": "my-plan", "namespace": "demo"},
+			wantContains: []string{"start", "plan", "--name", "my-plan", "--namespace", "demo"},
 		},
 		{
 			name:    "with flags",
 			cmdPath: "create/provider",
-			args:    []string{"my-provider"},
 			flags: map[string]any{
+				"name":                       "my-provider",
 				"type":                       "vsphere",
 				"url":                        "https://vcenter.example.com",
 				"provider-insecure-skip-tls": true,
 			},
-			wantContains: []string{"create", "provider", "my-provider", "--type", "vsphere", "--url", "--provider-insecure-skip-tls"},
+			wantContains: []string{"create", "provider", "--name", "my-provider", "--type", "vsphere", "--url", "--provider-insecure-skip-tls"},
 		},
 		{
 			name:         "does not auto-add output format",
 			cmdPath:      "create/plan",
-			args:         []string{"test-plan"},
-			wantContains: []string{"create", "plan", "test-plan"},
-			wantMissing:  []string{"-o"},
+			flags:        map[string]any{"name": "test-plan"},
+			wantContains: []string{"create", "plan", "--name", "test-plan"},
+			wantMissing:  []string{"--output"},
 		},
 		{
 			name:         "namespace extracted from flags not duplicated",
 			cmdPath:      "start/plan",
-			args:         []string{"my-plan"},
-			flags:        map[string]any{"namespace": "real-ns"},
-			wantContains: []string{"-n", "real-ns"},
-			wantMissing:  []string{"--namespace"},
+			flags:        map[string]any{"name": "my-plan", "namespace": "real-ns"},
+			wantContains: []string{"--namespace", "real-ns"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildWriteArgs(tt.cmdPath, tt.args, tt.flags)
+			result := buildWriteArgs(tt.cmdPath, tt.flags)
 			joined := strings.Join(result, " ")
 
 			for _, want := range tt.wantContains {
@@ -170,15 +166,12 @@ func TestHandleMTVWrite_DryRun(t *testing.T) {
 		ReadWrite: map[string]*discovery.Command{
 			"create/provider": {
 				Path: []string{"create", "provider"}, PathString: "create provider", Description: "Create provider",
-				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: true}},
 			},
 			"delete/plan": {
 				Path: []string{"delete", "plan"}, PathString: "delete plan", Description: "Delete plan",
-				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: false, Variadic: true}},
 			},
 			"start/plan": {
 				Path: []string{"start", "plan"}, PathString: "start plan", Description: "Start plan",
-				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: false, Variadic: true}},
 			},
 		},
 	}
@@ -193,7 +186,7 @@ func TestHandleMTVWrite_DryRun(t *testing.T) {
 		wantContains []string
 	}{
 		{
-			name: "create provider with named arg in flags",
+			name: "create provider with flags",
 			input: MTVWriteInput{
 				Command: "create provider",
 				Flags: map[string]any{
@@ -203,16 +196,16 @@ func TestHandleMTVWrite_DryRun(t *testing.T) {
 				},
 				DryRun: true,
 			},
-			wantContains: []string{"kubectl-mtv", "create", "provider", "my-vsphere", "--type", "vsphere", "--url"},
+			wantContains: []string{"kubectl-mtv", "create", "provider", "--name", "my-vsphere", "--type", "vsphere", "--url"},
 		},
 		{
-			name: "delete plan with named arg and namespace",
+			name: "delete plan with name and namespace",
 			input: MTVWriteInput{
 				Command: "delete plan",
 				Flags:   map[string]any{"name": "old-plan", "namespace": "demo"},
 				DryRun:  true,
 			},
-			wantContains: []string{"kubectl-mtv", "delete", "plan", "old-plan", "-n", "demo"},
+			wantContains: []string{"kubectl-mtv", "delete", "plan", "old-plan", "--namespace", "demo"},
 		},
 		{
 			name: "start plan with named arg",

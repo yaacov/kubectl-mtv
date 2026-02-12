@@ -32,8 +32,12 @@ By creating host resources, Forklift can utilize ESXi host interfaces directly f
 ### Basic Syntax
 
 ```bash
-kubectl mtv create host HOST_NAME [HOST_NAME...] --provider PROVIDER_NAME [options]
+kubectl mtv create host --name HOST_NAME[,HOST_NAME,...] --provider PROVIDER_NAME [options]
 ```
+
+> **Note:** Multiple host names are passed as a comma-separated list in a single `--name`
+> flag (e.g., `--name esxi-host-01,esxi-host-02,esxi-host-03`). You can also use `--names`
+> as an alias for `--name`.
 
 ### IP Address Resolution Methods
 
@@ -45,12 +49,12 @@ Specify the exact IP address to use for the migration host:
 
 ```bash
 # Single host with direct IP
-kubectl mtv create host esxi-host-01 \
+kubectl mtv create host --name esxi-host-01 \
   --provider vsphere-provider \
   --ip-address 192.168.1.10
 
 # Multiple hosts with same IP (load balancer scenario)
-kubectl mtv create host esxi-host-01 esxi-host-02 esxi-host-03 \
+kubectl mtv create host --name esxi-host-01,esxi-host-02,esxi-host-03 \
   --provider vsphere-provider \
   --ip-address 192.168.1.100
 ```
@@ -61,12 +65,12 @@ Automatically resolve IP address from a network adapter name in the inventory:
 
 ```bash
 # Single host using network adapter lookup
-kubectl mtv create host esxi-host-01 \
+kubectl mtv create host --name esxi-host-01 \
   --provider vsphere-provider \
   --network-adapter "Management Network"
 
 # Multiple hosts using network adapter lookup
-kubectl mtv create host esxi-host-01 esxi-host-02 esxi-host-03 \
+kubectl mtv create host --name esxi-host-01,esxi-host-02,esxi-host-03 \
   --provider vsphere-provider \
   --network-adapter "vMotion Network"
 ```
@@ -83,12 +87,12 @@ Use the provider's existing credentials automatically:
 
 ```bash
 # ESXi endpoint provider with direct IP (no additional credentials needed)
-kubectl mtv create host esxi-host-01 \
+kubectl mtv create host --name esxi-host-01 \
   --provider esxi-provider \
   --ip-address 192.168.1.10
 
 # ESXi endpoint provider with network adapter lookup
-kubectl mtv create host esxi-host-01 \
+kubectl mtv create host --name esxi-host-01 \
   --provider esxi-provider \
   --network-adapter "Management Network"
 ```
@@ -106,13 +110,13 @@ kubectl create secret generic esxi-host-secret \
   --from-literal=password=HostSecurePassword
 
 # Create host using existing secret
-kubectl mtv create host esxi-host-01 \
+kubectl mtv create host --name esxi-host-01 \
   --provider vsphere-provider \
   --existing-secret esxi-host-secret \
   --ip-address 192.168.1.10
 
 # Multiple hosts using same secret
-kubectl mtv create host esxi-host-01 esxi-host-02 esxi-host-03 \
+kubectl mtv create host --name esxi-host-01,esxi-host-02,esxi-host-03 \
   --provider vsphere-provider \
   --existing-secret esxi-hosts-shared-secret \
   --network-adapter "Management Network"
@@ -124,14 +128,14 @@ Provide username and password directly (creates a new secret):
 
 ```bash
 # Create host with new credentials and direct IP
-kubectl mtv create host esxi-host-01 \
+kubectl mtv create host --name esxi-host-01 \
   --provider vsphere-provider \
   --username root \
   --password HostSecurePassword \
   --ip-address 192.168.1.10
 
 # Create host with credentials using network adapter lookup
-kubectl mtv create host esxi-host-01 \
+kubectl mtv create host --name esxi-host-01 \
   --provider vsphere-provider \
   --username administrator \
   --password HostSecurePassword \
@@ -144,7 +148,7 @@ kubectl mtv create host esxi-host-01 \
 
 ```bash
 # Skip TLS verification for host connections (testing only)
-kubectl mtv create host esxi-test-host \
+kubectl mtv create host --name esxi-test-host \
   --provider vsphere-provider \
   --username root \
   --password TestPassword \
@@ -152,7 +156,7 @@ kubectl mtv create host esxi-test-host \
   --host-insecure-skip-tls
 
 # Provide CA certificate for host authentication
-kubectl mtv create host esxi-prod-host \
+kubectl mtv create host --name esxi-prod-host \
   --provider vsphere-provider \
   --username root \
   --password ProdPassword \
@@ -160,7 +164,7 @@ kubectl mtv create host esxi-prod-host \
   --cacert @/path/to/esxi-ca-certificate.pem
 
 # Inline CA certificate
-kubectl mtv create host esxi-prod-host \
+kubectl mtv create host --name esxi-prod-host \
   --provider vsphere-provider \
   --username root \
   --password ProdPassword \
@@ -176,14 +180,14 @@ Create multiple hosts efficiently:
 ```bash
 # Multiple hosts with same configuration
 kubectl mtv create host \
-  esxi-host-01 esxi-host-02 esxi-host-03 esxi-host-04 \
+  --name esxi-host-01,esxi-host-02,esxi-host-03,esxi-host-04 \
   --provider vsphere-cluster-provider \
   --existing-secret esxi-cluster-secret \
   --network-adapter "Management Network"
 
 # Hosts in different clusters but same authentication
 kubectl mtv create host \
-  esxi-west-01 esxi-west-02 esxi-east-01 esxi-east-02 \
+  --name esxi-west-01,esxi-west-02,esxi-east-01,esxi-east-02 \
   --provider vsphere-multi-cluster \
   --username cluster-admin \
   --password ClusterPassword \
@@ -194,14 +198,14 @@ kubectl mtv create host \
 
 ```bash
 # Specify custom inventory service URL
-kubectl mtv create host esxi-host-01 \
+kubectl mtv create host --name esxi-host-01 \
   --provider vsphere-provider \
   --ip-address 192.168.1.10 \
   --inventory-url http://custom-inventory.internal:8080
 
 # Use environment variable for inventory URL
 export MTV_INVENTORY_URL=http://inventory-service.forklift:8080
-kubectl mtv create host esxi-host-01 \
+kubectl mtv create host --name esxi-host-01 \
   --provider vsphere-provider \
   --ip-address 192.168.1.10
 ```
@@ -215,17 +219,17 @@ kubectl mtv create host esxi-host-01 \
 kubectl mtv get hosts
 
 # List hosts in specific namespace
-kubectl mtv get hosts -n migration-namespace
+kubectl mtv get hosts --namespace migration-namespace
 
 # List hosts across all namespaces
 kubectl mtv get hosts --all-namespaces
 
 # List with detailed output
-kubectl mtv get hosts -o yaml
-kubectl mtv get hosts -o json
+kubectl mtv get hosts --output yaml
+kubectl mtv get hosts --output json
 
 # List specific host
-kubectl mtv get host esxi-host-01
+kubectl mtv get host --name esxi-host-01
 ```
 
 ### Describe Migration Hosts
@@ -234,7 +238,7 @@ Get detailed information about migration hosts:
 
 ```bash
 # Describe a specific host
-kubectl mtv describe host esxi-host-01
+kubectl mtv describe host --name esxi-host-01
 
 # View host configuration and status
 kubectl get host esxi-host-01 -o yaml
@@ -244,16 +248,16 @@ kubectl get host esxi-host-01 -o yaml
 
 ```bash
 # Delete a specific host
-kubectl mtv delete host esxi-host-01
+kubectl mtv delete host --name esxi-host-01
 
 # Delete multiple hosts
-kubectl mtv delete host esxi-host-01 esxi-host-02 esxi-host-03
+kubectl mtv delete hosts --name esxi-host-01,esxi-host-02,esxi-host-03
 
 # Delete all hosts in namespace (use with caution)
 kubectl mtv delete host --all
 
-# Alternative plural form
-kubectl mtv delete hosts esxi-host-01
+# Plural form for single or multiple
+kubectl mtv delete hosts --name esxi-host-01
 ```
 
 ## Best Practices for Host Creation
@@ -263,7 +267,7 @@ kubectl mtv delete hosts esxi-host-01
 1. **Dedicated Migration Networks**:
    ```bash
    # Use dedicated network adapters for migration traffic
-   kubectl mtv create host esxi-host-01 \
+   kubectl mtv create host --name esxi-host-01 \
      --provider vsphere-provider \
      --network-adapter "Migration Network" \
      --existing-secret migration-credentials
@@ -272,7 +276,7 @@ kubectl mtv delete hosts esxi-host-01
 2. **High-Bandwidth Networks**:
    ```bash
    # Prioritize 10Gb+ network interfaces
-   kubectl mtv create host esxi-prod-host \
+   kubectl mtv create host --name esxi-prod-host \
      --provider vsphere-provider \
      --network-adapter "10Gb vMotion" \
      --username admin \
@@ -282,15 +286,15 @@ kubectl mtv delete hosts esxi-host-01
 3. **Network Segmentation**:
    ```bash
    # Separate production and development hosts
-   kubectl mtv create host prod-esxi-01 \
+   kubectl mtv create host --name prod-esxi-01 \
      --provider vsphere-prod \
      --network-adapter "Prod Migration Net" \
-     -n production
+     --namespace production
    
-   kubectl mtv create host dev-esxi-01 \
+   kubectl mtv create host --name dev-esxi-01 \
      --provider vsphere-dev \
      --network-adapter "Dev Migration Net" \
-     -n development
+     --namespace development
    ```
 
 ### Security Best Practices
@@ -302,7 +306,7 @@ kubectl mtv delete hosts esxi-host-01
      --from-literal=user=svc-migration \
      --from-literal=password=$(openssl rand -base64 32)
    
-   kubectl mtv create host esxi-host-01 \
+   kubectl mtv create host --name esxi-host-01 \
      --provider vsphere-provider \
      --existing-secret esxi-migration-creds \
      --ip-address 192.168.1.10
@@ -311,7 +315,7 @@ kubectl mtv delete hosts esxi-host-01
 2. **Certificate Validation**:
    ```bash
    # Always use CA certificates in production
-   kubectl mtv create host esxi-prod-host \
+   kubectl mtv create host --name esxi-prod-host \
      --provider vsphere-provider \
      --username svc-migration \
      --password SecurePassword \
@@ -323,7 +327,7 @@ kubectl mtv delete hosts esxi-host-01
    ```bash
    # Create ESXi users with minimal required permissions
    # Required privileges: Host.Config.Connection, Host.Config.NetService
-   kubectl mtv create host esxi-host-01 \
+   kubectl mtv create host --name esxi-host-01 \
      --provider vsphere-provider \
      --username migration-user \
      --password LimitedPrivPassword \
@@ -335,7 +339,7 @@ kubectl mtv delete hosts esxi-host-01
 1. **Network Interface Selection**:
    ```bash
    # Choose high-performance network adapters
-   kubectl mtv create host esxi-host-01 \
+   kubectl mtv create host --name esxi-host-01 \
      --provider vsphere-provider \
      --network-adapter "25Gb Ethernet" \
      --existing-secret high-perf-creds
@@ -344,12 +348,12 @@ kubectl mtv delete hosts esxi-host-01
 2. **Load Distribution**:
    ```bash
    # Distribute hosts across different network segments
-   kubectl mtv create host esxi-rack1-01 \
+   kubectl mtv create host --name esxi-rack1-01 \
      --provider vsphere-provider \
      --network-adapter "Rack1 Migration" \
      --existing-secret rack1-creds
    
-   kubectl mtv create host esxi-rack2-01 \
+   kubectl mtv create host --name esxi-rack2-01 \
      --provider vsphere-provider \
      --network-adapter "Rack2 Migration" \
      --existing-secret rack2-creds
@@ -358,14 +362,14 @@ kubectl mtv delete hosts esxi-host-01
 3. **Provider Endpoint Optimization**:
    ```bash
    # Use ESXi endpoint providers for direct host access
-   kubectl mtv create provider esxi-direct --type vsphere \
+   kubectl mtv create provider --name esxi-direct --type vsphere \
      --url https://esxi-host.example.com/sdk \
      --sdk-endpoint esxi \
      --username root \
      --password DirectPassword
    
    # Create host using ESXi endpoint provider
-   kubectl mtv create host esxi-direct-host \
+   kubectl mtv create host --name esxi-direct-host \
      --provider esxi-direct \
      --ip-address 192.168.1.10
    ```
@@ -375,7 +379,7 @@ kubectl mtv delete hosts esxi-host-01
 1. **Host Connectivity Testing**:
    ```bash
    # Verify host creation and status
-   kubectl mtv describe host esxi-host-01
+   kubectl mtv describe host --name esxi-host-01
    
    # Check underlying Kubernetes resource
    kubectl get host esxi-host-01 -o yaml
@@ -400,7 +404,7 @@ kubectl mtv delete hosts esxi-host-01
 
 ```bash
 # Step 1: Create vSphere provider for cluster
-kubectl mtv create provider vsphere-cluster --type vsphere \
+kubectl mtv create provider --name vsphere-cluster --type vsphere \
   --url https://vcenter.prod.company.com/sdk \
   --username svc-migration@vsphere.local \
   --password $(cat /secure/vcenter-password) \
@@ -413,7 +417,7 @@ kubectl create secret generic esxi-cluster-creds \
 
 # Step 3: Create migration hosts for each ESXi server
 kubectl mtv create host \
-  esxi-prod-01 esxi-prod-02 esxi-prod-03 esxi-prod-04 \
+  --name esxi-prod-01,esxi-prod-02,esxi-prod-03,esxi-prod-04 \
   --provider vsphere-cluster \
   --existing-secret esxi-cluster-creds \
   --network-adapter "Migration Network" \
@@ -421,30 +425,30 @@ kubectl mtv create host \
 
 # Step 4: Verify host creation
 kubectl mtv get hosts
-kubectl mtv describe host esxi-prod-01
+kubectl mtv describe host --name esxi-prod-01
 ```
 
 ### Example 2: Development Environment Setup
 
 ```bash
 # Step 1: Create development vSphere provider
-kubectl mtv create provider vsphere-dev --type vsphere \
+kubectl mtv create provider --name vsphere-dev --type vsphere \
   --url https://vcenter-dev.internal/sdk \
   --username administrator@vsphere.local \
   --password DevPassword123 \
   --provider-insecure-skip-tls
 
 # Step 2: Create development hosts with relaxed security
-kubectl mtv create host dev-esxi-01 dev-esxi-02 \
+kubectl mtv create host --name dev-esxi-01,dev-esxi-02 \
   --provider vsphere-dev \
   --username root \
   --password DevHostPassword \
   --network-adapter "VM Network" \
   --host-insecure-skip-tls \
-  -n development
+  --namespace development
 
 # Step 3: Verify setup
-kubectl mtv get hosts -n development
+kubectl mtv get hosts --namespace development
 ```
 
 ### Example 3: Multi-Site Migration Setup
@@ -452,14 +456,14 @@ kubectl mtv get hosts -n development
 ```bash
 # Site A hosts
 kubectl mtv create host \
-  site-a-esxi-01 site-a-esxi-02 \
+  --name site-a-esxi-01,site-a-esxi-02 \
   --provider vsphere-site-a \
   --ip-address 10.1.1.10 \
   --existing-secret site-a-creds
 
 # Site B hosts  
 kubectl mtv create host \
-  site-b-esxi-01 site-b-esxi-02 \
+  --name site-b-esxi-01,site-b-esxi-02 \
   --provider vsphere-site-b \
   --ip-address 10.2.1.10 \
   --existing-secret site-b-creds
@@ -476,10 +480,10 @@ kubectl mtv get hosts --all-namespaces
 
 ```bash
 # Check provider status
-kubectl mtv describe provider vsphere-provider
+kubectl mtv describe provider --name vsphere-provider
 
 # Verify host name exists in inventory
-kubectl mtv get inventory hosts vsphere-provider
+kubectl mtv get inventory hosts --provider vsphere-provider
 
 # Check network connectivity
 kubectl debug node-name -it --image=nicolaka/netshoot -- \
@@ -503,10 +507,10 @@ kubectl get events --field-selector involvedObject.name=esxi-host-01
 
 ```bash
 # List available network adapters
-kubectl mtv get inventory networks vsphere-provider
+kubectl mtv get inventory networks --provider vsphere-provider
 
 # Verify network adapter name matches inventory
-kubectl mtv get inventory hosts vsphere-provider -o yaml | grep -A5 networks
+kubectl mtv get inventory hosts --provider vsphere-provider --output yaml | grep -A5 networks
 ```
 
 ### Host Status Monitoring
@@ -544,7 +548,7 @@ Migration hosts automatically integrate with migration plans when available:
 
 ```bash
 # Create migration plan - will automatically use available hosts
-kubectl mtv create plan migration-with-hosts \
+kubectl mtv create plan --name migration-with-hosts \
   --source vsphere-provider \
   --vms "vm1,vm2,vm3"
 

@@ -420,23 +420,23 @@ func TestBuildArgs_FlagsAllNamespaces(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Use text format to avoid -o json in the result (simplifies assertions)
+			// Use text format to avoid --output json in the result (simplifies assertions)
 			origFormat := util.GetOutputFormat()
 			util.SetOutputFormat("text")
 			defer util.SetOutputFormat(origFormat)
 
-			result := buildArgs("get/plan", nil, tt.flags)
+			result := buildArgs("get/plan", tt.flags)
 
 			// Use exact element match to avoid false positives from substrings
 			hasA := false
 			for _, arg := range result {
-				if arg == "-A" {
+				if arg == "--all-namespaces" {
 					hasA = true
 					break
 				}
 			}
 			if hasA != tt.wantA {
-				t.Errorf("buildArgs() = %v, contains -A = %v, want %v", result, hasA, tt.wantA)
+				t.Errorf("buildArgs() = %v, contains --all-namespaces = %v, want %v", result, hasA, tt.wantA)
 			}
 		})
 	}

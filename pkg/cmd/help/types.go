@@ -38,13 +38,8 @@ type Command struct {
 	Aliases []string `json:"aliases,omitempty" yaml:"aliases,omitempty"`
 	// Category is one of: "read", "write", "admin"
 	Category string `json:"category" yaml:"category"`
-	// Providers lists which providers this command applies to (empty = all)
-	// Extracted from [providers: x, y] hints in the command description
-	Providers []string `json:"providers,omitempty" yaml:"providers,omitempty"`
 	// Flags are command-specific flags
 	Flags []Flag `json:"flags" yaml:"flags"`
-	// PositionalArgs are required/optional positional arguments
-	PositionalArgs []PositionalArg `json:"positional_args,omitempty" yaml:"positional_args,omitempty"`
 	// Examples are usage examples
 	Examples []Example `json:"examples,omitempty" yaml:"examples,omitempty"`
 	// Runnable indicates whether the command can be executed directly.
@@ -71,27 +66,6 @@ type Flag struct {
 	Enum []string `json:"enum,omitempty" yaml:"enum,omitempty"`
 	// Hidden indicates whether the flag is hidden from normal help
 	Hidden bool `json:"hidden,omitempty" yaml:"hidden,omitempty"`
-	// LLMRelevant indicates whether the flag should be included in AI/MCP tool descriptions.
-	// Set via the "llm-relevant" pflag annotation on global flags.
-	LLMRelevant bool `json:"llm_relevant,omitempty" yaml:"llm_relevant,omitempty"`
-	// Providers lists which providers support this flag (empty = all)
-	// Extracted from [providers: x, y] hints in the flag description
-	Providers []string `json:"providers,omitempty" yaml:"providers,omitempty"`
-	// MigrationTypes lists which migration types this flag applies to (empty = all)
-	// Extracted from [migration: x, y] hints in the flag description
-	MigrationTypes []string `json:"migration_types,omitempty" yaml:"migration_types,omitempty"`
-}
-
-// PositionalArg represents a positional command argument.
-type PositionalArg struct {
-	// Name is the argument name (usually UPPERCASE)
-	Name string `json:"name" yaml:"name"`
-	// Description is the argument description
-	Description string `json:"description" yaml:"description"`
-	// Required indicates whether the argument is required
-	Required bool `json:"required" yaml:"required"`
-	// Variadic indicates whether multiple values are accepted
-	Variadic bool `json:"variadic,omitempty" yaml:"variadic,omitempty"`
 }
 
 // Example represents a usage example.

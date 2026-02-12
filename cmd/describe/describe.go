@@ -16,10 +16,21 @@ func NewDescribeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig
 		SilenceUsage: true,
 	}
 
-	cmd.AddCommand(NewPlanCmd(kubeConfigFlags, globalConfig))
-	cmd.AddCommand(NewHostCmd(kubeConfigFlags, globalConfig))
-	cmd.AddCommand(NewHookCmd(kubeConfigFlags, globalConfig))
-	cmd.AddCommand(NewMappingCmd(globalConfig))
+	planCmd := NewPlanCmd(kubeConfigFlags, globalConfig)
+	planCmd.Aliases = []string{"plans"}
+	cmd.AddCommand(planCmd)
+
+	hostCmd := NewHostCmd(kubeConfigFlags, globalConfig)
+	hostCmd.Aliases = []string{"hosts"}
+	cmd.AddCommand(hostCmd)
+
+	hookCmd := NewHookCmd(kubeConfigFlags, globalConfig)
+	hookCmd.Aliases = []string{"hooks"}
+	cmd.AddCommand(hookCmd)
+
+	mappingCmd := NewMappingCmd(globalConfig)
+	mappingCmd.Aliases = []string{"mappings"}
+	cmd.AddCommand(mappingCmd)
 
 	return cmd
 }

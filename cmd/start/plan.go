@@ -1,6 +1,7 @@
 package start
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/start/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
-	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewPlanCmd creates the plan start command
@@ -20,9 +20,10 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig get
 	var all bool
 	var dryRun bool
 	var outputFormat string
+	var planNames []string
 
 	cmd := &cobra.Command{
-		Use:   "plan [NAME...] [--all]",
+		Use:   "plan",
 		Short: "Start one or more migration plans",
 		Long: `Start one or more migration plans.
 
@@ -35,32 +36,39 @@ The plan must be in a 'Ready' state to be started.
 Use --dry-run to output the Migration CR(s) to stdout instead of creating
 them in Kubernetes. This is useful for debugging, validation, and inspection.`,
 		Example: `  # Start a migration plan
-  kubectl-mtv start plan my-migration
+  kubectl-mtv start plan --name my-migration
 
   # Start multiple plans
-  kubectl-mtv start plan plan1 plan2 plan3
+  kubectl-mtv start plans --name plan1,plan2,plan3
 
   # Start all plans in the namespace
-  kubectl-mtv start plan --all
+  kubectl-mtv start plans --all
 
   # Start with scheduled cutover (warm migration)
-  kubectl-mtv start plan my-migration --cutover 2026-12-31T23:00:00Z
+  kubectl-mtv start plan --name my-migration --cutover 2026-12-31T23:00:00Z
 
   # Start warm migration with cutover in 2 hours (Linux)
-  kubectl-mtv start plan my-migration --cutover "$(date -d '+2 hours' --iso-8601=sec)"
+  kubectl-mtv start plan --name my-migration --cutover "$(date -d '+2 hours' --iso-8601=sec)"
 
   # Dry-run: output Migration CR to stdout (YAML format)
-  kubectl-mtv start plan my-migration --dry-run
+  kubectl-mtv start plan --name my-migration --dry-run
 
   # Dry-run: output Migration CR in JSON format
-  kubectl-mtv start plan my-migration --dry-run -o json
+  kubectl-mtv start plan --name my-migration --dry-run --output json
 
   # Dry-run: output all Migration CRs in namespace
-  kubectl-mtv start plan --all --dry-run`,
-		Args:              flags.ValidateAllFlagArgs(func() bool { return all }, 1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
+  kubectl-mtv start plans --all --dry-run`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate mutual exclusivity of --name and --all
+			if all && len(planNames) > 0 {
+				return errors.New("cannot use --name with --all")
+			}
+			if !all && len(planNames) == 0 {
+				return errors.New("must specify --name or --all")
+			}
+
 			// Cache kubeconfig flags for reuse throughout the function
 			cfg := globalConfig.GetKubeConfigFlags()
 
@@ -77,7 +85,6 @@ them in Kubernetes. This is useful for debugging, validation, and inspection.`,
 				cutoverTime = &t
 			}
 
-			var planNames []string
 			if all {
 				// Get all plan names from the namespace
 				var err error
@@ -89,8 +96,6 @@ them in Kubernetes. This is useful for debugging, validation, and inspection.`,
 					fmt.Fprintf(cmd.OutOrStdout(), "No plans found in namespace %s\n", namespace)
 					return nil
 				}
-			} else {
-				planNames = args
 			}
 
 			// Validate that --output is only used with --dry-run
@@ -108,12 +113,6 @@ them in Kubernetes. This is useful for debugging, validation, and inspection.`,
 				outputFormat = "yaml"
 			}
 
-			// Handle empty plan list
-			if len(planNames) == 0 && all {
-				fmt.Fprintf(cmd.OutOrStdout(), "No plans found in namespace %s\n", namespace)
-				return nil
-			}
-
 			// Loop over each plan name and start it (dry-run is handled inside plan.Start)
 			for _, name := range planNames {
 				if err := plan.Start(cfg, name, namespace, cutoverTime, globalConfig.GetUseUTC(), dryRun, outputFormat); err != nil {
@@ -124,10 +123,15 @@ them in Kubernetes. This is useful for debugging, validation, and inspection.`,
 		},
 	}
 
+	cmd.Flags().StringSliceVarP(&planNames, "name", "M", nil, "Plan name(s) to start (comma-separated, e.g. \"plan1,plan2\")")
+	cmd.Flags().StringSliceVar(&planNames, "names", nil, "Alias for --name")
+	_ = cmd.Flags().MarkHidden("names")
 	cmd.Flags().StringVarP(&cutoverTimeStr, "cutover", "c", "", "Cutover time in ISO8601 format (e.g., 2023-12-31T15:30:00Z, '$(date -d \"+1 hour\" --iso-8601=sec)' ). If not provided, defaults to 1 hour from now.")
 	cmd.Flags().BoolVar(&all, "all", false, "Start all migration plans in the namespace")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Output Migration CR(s) to stdout instead of creating them")
 	cmd.Flags().StringVarP(&outputFormat, "output", "o", "", "Output format for dry-run (json, yaml). Defaults to yaml when --dry-run is used")
+
+	_ = cmd.RegisterFlagCompletionFunc("name", completion.PlanNameCompletion(kubeConfigFlags))
 
 	// Add completion for output format flag
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

@@ -35,12 +35,12 @@ The simplest method specifies VM names directly:
 
 ```bash
 # Basic VM list
-kubectl mtv create plan simple-migration \
+kubectl mtv create plan --name simple-migration \
   --source vsphere-prod \
   --vms "web-server-01,db-server-01,app-server-01"
 
 # Single VM migration
-kubectl mtv create plan single-vm \
+kubectl mtv create plan --name single-vm \
   --source vsphere-prod \
   --vms "critical-database-01"
 ```
@@ -66,12 +66,12 @@ Use file references for complex VM configurations or large VM sets:
 
 ```bash
 # Reference VM file
-kubectl mtv create plan file-based-migration \
+kubectl mtv create plan --name file-based-migration \
   --source vsphere-prod \
   --vms @vm-list.yaml
 
 # Alternative: JSON format
-kubectl mtv create plan json-migration \
+kubectl mtv create plan --name json-migration \
   --source vsphere-prod \
   --vms @vm-list.json
 ```
@@ -84,12 +84,12 @@ Use [Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-refere
 
 ```bash
 # Migrate all powered-on VMs
-kubectl mtv create plan powered-on-vms \
+kubectl mtv create plan --name powered-on-vms \
   --source vsphere-prod \
   --vms "where powerState = 'poweredOn'"
 
 # Migrate VMs by name pattern
-kubectl mtv create plan production-vms \
+kubectl mtv create plan --name production-vms \
   --source vsphere-prod \
   --vms "where name ~= '^prod-.*'"
 ```
@@ -98,17 +98,17 @@ kubectl mtv create plan production-vms \
 
 ```bash
 # Select VMs by resource criteria
-kubectl mtv create plan small-vms \
+kubectl mtv create plan --name small-vms \
   --source vsphere-prod \
   --vms "where powerState = 'poweredOn' and memoryMB <= 8192 and len(disks) <= 3"
 
 # Select VMs in specific infrastructure
-kubectl mtv create plan cluster-migration \
+kubectl mtv create plan --name cluster-migration \
   --source vsphere-prod \
   --vms "where cluster.name = 'Production-Cluster' and not template"
 
 # Complex multi-condition queries
-kubectl mtv create plan filtered-migration \
+kubectl mtv create plan --name filtered-migration \
   --source vsphere-prod \
   --vms "where (name ~= '^web-.*' or name ~= '^app-.*') and powerState = 'poweredOn' and memoryMB >= 4096"
 ```
@@ -123,14 +123,14 @@ Reference pre-created mapping resources:
 
 ```bash
 # Use existing network and storage mappings
-kubectl mtv create plan mapped-migration \
+kubectl mtv create plan --name mapped-migration \
   --source vsphere-prod \
   --network-mapping production-network-map \
   --storage-mapping production-storage-map \
   --vms "web-01,web-02,db-01"
 
 # Use mappings from different namespaces
-kubectl mtv create plan cross-ns-mappings \
+kubectl mtv create plan --name cross-ns-mappings \
   --source vsphere-prod \
   --network-mapping shared-mappings/network-map \
   --storage-mapping shared-mappings/storage-map \
@@ -143,14 +143,14 @@ Define mappings directly in the plan creation command:
 
 ```bash
 # Inline network and storage pairs
-kubectl mtv create plan inline-mappings \
+kubectl mtv create plan --name inline-mappings \
   --source vsphere-prod \
   --network-pairs "VM Network:default,Management Network:multus-system/mgmt-net" \
   --storage-pairs "datastore1:fast-ssd,datastore2:standard-storage" \
   --vms "web-server-01,app-server-01"
 
 # Complex inline mappings with enhanced storage options
-kubectl mtv create plan advanced-inline \
+kubectl mtv create plan --name advanced-inline \
   --source vsphere-prod \
   --network-pairs "Production VLAN:prod-net,DMZ Network:security/dmz-net,Backup Network:ignored" \
   --storage-pairs "fast-ds:premium-ssd;volumeMode=Block;accessMode=ReadWriteOnce,shared-ds:shared-nfs;volumeMode=Filesystem;accessMode=ReadWriteMany" \
@@ -163,21 +163,21 @@ Let kubectl-mtv create simple default mappings:
 
 ```bash
 # Use default network and storage class
-kubectl mtv create plan default-migration \
+kubectl mtv create plan --name default-migration \
   --source vsphere-prod \
   --default-target-network default \
   --default-target-storage-class standard-ssd \
   --vms "test-vm-01,test-vm-02"
 
 # Default pod networking and specific storage
-kubectl mtv create plan pod-network-migration \
+kubectl mtv create plan --name pod-network-migration \
   --source vsphere-prod \
   --default-target-network default \
   --default-target-storage-class premium-nvme \
   --vms "where name ~= '^test-.*'"
 
 # Auto-mapping (no mappings needed for any provider)
-kubectl mtv create plan simple-migration \
+kubectl mtv create plan --name simple-migration \
   --source vsphere-prod \
   --vms "where powerState = 'poweredOn'"
 ```
@@ -203,26 +203,26 @@ For detailed information about conversion migration, including prerequisites, wo
 
 ```bash
 # Cold migration (default)
-kubectl mtv create plan cold-migration \
+kubectl mtv create plan --name cold-migration \
   --source vsphere-prod \
   --migration-type cold \
   --vms "batch-processor-01,backup-server-01"
 
 # Warm migration for large VMs
-kubectl mtv create plan warm-migration \
+kubectl mtv create plan --name warm-migration \
   --source vsphere-prod \
   --migration-type warm \
   --vms "where memoryMB > 16384"
 
 # Live migration (KubeVirt to KubeVirt)
-kubectl mtv create plan live-migration \
+kubectl mtv create plan --name live-migration \
   --source kubevirt-cluster1 \
   --migration-type live \
   --vms "production-workload-01"
 
 # Conversion-only migration (VMware only)
 # Prerequisites: PVCs must be pre-created with proper labels and annotations
-kubectl mtv create plan conversion-only \
+kubectl mtv create plan --name conversion-only \
   --source vsphere-prod \
   --migration-type conversion \
   --vms "vm-with-precreated-pvcs"
@@ -234,29 +234,29 @@ kubectl mtv create plan conversion-only \
 
 ```bash
 # Specify target namespace
-kubectl mtv create plan namespaced-migration \
+kubectl mtv create plan --name namespaced-migration \
   --source vsphere-prod \
   --target-namespace production-workloads \
   --vms "prod-web-01,prod-api-01"
 
 # Use current namespace (default)
-kubectl mtv create plan current-ns-migration \
+kubectl mtv create plan --name current-ns-migration \
   --source vsphere-prod \
-  --vms "dev-app-01,dev-db-01" \
-  -n development
+  -  --vms "dev-app-01,dev-db-01" \
+  --namespace development
 ```
 
 #### Transfer Network Configuration
 
 ```bash
 # Use specific transfer network for disk operations
-kubectl mtv create plan transfer-net-migration \
+kubectl mtv create plan --name transfer-net-migration \
   --source vsphere-prod \
   --transfer-network migration-net \
   --vms "large-vm-01,large-vm-02"
 
 # Cross-namespace transfer network
-kubectl mtv create plan cross-ns-transfer \
+kubectl mtv create plan --name cross-ns-transfer \
   --source vsphere-prod \
   --transfer-network network-system/high-bandwidth \
   --vms "where sum(disks[*].capacityGB) > 500"
@@ -272,19 +272,19 @@ Available variables: `{% raw %}{{.VmName}}{% endraw %}`, `{% raw %}{{.PlanName}}
 
 ```bash
 # Custom PVC naming with plan and VM name
-kubectl mtv create plan custom-pvc-names \
+kubectl mtv create plan --name custom-pvc-names \
   --source vsphere-prod \
   --pvc-name-template "{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.VmName}}{% endraw %}-disk-{% raw %}{{.DiskIndex}}{% endraw %}" \
   --vms "web-01,web-02"
 
 # Windows-specific PVC naming
-kubectl mtv create plan windows-migration \
+kubectl mtv create plan --name windows-migration \
   --source vsphere-prod \
   --pvc-name-template "{% raw %}{{.VmName}}{% endraw %}-{% raw %}{{.WinDriveLetter}}{% endraw %}-disk" \
   --vms "where guestOS ~= '.*windows.*'"
 
 # Shared disk identification
-kubectl mtv create plan shared-disk-migration \
+kubectl mtv create plan --name shared-disk-migration \
   --source vsphere-prod \
   --pvc-name-template "{% raw %}{{.VmName}}{% endraw %}-{% raw %}{{if .Shared}}{% endraw %}shared{% raw %}{{else}}{% endraw %}local{% raw %}{{end}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}" \
   --vms "cluster-node-01,cluster-node-02"
@@ -296,7 +296,7 @@ Available variables: `{% raw %}{{.PVCName}}{% endraw %}`, `{% raw %}{{.VolumeInd
 
 ```bash
 # Custom volume interface names
-kubectl mtv create plan custom-volumes \
+kubectl mtv create plan --name custom-volumes \
   --source vsphere-prod \
   --volume-name-template "vol-{% raw %}{{.VolumeIndex}}{% endraw %}-{% raw %}{{.PVCName}}{% endraw %}" \
   --vms "multi-disk-vm-01"
@@ -308,7 +308,7 @@ Available variables: `{% raw %}{{.NetworkName}}{% endraw %}`, `{% raw %}{{.Netwo
 
 ```bash
 # Custom network interface names
-kubectl mtv create plan custom-networks \
+kubectl mtv create plan --name custom-networks \
   --source vsphere-prod \
   --network-name-template "{% raw %}{{.NetworkType}}{% endraw %}-{% raw %}{{.NetworkIndex}}{% endraw %}" \
   --vms "multi-nic-vm-01"
@@ -322,19 +322,19 @@ kubectl mtv create plan custom-networks \
 
 ```bash
 # Add labels to target VMs
-kubectl mtv create plan labeled-migration \
+kubectl mtv create plan --name labeled-migration \
   --source vsphere-prod \
   --target-labels "environment=production,team=platform,tier=web" \
   --vms "web-server-01,web-server-02"
 
 # Node selector for VM placement
-kubectl mtv create plan node-constrained \
+kubectl mtv create plan --name node-constrained \
   --source vsphere-prod \
   --target-node-selector "zone=east,storage=ssd" \
   --vms "performance-app-01"
 
 # Combined labels and node selector
-kubectl mtv create plan full-scheduling \
+kubectl mtv create plan --name full-scheduling \
   --source vsphere-prod \
   --target-labels "app=database,performance=high" \
   --target-node-selector "zone=central,memory=high" \
@@ -345,19 +345,19 @@ kubectl mtv create plan full-scheduling \
 
 ```bash
 # Require co-location with specific pods
-kubectl mtv create plan affinity-colocation \
+kubectl mtv create plan --name affinity-colocation \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(app=database) on node" \
   --vms "app-server-01"
 
 # Anti-affinity for high availability
-kubectl mtv create plan ha-placement \
+kubectl mtv create plan --name ha-placement \
   --source vsphere-prod \
   --target-affinity "AVOID pods(app=web) on node" \
   --vms "web-server-03,web-server-04"
 
 # Complex affinity rules
-kubectl mtv create plan complex-affinity \
+kubectl mtv create plan --name complex-affinity \
   --source vsphere-prod \
   --target-affinity "REQUIRE zone(east) AND AVOID pods(resource=intensive)" \
   --vms "latency-sensitive-01"
@@ -367,19 +367,19 @@ kubectl mtv create plan complex-affinity \
 
 ```bash
 # Keep VMs powered off after migration
-kubectl mtv create plan offline-migration \
+kubectl mtv create plan --name offline-migration \
   --source vsphere-prod \
   --target-power-state off \
   --vms "backup-vm-01,archive-vm-01"
 
 # Ensure VMs start after migration
-kubectl mtv create plan online-migration \
+kubectl mtv create plan --name online-migration \
   --source vsphere-prod \
   --target-power-state on \
   --vms "web-service-01,api-service-01"
 
 # Auto power state (match source)
-kubectl mtv create plan auto-power \
+kubectl mtv create plan --name auto-power \
   --source vsphere-prod \
   --target-power-state auto \
   --vms "where powerState in ['poweredOn', 'suspended']"
@@ -391,20 +391,20 @@ kubectl mtv create plan auto-power \
 
 ```bash
 # Skip guest conversion for Linux VMs
-kubectl mtv create plan linux-migration \
+kubectl mtv create plan --name linux-migration \
   --source vsphere-prod \
   --skip-guest-conversion \
   --use-compatibility-mode \
   --vms "where guestOS ~= '.*linux.*'"
 
 # Enable guest conversion with cleanup
-kubectl mtv create plan windows-conversion \
+kubectl mtv create plan --name windows-conversion \
   --source vsphere-prod \
   --delete-guest-conversion-pod \
   --vms "where guestOS ~= '.*windows.*'"
 
 # Legacy driver installation for Windows
-kubectl mtv create plan legacy-windows \
+kubectl mtv create plan --name legacy-windows \
   --source vsphere-prod \
   --install-legacy-drivers true \
   --vms "windows-2012-server"
@@ -414,13 +414,13 @@ kubectl mtv create plan legacy-windows \
 
 ```bash
 # Preserve static IPs (vSphere only)
-kubectl mtv create plan preserve-ips \
+kubectl mtv create plan --name preserve-ips \
   --source vsphere-prod \
   --preserve-static-ips \
   --vms "database-01,web-lb-01"
 
 # Disable IP preservation
-kubectl mtv create plan new-ips \
+kubectl mtv create plan --name new-ips \
   --source vsphere-prod \
   --preserve-static-ips=false \
   --vms "test-vm-01,dev-vm-01"
@@ -432,14 +432,14 @@ Configure the virt-v2v conversion pods:
 
 ```bash
 # Convertor pod labels and scheduling
-kubectl mtv create plan convertor-config \
+kubectl mtv create plan --name convertor-config \
   --source vsphere-prod \
   --convertor-labels "team=migration,priority=high" \
   --convertor-node-selector "conversion=true,cpu=high" \
   --vms "large-workload-01"
 
 # Convertor affinity with KARL (see Chapter 28)
-kubectl mtv create plan convertor-affinity \
+kubectl mtv create plan --name convertor-affinity \
   --source vsphere-prod \
   --convertor-affinity "REQUIRE nodes(conversion=dedicated)" \
   --vms "complex-vm-01"
@@ -451,13 +451,13 @@ kubectl mtv create plan convertor-affinity \
 
 ```bash
 # Include shared disks in migration
-kubectl mtv create plan shared-disks \
+kubectl mtv create plan --name shared-disks \
   --source vsphere-prod \
   --migrate-shared-disks \
   --vms "cluster-vm-01,cluster-vm-02"
 
 # Exclude shared disks
-kubectl mtv create plan no-shared-disks \
+kubectl mtv create plan --name no-shared-disks \
   --source vsphere-prod \
   --migrate-shared-disks=false \
   --vms "standalone-vm-01"
@@ -467,14 +467,14 @@ kubectl mtv create plan no-shared-disks \
 
 ```bash
 # Enable preflight disk inspection for warm migrations
-kubectl mtv create plan warm-with-preflight \
+kubectl mtv create plan --name warm-with-preflight \
   --source vsphere-prod \
   --migration-type warm \
   --run-preflight-inspection \
   --vms "critical-database-01"
 
 # Disable preflight for faster warm start
-kubectl mtv create plan warm-no-preflight \
+kubectl mtv create plan --name warm-no-preflight \
   --source vsphere-prod \
   --migration-type warm \
   --run-preflight-inspection=false \
@@ -489,20 +489,20 @@ Add hooks to run custom automation during migrations:
 
 ```bash
 # Add pre and post hooks to all VMs
-kubectl mtv create plan hooked-migration \
+kubectl mtv create plan --name hooked-migration \
   --source vsphere-prod \
   --pre-hook backup-hook \
   --post-hook cleanup-hook \
   --vms "web-01,db-01"
 
 # Pre-hook only for preparation tasks
-kubectl mtv create plan prep-migration \
+kubectl mtv create plan --name prep-migration \
   --source vsphere-prod \
   --pre-hook application-quiesce \
   --vms "database-cluster-01"
 
 # Post-hook only for validation
-kubectl mtv create plan validated-migration \
+kubectl mtv create plan --name validated-migration \
   --source vsphere-prod \
   --post-hook health-check \
   --vms "web-service-01"
@@ -514,7 +514,7 @@ kubectl mtv create plan validated-migration \
 
 ```bash
 # Comprehensive enterprise migration plan
-kubectl mtv create plan enterprise-production \
+kubectl mtv create plan --name enterprise-production \
   --source vsphere-production \
   --target openshift-production \
   --network-mapping enterprise-network-map \
@@ -537,7 +537,7 @@ kubectl mtv create plan enterprise-production \
 
 ```bash
 # Simple development migration
-kubectl mtv create plan dev-migration \
+kubectl mtv create plan --name dev-migration \
   --source vsphere-dev \
   --migration-type cold \
   --default-target-network default \
@@ -547,14 +547,14 @@ kubectl mtv create plan dev-migration \
   --use-compatibility-mode \
   --target-power-state on \
   --vms "dev-web-01,dev-api-01,dev-db-01" \
-  -n development
+  --namespace development
 ```
 
 ### Example 3: Query-Based Batch Migration
 
 ```bash
 # Large-scale query-driven migration
-kubectl mtv create plan batch-small-vms \
+kubectl mtv create plan --name batch-small-vms \
   --source vsphere-prod \
   --migration-type cold \
   --network-pairs "VM Network:default,Management Network:ignored" \
@@ -570,7 +570,7 @@ kubectl mtv create plan batch-small-vms \
 
 ```bash
 # oVirt to OpenShift migration
-kubectl mtv create plan ovirt-migration \
+kubectl mtv create plan --name ovirt-migration \
   --source ovirt-production \
   --target openshift-target \
   --migration-type warm \
@@ -581,7 +581,7 @@ kubectl mtv create plan ovirt-migration \
   --vms @ovirt-vm-list.yaml
 
 # OpenStack to OpenShift migration
-kubectl mtv create plan openstack-migration \
+kubectl mtv create plan --name openstack-migration \
   --source openstack-prod \
   --target openshift-target \
   --migration-type cold \
@@ -595,7 +595,7 @@ kubectl mtv create plan openstack-migration \
 
 ```bash
 # Plan with storage array offloading
-kubectl mtv create plan offload-migration \
+kubectl mtv create plan --name offload-migration \
   --source vsphere-prod \
   --storage-pairs "tier1-ds:flashsystem-gold;offloadPlugin=vsphere;offloadVendor=flashsystem" \
   --default-offload-plugin vsphere \
@@ -615,13 +615,13 @@ kubectl mtv create plan offload-migration \
 
 ```bash
 # Test VM query before creating plan
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where powerState = 'poweredOn' and memoryMB <= 8192" \
-  -o table
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where powerState = 'poweredOn' and memoryMB <= 8192" \
+  --output table
 
 # Validate mapping resources exist
-kubectl mtv describe mapping network enterprise-network-map
-kubectl mtv describe mapping storage enterprise-storage-map
+kubectl mtv describe mapping network --name enterprise-network-map
+kubectl mtv describe mapping storage --name enterprise-storage-map
 
 # Check target namespace and resources
 kubectl get storageclass premium-ssd
@@ -632,15 +632,15 @@ kubectl get network-attachment-definitions -n production
 
 ```bash
 # Use --dry-run to validate without creating
-kubectl mtv create plan test-validation \
+kubectl mtv create plan --name test-validation \
   --source vsphere-prod \
   --vms "test-vm-01" \
   --dry-run=client
 
 # Validate query results
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where cluster.name = 'Test-Cluster'" \
-  -o planvms > test-query-results.yaml
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where cluster.name = 'Test-Cluster'" \
+  --output planvms > test-query-results.yaml
 ```
 
 ## Plan Lifecycle Management
@@ -652,10 +652,10 @@ kubectl mtv get inventory vms vsphere-prod \
 kubectl mtv get plans
 
 # Detailed plan information
-kubectl mtv describe plan enterprise-production
+kubectl mtv describe plan --name enterprise-production
 
 # Monitor plan progress
-kubectl mtv get plan enterprise-production --watch
+kubectl mtv get plan --name enterprise-production --watch
 ```
 
 ### Plan Modification
@@ -669,7 +669,7 @@ kubectl get plan original-plan -o yaml > modified-plan.yaml
 kubectl apply -f modified-plan.yaml
 
 # 2. Use plan patching (covered in Chapter 18)
-kubectl mtv patch plan enterprise-production --archived=true
+kubectl mtv patch plan --plan-name enterprise-production --archived=true
 ```
 
 ## Troubleshooting Plan Creation
@@ -680,13 +680,13 @@ kubectl mtv patch plan enterprise-production --archived=true
 
 ```bash
 # Debug query results
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where powerState = 'poweredOn'" \
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where powerState = 'poweredOn'" \
   -v=2
 
 # Check if VMs exist
 for vm in vm1 vm2 vm3; do
-  kubectl mtv get inventory vms vsphere-prod -q "where name = '$vm'"
+  kubectl mtv get inventory vms --provider vsphere-prod --query "where name = '$vm'"
 done
 ```
 
@@ -718,7 +718,7 @@ kubectl auth can-i create virtualmachines -n target-namespace
 
 ```bash
 # Enable verbose logging
-kubectl mtv create plan debug-plan \
+kubectl mtv create plan --name debug-plan \
   --source vsphere-prod \
   --vms "debug-vm-01" \
   -v=2
@@ -736,16 +736,16 @@ kubectl get events --sort-by='.metadata.creationTimestamp' | grep plan
 
 ```bash
 # Use inventory queries in plans
-kubectl mtv create plan inventory-driven \
+kubectl mtv create plan --name inventory-driven \
   --source vsphere-prod \
   --vms "where cluster.name = 'Production' and host.name ~= 'esxi-0[1-3].*'"
 
 # Export VMs for plan creation
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where powerState = 'poweredOn'" \
-  -o planvms > selected-vms.yaml
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where powerState = 'poweredOn'" \
+  --output planvms > selected-vms.yaml
 
-kubectl mtv create plan exported-vms \
+kubectl mtv create plan --name exported-vms \
   --source vsphere-prod \
   --vms @selected-vms.yaml
 ```
@@ -754,13 +754,13 @@ kubectl mtv create plan exported-vms \
 
 ```bash
 # Reference existing mappings
-kubectl mtv create plan mapped-migration \
+kubectl mtv create plan --name mapped-migration \
   --network-mapping existing-network-map \
   --storage-mapping existing-storage-map
 
 # Mix mappings and inline pairs (not allowed)
 # This will error:
-kubectl mtv create plan mixed-mappings \
+kubectl mtv create plan --name mixed-mappings \
   --network-mapping existing-map \
   --network-pairs "VM Network:default"  # Error: conflicting options
 ```

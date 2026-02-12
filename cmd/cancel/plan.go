@@ -18,9 +18,10 @@ import (
 // NewPlanCmd creates the plan cancellation command
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var vmNamesOrFile string
+	var name string
 
 	cmd := &cobra.Command{
-		Use:   "plan NAME",
+		Use:   "plan",
 		Short: "Cancel specific VMs in a running migration plan",
 		Long: `Cancel specific VMs in a running migration plan.
 
@@ -28,17 +29,13 @@ This command allows you to stop the migration of selected VMs while allowing
 other VMs in the plan to continue. VMs to cancel can be specified as a
 comma-separated list or read from a file.`,
 		Example: `  # Cancel specific VMs in a plan
-  kubectl-mtv cancel plan my-migration --vms "vm1,vm2"
+  kubectl-mtv cancel plan --name my-migration --vms "vm1,vm2"
 
   # Cancel VMs from a file
-  kubectl-mtv cancel plan my-migration --vms @failed-vms.yaml`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
+  kubectl-mtv cancel plan --name my-migration --vms @failed-vms.yaml`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get plan name from positional argument
-			planName := args[0]
-
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -72,15 +69,21 @@ comma-separated list or read from a file.`,
 				return fmt.Errorf("no VM names specified to cancel")
 			}
 
-			return plan.Cancel(kubeConfigFlags, planName, namespace, vmNames)
+			return plan.Cancel(kubeConfigFlags, name, namespace, vmNames)
 		},
 	}
 
+	cmd.Flags().StringVarP(&name, "name", "M", "", "Plan name")
 	cmd.Flags().StringVar(&vmNamesOrFile, "vms", "", "List of VM names to cancel (comma-separated) or path to file containing VM names (prefix with @)")
 
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		fmt.Printf("Warning: error marking 'name' flag as required: %v\n", err)
+	}
 	if err := cmd.MarkFlagRequired("vms"); err != nil {
 		fmt.Printf("Warning: error marking 'vms' flag as required: %v\n", err)
 	}
+
+	_ = cmd.RegisterFlagCompletionFunc("name", completion.PlanNameCompletion(kubeConfigFlags))
 
 	return cmd
 }

@@ -1,6 +1,8 @@
 package patch
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -31,18 +33,25 @@ func NewMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig 
 
 // newPatchNetworkMappingCmd creates the patch network mapping subcommand
 func newPatchNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
+	var name string
 	var addPairs, updatePairs, removePairs string
 
 	cmd := &cobra.Command{
-		Use:               "network NAME",
-		Short:             "Patch a network mapping",
-		Long:              `Patch a network mapping by adding, updating, or removing network pairs`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.MappingNameCompletion(kubeConfigFlags, "network"),
+		Use:   "network",
+		Short: "Patch a network mapping",
+		Long:  `Patch a network mapping by adding, updating, or removing network pairs`,
+		Example: `  # Add network pairs to a mapping
+  kubectl-mtv patch mapping network --name my-net-map --add-pairs "VM Network:default"
+
+  # Update network pairs
+  kubectl-mtv patch mapping network --name my-net-map --update-pairs "VM Network:migration-net"`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get name from positional argument
-			name := args[0]
+			// Validate required --name flag
+			if name == "" {
+				return fmt.Errorf("--name is required")
+			}
 
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
@@ -54,15 +63,20 @@ func newPatchNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 		},
 	}
 
+	cmd.Flags().StringVarP(&name, "name", "M", "", "Network mapping name")
+	_ = cmd.MarkFlagRequired("name")
 	cmd.Flags().StringVar(&addPairs, "add-pairs", "", "Network pairs to add in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated)")
 	cmd.Flags().StringVar(&updatePairs, "update-pairs", "", "Network pairs to update in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated)")
 	cmd.Flags().StringVar(&removePairs, "remove-pairs", "", "Source network names to remove from mapping (comma-separated)")
+
+	_ = cmd.RegisterFlagCompletionFunc("name", completion.MappingNameCompletion(kubeConfigFlags, "network"))
 
 	return cmd
 }
 
 // newPatchStorageMappingCmd creates the patch storage mapping subcommand
 func newPatchStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
+	var name string
 	var addPairs, updatePairs, removePairs string
 	var defaultVolumeMode string
 	var defaultAccessMode string
@@ -71,15 +85,21 @@ func newPatchStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 	var defaultOffloadVendor string
 
 	cmd := &cobra.Command{
-		Use:               "storage NAME",
-		Short:             "Patch a storage mapping",
-		Long:              `Patch a storage mapping by adding, updating, or removing storage pairs`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.MappingNameCompletion(kubeConfigFlags, "storage"),
+		Use:   "storage",
+		Short: "Patch a storage mapping",
+		Long:  `Patch a storage mapping by adding, updating, or removing storage pairs`,
+		Example: `  # Add storage pairs to a mapping
+  kubectl-mtv patch mapping storage --name my-storage-map --add-pairs "datastore1:standard"
+
+  # Update storage pairs
+  kubectl-mtv patch mapping storage --name my-storage-map --update-pairs "datastore1:premium"`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get name from positional argument
-			name := args[0]
+			// Validate required --name flag
+			if name == "" {
+				return fmt.Errorf("--name is required")
+			}
 
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
@@ -94,6 +114,8 @@ func newPatchStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 		},
 	}
 
+	cmd.Flags().StringVarP(&name, "name", "M", "", "Storage mapping name")
+	_ = cmd.MarkFlagRequired("name")
 	cmd.Flags().StringVar(&addPairs, "add-pairs", "", "Storage pairs to add in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)")
 	cmd.Flags().StringVar(&updatePairs, "update-pairs", "", "Storage pairs to update in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)")
 	cmd.Flags().StringVar(&removePairs, "remove-pairs", "", "Source storage names to remove from mapping (comma-separated)")
@@ -130,6 +152,8 @@ func newPatchStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 	}); err != nil {
 		panic(err)
 	}
+
+	_ = cmd.RegisterFlagCompletionFunc("name", completion.MappingNameCompletion(kubeConfigFlags, "storage"))
 
 	return cmd
 }

@@ -50,7 +50,7 @@ func wrapClusterError(err error, operation string) error {
 
 	// Unauthorized - authentication issues
 	if strings.Contains(errStr, "Unauthorized") || strings.Contains(errStr, "unauthorized") {
-		return fmt.Errorf("authentication failed: %w\n\nMake sure:\n  - Your kubeconfig credentials are valid\n  - Run 'kubectl auth can-i get forkliftcontrollers -n openshift-mtv' to check permissions", err)
+		return fmt.Errorf("authentication failed: %w\n\nMake sure:\n  - Your kubeconfig credentials are valid\n  - Run 'kubectl auth can-i get forkliftcontrollers --namespace openshift-mtv' to check permissions", err)
 	}
 
 	// Forbidden - permission issues

@@ -24,10 +24,21 @@ func NewPatchCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Gl
 	}
 
 	// Add subcommands
-	cmd.AddCommand(NewMappingCmd(kubeConfigFlags, globalConfig))
-	cmd.AddCommand(NewProviderCmd(kubeConfigFlags))
-	cmd.AddCommand(NewPlanCmd(kubeConfigFlags))
-	cmd.AddCommand(NewPlanVMCmd(kubeConfigFlags))
+	mappingCmd := NewMappingCmd(kubeConfigFlags, globalConfig)
+	mappingCmd.Aliases = []string{"mappings"}
+	cmd.AddCommand(mappingCmd)
+
+	providerCmd := NewProviderCmd(kubeConfigFlags)
+	providerCmd.Aliases = []string{"providers"}
+	cmd.AddCommand(providerCmd)
+
+	planCmd := NewPlanCmd(kubeConfigFlags)
+	planCmd.Aliases = []string{"plans"}
+	cmd.AddCommand(planCmd)
+
+	planVMCmd := NewPlanVMCmd(kubeConfigFlags)
+	planVMCmd.Aliases = []string{"planvms"}
+	cmd.AddCommand(planVMCmd)
 
 	return cmd
 }

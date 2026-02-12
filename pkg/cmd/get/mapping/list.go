@@ -28,6 +28,32 @@ func extractProviderName(mapping unstructured.Unstructured, providerType string)
 	return ""
 }
 
+// extractMappingStatus extracts the Ready status from a mapping's status.conditions.
+func extractMappingStatus(mapping unstructured.Unstructured) string {
+	conditions, found, _ := unstructured.NestedSlice(mapping.Object, "status", "conditions")
+	if !found || len(conditions) == 0 {
+		return ""
+	}
+
+	for _, condition := range conditions {
+		condMap, ok := condition.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		condType, _ := condMap["type"].(string)
+		if condType == "Ready" {
+			if status, ok := condMap["status"].(string); ok {
+				if status == "True" {
+					return "Ready"
+				}
+				return "Not Ready"
+			}
+		}
+	}
+
+	return ""
+}
+
 // createMappingItem creates a standardized mapping item for output
 func createMappingItem(mapping unstructured.Unstructured, mappingType string, useUTC bool) map[string]interface{} {
 	item := map[string]interface{}{
@@ -36,6 +62,7 @@ func createMappingItem(mapping unstructured.Unstructured, mappingType string, us
 		"type":      mappingType,
 		"source":    extractProviderName(mapping, "source"),
 		"target":    extractProviderName(mapping, "destination"),
+		"status":    extractMappingStatus(mapping),
 		"created":   output.FormatTimestamp(mapping.GetCreationTimestamp().Time, useUTC),
 		"object":    mapping.Object, // Include the original object
 	}
@@ -298,6 +325,7 @@ func listMappings(ctx context.Context, configFlags *genericclioptions.ConfigFlag
 			output.Header{DisplayName: "TYPE", JSONPath: "type"},
 			output.Header{DisplayName: "SOURCE", JSONPath: "source"},
 			output.Header{DisplayName: "TARGET", JSONPath: "target"},
+			output.Header{DisplayName: "STATUS", JSONPath: "status"},
 			output.Header{DisplayName: "OWNER", JSONPath: "owner"},
 			output.Header{DisplayName: "CREATED", JSONPath: "created"},
 		)

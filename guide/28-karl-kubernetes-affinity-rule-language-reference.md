@@ -49,7 +49,7 @@ KARL appears in two flags, available on `create plan` and `patch plan`:
 Controls where the **migrated VM** runs in the target cluster for its operational lifetime:
 
 ```bash
-kubectl mtv create plan my-plan \
+kubectl mtv create plan --name my-plan \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(app=database) on node" \
   --vms "app-server-01"
@@ -60,7 +60,7 @@ kubectl mtv create plan my-plan \
 Controls where the **temporary convertor pod** (virt-v2v) runs during the migration process:
 
 ```bash
-kubectl mtv create plan my-plan \
+kubectl mtv create plan --name my-plan \
   --source vsphere-prod \
   --convertor-affinity "PREFER pods(app=storage-controller) on node weight=80" \
   --vms "large-vm-01"
@@ -197,19 +197,19 @@ When multiple soft rules compete, the scheduler adds up the weights of all satis
 
 ```bash
 # Application must run on same node as database
-kubectl mtv create plan app-db-colocation \
+kubectl mtv create plan --name app-db-colocation \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(app=database) on node" \
   --vms "app-server-01,app-server-02"
 
 # Prefer placing near cache for performance
-kubectl mtv create plan near-cache \
+kubectl mtv create plan --name near-cache \
   --source vsphere-prod \
   --target-affinity "PREFER pods(app=redis,role=cache) on node weight=90" \
   --vms "web-app-01"
 
 # Co-locate within the same zone as the API tier
-kubectl mtv create plan api-zone \
+kubectl mtv create plan --name api-zone \
   --source vsphere-prod \
   --target-affinity "PREFER pods(tier=api) on zone weight=80" \
   --vms "api-client-01,api-client-02"
@@ -219,19 +219,19 @@ kubectl mtv create plan api-zone \
 
 ```bash
 # Spread web servers across nodes for HA
-kubectl mtv create plan ha-web \
+kubectl mtv create plan --name ha-web \
   --source vsphere-prod \
   --target-affinity "AVOID pods(app=web-server) on node" \
   --vms "web-01,web-02,web-03"
 
 # Soft spread of workers across zones
-kubectl mtv create plan spread-workers \
+kubectl mtv create plan --name spread-workers \
   --source vsphere-prod \
   --target-affinity "REPEL pods(app=worker) on zone weight=60" \
   --vms "worker-01,worker-02,worker-03"
 
 # Keep away from batch workloads
-kubectl mtv create plan avoid-batch \
+kubectl mtv create plan --name avoid-batch \
   --source vsphere-prod \
   --target-affinity "AVOID pods(tier in [batch,worker]) on node" \
   --vms "latency-sensitive-app"
@@ -241,19 +241,19 @@ kubectl mtv create plan avoid-batch \
 
 ```bash
 # Require same zone for compliance
-kubectl mtv create plan zone-compliance \
+kubectl mtv create plan --name zone-compliance \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(compliance-zone=east) on zone" \
   --vms "regulated-app-01"
 
 # Spread across zones for disaster recovery
-kubectl mtv create plan multi-zone \
+kubectl mtv create plan --name multi-zone \
   --source vsphere-prod \
   --target-affinity "AVOID pods(app=frontend) on zone" \
   --vms "frontend-01,frontend-02,frontend-03"
 
 # Prefer same region for data locality
-kubectl mtv create plan regional-data \
+kubectl mtv create plan --name regional-data \
   --source vsphere-prod \
   --target-affinity "PREFER pods(data-region=us-west) on region weight=95" \
   --vms "data-processor-01"
@@ -263,19 +263,19 @@ kubectl mtv create plan regional-data \
 
 ```bash
 # Multiple AND-ed selectors
-kubectl mtv create plan multi-selector \
+kubectl mtv create plan --name multi-selector \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(app=web,tier=frontend,has monitoring) on node" \
   --vms "monitored-web-01"
 
 # Using set-based selectors
-kubectl mtv create plan set-selector \
+kubectl mtv create plan --name set-selector \
   --source vsphere-prod \
   --target-affinity "AVOID pods(env in [staging,dev]) on node" \
   --vms "production-app-01"
 
 # Excluding labels
-kubectl mtv create plan exclude-ephemeral \
+kubectl mtv create plan --name exclude-ephemeral \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(storage not in [ephemeral]) on node" \
   --vms "persistent-workload-01"
@@ -285,19 +285,19 @@ kubectl mtv create plan exclude-ephemeral \
 
 ```bash
 # Place convertor near storage controller for faster disk transfer
-kubectl mtv create plan fast-transfer \
+kubectl mtv create plan --name fast-transfer \
   --source vsphere-prod \
   --convertor-affinity "PREFER pods(app=storage-controller) on node weight=80" \
   --vms "large-disk-vm-01"
 
 # Isolate convertor from production workloads
-kubectl mtv create plan isolated-conversion \
+kubectl mtv create plan --name isolated-conversion \
   --source vsphere-prod \
   --convertor-affinity "AVOID pods(environment=production) on node" \
   --vms "risky-vm-01"
 
 # Convertor on high-performance nodes
-kubectl mtv create plan perf-convertor \
+kubectl mtv create plan --name perf-convertor \
   --source vsphere-prod \
   --convertor-affinity "REQUIRE pods(node-role=migration) on node" \
   --convertor-node-selector "performance=high" \
@@ -308,7 +308,7 @@ kubectl mtv create plan perf-convertor \
 
 ```bash
 # Different rules for migration process vs. operational lifetime
-kubectl mtv create plan full-placement \
+kubectl mtv create plan --name full-placement \
   --source vsphere-prod \
   --convertor-affinity "PREFER pods(app=ceph-osd) on node weight=90" \
   --target-affinity "AVOID pods(app=database) on node" \
@@ -323,21 +323,21 @@ A complete example placing a three-tier application with appropriate affinity ru
 
 ```bash
 # Web tier: spread across nodes, label as frontend
-kubectl mtv create plan web-tier \
+kubectl mtv create plan --name web-tier \
   --source vsphere-prod \
   --target-affinity "AVOID pods(tier=web) on node" \
   --target-labels "tier=web,layer=frontend" \
   --vms "web-01,web-02,web-03"
 
 # App tier: prefer near web tier within the same zone
-kubectl mtv create plan app-tier \
+kubectl mtv create plan --name app-tier \
   --source vsphere-prod \
   --target-affinity "PREFER pods(tier=web) on zone weight=80" \
   --target-labels "tier=app,layer=business" \
   --vms "app-01,app-02"
 
 # Data tier: require dedicated database nodes
-kubectl mtv create plan data-tier \
+kubectl mtv create plan --name data-tier \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(node-role=database) on node" \
   --target-node-selector "dedicated=database" \
@@ -351,11 +351,11 @@ Affinity rules can be updated on existing plans using `patch plan`:
 
 ```bash
 # Update target affinity
-kubectl mtv patch plan my-plan \
+kubectl mtv patch plan --plan-name my-plan \
   --target-affinity "PREFER pods(app=cache) on zone weight=70"
 
 # Update convertor affinity
-kubectl mtv patch plan my-plan \
+kubectl mtv patch plan --plan-name my-plan \
   --convertor-affinity "REQUIRE pods(storage=fast) on node"
 ```
 

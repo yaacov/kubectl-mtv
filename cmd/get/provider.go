@@ -18,27 +18,27 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
 
+	var providerName string
 	cmd := &cobra.Command{
-		Use:   "provider [NAME]",
+		Use:   "provider",
 		Short: "Get providers",
 		Long: `Get MTV providers from the cluster.
 
 Providers represent source (oVirt, vSphere, OpenStack, OVA, EC2) or target (OpenShift)
 environments for VM migrations. Lists all providers or retrieves details for a specific one.`,
 		Example: `  # List all providers
-  kubectl-mtv get provider
+  kubectl-mtv get providers
 
   # List providers across all namespaces
-  kubectl-mtv get provider -A
+  kubectl-mtv get providers --all-namespaces
 
   # Get provider details in YAML format
-  kubectl-mtv get provider vsphere-prod -o yaml
+  kubectl-mtv get provider --name vsphere-prod --output yaml
 
   # Watch provider status changes
-  kubectl-mtv get provider -w`,
-		Args:              cobra.MaximumNArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+  kubectl-mtv get providers --watch`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -50,12 +50,6 @@ environments for VM migrations. Lists all providers or retrieves details for a s
 			kubeConfigFlags := globalConfig.GetKubeConfigFlags()
 			allNamespaces := globalConfig.GetAllNamespaces()
 			namespace := client.ResolveNamespaceWithAllFlag(kubeConfigFlags, allNamespaces)
-
-			// Get optional provider name from arguments
-			var providerName string
-			if len(args) > 0 {
-				providerName = args[0]
-			}
 
 			// Get inventory URL and insecure skip TLS from global config (auto-discovers if needed)
 			inventoryURL := globalConfig.GetInventoryURL()
@@ -73,9 +67,14 @@ environments for VM migrations. Lists all providers or retrieves details for a s
 		},
 	}
 
+	cmd.Flags().StringVarP(&providerName, "name", "M", "", "Provider name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
+	// Add completion for name and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("name", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	// Add completion for output format flag
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp

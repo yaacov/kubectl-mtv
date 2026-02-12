@@ -78,7 +78,7 @@ Hook creation supports comprehensive configuration verified from the command cod
 
 ```bash
 # Create hook with inline playbook
-kubectl mtv create hook simple-notification \
+kubectl mtv create hook --name simple-notification \
   --playbook "$(cat << 'EOF'
 - hosts: localhost
   tasks:
@@ -115,7 +115,7 @@ cat > database-backup.yml << 'EOF'
 EOF
 
 # Create hook using file
-kubectl mtv create hook database-backup \
+kubectl mtv create hook --name database-backup \
   --playbook @database-backup.yml \
   --service-account migration-hooks-sa \
   --deadline 1800
@@ -125,7 +125,7 @@ kubectl mtv create hook database-backup \
 
 ```bash
 # Create hook with custom image and extended capabilities
-kubectl mtv create hook advanced-validation \
+kubectl mtv create hook --name advanced-validation \
   --image registry.company.com/migration/custom-hook:v1.2 \
   --playbook @advanced-validation.yml \
   --service-account admin-hooks-sa \
@@ -201,7 +201,7 @@ kubectl create secret generic db-credentials \
   -n migration
 
 # Create the hook
-kubectl mtv create hook database-backup-pre \
+kubectl mtv create hook --name database-backup-pre \
   --playbook @db-backup-hook.yml \
   --service-account migration-admin \
   --deadline 1800
@@ -295,7 +295,7 @@ kubectl create secret generic notification-config \
   -n migration
 
 # Create the hook
-kubectl mtv create hook health-check-post \
+kubectl mtv create hook --name health-check-post \
   --playbook @health-check-hook.yml \
   --service-account migration-monitor \
   --deadline 900
@@ -363,7 +363,7 @@ kubectl create secret generic monitoring-token \
   -n migration
 
 # Create the hook
-kubectl mtv create hook shell-integration \
+kubectl mtv create hook --name shell-integration \
   --playbook @shell-script-hook.yml \
   --service-account migration-integration \
   --deadline 600
@@ -377,20 +377,20 @@ Plan creation supports adding hooks to all VMs in the plan:
 
 ```bash
 # Add pre-hook to all VMs in the plan
-kubectl mtv create plan hooked-migration \
+kubectl mtv create plan --name hooked-migration \
   --source vsphere-prod \
   --pre-hook database-backup-pre \
   --vms "database-01,database-02,app-server-01"
 
 # Add both pre and post hooks
-kubectl mtv create plan comprehensive-hooks \
+kubectl mtv create plan --name comprehensive-hooks \
   --source vsphere-prod \
   --pre-hook preparation-hook \
   --post-hook validation-hook \
   --vms "where name ~= '.*prod.*'"
 
 # Combined with other migration settings
-kubectl mtv create plan production-with-hooks \
+kubectl mtv create plan --name production-with-hooks \
   --source vsphere-prod \
   --target-namespace production \
   --migration-type warm \
@@ -454,7 +454,7 @@ Individual VMs can have specific hooks using the PlanVMS format:
 
 ```bash
 # Create plan with VM-specific hooks
-kubectl mtv create plan vm-specific-hooks \
+kubectl mtv create plan --name vm-specific-hooks \
   --source vsphere-prod \
   --vms @vm-specific-hooks.yaml \
   --network-mapping prod-network-map \
@@ -512,7 +512,7 @@ docker build -t registry.company.com/migration/custom-hook:v1.0 .
 docker push registry.company.com/migration/custom-hook:v1.0
 
 # Create hook with custom image
-kubectl mtv create hook custom-database-hook \
+kubectl mtv create hook --name custom-database-hook \
   --image registry.company.com/migration/custom-hook:v1.0 \
   --playbook @database-migration-hook.yml \
   --service-account database-migration-sa

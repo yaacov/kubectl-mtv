@@ -40,28 +40,28 @@ This command checks:
 Namespace behavior:
   Forklift OPERATOR components (controller, pods, logs) are always checked in
   the auto-detected operator namespace (typically openshift-mtv), regardless
-  of the -n flag.
+  of the --namespace flag.
 
-  The -n and -A flags control the scope for USER RESOURCES:
-  - Providers: checked in the specified namespace or all namespaces with -A
-  - Plans: checked in the specified namespace or all namespaces with -A
+  The --namespace and --all-namespaces flags control the scope for USER RESOURCES:
+  - Providers: checked in the specified namespace or all namespaces with --all-namespaces
+  - Plans: checked in the specified namespace or all namespaces with --all-namespaces
 
   Configuration warnings (e.g., missing VDDK image for vSphere migrations)
   only appear if relevant providers exist in the scoped namespace(s).
-  Use -A to check all namespaces cluster-wide.
+  Use --all-namespaces to check all namespaces cluster-wide.
 
 Examples:
   # Check health in the default MTV namespace (includes log analysis)
   kubectl mtv health
 
   # Check health with JSON output
-  kubectl mtv health -o json
+  kubectl mtv health --output json
 
   # Check health for providers/plans in a specific namespace
-  kubectl mtv health -n my-namespace
+  kubectl mtv health --namespace my-namespace
 
   # Check health across all namespaces (recommended for full cluster check)
-  kubectl mtv health -A
+  kubectl mtv health --all-namespaces
 
   # Check health without log analysis (faster)
   kubectl mtv health --skip-logs

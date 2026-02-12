@@ -73,13 +73,13 @@ Labels help identify, manage, and monitor convertor pods:
 
 ```bash
 # Migration identification labels
-kubectl mtv create plan labeled-conversion \
+kubectl mtv create plan --name labeled-conversion \
   --source vsphere-prod \
   --convertor-labels "migration=production,batch=phase1" \
   --vms "web-01,web-02"
 
 # Resource tracking labels
-kubectl mtv create plan resource-tracking \
+kubectl mtv create plan --name resource-tracking \
   --source vsphere-prod \
   --convertor-labels "cost-center=migration,project=datacenter-exit,team=infrastructure" \
   --vms "where cluster.name = 'Legacy-Cluster'"
@@ -89,13 +89,13 @@ kubectl mtv create plan resource-tracking \
 
 ```bash
 # Performance tier labeling
-kubectl mtv create plan performance-conversion \
+kubectl mtv create plan --name performance-conversion \
   --source vsphere-prod \
   --convertor-labels "performance=high,priority=urgent,sla=4hour" \
   --vms "critical-database-01,payment-processor"
 
 # Monitoring and alerting labels
-kubectl mtv create plan monitored-migration \
+kubectl mtv create plan --name monitored-migration \
   --source vsphere-prod \
   --convertor-labels "monitoring=enabled,alerts=critical,dashboard=migration" \
   --vms "production-workloads"
@@ -109,19 +109,19 @@ Node selectors target convertors to appropriate infrastructure:
 
 ```bash
 # High-performance storage nodes
-kubectl mtv create plan storage-optimized \
+kubectl mtv create plan --name storage-optimized \
   --source vsphere-prod \
   --convertor-node-selector "storage=high-performance,io=dedicated" \
   --vms "large-database-01,file-server-02"
 
 # NVMe storage for conversion acceleration
-kubectl mtv create plan nvme-conversion \
+kubectl mtv create plan --name nvme-conversion \
   --source vsphere-prod \
   --convertor-node-selector "storage=nvme,conversion=optimized" \
   --vms "where sum(disks[*].capacityGB) > 500"
 
 # Local SSD for temporary conversion files
-kubectl mtv create plan local-ssd \
+kubectl mtv create plan --name local-ssd \
   --source vsphere-prod \
   --convertor-node-selector "local-storage=ssd,ephemeral=fast" \
   --vms "high-iops-vm-01,database-vm"
@@ -131,19 +131,19 @@ kubectl mtv create plan local-ssd \
 
 ```bash
 # High-CPU nodes for conversion intensive workloads
-kubectl mtv create plan cpu-intensive \
+kubectl mtv create plan --name cpu-intensive \
   --source vsphere-prod \
   --convertor-node-selector "cpu=high-performance,cores=many" \
   --vms "windows-vm-01,complex-os-vm"
 
 # High-memory nodes for large VM conversion
-kubectl mtv create plan memory-intensive \
+kubectl mtv create plan --name memory-intensive \
   --source vsphere-prod \
   --convertor-node-selector "memory=high,ram=dedicated" \
   --vms "where memoryMB > 32768"
 
 # Balanced resources for standard conversion
-kubectl mtv create plan balanced-resources \
+kubectl mtv create plan --name balanced-resources \
   --source vsphere-prod \
   --convertor-node-selector "instance-type=balanced,workload=conversion" \
   --vms "standard-vm-01,web-server-02"
@@ -153,13 +153,13 @@ kubectl mtv create plan balanced-resources \
 
 ```bash
 # High-bandwidth network nodes
-kubectl mtv create plan network-optimized \
+kubectl mtv create plan --name network-optimized \
   --source vsphere-prod \
   --convertor-node-selector "network=25gb,bandwidth=high" \
   --vms "network-intensive-app"
 
 # Storage network proximity
-kubectl mtv create plan storage-network \
+kubectl mtv create plan --name storage-network \
   --source vsphere-prod \
   --convertor-node-selector "network-zone=storage,storage-fabric=connected" \
   --vms "storage-heavy-vm-01"
@@ -175,13 +175,13 @@ kubectl mtv create plan storage-network \
 
 ```bash
 # Require convertors near storage controllers
-kubectl mtv create plan storage-colocation \
+kubectl mtv create plan --name storage-colocation \
   --source vsphere-prod \
   --convertor-affinity "REQUIRE pods(app=storage-controller) on node" \
   --vms "storage-intensive-vm"
 
 # Prefer convertors near Ceph OSD pods
-kubectl mtv create plan ceph-proximity \
+kubectl mtv create plan --name ceph-proximity \
   --source vsphere-prod \
   --convertor-affinity "PREFER pods(app=ceph-osd) on node weight=90" \
   --vms "large-vm-01,database-vm-02"
@@ -191,13 +191,13 @@ kubectl mtv create plan ceph-proximity \
 
 ```bash
 # Co-locate with storage array controllers
-kubectl mtv create plan array-colocation \
+kubectl mtv create plan --name array-colocation \
   --source vsphere-prod \
   --convertor-affinity "REQUIRE pods(storage-array=flashsystem) on node" \
   --vms "performance-database-01"
 
 # Prefer proximity to NVMe controllers
-kubectl mtv create plan nvme-proximity \
+kubectl mtv create plan --name nvme-proximity \
   --source vsphere-prod \
   --convertor-affinity "PREFER pods(controller=nvme) on zone weight=85" \
   --vms "high-performance-workload"
@@ -209,13 +209,13 @@ kubectl mtv create plan nvme-proximity \
 
 ```bash
 # Co-locate with network-attached storage
-kubectl mtv create plan nas-proximity \
+kubectl mtv create plan --name nas-proximity \
   --source vsphere-prod \
   --convertor-affinity "REQUIRE pods(storage=nas) on zone" \
   --vms "file-heavy-vm-01"
 
 # Prefer proximity to backup infrastructure
-kubectl mtv create plan backup-proximity \
+kubectl mtv create plan --name backup-proximity \
   --source vsphere-prod \
   --convertor-affinity "PREFER pods(app=backup-controller) on node weight=80" \
   --vms "backup-target-vm"
@@ -227,13 +227,13 @@ kubectl mtv create plan backup-proximity \
 
 ```bash
 # Avoid running convertors near production databases
-kubectl mtv create plan avoid-production-db \
+kubectl mtv create plan --name avoid-production-db \
   --source vsphere-prod \
   --convertor-affinity "AVOID pods(tier=database,environment=production) on node" \
   --vms "test-migration-vm"
 
 # Isolate from CPU-intensive production workloads
-kubectl mtv create plan avoid-cpu-intensive \
+kubectl mtv create plan --name avoid-cpu-intensive \
   --source vsphere-prod \
   --convertor-affinity "AVOID pods(workload=cpu-intensive) on zone" \
   --vms "latency-sensitive-conversion"
@@ -243,14 +243,14 @@ kubectl mtv create plan avoid-cpu-intensive \
 
 ```bash
 # Require dedicated migration nodes
-kubectl mtv create plan dedicated-migration \
+kubectl mtv create plan --name dedicated-migration \
   --source vsphere-prod \
   --convertor-affinity "REQUIRE pods(purpose=migration) on node" \
   --convertor-node-selector "dedicated=migration" \
   --vms "batch-migration-vms"
 
 # Prefer migration-optimized infrastructure
-kubectl mtv create plan migration-optimized \
+kubectl mtv create plan --name migration-optimized \
   --source vsphere-prod \
   --convertor-affinity "PREFER pods(optimized=migration) on zone weight=95" \
   --vms "large-scale-migration"
@@ -264,7 +264,7 @@ kubectl mtv create plan migration-optimized \
 
 ```bash
 # Maximize NVMe storage access for conversion
-kubectl mtv create plan nvme-optimized \
+kubectl mtv create plan --name nvme-optimized \
   --source vsphere-prod \
   --convertor-node-selector "storage=nvme,performance=extreme" \
   --convertor-affinity "REQUIRE pods(storage-controller=nvme) on node" \
@@ -279,7 +279,7 @@ kubectl mtv create plan nvme-optimized \
 
 ```bash
 # Direct access to storage arrays for conversion
-kubectl mtv create plan array-direct \
+kubectl mtv create plan --name array-direct \
   --source vsphere-prod \
   --convertor-node-selector "storage-fabric=connected,array-access=direct" \
   --convertor-affinity "REQUIRE pods(storage-array=flashsystem) on zone" \
@@ -293,7 +293,7 @@ kubectl mtv create plan array-direct \
 
 ```bash
 # Isolate conversion workloads on dedicated nodes
-kubectl mtv create plan isolated-conversion \
+kubectl mtv create plan --name isolated-conversion \
   --source vsphere-prod \
   --convertor-node-selector "workload=migration-only,isolation=dedicated" \
   --convertor-affinity "AVOID pods(environment=production) on node" \
@@ -305,13 +305,13 @@ kubectl mtv create plan isolated-conversion \
 
 ```bash
 # Separate development migrations from production
-kubectl mtv create plan dev-isolation \
+kubectl mtv create plan --name dev-isolation \
   --source vsphere-dev \
   --convertor-node-selector "environment=development,cost=optimized" \
   --convertor-affinity "AVOID pods(environment=production) on zone" \
   --convertor-labels "environment=dev,cost-tier=low" \
   --vms "dev-environment-vms" \
-  -n development
+  --namespace development
 ```
 
 ### Use Case 3: Network and Bandwidth Optimization
@@ -320,7 +320,7 @@ kubectl mtv create plan dev-isolation \
 
 ```bash
 # Optimize for high-bandwidth data transfers
-kubectl mtv create plan bandwidth-optimized \
+kubectl mtv create plan --name bandwidth-optimized \
   --source vsphere-prod \
   --convertor-node-selector "network=100gb,bandwidth=dedicated" \
   --convertor-affinity "PREFER pods(network-controller=high-bandwidth) on zone weight=90" \
@@ -332,7 +332,7 @@ kubectl mtv create plan bandwidth-optimized \
 
 ```bash
 # Place convertors near storage network infrastructure
-kubectl mtv create plan storage-network \
+kubectl mtv create plan --name storage-network \
   --source vsphere-prod \
   --convertor-node-selector "network-zone=storage,fabric=infiniband" \
   --convertor-affinity "REQUIRE pods(network=storage-fabric) on zone" \
@@ -346,7 +346,7 @@ kubectl mtv create plan storage-network \
 
 ```bash
 # Use cost-optimized nodes for non-critical migrations
-kubectl mtv create plan cost-optimized \
+kubectl mtv create plan --name cost-optimized \
   --source vsphere-dev \
   --convertor-node-selector "instance-type=spot,cost=optimized" \
   --convertor-labels "cost-tier=spot,priority=low" \
@@ -358,7 +358,7 @@ kubectl mtv create plan cost-optimized \
 
 ```bash
 # Right-size convertor resources based on workload
-kubectl mtv create plan rightsized-conversion \
+kubectl mtv create plan --name rightsized-conversion \
   --source vsphere-prod \
   --convertor-node-selector "sizing=optimal,efficiency=high" \
   --convertor-labels "efficiency=optimized,sizing=matched" \
@@ -373,14 +373,14 @@ kubectl mtv create plan rightsized-conversion \
 
 ```bash
 # Windows OS conversion (driver removal/installation)
-kubectl mtv create plan windows-conversion \
+kubectl mtv create plan --name windows-conversion \
   --source vsphere-prod \
   --convertor-node-selector "cpu=high,cores=8plus" \
   --convertor-labels "os=windows,cpu-usage=high" \
   --vms "where guestOS ~= '.*windows.*'"
 
 # Multi-disk VM conversion
-kubectl mtv create plan multi-disk-conversion \
+kubectl mtv create plan --name multi-disk-conversion \
   --source vsphere-prod \
   --convertor-node-selector "cpu=performance,parallel=supported" \
   --convertor-labels "disk-count=multiple,cpu=parallel" \
@@ -393,14 +393,14 @@ kubectl mtv create plan multi-disk-conversion \
 
 ```bash
 # Large VM conversion requiring substantial memory
-kubectl mtv create plan large-vm-conversion \
+kubectl mtv create plan --name large-vm-conversion \
   --source vsphere-prod \
   --convertor-node-selector "memory=32gb-plus,swap=disabled" \
   --convertor-labels "memory-usage=high,vm-size=large" \
   --vms "where memoryMB > 32768"
 
 # Memory-optimized conversion for database VMs
-kubectl mtv create plan database-conversion \
+kubectl mtv create plan --name database-conversion \
   --source vsphere-prod \
   --convertor-node-selector "memory=high,performance=database" \
   --convertor-labels "workload=database,memory=optimized" \
@@ -413,7 +413,7 @@ kubectl mtv create plan database-conversion \
 
 ```bash
 # High-IOPS conversion for database and storage VMs
-kubectl mtv create plan high-iops-conversion \
+kubectl mtv create plan --name high-iops-conversion \
   --source vsphere-prod \
   --convertor-node-selector "iops=high,storage=dedicated" \
   --convertor-affinity "REQUIRE pods(storage=high-iops) on node" \
@@ -421,7 +421,7 @@ kubectl mtv create plan high-iops-conversion \
   --vms "where any(disks[*].iops > 10000)"
 
 # Sequential I/O optimization for large files
-kubectl mtv create plan sequential-io \
+kubectl mtv create plan --name sequential-io \
   --source vsphere-prod \
   --convertor-node-selector "io-pattern=sequential,throughput=high" \
   --convertor-labels "io=sequential,throughput=optimized" \
@@ -434,7 +434,7 @@ kubectl mtv create plan sequential-io \
 
 ```bash
 # Phase 1: Infrastructure preparation with dedicated conversion nodes
-kubectl mtv create plan enterprise-phase1 \
+kubectl mtv create plan --name enterprise-phase1 \
   --source vsphere-production \
   --convertor-node-selector "migration=dedicated,performance=extreme,storage=nvme" \
   --convertor-affinity "REQUIRE pods(infrastructure=migration) on zone" \
@@ -443,7 +443,7 @@ kubectl mtv create plan enterprise-phase1 \
   --vms "where cluster.name = 'Critical-Production' and powerState = 'poweredOn'"
 
 # Phase 2: Batch processing with resource isolation
-kubectl mtv create plan enterprise-phase2 \
+kubectl mtv create plan --name enterprise-phase2 \
   --source vsphere-production \
   --convertor-node-selector "batch-processing=enabled,isolation=complete" \
   --convertor-affinity "AVOID pods(migration=enterprise,phase=1) on node" \
@@ -456,7 +456,7 @@ kubectl mtv create plan enterprise-phase2 \
 
 ```bash
 # Cloud storage optimization for hybrid migrations
-kubectl mtv create plan cloud-storage-optimized \
+kubectl mtv create plan --name cloud-storage-optimized \
   --source vsphere-prod \
   --convertor-node-selector "cloud-connectivity=optimized,bandwidth=unlimited" \
   --convertor-affinity "PREFER pods(storage=cloud-gateway) on zone weight=95" \
@@ -464,7 +464,7 @@ kubectl mtv create plan cloud-storage-optimized \
   --vms "cloud-migration-candidates"
 
 # Edge location optimization
-kubectl mtv create plan edge-optimized \
+kubectl mtv create plan --name edge-optimized \
   --source vsphere-edge \
   --convertor-node-selector "location=edge,connectivity=cellular" \
   --convertor-affinity "REQUIRE pods(edge-gateway=true) on zone" \
@@ -477,7 +477,7 @@ kubectl mtv create plan edge-optimized \
 
 ```bash
 # Secure conversion with air-gapped networks
-kubectl mtv create plan secure-conversion \
+kubectl mtv create plan --name secure-conversion \
   --source vsphere-secure \
   --convertor-node-selector "security=classified,network=airgapped" \
   --convertor-affinity "REQUIRE pods(security=classified) on node" \
@@ -485,7 +485,7 @@ kubectl mtv create plan secure-conversion \
   --vms "classified-workloads"
 
 # FIPS compliance conversion
-kubectl mtv create plan fips-compliant \
+kubectl mtv create plan --name fips-compliant \
   --source vsphere-gov \
   --convertor-node-selector "fips=enabled,compliance=gov" \
   --convertor-affinity "REQUIRE pods(fips=true) on zone" \
@@ -497,14 +497,14 @@ kubectl mtv create plan fips-compliant \
 
 ```bash
 # Baseline performance measurement
-kubectl mtv create plan performance-baseline \
+kubectl mtv create plan --name performance-baseline \
   --source vsphere-test \
   --convertor-node-selector "monitoring=enabled,benchmarking=true" \
   --convertor-labels "benchmark=baseline,monitoring=detailed,metrics=enabled" \
   --vms "benchmark-vm-set"
 
 # Optimized performance comparison
-kubectl mtv create plan performance-optimized \
+kubectl mtv create plan --name performance-optimized \
   --source vsphere-test \
   --convertor-node-selector "performance=maximum,optimization=enabled" \
   --convertor-affinity "REQUIRE pods(storage=fastest) on node" \
@@ -603,7 +603,7 @@ kubectl exec convertor-pod -- top -n 1
 
 ```bash
 # Enable verbose logging for convertor scheduling
-kubectl mtv create plan debug-convertor \
+kubectl mtv create plan --name debug-convertor \
   --convertor-node-selector "debug=enabled" \
   --convertor-affinity "REQUIRE pods(debug=true) on node" \
   -v=2
@@ -621,7 +621,7 @@ kubectl get events --sort-by='.metadata.creationTimestamp' | grep convertor
 
 ```bash
 # Optimize both target VMs and conversion process
-kubectl mtv create plan comprehensive-optimization \
+kubectl mtv create plan --name comprehensive-optimization \
   --source vsphere-prod \
   --target-node-selector "production=true,performance=high" \
   --target-affinity "AVOID pods(app=web) on node" \
@@ -636,7 +636,7 @@ kubectl mtv create plan comprehensive-optimization \
 
 ```bash
 # Warm migration with conversion optimization
-kubectl mtv create plan warm-optimized \
+kubectl mtv create plan --name warm-optimized \
   --source vsphere-prod \
   --migration-type warm \
   --convertor-node-selector "storage=nvme,memory=high" \
@@ -644,7 +644,7 @@ kubectl mtv create plan warm-optimized \
   --vms "large-vm-warm-migration"
 
 # Cold migration with cost optimization
-kubectl mtv create plan cold-cost-optimized \
+kubectl mtv create plan --name cold-cost-optimized \
   --source vsphere-prod \
   --migration-type cold \
   --convertor-node-selector "cost=optimized,instance-type=spot" \

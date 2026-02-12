@@ -277,13 +277,13 @@ where name ~= 'prod-.*' limit 5
 
 ```bash
 # Top 10 largest VMs by memory
-kubectl mtv get inventory vm vsphere-prod -q "where powerState = 'poweredOn' order by memoryMB desc limit 10"
+kubectl mtv get inventory vms --provider vsphere-prod --query "where powerState = 'poweredOn' order by memoryMB desc limit 10"
 
 # Compact output: only name, memory, CPU
-kubectl mtv get inventory vm vsphere-prod -q "select name, memoryMB, cpuCount where powerState = 'poweredOn' limit 10"
+kubectl mtv get inventory vms --provider vsphere-prod --query "select name, memoryMB, cpuCount where powerState = 'poweredOn' limit 10"
 
 # Full query: select + where + order + limit
-kubectl mtv get inventory vm vsphere-prod -q "select name, memoryMB as mem where memoryMB > 4096 order by mem desc limit 5"
+kubectl mtv get inventory vms --provider vsphere-prod --query "select name, memoryMB as mem where memoryMB > 4096 order by mem desc limit 5"
 ```
 
 ## Functions

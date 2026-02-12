@@ -16,7 +16,7 @@ type MTVReadInput struct {
 
 	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters including positional args and options (e.g. name: \"my-plan\", provider: \"my-vsphere\", output: \"json\", namespace: \"ns\", query: \"where cpuCount > 4\")"`
 
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"Preview without executing"`
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, returns the command that would be executed without running it"`
 
 	Fields []string `json:"fields,omitempty" jsonschema:"Limit JSON to these top-level keys only (e.g. [name, id, concerns])"`
 }
@@ -104,11 +104,8 @@ func HandleMTVRead(registry *discovery.Registry) func(context.Context, *mcp.Call
 			ctx = util.WithDryRun(ctx, true)
 		}
 
-		// Extract positional args from named entries in flags
-		positionalArgs := extractPositionalArgs(registry.GetCommand(cmdPath), input.Flags)
-
-		// Build command arguments
-		args := buildArgs(cmdPath, positionalArgs, input.Flags)
+		// Build command arguments (all params passed via flags)
+		args := buildArgs(cmdPath, input.Flags)
 
 		// Execute command
 		result, err := util.RunKubectlMTVCommand(ctx, args)
@@ -198,90 +195,15 @@ func normalizeCommandPath(cmd string) string {
 	return strings.Join(parts, "/")
 }
 
-// extractPositionalArgs extracts positional argument values from the flags map
-// using the command's positional arg metadata. The LLM passes positional args
-// as named entries in flags (e.g., flags: {"provider": "my-provider"}).
-// Matched entries are removed from the flags map to prevent double-passing.
-func extractPositionalArgs(cmd *discovery.Command, flags map[string]any) []string {
-	if cmd == nil || len(cmd.PositionalArgs) == 0 || flags == nil {
-		return nil
-	}
-
-	var result []string
-	for _, posArg := range cmd.PositionalArgs {
-		// Strip "..." suffix from variadic arg names (e.g., "NAME..." → "NAME").
-		// The help schema may encode variadic as a name suffix rather than a
-		// separate boolean field; detect either form.
-		argName := strings.TrimSuffix(posArg.Name, "...")
-		isVariadic := posArg.Variadic || argName != posArg.Name
-
-		// Try lowercase match first (e.g., "provider" for PROVIDER)
-		argLower := strings.ToLower(argName)
-
-		// Also try underscore variants (e.g., "plan_name" for PLAN_NAME)
-		variants := []string{argLower, strings.ReplaceAll(argLower, "_", "-")}
-		// Also try the original case
-		variants = append(variants, argName)
-
-		var found bool
-		for _, variant := range variants {
-			if val, ok := flags[variant]; ok {
-				// Handle variadic args: accept JSON arrays or space-separated strings.
-				// These are K8s resource names (no spaces), so splitting is safe.
-				// Examples: ["plan-a", "plan-b"] or "plan-a plan-b"
-				if isVariadic {
-					switch v := val.(type) {
-					case []interface{}:
-						for _, elem := range v {
-							s := fmt.Sprintf("%v", elem)
-							if s != "" {
-								result = append(result, s)
-							}
-						}
-					case string:
-						result = append(result, strings.Fields(v)...)
-					default:
-						s := fmt.Sprintf("%v", v)
-						if s != "" {
-							result = append(result, s)
-						}
-					}
-					delete(flags, variant)
-					found = true
-					break
-				}
-				// Single value for non-variadic args
-				strVal := fmt.Sprintf("%v", val)
-				if strVal != "" {
-					result = append(result, strVal)
-					delete(flags, variant)
-					found = true
-					break
-				}
-			}
-		}
-
-		// If required arg not found, stop — remaining args can't be provided out of order
-		if !found && posArg.Required {
-			break
-		}
-	}
-
-	return result
-}
-
 // buildArgs builds the command-line arguments for kubectl-mtv.
-// All parameters (namespace, all_namespaces, inventory_url, output, etc.)
+// All parameters (namespace, all_namespaces, inventory_url, output, name, provider, etc.)
 // are extracted from the flags map — there are no separate top-level fields.
-func buildArgs(cmdPath string, positionalArgs []string, flags map[string]any) []string {
+func buildArgs(cmdPath string, flags map[string]any) []string {
 	var args []string
 
 	// Add command path parts
 	parts := strings.Split(cmdPath, "/")
 	args = append(args, parts...)
-
-	// Add positional arguments
-	args = append(args, positionalArgs...)
 
 	// Extract namespace / all_namespaces from flags
 	var namespace string
@@ -301,9 +223,9 @@ func buildArgs(cmdPath string, positionalArgs []string, flags map[string]any) []
 
 	// Add namespace flags
 	if allNamespaces {
-		args = append(args, "-A")
+		args = append(args, "--all-namespaces")
 	} else if namespace != "" {
-		args = append(args, "-n", namespace)
+		args = append(args, "--namespace", namespace)
 	}
 
 	// Extract inventory URL from flags
@@ -332,13 +254,13 @@ func buildArgs(cmdPath string, positionalArgs []string, flags map[string]any) []
 	}
 	if userOutput != "" {
 		// User explicitly requested an output format
-		args = append(args, "-o", userOutput)
+		args = append(args, "--output", userOutput)
 	} else {
 		// Use configured default from MCP server
 		format := util.GetOutputFormat()
-		// For "text" format, don't add -o flag to use default table output
+		// For "text" format, don't add --output flag to use default table output
 		if format != "text" {
-			args = append(args, "-o", format)
+			args = append(args, "--output", format)
 		}
 	}
 

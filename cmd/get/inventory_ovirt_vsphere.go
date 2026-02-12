@@ -18,25 +18,25 @@ func NewInventoryHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalC
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:   "host PROVIDER",
-		Short: "Get hosts from a provider " + flags.ProvidersVSphereOVirt,
+		Use:   "host",
+		Short: "Get hosts from a provider",
 		Long: `Get hypervisor hosts from a provider's inventory.
 
 Lists ESXi hosts (vSphere) or hypervisor hosts (oVirt) from the source provider.
 Host information is useful for planning migrations and understanding the source environment.`,
 		Example: `  # Filter hosts by cluster
-  kubectl-mtv get inventory host vsphere-prod -q "where cluster = 'production'"
+  kubectl-mtv get inventory hosts --provider vsphere-prod --query "where cluster = 'production'"
 
   # List all hosts from a provider
-  kubectl-mtv get inventory host vsphere-prod
+  kubectl-mtv get inventory hosts --provider vsphere-prod
 
   # Output as JSON
-  kubectl-mtv get inventory host vsphere-prod -o json`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+  kubectl-mtv get inventory hosts --provider vsphere-prod --output json`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -44,8 +44,6 @@ Host information is useful for planning migrations and understanding the source 
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -59,11 +57,16 @@ Host information is useful for planning migrations and understanding the source 
 			return inventory.ListHostsWithInsecure(ctx, globalConfig.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -78,25 +81,25 @@ func NewInventoryDataCenterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:   "datacenter PROVIDER",
-		Short: "Get datacenters from a provider " + flags.ProvidersVSphereOVirt,
+		Use:   "datacenter",
+		Short: "Get datacenters from a provider",
 		Long: `Get datacenters from a provider's inventory.
 
 Lists datacenters from vSphere or oVirt providers. Datacenters are the top-level
 organizational units that contain clusters, hosts, and VMs.`,
 		Example: `  # Filter datacenters by name
-  kubectl-mtv get inventory datacenter vsphere-prod -q "where name ~= 'DC.*'"
+  kubectl-mtv get inventory datacenters --provider vsphere-prod --query "where name ~= 'DC.*'"
 
   # List all datacenters from a provider
-  kubectl-mtv get inventory datacenter vsphere-prod
+  kubectl-mtv get inventory datacenters --provider vsphere-prod
 
   # Output as YAML
-  kubectl-mtv get inventory datacenter vsphere-prod -o yaml`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+  kubectl-mtv get inventory datacenters --provider vsphere-prod --output yaml`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -104,8 +107,6 @@ organizational units that contain clusters, hosts, and VMs.`,
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -119,11 +120,16 @@ organizational units that contain clusters, hosts, and VMs.`,
 			return inventory.ListDataCentersWithInsecure(ctx, globalConfig.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -138,25 +144,25 @@ func NewInventoryClusterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:   "cluster PROVIDER",
-		Short: "Get clusters from a provider " + flags.ProvidersVSphereOVirt,
+		Use:   "cluster",
+		Short: "Get clusters from a provider",
 		Long: `Get clusters from a provider's inventory.
 
 Lists compute clusters from vSphere or oVirt providers. Clusters group hosts
 together and define resource pools for VMs.`,
 		Example: `  # Filter clusters by datacenter
-  kubectl-mtv get inventory cluster vsphere-prod -q "where datacenter = 'DC1'"
+  kubectl-mtv get inventory clusters --provider vsphere-prod --query "where datacenter = 'DC1'"
 
   # List all clusters from a provider
-  kubectl-mtv get inventory cluster vsphere-prod
+  kubectl-mtv get inventory clusters --provider vsphere-prod
 
   # Output as JSON
-  kubectl-mtv get inventory cluster vsphere-prod -o json`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+  kubectl-mtv get inventory clusters --provider vsphere-prod --output json`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -164,8 +170,6 @@ together and define resource pools for VMs.`,
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -179,11 +183,16 @@ together and define resource pools for VMs.`,
 			return inventory.ListClustersWithInsecure(ctx, globalConfig.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -198,25 +207,25 @@ func NewInventoryDiskCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalC
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:   "disk PROVIDER",
-		Short: "Get disks from a provider " + flags.ProvidersVSphereOVirt,
+		Use:   "disk",
+		Short: "Get disks from a provider",
 		Long: `Get disks from a provider's inventory.
 
 Lists virtual disks from vSphere or oVirt providers. Disk information includes
 size, storage location, and attachment to VMs.`,
 		Example: `  # Filter disks by size using SI units (greater than 100GB)
-  kubectl-mtv get inventory disk vsphere-prod -q "where capacity > 100Gi"
+  kubectl-mtv get inventory disks --provider vsphere-prod --query "where capacity > 100Gi"
 
   # List all disks from a provider
-  kubectl-mtv get inventory disk ovirt-prod
+  kubectl-mtv get inventory disks --provider ovirt-prod
 
   # Output as JSON
-  kubectl-mtv get inventory disk vsphere-prod -o json`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+  kubectl-mtv get inventory disks --provider vsphere-prod --output json`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -224,8 +233,6 @@ size, storage location, and attachment to VMs.`,
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -239,11 +246,16 @@ size, storage location, and attachment to VMs.`,
 			return inventory.ListDisksWithInsecure(ctx, globalConfig.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {

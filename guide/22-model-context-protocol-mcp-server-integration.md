@@ -532,7 +532,7 @@ def create_batch_migration(
     
     # Get VMs matching filter
     result = subprocess.run([
-        "kubectl", "mtv", "get", "inventory", "vm", provider,
+        "kubectl", "mtv", "get", "inventory", "vms", "--provider", provider,
         "--query", vm_filter,
         "-o", "json"
     ], capture_output=True, text=True)
@@ -549,7 +549,7 @@ def create_batch_migration(
         
         # Create migration plan
         subprocess.run([
-            "kubectl", "mtv", "create", "plan", plan_name,
+            "kubectl", "mtv", "create", "plan", "--name", plan_name,
             "--source", provider,
             "--target-namespace", target_namespace,
             "--vms", ",".join(vm_names)

@@ -138,57 +138,6 @@ func TestCommand_CommandPath(t *testing.T) {
 	}
 }
 
-func TestCommand_PositionalArgsString(t *testing.T) {
-	tests := []struct {
-		name     string
-		cmd      Command
-		expected string
-	}{
-		{
-			name:     "no positional args",
-			cmd:      Command{},
-			expected: "",
-		},
-		{
-			name: "required positional arg",
-			cmd: Command{
-				PositionalArgs: []Arg{
-					{Name: "NAME", Required: true},
-				},
-			},
-			expected: "NAME",
-		},
-		{
-			name: "optional positional arg",
-			cmd: Command{
-				PositionalArgs: []Arg{
-					{Name: "NAME", Required: false},
-				},
-			},
-			expected: "[NAME]",
-		},
-		{
-			name: "mixed positional args",
-			cmd: Command{
-				PositionalArgs: []Arg{
-					{Name: "PROVIDER", Required: true},
-					{Name: "NAME", Required: false},
-				},
-			},
-			expected: "PROVIDER [NAME]",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.cmd.PositionalArgsString()
-			if result != tt.expected {
-				t.Errorf("PositionalArgsString() = %q, want %q", result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestRegistry_IsReadOnly(t *testing.T) {
 	registry := &Registry{
 		ReadOnly: map[string]*Command{
@@ -341,13 +290,12 @@ func TestRegistry_ListReadWriteCommands(t *testing.T) {
 
 func TestBuildCommandArgs(t *testing.T) {
 	tests := []struct {
-		name           string
-		cmdPath        string
-		positionalArgs []string
-		flags          map[string]string
-		namespace      string
-		allNamespaces  bool
-		expected       []string
+		name          string
+		cmdPath       string
+		flags         map[string]string
+		namespace     string
+		allNamespaces bool
+		expected      []string
 	}{
 		{
 			name:     "simple command",
@@ -355,22 +303,22 @@ func TestBuildCommandArgs(t *testing.T) {
 			expected: []string{"get", "plan"},
 		},
 		{
-			name:           "with positional args",
-			cmdPath:        "get/plan",
-			positionalArgs: []string{"my-plan"},
-			expected:       []string{"get", "plan", "my-plan"},
+			name:     "with flag",
+			cmdPath:  "get/plan",
+			flags:    map[string]string{"name": "my-plan"},
+			expected: []string{"get", "plan", "--name", "my-plan"},
 		},
 		{
 			name:      "with namespace",
 			cmdPath:   "get/plan",
 			namespace: "test-ns",
-			expected:  []string{"get", "plan", "-n", "test-ns"},
+			expected:  []string{"get", "plan", "--namespace", "test-ns"},
 		},
 		{
 			name:          "with all namespaces",
 			cmdPath:       "get/plan",
 			allNamespaces: true,
-			expected:      []string{"get", "plan", "-A"},
+			expected:      []string{"get", "plan", "--all-namespaces"},
 		},
 		{
 			name:     "with string flag",
@@ -395,13 +343,13 @@ func TestBuildCommandArgs(t *testing.T) {
 			cmdPath:   "get/plan",
 			namespace: "test-ns",
 			flags:     map[string]string{"namespace": "other-ns"},
-			expected:  []string{"get", "plan", "-n", "test-ns"},
+			expected:  []string{"get", "plan", "--namespace", "test-ns"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := BuildCommandArgs(tt.cmdPath, tt.positionalArgs, tt.flags, tt.namespace, tt.allNamespaces)
+			result := BuildCommandArgs(tt.cmdPath, tt.flags, tt.namespace, tt.allNamespaces)
 
 			if len(result) != len(tt.expected) {
 				t.Fatalf("BuildCommandArgs() returned %v, want %v", result, tt.expected)
@@ -423,31 +371,18 @@ func TestFormatUsageShort(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "command without args",
+			name: "command path",
 			cmd: &Command{
 				PathString: "get plan",
 			},
 			expected: "get plan",
 		},
 		{
-			name: "command with required arg",
+			name: "multi-segment path",
 			cmd: &Command{
 				PathString: "create provider",
-				PositionalArgs: []Arg{
-					{Name: "NAME", Required: true},
-				},
 			},
-			expected: "create provider <name>",
-		},
-		{
-			name: "command with optional arg",
-			cmd: &Command{
-				PathString: "get plan",
-				PositionalArgs: []Arg{
-					{Name: "NAME", Required: false},
-				},
-			},
-			expected: "get plan [name]",
+			expected: "create provider",
 		},
 	}
 
@@ -467,14 +402,11 @@ func TestRegistry_GenerateReadOnlyDescription_Synthetic(t *testing.T) {
 			"get/plan": {
 				PathString:  "get plan",
 				Description: "Get migration plans",
-				PositionalArgs: []Arg{
-					{Name: "NAME", Required: false},
-				},
 			},
 		},
 		ReadWrite: map[string]*Command{},
 		GlobalFlags: []Flag{
-			{Name: "namespace", Description: "Target namespace", LLMRelevant: true},
+			{Name: "namespace", Description: "Target namespace"},
 		},
 	}
 
@@ -483,8 +415,8 @@ func TestRegistry_GenerateReadOnlyDescription_Synthetic(t *testing.T) {
 	if !strings.Contains(result, "read-only") {
 		t.Error("Description should mention read-only")
 	}
-	if !strings.Contains(result, "get plan [name]") {
-		t.Error("Description should include command with args")
+	if !strings.Contains(result, "get plan") {
+		t.Error("Description should include command")
 	}
 	if !strings.Contains(result, "Get migration plans") {
 		t.Error("Description should include command description")
@@ -493,7 +425,7 @@ func TestRegistry_GenerateReadOnlyDescription_Synthetic(t *testing.T) {
 	if !strings.Contains(result, "Commands: get") {
 		t.Error("Description should contain data-derived root verbs")
 	}
-	// Global flags should be derived from GlobalFlags data
+	// Global flags should be derived from GlobalFlags data (important flags)
 	if !strings.Contains(result, "namespace: Target namespace") {
 		t.Error("Description should contain global flag descriptions from data")
 	}
@@ -508,9 +440,6 @@ func TestRegistry_GenerateReadWriteDescription_Synthetic(t *testing.T) {
 			"create/plan": {
 				PathString:  "create plan",
 				Description: "Create a migration plan",
-				PositionalArgs: []Arg{
-					{Name: "NAME", Required: true},
-				},
 			},
 		},
 		GlobalFlags: []Flag{
@@ -523,8 +452,8 @@ func TestRegistry_GenerateReadWriteDescription_Synthetic(t *testing.T) {
 	if !strings.Contains(result, "WARNING") {
 		t.Error("Description should include WARNING")
 	}
-	if !strings.Contains(result, "create plan <name>") {
-		t.Error("Description should include command with args")
+	if !strings.Contains(result, "create plan") {
+		t.Error("Description should include command")
 	}
 	if !strings.Contains(result, "Create a migration plan") {
 		t.Error("Description should include command description")
@@ -753,7 +682,7 @@ func TestRegistry_RealHelpMachine_QueryLanguageReference(t *testing.T) {
 		"like",
 		"~=",
 		"ORDER BY",
-		"-o json",
+		"--output json",
 		"cpuCount",
 		"help tsl",
 	}
@@ -792,20 +721,18 @@ func TestUniqueRootVerbs(t *testing.T) {
 
 func TestDetectBareParents(t *testing.T) {
 	commands := map[string]*Command{
-		// "patch" is a bare parent: no flags, no positional args, prefix of patch/plan
+		// "patch" is a bare parent: no flags, prefix of patch/plan
 		"patch": {Path: []string{"patch"}},
 		"patch/plan": {
-			Path:           []string{"patch", "plan"},
-			PositionalArgs: []Arg{{Name: "NAME", Required: true}},
-			Flags:          []Flag{{Name: "query", Type: "string"}},
+			Path:  []string{"patch", "plan"},
+			Flags: []Flag{{Name: "query", Type: "string"}},
 		},
 		"patch/mapping": {
-			// Also a bare parent: prefix of patch/mapping/network, no flags or args
+			// Also a bare parent: prefix of patch/mapping/network, no flags
 			Path: []string{"patch", "mapping"},
 		},
 		"patch/mapping/network": {
-			Path:           []string{"patch", "mapping", "network"},
-			PositionalArgs: []Arg{{Name: "NAME", Required: true}},
+			Path: []string{"patch", "mapping", "network"},
 		},
 		// "delete/mapping" has flags, so NOT a bare parent even though it's a prefix
 		"delete/mapping": {
@@ -836,31 +763,27 @@ func TestDetectBareParents(t *testing.T) {
 		t.Error("'create/plan' is not a prefix of anything, should NOT be bare parent")
 	}
 	if bareParents["patch/plan"] {
-		t.Error("'patch/plan' has flags and args, should NOT be bare parent")
+		t.Error("'patch/plan' has flags, should NOT be bare parent")
 	}
 }
 
-func TestDetectSiblingGroups(t *testing.T) {
+func TestDetectDeepSiblingGroups(t *testing.T) {
 	commands := map[string]*Command{
 		"get/inventory/vm": {
-			Name:           "vm",
-			Path:           []string{"get", "inventory", "vm"},
-			Description:    "Get VMs from provider",
-			PositionalArgs: []Arg{{Name: "PROVIDER", Required: true}},
+			Name:        "vm",
+			Path:        []string{"get", "inventory", "vm"},
+			Description: "Get VMs from provider",
 		},
 		"get/inventory/network": {
-			Name:           "network",
-			Path:           []string{"get", "inventory", "network"},
-			Description:    "Get networks from provider",
-			PositionalArgs: []Arg{{Name: "PROVIDER", Required: true}},
+			Name:        "network",
+			Path:        []string{"get", "inventory", "network"},
+			Description: "Get networks from provider",
 		},
 		"get/inventory/cluster": {
-			Name:           "cluster",
-			Path:           []string{"get", "inventory", "cluster"},
-			Description:    "Get clusters from provider",
-			PositionalArgs: []Arg{{Name: "PROVIDER", Required: true}},
+			Name:        "cluster",
+			Path:        []string{"get", "inventory", "cluster"},
+			Description: "Get clusters from provider",
 		},
-		// This command is not in a large enough group
 		"get/plan": {
 			Name:        "plan",
 			Path:        []string{"get", "plan"},
@@ -868,84 +791,38 @@ func TestDetectSiblingGroups(t *testing.T) {
 		},
 	}
 
-	groups, groupedKeys := detectSiblingGroups(commands, nil, 3)
+	groups, groupedKeys := detectDeepSiblingGroups(commands, nil)
 
 	if len(groups) != 1 {
 		t.Fatalf("Expected 1 sibling group, got %d", len(groups))
 	}
 
 	group := groups[0]
-	if group.ParentPath != "get/inventory" {
-		t.Errorf("Expected parent path 'get/inventory', got %q", group.ParentPath)
+	if group.parentPath != "get/inventory" {
+		t.Errorf("Expected parent path 'get/inventory', got %q", group.parentPath)
 	}
-	if group.SharedRequiredArg != "PROVIDER" {
-		t.Errorf("Expected shared arg 'PROVIDER', got %q", group.SharedRequiredArg)
-	}
-	if len(group.Children) != 3 {
-		t.Errorf("Expected 3 children, got %d: %v", len(group.Children), group.Children)
+	if len(group.children) != 3 {
+		t.Errorf("Expected 3 children, got %d: %v", len(group.children), group.children)
 	}
 
-	// All inventory keys should be grouped
 	for _, key := range []string{"get/inventory/vm", "get/inventory/network", "get/inventory/cluster"} {
 		if !groupedKeys[key] {
 			t.Errorf("Expected %q to be in grouped keys", key)
 		}
 	}
-
-	// get/plan should NOT be grouped
 	if groupedKeys["get/plan"] {
 		t.Error("get/plan should not be in a sibling group")
 	}
 }
 
-func TestDetectSiblingGroups_NoSharedArg(t *testing.T) {
-	// When children have evenly split different positional args, no supermajority is reached
-	commands := map[string]*Command{
-		"foo/bar/a": {Name: "a", Path: []string{"foo", "bar", "a"}, Description: "A",
-			PositionalArgs: []Arg{{Name: "X", Required: true}}},
-		"foo/bar/b": {Name: "b", Path: []string{"foo", "bar", "b"}, Description: "B",
-			PositionalArgs: []Arg{{Name: "Y", Required: true}}},
-		"foo/bar/c": {Name: "c", Path: []string{"foo", "bar", "c"}, Description: "C",
-			PositionalArgs: []Arg{{Name: "Z", Required: true}}},
-	}
-
-	groups, _ := detectSiblingGroups(commands, nil, 3)
-	if len(groups) != 1 {
-		t.Fatalf("Expected 1 group, got %d", len(groups))
-	}
-	if groups[0].SharedRequiredArg != "" {
-		t.Errorf("Expected empty shared arg when children are evenly split, got %q", groups[0].SharedRequiredArg)
-	}
-}
-
-func TestDetectSiblingGroups_SupermajorityArg(t *testing.T) {
-	// When ≥ 2/3 of children share the same required arg, it should be detected
-	commands := map[string]*Command{
-		"foo/bar/a": {Name: "a", Path: []string{"foo", "bar", "a"}, Description: "A",
-			PositionalArgs: []Arg{{Name: "PROVIDER", Required: true}}},
-		"foo/bar/b": {Name: "b", Path: []string{"foo", "bar", "b"}, Description: "B",
-			PositionalArgs: []Arg{{Name: "PROVIDER", Required: true}}},
-		"foo/bar/c": {Name: "c", Path: []string{"foo", "bar", "c"}, Description: "C",
-			PositionalArgs: []Arg{{Name: "OTHER", Required: false}}},
-	}
-
-	groups, _ := detectSiblingGroups(commands, nil, 3)
-	if len(groups) != 1 {
-		t.Fatalf("Expected 1 group, got %d", len(groups))
-	}
-	if groups[0].SharedRequiredArg != "PROVIDER" {
-		t.Errorf("Expected shared arg 'PROVIDER' from supermajority, got %q", groups[0].SharedRequiredArg)
-	}
-}
-
-func TestDetectSiblingGroups_BelowThreshold(t *testing.T) {
+func TestDetectDeepSiblingGroups_BelowThreshold(t *testing.T) {
 	// Only 2 siblings — below the threshold of 3
 	commands := map[string]*Command{
 		"get/inventory/vm":      {Name: "vm", Path: []string{"get", "inventory", "vm"}, Description: "VMs"},
 		"get/inventory/network": {Name: "network", Path: []string{"get", "inventory", "network"}, Description: "Networks"},
 	}
 
-	groups, groupedKeys := detectSiblingGroups(commands, nil, 3)
+	groups, groupedKeys := detectDeepSiblingGroups(commands, nil)
 	if len(groups) != 0 {
 		t.Errorf("Expected 0 groups below threshold, got %d", len(groups))
 	}
@@ -954,7 +831,7 @@ func TestDetectSiblingGroups_BelowThreshold(t *testing.T) {
 	}
 }
 
-func TestDetectSiblingGroups_TopLevelNotCompacted(t *testing.T) {
+func TestDetectDeepSiblingGroups_TopLevelNotCompacted(t *testing.T) {
 	// Top-level groups (depth 2) should NOT be compacted — they are heterogeneous
 	commands := map[string]*Command{
 		"get/plan":     {Name: "plan", Path: []string{"get", "plan"}, Description: "Get plans"},
@@ -963,7 +840,7 @@ func TestDetectSiblingGroups_TopLevelNotCompacted(t *testing.T) {
 		"get/host":     {Name: "host", Path: []string{"get", "host"}, Description: "Get hosts"},
 	}
 
-	groups, groupedKeys := detectSiblingGroups(commands, nil, 3)
+	groups, groupedKeys := detectDeepSiblingGroups(commands, nil)
 	if len(groups) != 0 {
 		t.Errorf("Top-level groups (depth 2) should not be compacted, got %d groups", len(groups))
 	}
@@ -975,17 +852,17 @@ func TestDetectSiblingGroups_TopLevelNotCompacted(t *testing.T) {
 func TestFormatGlobalFlags(t *testing.T) {
 	registry := &Registry{
 		GlobalFlags: []Flag{
-			{Name: "namespace", Description: "Target Kubernetes namespace", LLMRelevant: true},
-			{Name: "all-namespaces", Description: "Query all namespaces", LLMRelevant: true},
+			{Name: "namespace", Description: "Target Kubernetes namespace"},
+			{Name: "all-namespaces", Description: "Query all namespaces"},
 			{Name: "output", Description: "Output format"},
 			{Name: "kubeconfig", Description: "Path to kubeconfig"},
-			{Name: "verbose", Description: "Enable verbose output", LLMRelevant: true},
+			{Name: "verbose", Description: "Enable verbose output"},
 		},
 	}
 
 	result := registry.formatGlobalFlags()
 
-	// Should include the LLM-relevant flags (those with LLMRelevant: true)
+	// Should include the important global flags
 	if !strings.Contains(result, "namespace: Target Kubernetes namespace") {
 		t.Error("Should include namespace flag from data")
 	}
@@ -996,7 +873,7 @@ func TestFormatGlobalFlags(t *testing.T) {
 		t.Error("Should include verbose flag from data")
 	}
 
-	// Should NOT include kubeconfig (LLMRelevant not set) or output
+	// Should NOT include kubeconfig or output (not in importantGlobalFlags)
 	if strings.Contains(result, "kubeconfig") {
 		t.Error("Should NOT include kubeconfig flag (not LLM-relevant)")
 	}
@@ -1039,9 +916,9 @@ func TestRegistry_RealHelpMachine_MinimalReadOnlyGroupsInventory(t *testing.T) {
 
 	result := registry.GenerateMinimalReadOnlyDescription()
 
-	// Should have a compacted inventory line with "RESOURCE <provider>"
-	if !strings.Contains(result, "get inventory RESOURCE <provider>") {
-		t.Errorf("Minimal read-only description should compact inventory commands into 'get inventory RESOURCE <provider>', got:\n%s", result)
+	// Should have a compacted inventory line with "RESOURCE"
+	if !strings.Contains(result, "get inventory RESOURCE") {
+		t.Errorf("Minimal read-only description should compact inventory commands into 'get inventory RESOURCE', got:\n%s", result)
 	}
 	// Should list resource names
 	if !strings.Contains(result, "vm") {
@@ -1050,66 +927,33 @@ func TestRegistry_RealHelpMachine_MinimalReadOnlyGroupsInventory(t *testing.T) {
 	if !strings.Contains(result, "network") {
 		t.Error("Compacted inventory should list 'network' as a resource")
 	}
-	// Should have examples section derived from source
+	// Should have examples section
 	if !strings.Contains(result, "Examples:") {
 		t.Error("Description should include examples section")
 	}
-	// Inventory commands have a unique call pattern (RESOURCE in command path,
-	// provider as positional arg). Ensure they get their own example.
 	if !strings.Contains(result, "get inventory") {
-		t.Error("Examples should include an inventory command to demonstrate the RESOURCE-in-command-path pattern")
+		t.Error("Examples should include an inventory command")
 	}
-	// The inventory example should show a query to teach the LM about TSL filtering.
-	// Without this, small LMs fall back to shell piping (grep/jq) instead of using queries.
 	if !strings.Contains(result, "query") {
 		t.Error("Inventory example should include a query flag to demonstrate TSL filtering")
 	}
-	// Should include TSL syntax hint via mtv_help reference
 	if !strings.Contains(result, "TSL") {
 		t.Error("Description should include TSL syntax hint")
 	}
-	// Should include mtv_help reference
 	if !strings.Contains(result, "mtv_help") {
 		t.Error("Description should reference mtv_help for detailed flags")
 	}
-	// Provider-grouped output: should have category lines instead of one flat list
-	if !strings.Contains(result, "vSphere:") {
-		t.Error("Grouped inventory should have a 'vSphere:' category line")
-	}
-	if !strings.Contains(result, "oVirt:") {
-		t.Error("Grouped inventory should have an 'oVirt:' category line")
-	}
-	if !strings.Contains(result, "OpenStack:") {
-		t.Error("Grouped inventory should have an 'OpenStack:' category line")
-	}
-	if !strings.Contains(result, "OpenShift:") {
-		t.Error("Grouped inventory should have an 'OpenShift:' category line")
-	}
-	if !strings.Contains(result, "AWS:") {
-		t.Error("Grouped inventory should have an 'AWS:' category line")
-	}
-	// Common resources should be in the "Resources:" line
-	if !strings.Contains(result, "Resources:") {
-		t.Error("Grouped inventory should have a 'Resources:' line for common resources")
-	}
-	// Should NOT have a single flat comma-separated line with 28 resources
-	// (the old format had all resources on one line after "Resources:")
-	for _, line := range strings.Split(result, "\n") {
-		if strings.Contains(line, "Resources:") && strings.Count(line, ",") > 10 {
-			t.Errorf("Resources line should not be a wall of text (>10 commas), got: %s", line)
-		}
-	}
-	// Should NOT list individual inventory commands separately
-	if strings.Contains(result, "  get inventory vm <provider>") {
+	// Should NOT list individual inventory commands separately (they should be compacted)
+	if strings.Contains(result, "  get inventory vm -") {
 		t.Error("Individual inventory commands should be compacted, not listed separately")
 	}
 	// Should list non-grouped commands like get plan
 	if !strings.Contains(result, "get plan") {
 		t.Error("Description should list non-grouped commands like 'get plan'")
 	}
-	// Should NOT include LongDescription (removed to save space)
-	if strings.Contains(result, "Migration Toolkit for Virtualization") {
-		t.Error("Minimal description should NOT include LongDescription domain context")
+	// Should include short MTV context preamble
+	if !strings.Contains(result, "Migration Toolkit for Virtualization") {
+		t.Error("Minimal description should include MTV context preamble")
 	}
 	// Should NOT include orphaned convention notes (removed)
 	if strings.Contains(result, "Args: <required>, [optional]") {

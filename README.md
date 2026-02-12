@@ -34,53 +34,66 @@ See [MCP Server Guide](guide/22-model-context-protocol-mcp-server-integration.md
 
 ```bash
 # vSphere
-kubectl mtv create provider vsphere-01 --type vsphere \
+kubectl mtv create provider --name vsphere-01 --type vsphere \
   --url https://vcenter.example.com \
-  -u admin --password secret --cacert @ca.cert
+  --username admin --password secret --cacert @ca.cert
 ```
 
-### 2. Create Mappings (Optional)
+### 2. Create Migration Plan
+
+Network and storage mappings are created automatically with sensible defaults.
+Use `--network-pairs` / `--storage-pairs` to override inline if needed.
+
+```bash
+# Using system defaults for best network and storage mapping
+kubectl mtv create plan --name migration-1 \
+  --source vsphere-01 \
+  --vms vm1,vm2,vm3
+
+# Overriding mappings inline
+kubectl mtv create plan --name migration-1 \
+  --source vsphere-01 \
+  --vms vm1,vm2,vm3 \
+  --network-pairs "VM Network:default" \
+  --storage-pairs "datastore1:standard"
+```
+
+### 3. Start Migration
+
+```bash
+kubectl mtv start plan --name migration-1
+```
+
+### 4. Monitor Progress
+
+```bash
+# Interactive TUI with scrolling, help panel, and adjustable refresh
+kubectl mtv get plans --vms --watch
+```
+
+### Advanced: Reusable Mappings
+
+If you need to reuse the same network/storage configuration across multiple plans,
+create named mappings and reference them:
 
 ```bash
 # Network mapping
-kubectl mtv create mapping network prod-net \
+kubectl mtv create mapping network --name prod-net \
   --source vsphere-01 --target openshift \
   --network-pairs "VM Network:default,Management:openshift-sdn/mgmt"
 
 # Storage mapping with enhanced features
-kubectl mtv create mapping storage prod-storage \
+kubectl mtv create mapping storage --name prod-storage \
   --source vsphere-01 --target openshift \
   --storage-pairs "datastore1:standard;volumeMode=Block;accessMode=ReadWriteOnce,datastore2:fast;volumeMode=Filesystem" \
   --default-offload-plugin vsphere --default-offload-vendor flashsystem
-```
 
-### 3. Create Migration Plan
-
-```bash
-# Using system defaults for best network and storage mapping
-kubectl mtv create plan migration-1 \
-  --source vsphere-01 \
-  --vms vm1,vm2,vm3
-
-# Using existing mappings
-kubectl mtv create plan migration-1 \
+# Reference them in a plan
+kubectl mtv create plan --name migration-1 \
   --source vsphere-01 \
   --network-mapping prod-net \
   --storage-mapping prod-storage \
   --vms vm1,vm2,vm3
-```
-
-### 4. Start Migration
-
-```bash
-kubectl mtv start plan migration-1
-```
-
-### 5. Monitor Progress
-
-```bash
-# Interactive TUI with scrolling, help panel, and adjustable refresh
-kubectl mtv get plan --vms --watch
 ```
 
 For a complete walkthrough, see the [Quick Start Guide](guide/03-quick-start-first-migration-workflow.md).
@@ -91,14 +104,14 @@ Query and explore provider resources before migration:
 
 ```bash
 # List VMs
-kubectl mtv get inventory vms vsphere-01
+kubectl mtv get inventory vms --provider vsphere-01
 
 # Filter VMs by criteria
-kubectl mtv get inventory vms vsphere-01 -q "where memoryMB > 4096"
+kubectl mtv get inventory vms --provider vsphere-01 --query "where memoryMB > 4096"
 
 # List networks and storage
-kubectl mtv get inventory networks vsphere-01
-kubectl mtv get inventory storage vsphere-01
+kubectl mtv get inventory networks --provider vsphere-01
+kubectl mtv get inventory storages --provider vsphere-01
 ```
 
 See [Inventory Management Guide](guide/09-inventory-management.md) for advanced queries and filtering.
@@ -114,7 +127,7 @@ kubectl mtv create vddk-image \
   --tag quay.io/myorg/vddk:8.0.1
 
 # Use it when creating a provider
-kubectl mtv create provider vsphere-01 --type vsphere \
+kubectl mtv create provider --name vsphere-01 --type vsphere \
   --url https://vcenter.example.com \
   --vddk-init-image quay.io/myorg/vddk:8.0.1
 ```

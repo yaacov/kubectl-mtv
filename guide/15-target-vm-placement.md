@@ -51,13 +51,13 @@ Target labels are applied to VM pods for identification, management, and policy 
 
 ```bash
 # Single environment label
-kubectl mtv create plan labeled-migration \
+kubectl mtv create plan --name labeled-migration \
   --source vsphere-prod \
   --target-labels "environment=production" \
   --vms "web-01,web-02"
 
 # Multiple labels for comprehensive tagging
-kubectl mtv create plan comprehensive-labels \
+kubectl mtv create plan --name comprehensive-labels \
   --source vsphere-prod \
   --target-labels "environment=production,team=platform,application=web,tier=frontend" \
   --vms "web-server-01,web-server-02"
@@ -67,19 +67,19 @@ kubectl mtv create plan comprehensive-labels \
 
 ```bash
 # Cost center and ownership tracking
-kubectl mtv create plan cost-tracking \
+kubectl mtv create plan --name cost-tracking \
   --source vsphere-prod \
   --target-labels "cost-center=engineering,owner=web-team,budget=ops-2024" \
   --vms "where name ~= '^web-.*'"
 
 # Compliance and security labeling
-kubectl mtv create plan compliance-labels \
+kubectl mtv create plan --name compliance-labels \
   --source vsphere-prod \
   --target-labels "security-level=restricted,compliance=pci-dss,data-class=sensitive" \
   --vms "payment-processor-01,user-data-vm"
 
 # Application lifecycle management
-kubectl mtv create plan lifecycle-labels \
+kubectl mtv create plan --name lifecycle-labels \
   --source vsphere-prod \
   --target-labels "lifecycle=production,support-level=24x7,backup=required" \
   --vms "critical-app-01,database-primary"
@@ -93,19 +93,19 @@ Node selectors provide basic scheduling constraints using node labels:
 
 ```bash
 # Zone-based placement
-kubectl mtv create plan zone-east \
+kubectl mtv create plan --name zone-east \
   --source vsphere-prod \
   --target-node-selector "zone=east" \
   --vms "east-coast-services"
 
 # Storage-specific placement
-kubectl mtv create plan ssd-placement \
+kubectl mtv create plan --name ssd-placement \
   --source vsphere-prod \
   --target-node-selector "storage=ssd,performance=high" \
   --vms "database-01,cache-redis-01"
 
 # Hardware-specific requirements
-kubectl mtv create plan gpu-workload \
+kubectl mtv create plan --name gpu-workload \
   --source vsphere-prod \
   --target-node-selector "accelerator=gpu,gpu-type=v100" \
   --vms "ml-training-vm,ai-inference-vm"
@@ -115,13 +115,13 @@ kubectl mtv create plan gpu-workload \
 
 ```bash
 # Multi-constraint node selection
-kubectl mtv create plan specific-hardware \
+kubectl mtv create plan --name specific-hardware \
   --source vsphere-prod \
   --target-node-selector "zone=central,storage=nvme,memory=high,network=25gb" \
   --vms "high-performance-db,analytics-engine"
 
 # Dedicated node pools
-kubectl mtv create plan dedicated-pool \
+kubectl mtv create plan --name dedicated-pool \
   --source vsphere-prod \
   --target-node-selector "node-pool=database,dedicated=true" \
   --vms "postgres-primary,postgres-replica-01"
@@ -143,19 +143,19 @@ Control VM power state after migration completion:
 
 ```bash
 # Ensure production VMs start immediately
-kubectl mtv create plan production-online \
+kubectl mtv create plan --name production-online \
   --source vsphere-prod \
   --target-power-state on \
   --vms "web-service-01,api-gateway-01,database-01"
 
 # Keep backup VMs offline initially
-kubectl mtv create plan backup-offline \
+kubectl mtv create plan --name backup-offline \
   --source vsphere-prod \
   --target-power-state off \
   --vms "backup-vm-01,archive-vm-02"
 
 # Preserve original power states
-kubectl mtv create plan preserve-state \
+kubectl mtv create plan --name preserve-state \
   --source vsphere-prod \
   --target-power-state auto \
   --vms "where powerState in ['poweredOn', 'poweredOff']"
@@ -209,13 +209,13 @@ RULE_TYPE pods(selector) on TOPOLOGY_KEY [weight=N]
 
 ```bash
 # Require application VMs to run on same node as database
-kubectl mtv create plan app-with-database \
+kubectl mtv create plan --name app-with-database \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(app=database) on node" \
   --vms "app-server-01,app-server-02"
 
 # Prefer application VMs near database for performance
-kubectl mtv create plan app-near-database \
+kubectl mtv create plan --name app-near-database \
   --source vsphere-prod \
   --target-affinity "PREFER pods(app=database,tier=primary) on zone weight=80" \
   --vms "web-app-01,api-service-01"
@@ -225,13 +225,13 @@ kubectl mtv create plan app-near-database \
 
 ```bash
 # Require VMs to run with storage controller pods
-kubectl mtv create plan storage-colocation \
+kubectl mtv create plan --name storage-colocation \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(app=storage-controller) on node" \
   --vms "high-iops-vm-01,database-vm-01"
 
 # Prefer VMs near cache pods
-kubectl mtv create plan cache-colocation \
+kubectl mtv create plan --name cache-colocation \
   --source vsphere-prod \
   --target-affinity "PREFER pods(app=redis,role=cache) on node weight=90" \
   --vms "cache-client-01,session-service"
@@ -243,13 +243,13 @@ kubectl mtv create plan cache-colocation \
 
 ```bash
 # Avoid running web servers on same node
-kubectl mtv create plan ha-web-servers \
+kubectl mtv create plan --name ha-web-servers \
   --source vsphere-prod \
   --target-affinity "AVOID pods(app=web-server) on node" \
   --vms "web-01,web-02,web-03"
 
 # Soft anti-affinity for load distribution
-kubectl mtv create plan distributed-workers \
+kubectl mtv create plan --name distributed-workers \
   --source vsphere-prod \
   --target-affinity "REPEL pods(app=worker) on node weight=70" \
   --vms "worker-01,worker-02,worker-03,worker-04"
@@ -259,13 +259,13 @@ kubectl mtv create plan distributed-workers \
 
 ```bash
 # Avoid running near resource-intensive applications
-kubectl mtv create plan avoid-intensive \
+kubectl mtv create plan --name avoid-intensive \
   --source vsphere-prod \
   --target-affinity "AVOID pods(resource=intensive) on node" \
   --vms "latency-sensitive-01,real-time-service"
 
 # Avoid CPU-heavy workloads
-kubectl mtv create plan avoid-cpu-heavy \
+kubectl mtv create plan --name avoid-cpu-heavy \
   --source vsphere-prod \
   --target-affinity "AVOID pods(workload=cpu-intensive) on zone" \
   --vms "interactive-app-01,user-facing-service"
@@ -277,13 +277,13 @@ kubectl mtv create plan avoid-cpu-heavy \
 
 ```bash
 # Require VMs in specific zone for compliance
-kubectl mtv create plan zone-compliance \
+kubectl mtv create plan --name zone-compliance \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(zone=east) on zone" \
   --vms "compliance-app-01,audit-service"
 
 # Distribute across zones for availability
-kubectl mtv create plan multi-zone-ha \
+kubectl mtv create plan --name multi-zone-ha \
   --source vsphere-prod \
   --target-affinity "AVOID pods(app=frontend) on zone" \
   --vms "frontend-east,frontend-west,frontend-central"
@@ -293,13 +293,13 @@ kubectl mtv create plan multi-zone-ha \
 
 ```bash
 # Keep data processing near data sources
-kubectl mtv create plan data-locality \
+kubectl mtv create plan --name data-locality \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(data-region=us-east) on region" \
   --vms "data-processor-01,analytics-engine"
 
 # Prefer regional processing for performance
-kubectl mtv create plan regional-processing \
+kubectl mtv create plan --name regional-processing \
   --source vsphere-prod \
   --target-affinity "PREFER pods(region=us-west) on region weight=95" \
   --vms "west-coast-analytics,regional-cache"
@@ -311,14 +311,14 @@ kubectl mtv create plan regional-processing \
 
 ```bash
 # Primary database: require dedicated nodes
-kubectl mtv create plan db-primary \
+kubectl mtv create plan --name db-primary \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(node-type=database) on node" \
   --target-node-selector "dedicated=database" \
   --vms "postgres-primary"
 
 # Replica databases: avoid primary, prefer database nodes
-kubectl mtv create plan db-replicas \
+kubectl mtv create plan --name db-replicas \
   --source vsphere-prod \
   --target-affinity "AVOID pods(role=primary) on node" \
   --target-node-selector "node-type=database" \
@@ -329,21 +329,21 @@ kubectl mtv create plan db-replicas \
 
 ```bash
 # Web tier: distribute across zones, avoid other web servers
-kubectl mtv create plan web-tier \
+kubectl mtv create plan --name web-tier \
   --source vsphere-prod \
   --target-affinity "AVOID pods(tier=web) on node" \
   --target-labels "tier=web,layer=frontend" \
   --vms "web-server-01,web-server-02,web-server-03"
 
 # App tier: prefer near web tier, avoid intensive workloads
-kubectl mtv create plan app-tier \
+kubectl mtv create plan --name app-tier \
   --source vsphere-prod \
   --target-affinity "PREFER pods(tier=web) on zone weight=80" \
   --target-labels "tier=app,layer=business" \
   --vms "app-server-01,app-server-02"
 
 # Data tier: require dedicated storage nodes
-kubectl mtv create plan data-tier \
+kubectl mtv create plan --name data-tier \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(storage=dedicated) on node" \
   --target-node-selector "storage=high-performance" \
@@ -357,7 +357,7 @@ kubectl mtv create plan data-tier \
 
 ```bash
 # East region deployment
-kubectl mtv create plan east-region \
+kubectl mtv create plan --name east-region \
   --source vsphere-east \
   --target-affinity "REQUIRE pods(region=east) on region" \
   --target-node-selector "zone=us-east-1" \
@@ -366,7 +366,7 @@ kubectl mtv create plan east-region \
   --vms "east-web-01,east-api-01,east-cache-01"
 
 # West region deployment with cross-region anti-affinity
-kubectl mtv create plan west-region \
+kubectl mtv create plan --name west-region \
   --source vsphere-west \
   --target-affinity "AVOID pods(region=east) on region" \
   --target-node-selector "zone=us-west-1" \
@@ -379,7 +379,7 @@ kubectl mtv create plan west-region \
 
 ```bash
 # High-performance database with strict placement
-kubectl mtv create plan performance-db \
+kubectl mtv create plan --name performance-db \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(storage=nvme) on node" \
   --target-node-selector "performance=extreme,storage=nvme,cpu=high" \
@@ -388,7 +388,7 @@ kubectl mtv create plan performance-db \
   --vms "trading-db-primary"
 
 # Application servers near performance database
-kubectl mtv create plan performance-apps \
+kubectl mtv create plan --name performance-apps \
   --source vsphere-prod \
   --target-affinity "PREFER pods(app=trading-db) on zone weight=95" \
   --target-node-selector "performance=high,latency=low" \
@@ -401,7 +401,7 @@ kubectl mtv create plan performance-apps \
 
 ```bash
 # Secure workloads on dedicated nodes
-kubectl mtv create plan secure-workloads \
+kubectl mtv create plan --name secure-workloads \
   --source vsphere-security \
   --target-affinity "REQUIRE pods(security=dedicated) on node" \
   --target-node-selector "security=restricted,isolation=physical" \
@@ -410,7 +410,7 @@ kubectl mtv create plan secure-workloads \
   --vms "patient-data-vm,financial-processor"
 
 # Avoid co-location with non-secure workloads
-kubectl mtv create plan security-isolation \
+kubectl mtv create plan --name security-isolation \
   --source vsphere-security \
   --target-affinity "AVOID pods(security!=restricted) on node" \
   --target-node-selector "security=restricted" \
@@ -422,24 +422,24 @@ kubectl mtv create plan security-isolation \
 
 ```bash
 # Development VMs with relaxed constraints
-kubectl mtv create plan dev-environment \
+kubectl mtv create plan --name dev-environment \
   --source vsphere-dev \
   --target-affinity "PREFER pods(environment=dev) on zone weight=50" \
   --target-node-selector "environment=dev" \
   --target-labels "environment=dev,lifecycle=temporary,cost-optimize=true" \
   --target-power-state off \
   --vms "dev-web-01,dev-api-01,dev-db-01" \
-  -n development
+  --namespace development
 
 # Test VMs isolated from production
-kubectl mtv create plan test-isolation \
+kubectl mtv create plan --name test-isolation \
   --source vsphere-test \
   --target-affinity "AVOID pods(environment=production) on zone" \
   --target-node-selector "environment=test" \
   --target-labels "environment=test,temporary=true" \
   --target-power-state off \
   --vms "test-suite-01,load-test-vm" \
-  -n testing
+  --namespace testing
 ```
 
 ## Integration with PlanVMS Format
@@ -465,7 +465,7 @@ Target placement settings can be combined with individual VM customization:
 
 ```bash
 # Plan-level settings apply to all VMs
-kubectl mtv create plan database-cluster \
+kubectl mtv create plan --name database-cluster \
   --source vsphere-prod \
   --target-affinity "REQUIRE pods(storage=database) on node" \
   --target-node-selector "dedicated=database" \
@@ -495,7 +495,7 @@ kubectl get pods -o wide --show-labels | grep "app=database"
 
 ```bash
 # Test KARL rule parsing (requires migration plan creation)
-kubectl mtv create plan affinity-test \
+kubectl mtv create plan --name affinity-test \
   --source vsphere-test \
   --target-affinity "REQUIRE pods(app=test) on node" \
   --vms "test-vm-01" \
@@ -568,7 +568,7 @@ kubectl label node worker-node-01 storage=ssd zone=east
 
 ```bash
 # Enable verbose logging for plan creation
-kubectl mtv create plan debug-target \
+kubectl mtv create plan --name debug-target \
   --target-affinity "REQUIRE pods(app=debug) on node" \
   --target-node-selector "debug=true" \
   -v=2
@@ -587,7 +587,7 @@ kubectl get vm debug-vm -o yaml | grep -A20 spec
 #### Network Locality
 ```bash
 # Co-locate network-intensive applications
-kubectl mtv create plan network-locality \
+kubectl mtv create plan --name network-locality \
   --target-affinity "REQUIRE pods(app=network-storage) on node" \
   --vms "high-bandwidth-app"
 ```
@@ -595,7 +595,7 @@ kubectl mtv create plan network-locality \
 #### Storage Locality
 ```bash
 # Place VMs near storage controllers
-kubectl mtv create plan storage-locality \
+kubectl mtv create plan --name storage-locality \
   --target-affinity "PREFER pods(app=ceph-osd) on node weight=90" \
   --vms "storage-intensive-vm"
 ```
@@ -603,7 +603,7 @@ kubectl mtv create plan storage-locality \
 #### CPU/Memory Optimization
 ```bash
 # Distribute CPU-intensive workloads
-kubectl mtv create plan cpu-distribution \
+kubectl mtv create plan --name cpu-distribution \
   --target-affinity "AVOID pods(cpu-usage=high) on node" \
   --vms "cpu-intensive-01,cpu-intensive-02"
 ```

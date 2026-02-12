@@ -375,7 +375,7 @@ EOF
 ```bash
 # For containerized kubectl-mtv usage
 docker run -e MTV_VDDK_INIT_IMAGE=quay.io/your-registry/vddk:8.0.1 \
-  kubectl-mtv-image create provider vsphere-prod --type vsphere
+  kubectl-mtv-image create provider --name vsphere-prod --type vsphere
 
 # In Kubernetes pods
 apiVersion: v1
@@ -399,7 +399,7 @@ else
 fi
 
 # Test with provider creation (should use default image)
-kubectl mtv create provider vsphere-test --type vsphere \
+kubectl mtv create provider --name vsphere-test --type vsphere \
   --url https://vcenter.test.com/sdk \
   --username admin \
   --password password123 \
@@ -414,7 +414,7 @@ When `MTV_VDDK_INIT_IMAGE` is set, providers automatically use the VDDK image:
 
 ```bash
 # This will automatically use the VDDK image from MTV_VDDK_INIT_IMAGE
-kubectl mtv create provider vsphere-auto --type vsphere \
+kubectl mtv create provider --name vsphere-auto --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourPassword
@@ -426,7 +426,7 @@ Override the default VDDK image per provider:
 
 ```bash
 # Use specific VDDK image for this provider
-kubectl mtv create provider vsphere-custom --type vsphere \
+kubectl mtv create provider --name vsphere-custom --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourPassword \
@@ -439,7 +439,7 @@ Enable advanced VDDK optimization features:
 
 ```bash
 # Provider with VDDK AIO optimization
-kubectl mtv create provider vsphere-optimized --type vsphere \
+kubectl mtv create provider --name vsphere-optimized --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourPassword \
@@ -447,7 +447,7 @@ kubectl mtv create provider vsphere-optimized --type vsphere \
   --use-vddk-aio-optimization
 
 # Provider with custom VDDK buffer settings
-kubectl mtv create provider vsphere-tuned --type vsphere \
+kubectl mtv create provider --name vsphere-tuned --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourPassword \
@@ -517,7 +517,7 @@ export MTV_VDDK_INIT_IMAGE=harbor.company.com/migration/vddk:8.0.1
 echo 'export MTV_VDDK_INIT_IMAGE=harbor.company.com/migration/vddk:8.0.1' >> ~/.bashrc
 
 # Step 4: Create optimized vSphere provider (will use global VDDK image from controller)
-kubectl mtv create provider vsphere-production --type vsphere \
+kubectl mtv create provider --name vsphere-production --type vsphere \
   --url https://vcenter.prod.company.com/sdk \
   --username svc-migration@vsphere.local \
   --password $(cat /secure/vsphere-password) \
@@ -526,7 +526,7 @@ kubectl mtv create provider vsphere-production --type vsphere \
   --vddk-buf-count 16
 
 # Step 5: Verify VDDK integration
-kubectl mtv describe provider vsphere-production | grep -i vddk
+kubectl mtv describe provider --name vsphere-production | grep -i vddk
 
 # Step 6: Verify ForkliftController configuration
 kubectl get forkliftcontroller forklift-controller -n openshift-mtv \
@@ -592,13 +592,13 @@ kubectl mtv create vddk-image \
   --push
 
 # Create test provider with debug image
-kubectl mtv create provider vsphere-debug --type vsphere \
+kubectl mtv create provider --name vsphere-debug --type vsphere \
   --url https://vcenter-test.internal/sdk \
   --username administrator@vsphere.local \
   --password TestPassword \
   --vddk-init-image localhost:5000/vddk:debug \
   --provider-insecure-skip-tls \
-  -n testing
+  --namespace testing
 ```
 
 ## Advanced VDDK Configuration
@@ -650,7 +650,7 @@ kubectl exec -it vddk-pod -- netstat -i
 
 ```bash
 # Apply tuning based on VM size
-kubectl mtv create provider vsphere-large-vms --type vsphere \
+kubectl mtv create provider --name vsphere-large-vms --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username admin \
   --password password \
@@ -666,7 +666,7 @@ For compatible storage arrays, enable offloading:
 
 ```bash
 # Provider with storage array offloading
-kubectl mtv create provider vsphere-offload --type vsphere \
+kubectl mtv create provider --name vsphere-offload --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username admin \
   --password password \
@@ -674,7 +674,7 @@ kubectl mtv create provider vsphere-offload --type vsphere \
   --use-vddk-aio-optimization
 
 # Use with storage mapping that supports offloading
-kubectl mtv create mapping storage offload-mapping \
+kubectl mtv create mapping storage --name offload-mapping \
   --source vsphere-offload \
   --target openshift \
   --storage-pairs "datastore1:fast-ssd;offloadPlugin=vsphere;offloadVendor=flashsystem"

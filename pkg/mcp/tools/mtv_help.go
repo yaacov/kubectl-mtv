@@ -10,12 +10,6 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/mcp/util"
 )
 
-// helpPosArg holds positional arg metadata extracted from help --machine responses.
-type helpPosArg struct {
-	name     string
-	required bool
-}
-
 // MTVHelpInput represents the input for the mtv_help tool.
 type MTVHelpInput struct {
 	// Command is the kubectl-mtv command or topic to get help for.
@@ -39,7 +33,7 @@ Topics:
 
 IMPORTANT: Call mtv_help("tsl") before writing inventory queries to learn available fields and syntax.
 
-Output: Returns command flags, usage, examples, and positional args as structured data.`,
+Output: Returns command flags, usage, and examples as structured data.`,
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -140,23 +134,6 @@ func convertCommandToMCPStyle(cmd map[string]interface{}) {
 		return
 	}
 
-	// Build positional arg metadata: name -> required
-	var posArgs []helpPosArg
-	if rawArgs, ok := cmd["positional_args"].([]interface{}); ok {
-		for _, rawArg := range rawArgs {
-			if arg, ok := rawArg.(map[string]interface{}); ok {
-				name, _ := arg["name"].(string)
-				required, _ := arg["required"].(bool)
-				if name != "" {
-					posArgs = append(posArgs, helpPosArg{
-						name:     strings.ToLower(strings.TrimSuffix(name, "...")),
-						required: required,
-					})
-				}
-			}
-		}
-	}
-
 	// Build flag shorthand -> long name mapping
 	shortToLong := make(map[string]string)
 	if rawFlags, ok := cmd["flags"].([]interface{}); ok {
@@ -172,22 +149,7 @@ func convertCommandToMCPStyle(cmd map[string]interface{}) {
 	}
 
 	// Replace "usage" with MCP-style call pattern
-	if len(posArgs) > 0 {
-		var argParts []string
-		for _, a := range posArgs {
-			if a.required {
-				argParts = append(argParts, fmt.Sprintf("%s: \"...\"", a.name))
-			}
-		}
-		flagStr := strings.Join(argParts, ", ")
-		if flagStr != "" {
-			cmd["usage"] = fmt.Sprintf("{command: \"%s\", flags: {%s, ...}}", pathString, flagStr)
-		} else {
-			cmd["usage"] = fmt.Sprintf("{command: \"%s\", flags: {...}}", pathString)
-		}
-	} else {
-		cmd["usage"] = fmt.Sprintf("{command: \"%s\", flags: {...}}", pathString)
-	}
+	cmd["usage"] = fmt.Sprintf("{command: \"%s\", flags: {...}}", pathString)
 
 	// Convert examples from CLI to MCP style
 	if rawExamples, ok := cmd["examples"].([]interface{}); ok {
@@ -200,7 +162,7 @@ func convertCommandToMCPStyle(cmd map[string]interface{}) {
 			if cliCmd == "" {
 				continue
 			}
-			mcpCall := convertCLIExampleToMCP(cliCmd, pathString, posArgs, shortToLong)
+			mcpCall := convertCLIExampleToMCP(cliCmd, pathString, shortToLong)
 			if mcpCall != "" {
 				ex["command"] = mcpCall
 				rawExamples[i] = ex
@@ -214,9 +176,9 @@ func convertCommandToMCPStyle(cmd map[string]interface{}) {
 var cliContinuationRegex = regexp.MustCompile(`\s*\\\s*(?:#[^\n]*)?\n\s*(?:#\s*)?`)
 
 // convertCLIExampleToMCP converts a CLI example string to an MCP-style JSON call.
-// Example: "kubectl-mtv get inventory vm vsphere-prod -q \"where name ~= 'web-.*'\""
+// Example: "kubectl-mtv get inventory vm --provider vsphere-prod --query \"where name ~= 'web-.*'\""
 // becomes: {command: "get inventory vm", flags: {provider: "vsphere-prod", query: "where name ~= 'web-.*'"}}
-func convertCLIExampleToMCP(cliCmd string, pathString string, posArgs []helpPosArg, shortToLong map[string]string) string {
+func convertCLIExampleToMCP(cliCmd string, pathString string, shortToLong map[string]string) string {
 	// Clean up multi-line examples (backslash continuations with # comments)
 	cliCmd = cliContinuationRegex.ReplaceAllString(cliCmd, " ")
 	cliCmd = strings.TrimSpace(cliCmd)
@@ -241,30 +203,12 @@ func convertCLIExampleToMCP(cliCmd string, pathString string, posArgs []helpPosA
 	// Tokenize the remaining string, respecting quotes
 	tokens := tokenizeCLIArgs(rest)
 
-	// Extract positional args (consume tokens from the front that are not flags)
+	// Parse tokens as flags (no positional args — all args are flags now)
 	flags := make(map[string]string)
-	posIdx := 0
-	var remainingTokens []string
-	for _, tok := range tokens {
-		if strings.HasPrefix(tok, "-") {
-			// This and all following are flags
-			remainingTokens = append(remainingTokens, tok)
-			continue
-		}
-		if posIdx < len(posArgs) && len(remainingTokens) == 0 {
-			// Map positional arg to its flag name
-			flags[posArgs[posIdx].name] = tok
-			posIdx++
-		} else {
-			remainingTokens = append(remainingTokens, tok)
-		}
-	}
-
-	// Parse remaining tokens as flags
-	for i := 0; i < len(remainingTokens); i++ {
-		tok := remainingTokens[i]
+	for i := 0; i < len(tokens); i++ {
+		tok := tokens[i]
 		if !strings.HasPrefix(tok, "-") {
-			continue
+			continue // skip stray tokens
 		}
 
 		// Handle --flag=value
@@ -287,8 +231,8 @@ func convertCLIExampleToMCP(cliCmd string, pathString string, posArgs []helpPosA
 		}
 
 		// Check if next token is a value (not another flag)
-		if i+1 < len(remainingTokens) && !strings.HasPrefix(remainingTokens[i+1], "-") {
-			flags[name] = remainingTokens[i+1]
+		if i+1 < len(tokens) && !strings.HasPrefix(tokens[i+1], "-") {
+			flags[name] = tokens[i+1]
 			i++ // skip value
 		} else {
 			// Boolean flag

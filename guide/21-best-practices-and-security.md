@@ -36,7 +36,7 @@ Implement systematic testing approaches:
 
 ```bash
 # 1. Single VM Test Plan
-kubectl mtv create plan test-single \
+kubectl mtv create plan --name test-single \
   --source test-provider \
   --target test-cluster \
   --vms "small-test-vm" \
@@ -44,7 +44,7 @@ kubectl mtv create plan test-single \
   --migration-type cold
 
 # 2. Small Batch Test Plan
-kubectl mtv create plan test-batch \
+kubectl mtv create plan --name test-batch \
   --source test-provider \
   --target test-cluster \
   --vms "test-vm-01,test-vm-02,test-vm-03" \
@@ -52,7 +52,7 @@ kubectl mtv create plan test-batch \
   --migration-type warm
 
 # 3. Production Pilot Plan
-kubectl mtv create plan pilot-production \
+kubectl mtv create plan --name pilot-production \
   --source prod-provider \
   --target prod-cluster \
   --vms "non-critical-app-01" \
@@ -61,7 +61,7 @@ kubectl mtv create plan pilot-production \
   --convertor-node-selector "migration=true"
 
 # 4. Full Production Plan (after validation)
-kubectl mtv create plan production-migration \
+kubectl mtv create plan --name production-migration \
   --source prod-provider \
   --target prod-cluster \
   --vms @validated-production-vms.yaml \
@@ -77,17 +77,17 @@ kubectl mtv create plan production-migration \
 
 ```bash
 # Validate plan configuration before execution
-kubectl mtv describe plan test-plan --with-vms
+kubectl mtv describe plan --name test-plan --with-vms
 
 # Check resource availability
 kubectl describe nodes | grep -A5 "Allocatable"
 
 # Verify mapping configurations
-kubectl mtv describe mapping network test-network-map
-kubectl mtv describe mapping storage test-storage-map
+kubectl mtv describe mapping network --name test-network-map
+kubectl mtv describe mapping storage --name test-storage-map
 
 # Test provider connectivity
-kubectl mtv get inventory vm test-provider -v=2
+kubectl mtv get inventory vms --provider test-provider -v=2
 
 # Validate target namespace and permissions
 kubectl auth can-i create vm -n test-migrations
@@ -99,7 +99,7 @@ kubectl auth can-i create vm -n test-migrations
 
 ```bash
 # Production warm migration with strategic scheduling
-kubectl mtv create plan production-warm \
+kubectl mtv create plan --name production-warm \
   --source vsphere-prod \
   --target openshift-prod \
   --migration-type warm \
@@ -112,14 +112,14 @@ kubectl mtv create plan production-warm \
   --storage-mapping production-storage
 
 # Start with cutover scheduled for maintenance window
-kubectl mtv start plan production-warm \
+kubectl mtv start plan --name production-warm \
   --cutover "$(date -d 'next Sunday 2:00 AM' --iso-8601=seconds)"
 
 # Monitor warm migration progress
-kubectl mtv get plan production-warm -w
+kubectl mtv get plan --name production-warm --watch
 
 # Adjust cutover if needed
-kubectl mtv cutover plan production-warm \
+kubectl mtv cutover plan --name production-warm \
   --cutover "$(date -d '+30 minutes' --iso-8601=seconds)"
 ```
 
@@ -136,25 +136,25 @@ kubectl mtv cutover plan production-warm \
 
 ```bash
 # Archive completed migrations for audit trail
-kubectl mtv archive plan completed-q1-migration
-kubectl mtv archive plan successful-pilot-test
+kubectl mtv archive plan --name completed-q1-migration
+kubectl mtv archive plan --name successful-pilot-test
 
 # Bulk archive old completed plans
-for plan in $(kubectl mtv get plans -o json | jq -r '.items[] | select(.status.phase == "Succeeded" and (.metadata.creationTimestamp | fromdateiso8601) < (now - 90*24*3600)) | .metadata.name'); do
+for plan in $(kubectl mtv get plans --output json | jq -r '.items[] | select(.status.phase == "Succeeded" and (.metadata.creationTimestamp | fromdateiso8601) < (now - 90*24*3600)) | .metadata.name'); do
   echo "Archiving old plan: $plan"
-  kubectl mtv archive plan "$plan"
+  kubectl mtv archive plan --name "$plan"
 done
 
 # Maintain active plans, archive obsolete ones
 kubectl mtv get plans | grep -E "(Failed|Cancelled)" | awk '{print $1}' | \
-  xargs -I {} kubectl mtv archive plan {}
+  xargs -I {} kubectl mtv archive plan --name {}
 ```
 
 #### Plan Template Management
 
 ```bash
 # Create reusable plan templates
-kubectl mtv create plan template-web-tier \
+kubectl mtv create plan --name template-web-tier \
   --source vsphere-template \
   --migration-type warm \
   --target-namespace web-applications \
@@ -165,11 +165,11 @@ kubectl mtv create plan template-web-tier \
   --vms placeholder-vm
 
 # Archive template for reuse
-kubectl mtv archive plan template-web-tier
+kubectl mtv archive plan --name template-web-tier
 
 # Clone template for actual use
-kubectl mtv unarchive plan template-web-tier
-kubectl mtv patch plan template-web-tier \
+kubectl mtv unarchive plan --name template-web-tier
+kubectl mtv patch plan --plan-name template-web-tier \
   --description "Q2 2024 web tier migration" \
   --vms "web-01,web-02,web-03"
 ```
@@ -182,7 +182,7 @@ kubectl mtv patch plan template-web-tier \
 
 ```bash
 # Use strong authentication credentials
-kubectl mtv create provider secure-vsphere \
+kubectl mtv create provider --name secure-vsphere \
   --type vsphere \
   --url https://vcenter.secure.com/sdk \
   --username "migration_service@secure.local" \
@@ -191,10 +191,10 @@ kubectl mtv create provider secure-vsphere \
   --vddk-init-image registry.secure.com/vddk:8.0.2
 
 # Verify certificate validation is enabled
-kubectl mtv describe provider secure-vsphere | grep -i "skip.*tls\|insecure"
+kubectl mtv describe provider --name secure-vsphere | grep -i "skip.*tls\|insecure"
 
 # Rotate credentials regularly
-kubectl mtv patch provider secure-vsphere \
+kubectl mtv patch provider --name secure-vsphere \
   --password "$(openssl rand -base64 32)"
 ```
 
@@ -226,7 +226,7 @@ stringData:
 EOF
 
 # Reference secure secret in provider
-kubectl mtv create provider secure-vsphere \
+kubectl mtv create provider --name secure-vsphere \
   --type vsphere \
   --url https://vcenter.company.com/sdk \
   --existing-secret vsphere-credentials \
@@ -239,7 +239,7 @@ kubectl mtv create provider secure-vsphere \
 
 ```bash
 # Always validate certificates in production
-kubectl mtv create provider production-vsphere \
+kubectl mtv create provider --name production-vsphere \
   --type vsphere \
   --url https://vcenter.prod.company.com/sdk \
   --username "migration@company.com" \
@@ -248,7 +248,7 @@ kubectl mtv create provider production-vsphere \
   # Note: No --insecure-skip-tls flag
 
 # For development only, use insecure connections with clear labeling
-kubectl mtv create provider dev-vsphere \
+kubectl mtv create provider --name dev-vsphere \
   --type vsphere \
   --url https://vcenter-dev.company.com/sdk \
   --username "dev-migration@company.com" \
@@ -273,7 +273,7 @@ openssl s_client -connect vcenter.company.com:443 -showcerts < /dev/null 2>/dev/
 openssl verify -CAfile company-ca.pem vcenter-cert.pem
 
 # Use certificate bundle for provider
-kubectl mtv create provider verified-vsphere \
+kubectl mtv create provider --name verified-vsphere \
   --type vsphere \
   --url https://vcenter.company.com/sdk \
   --username "migration@company.com" \
@@ -369,18 +369,18 @@ subjects:
 ```bash
 # Use specific filters instead of broad queries
 # Good: Specific criteria
-kubectl mtv get inventory vm vsphere-prod \
+kubectl mtv get inventory vms --provider vsphere-prod \
   --query "where powerState = 'poweredOn' and memory.size > 8192 and name like 'prod-%'"
 
 # Avoid: Broad unfiltered queries
-# kubectl mtv get inventory vm vsphere-prod  # Returns everything
+# kubectl mtv get inventory vms --provider vsphere-prod  # Returns everything
 
 # Good: Targeted network queries
-kubectl mtv get inventory network vsphere-prod \
+kubectl mtv get inventory networks --provider vsphere-prod \
   --query "where name ~= '.*production.*' and type != 'dvPortGroup'"
 
 # Good: Storage queries with size filters
-kubectl mtv get inventory storage vsphere-prod \
+kubectl mtv get inventory storages --provider vsphere-prod \
   --query "where capacity > 1073741824 and type = 'VMFS'"  # > 1GB
 ```
 
@@ -388,15 +388,15 @@ kubectl mtv get inventory storage vsphere-prod \
 
 ```bash
 # Use exact matches when possible (more efficient)
-kubectl mtv get inventory vm vsphere-prod \
+kubectl mtv get inventory vms --provider vsphere-prod \
   --query "where name = 'specific-vm-name'"
 
 # Use LIKE with anchored patterns
-kubectl mtv get inventory vm vsphere-prod \
+kubectl mtv get inventory vms --provider vsphere-prod \
   --query "where name like 'prod-web-%'"  # Anchored prefix
 
 # Combine filters efficiently
-kubectl mtv get inventory vm vsphere-prod \
+kubectl mtv get inventory vms --provider vsphere-prod \
   --query "where powerState = 'poweredOn' and guestOS like 'linux%' and memory.size between 4096 and 16384"
 ```
 
@@ -406,22 +406,22 @@ kubectl mtv get inventory vm vsphere-prod \
 
 ```bash
 # Export large queries to files for processing
-kubectl mtv get inventory vm large-provider \
+kubectl mtv get inventory vms --provider large-provider \
   --query "where tags.category = 'production'" \
-  -o planvms > production-vms.yaml
+  --output planvms > production-vms.yaml
 
 # Use pagination for massive datasets
-kubectl mtv get inventory vm huge-provider \
+kubectl mtv get inventory vms --provider huge-provider \
   --query "where name ~= '^[a-m].*'"  # First half alphabetically
 
-kubectl mtv get inventory vm huge-provider \
+kubectl mtv get inventory vms --provider huge-provider \
   --query "where name ~= '^[n-z].*'"  # Second half
 
 # Process results in manageable chunks
 for prefix in {a..z}; do
-  kubectl mtv get inventory vm large-provider \
+  kubectl mtv get inventory vms --provider large-provider \
     --query "where name like '${prefix}%'" \
-    -o planvms > "vms-${prefix}.yaml"
+    --output planvms > "vms-${prefix}.yaml"
 done
 ```
 
@@ -601,12 +601,12 @@ spec:
 
 ```bash
 # Ensure all provider communications use TLS
-kubectl mtv get providers -o yaml | grep -B5 -A5 "insecureSkipTLS: true" || echo "All providers use TLS"
+kubectl mtv get providers --output yaml | grep -B5 -A5 "insecureSkipTLS: true" || echo "All providers use TLS"
 
 # Verify certificate validation
-for provider in $(kubectl mtv get providers -o jsonpath='{.items[*].metadata.name}'); do
+for provider in $(kubectl mtv get providers --output jsonpath='{.items[*].metadata.name}'); do
   echo "Provider: $provider"
-  kubectl mtv describe provider "$provider" | grep -i "certificate\|tls\|insecure"
+  kubectl mtv describe provider --name "$provider" | grep -i "certificate\|tls\|insecure"
 done
 ```
 
@@ -699,7 +699,7 @@ spec:
 
 ```bash
 # Create convertor pods with security context
-kubectl mtv create plan secure-migration \
+kubectl mtv create plan --name secure-migration \
   --source vsphere-secure \
   --convertor-node-selector "security=restricted,taint=dedicated" \
   --convertor-labels "security-context=restricted,compliance=required" \
@@ -730,7 +730,7 @@ cat <<EOF > migration-documentation.md
 - **Risk Assessment**: Medium (tested in staging)
 
 ## VMs Included:
-$(kubectl mtv get plan production-q4-migration -o jsonpath='{.spec.vms[*].name}' | tr ' ' '\n' | sort)
+$(kubectl mtv get plan --name production-q4-migration --output jsonpath='{.spec.vms[*].name}' | tr ' ' '\n' | sort)
 
 ## Security Considerations:
 - TLS verification enabled for all providers

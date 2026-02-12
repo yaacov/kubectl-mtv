@@ -31,7 +31,7 @@ type Command struct {
 	// LongDescription is the extended description with details
 	LongDescription string `json:"long_description,omitempty"`
 
-	// Usage is the usage pattern (e.g., "kubectl-mtv get inventory vm PROVIDER [flags]")
+	// Usage is the usage pattern (e.g., "kubectl-mtv get inventory vm [flags]")
 	Usage string `json:"usage"`
 
 	// Aliases are alternative names for the command
@@ -40,14 +40,8 @@ type Command struct {
 	// Category is one of: "read", "write", "admin"
 	Category string `json:"category"`
 
-	// Providers lists which providers this command applies to (empty = all)
-	Providers []string `json:"providers,omitempty"`
-
 	// Flags are the command-specific flags
 	Flags []Flag `json:"flags"`
-
-	// PositionalArgs are required/optional positional arguments
-	PositionalArgs []Arg `json:"positional_args,omitempty"`
 
 	// Examples are usage examples from the CLI help
 	Examples []Example `json:"examples,omitempty"`
@@ -91,24 +85,6 @@ type Flag struct {
 
 	// Hidden indicates if the flag is hidden from normal help
 	Hidden bool `json:"hidden,omitempty"`
-
-	// LLMRelevant indicates if the flag should be included in AI/MCP tool descriptions
-	LLMRelevant bool `json:"llm_relevant,omitempty"`
-}
-
-// Arg represents a positional argument.
-type Arg struct {
-	// Name is the argument name (usually UPPERCASE)
-	Name string `json:"name"`
-
-	// Description is the argument description
-	Description string `json:"description"`
-
-	// Required indicates if the argument is required
-	Required bool `json:"required"`
-
-	// Variadic indicates if multiple values are accepted
-	Variadic bool `json:"variadic,omitempty"`
 }
 
 // CommandPath returns the full command path as a string (e.g., "get inventory vm")
@@ -122,18 +98,4 @@ func (c *Command) CommandPath() string {
 // PathKey returns a key suitable for map lookups (e.g., "get/inventory/vm")
 func (c *Command) PathKey() string {
 	return strings.Join(c.Path, "/")
-}
-
-// PositionalArgsString returns positional args as a formatted string for display.
-// Example: "[NAME]" or "PROVIDER"
-func (c *Command) PositionalArgsString() string {
-	var args []string
-	for _, arg := range c.PositionalArgs {
-		if arg.Required {
-			args = append(args, arg.Name)
-		} else {
-			args = append(args, "["+arg.Name+"]")
-		}
-	}
-	return strings.Join(args, " ")
 }

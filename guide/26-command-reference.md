@@ -26,69 +26,74 @@ These flags are available for all `kubectl-mtv` commands:
 
 Get various MTV resources including plans, providers, mappings, and inventory.
 
-#### get plan [PLAN_NAME]
+#### get plan [--name PLAN_NAME]
 
 Retrieve migration plans.
 
 ```bash
-kubectl mtv get plan [plan-name] [flags]
+kubectl mtv get plan [--name plan-name] [flags]
 kubectl mtv get plans [flags]  # Alias
 ```
 
 **Flags:**
+- `--name, -M`: Plan name (optional, omit to list all)
 - `--output, -o`: Output format (table, json, yaml)
 - `--watch, -w`: Watch for changes
 - `--inventory-url, -i`: Base URL for the inventory service
 
-#### get provider [PROVIDER_NAME]
+#### get provider [--name PROVIDER_NAME]
 
 Retrieve migration providers.
 
 ```bash
-kubectl mtv get provider [provider-name] [flags]
+kubectl mtv get provider [--name provider-name] [flags]
 kubectl mtv get providers [flags]  # Alias
 ```
 
 **Flags:**
+- `--name, -M`: Provider name (optional, omit to list all)
 - `--output, -o`: Output format (table, json, yaml)
 - `--watch, -w`: Watch for changes
 
-#### get mapping [MAPPING_NAME]
+#### get mapping [--name MAPPING_NAME]
 
 Retrieve network and storage mappings.
 
 ```bash
-kubectl mtv get mapping [mapping-name] [flags]
+kubectl mtv get mapping [--name mapping-name] [flags]
 kubectl mtv get mappings [flags]  # Alias
 ```
 
 **Flags:**
+- `--name, -M`: Mapping name (optional, omit to list all)
 - `--output, -o`: Output format (table, json, yaml)
 - `--watch, -w`: Watch for changes
 
-#### get host [HOST_NAME]
+#### get host [--name HOST_NAME]
 
 Retrieve migration hosts (ESXi hosts for vSphere).
 
 ```bash
-kubectl mtv get host [host-name] [flags]
-kubectl mtv get hosts [flags]  # Alias
+kubectl mtv get hosts [flags]                    # List all hosts
+kubectl mtv get host --name <host-name> [flags]  # Get specific host
 ```
 
 **Flags:**
+- `--name, -M`: Host name (optional, omit to list all)
 - `--output, -o`: Output format (table, json, yaml)
 - `--watch, -w`: Watch for changes
 
-#### get hook [HOOK_NAME]
+#### get hook [--name HOOK_NAME]
 
 Retrieve migration hooks.
 
 ```bash
-kubectl mtv get hook [hook-name] [flags]
-kubectl mtv get hooks [flags]  # Alias
+kubectl mtv get hooks [flags]                    # List all hooks
+kubectl mtv get hook --name <hook-name> [flags]  # Get specific hook
 ```
 
 **Flags:**
+- `--name, -M`: Hook name (optional, omit to list all)
 - `--output, -o`: Output format (table, json, yaml)
 - `--watch, -w`: Watch for changes
 
@@ -96,16 +101,16 @@ kubectl mtv get hooks [flags]  # Alias
 
 Get inventory resources from providers using the Tree Search Language (TSL) for advanced filtering.
 
-#### get inventory vm PROVIDER_NAME
+#### get inventory vms --provider PROVIDER_NAME
 
 Retrieve virtual machines from provider inventory.
 
 ```bash
-kubectl mtv get inventory vm <provider-name> [flags]
-kubectl mtv get inventory vms <provider-name> [flags]  # Alias
+kubectl mtv get inventory vms --provider <provider-name> [flags]
 ```
 
 **Flags:**
+- `--provider, -p`: Provider name (required)
 - `--query, -q`: [TSL](/kubectl-mtv/27-tsl-tree-search-language-reference) query filter (e.g., "where powerState = 'poweredOn'")
 - `--output, -o`: Output format (table, json, yaml, planvms)
 - `--watch, -w`: Watch for changes
@@ -114,119 +119,119 @@ kubectl mtv get inventory vms <provider-name> [flags]  # Alias
 **Examples:**
 ```bash
 # List all VMs
-kubectl mtv get inventory vm my-vsphere-provider
+kubectl mtv get inventory vms --provider my-vsphere-provider
 
 # Filter powered-on VMs with more than 4GB RAM
-kubectl mtv get inventory vm my-vsphere-provider -q "where powerState = 'poweredOn' and memory.size > 4096"
+kubectl mtv get inventory vms --provider my-vsphere-provider --query "where powerState = 'poweredOn' and memory.size > 4096"
 
 # Export VMs in planvms format for migration planning
-kubectl mtv get inventory vm my-vsphere-provider -o planvms > vms.yaml
+kubectl mtv get inventory vms --provider my-vsphere-provider --output planvms > vms.yaml
 ```
 
-#### get inventory network PROVIDER_NAME
+#### get inventory networks --provider PROVIDER_NAME
 
 Retrieve networks from provider inventory.
 
 ```bash
-kubectl mtv get inventory network <provider-name> [flags]
-kubectl mtv get inventory networks <provider-name> [flags]  # Alias
+kubectl mtv get inventory networks --provider <provider-name> [flags]
 ```
 
-#### get inventory storage PROVIDER_NAME
+#### get inventory storages --provider PROVIDER_NAME
 
 Retrieve storage resources from provider inventory.
 
 ```bash
-kubectl mtv get inventory storage <provider-name> [flags]  
-kubectl mtv get inventory storages <provider-name> [flags]  # Alias
+kubectl mtv get inventory storages --provider <provider-name> [flags]
 ```
 
-#### get inventory host PROVIDER_NAME
+#### get inventory hosts --provider PROVIDER_NAME
 
 Retrieve hosts from provider inventory.
 
 ```bash
-kubectl mtv get inventory host <provider-name> [flags]
-kubectl mtv get inventory hosts <provider-name> [flags]  # Alias
+kubectl mtv get inventory hosts --provider <provider-name> [flags]
 ```
 
-#### get inventory namespace PROVIDER_NAME
+#### get inventory namespaces --provider PROVIDER_NAME
 
 Retrieve namespaces from provider inventory.
 
 ```bash
-kubectl mtv get inventory namespace <provider-name> [flags]
-kubectl mtv get inventory namespaces <provider-name> [flags]  # Alias
+kubectl mtv get inventory namespaces --provider <provider-name> [flags]
 ```
 
-All inventory subcommands support the same flags as `get inventory vm`.
+All inventory subcommands support the same flags as `get inventory vms`.
 
 ### describe - Detailed Resource Information
 
 Get detailed information about specific resources.
 
-#### describe plan PLAN_NAME
+#### describe plan --name PLAN_NAME
 
 ```bash
-kubectl mtv describe plan <plan-name> [flags]
+kubectl mtv describe plan --name <plan-name> [flags]
 ```
 
-#### describe provider PROVIDER_NAME
+#### describe provider --name PROVIDER_NAME
 
 ```bash
-kubectl mtv describe provider <provider-name> [flags]
+kubectl mtv describe provider --name <provider-name> [flags]
 ```
 
-#### describe mapping MAPPING_NAME
+#### describe mapping network --name NAME / describe mapping storage --name NAME
 
 ```bash
-kubectl mtv describe mapping <mapping-name> [flags]
+kubectl mtv describe mapping network --name <mapping-name> [flags]
+kubectl mtv describe mapping storage --name <mapping-name> [flags]
 ```
 
-#### describe host HOST_NAME
+#### describe host --name HOST_NAME
 
 ```bash
-kubectl mtv describe host <host-name> [flags]
+kubectl mtv describe host --name <host-name> [flags]
 ```
 
-#### describe hook HOOK_NAME
+#### describe hook --name HOOK_NAME
 
 ```bash
-kubectl mtv describe hook <hook-name> [flags]
+kubectl mtv describe hook --name <hook-name> [flags]
 ```
 
 ### delete - Remove Resources
 
-Delete MTV resources.
+Delete MTV resources. To delete multiple resources at once, pass a comma-separated
+list to `--name, -M` (e.g., `--name plan1,plan2,plan3`). You can also use `--names` as an
+alias for `--name`.
 
-#### delete plan PLAN_NAME
+#### delete plan --name PLAN_NAME
 
 ```bash
-kubectl mtv delete plan <plan-name> [flags]
+kubectl mtv delete plan --name <plan-name> [flags]
 ```
 
-#### delete provider PROVIDER_NAME
+#### delete provider --name PROVIDER_NAME
 
 ```bash
-kubectl mtv delete provider <provider-name> [flags]
+kubectl mtv delete provider --name <provider-name> [flags]
 ```
 
-#### delete mapping MAPPING_NAME
+#### delete mapping network --name NAME / delete mapping storage --name NAME
 
 ```bash
-kubectl mtv delete mapping <mapping-name> [flags]
+kubectl mtv delete mapping network --name <mapping-name> [flags]
+kubectl mtv delete mapping storage --name <mapping-name> [flags]
 ```
 
-#### delete host HOST_NAME
+#### delete host --name HOST_NAME
 
 ```bash
-kubectl mtv delete host <host-name> [flags]
+kubectl mtv delete host --name <host-name> [flags]
 ```
 
-#### delete hook HOOK_NAME
+#### delete hook --name HOOK_NAME
 
 ```bash
-kubectl mtv delete hook <hook-name> [flags]
+kubectl mtv delete hook --name <hook-name> [flags]
 ```
 
 ## Resource Creation Commands
@@ -235,12 +240,12 @@ kubectl mtv delete hook <hook-name> [flags]
 
 Create various MTV resources.
 
-#### create provider PROVIDER_NAME
+#### create provider --name PROVIDER_NAME
 
 Create a new migration provider.
 
 ```bash
-kubectl mtv create provider <name> [flags]
+kubectl mtv create provider --name <name> [flags]
 ```
 
 **Common Flags:**
@@ -264,30 +269,30 @@ kubectl mtv create provider <name> [flags]
 **Examples:**
 ```bash
 # vSphere provider
-kubectl mtv create provider my-vsphere --type vsphere \
+kubectl mtv create provider --name my-vsphere --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password VMware1! \
   --vddk-init-image quay.io/kubev2v/vddk:8.0.1
 
 # OpenShift provider
-kubectl mtv create provider my-openshift --type openshift \
+kubectl mtv create provider --name my-openshift --type openshift \
   --url https://api.openshift.example.com:6443 \
   --token sha256~abc123...
 
 # oVirt provider
-kubectl mtv create provider my-ovirt --type ovirt \
+kubectl mtv create provider --name my-ovirt --type ovirt \
   --url https://ovirt-engine.example.com/ovirt-engine/api \
   --username admin@internal \
   --password oVirtPassword123
 ```
 
-#### create plan PLAN_NAME
+#### create plan --name PLAN_NAME
 
 Create a new migration plan.
 
 ```bash
-kubectl mtv create plan <name> [flags]
+kubectl mtv create plan --name <name> [flags]
 ```
 
 **Provider and Mapping Flags:**
@@ -357,31 +362,31 @@ kubectl mtv create plan <name> [flags]
 **Examples:**
 ```bash
 # Simple plan with VM list
-kubectl mtv create plan my-migration \
+kubectl mtv create plan --name my-migration \
   --source my-vsphere --target my-openshift \
   --vms vm-web-01,vm-db-02,vm-app-03
 
 # Plan with query-based VM selection
-kubectl mtv create plan production-migration \
+kubectl mtv create plan --name production-migration \
   --source vsphere-prod --target openshift-prod \
   --vms "where powerState = 'poweredOn' and name like 'prod-%'" \
   --migration-type warm
 
 # Plan with storage offloading
-kubectl mtv create plan offload-migration \
+kubectl mtv create plan --name offload-migration \
   --source vsphere-datacenter --target openshift-production \
   --storage-pairs "tier1-ds:flashsystem-gold;offloadPlugin=vsphere;offloadVendor=flashsystem" \
   --offload-vsphere-username vcenter-svc@vsphere.local \
   --offload-storage-username flashsystem-admin
 ```
 
-#### create mapping MAPPING_NAME
+#### create mapping network --name NAME / create mapping storage --name NAME
 
 Create network or storage mappings.
 
 ```bash
-kubectl mtv create mapping network <name> [flags]
-kubectl mtv create mapping storage <name> [flags]
+kubectl mtv create mapping network --name <name> [flags]
+kubectl mtv create mapping storage --name <name> [flags]
 ```
 
 **Network Mapping Flags:**
@@ -404,27 +409,27 @@ kubectl mtv create mapping storage <name> [flags]
 **Examples:**
 ```bash
 # Network mapping
-kubectl mtv create mapping network prod-networks \
+kubectl mtv create mapping network --name prod-networks \
   --source vsphere-prod --target openshift-prod \
   --network-pairs "Production VLAN:prod-network,Management:mgmt-network"
 
 # Storage mapping with offloading
-kubectl mtv create mapping storage enterprise-storage \
+kubectl mtv create mapping storage --name enterprise-storage \
   --source vsphere-prod --target openshift-prod \
   --storage-pairs "premium-ds:flashsystem-tier1;offloadPlugin=vsphere;offloadVendor=flashsystem" \
   --offload-vsphere-username admin@vsphere.local
 ```
 
-#### create host HOST_NAME
+#### create host --name HOST_NAME
 
 Create migration hosts for vSphere environments.
 
 ```bash
-kubectl mtv create host <name> [flags]
+kubectl mtv create host --name <name> [flags]
 ```
 
 **Flags:**
-- `--provider`: vSphere provider name (required)
+- `--provider, -p`: vSphere provider name (required)
 - `--ip-address`: IP address for disk transfer (mutually exclusive with --network-adapter)
 - `--network-adapter`: Network adapter name to get IP from inventory (mutually exclusive with --ip-address)
 - `--secret`: Existing secret with host credentials
@@ -436,23 +441,23 @@ kubectl mtv create host <name> [flags]
 **Examples:**
 ```bash
 # Host with direct IP
-kubectl mtv create host esxi-host-01 \
+kubectl mtv create host --name esxi-host-01 \
   --provider my-vsphere-provider \
   --ip-address 192.168.1.10
 
 # Host with network adapter lookup
-kubectl mtv create host esxi-host-02 \
+kubectl mtv create host --name esxi-host-02 \
   --provider my-vsphere-provider \
   --network-adapter vmk1 \
   --username root --password ESXiPassword123
 ```
 
-#### create hook HOOK_NAME
+#### create hook --name HOOK_NAME
 
 Create migration hooks for custom automation.
 
 ```bash
-kubectl mtv create hook <name> [flags]
+kubectl mtv create hook --name <name> [flags]
 ```
 
 **Flags:**
@@ -464,11 +469,11 @@ kubectl mtv create hook <name> [flags]
 **Examples:**
 ```bash
 # Hook with inline playbook
-kubectl mtv create hook backup-hook \
+kubectl mtv create hook --name backup-hook \
   --playbook "- hosts: localhost\n  tasks:\n  - debug: msg='Backup complete'"
 
 # Hook with playbook file
-kubectl mtv create hook database-backup \
+kubectl mtv create hook --name database-backup \
   --playbook @backup-playbook.yml \
   --service-account hook-runner-sa \
   --deadline 300
@@ -506,14 +511,18 @@ kubectl mtv create vddk-image \
 
 ## Plan Lifecycle Commands
 
+Commands that accept multiple resource names use comma-separated values in `--name, -M`
+(e.g., `--name plan1,plan2,plan3`). You can also use `--names` as an alias for `--name`.
+
 ### start - Begin Migration
 
 Start migration plans.
 
-#### start plan PLAN_NAME
+#### start plan / start plans
 
 ```bash
-kubectl mtv start plan <plan-name> [plan-name2 ...] [flags]
+kubectl mtv start plan --name <plan-name> [flags]       # Start one plan
+kubectl mtv start plans --name plan1,plan2,plan3 [flags]  # Start multiple plans
 ```
 
 Start one or more migration plans.
@@ -522,22 +531,23 @@ Start one or more migration plans.
 
 Cancel running migration plans.
 
-#### cancel plan PLAN_NAME
+#### cancel plan --name PLAN_NAME
 
 ```bash
-kubectl mtv cancel plan <plan-name> [plan-name2 ...] [flags]
+kubectl mtv cancel plan --name <plan-name> [flags]
 ```
 
-Cancel one or more running migration plans.
+Cancel specific VMs in one or more running migration plans.
 
 ### cutover - Complete Warm Migration
 
 Perform cutover for warm migrations.
 
-#### cutover plan PLAN_NAME
+#### cutover plan / cutover plans
 
 ```bash
-kubectl mtv cutover plan <plan-name> [plan-name2 ...] [flags]
+kubectl mtv cutover plan --name <plan-name> [flags]      # Cutover one plan
+kubectl mtv cutover plans --name plan1,plan2 [flags]    # Cutover multiple plans
 ```
 
 Complete the cutover phase for warm migration plans.
@@ -546,25 +556,27 @@ Complete the cutover phase for warm migration plans.
 
 Archive completed migration plans.
 
-#### archive plan PLAN_NAME
+#### archive plan / archive plans
 
 ```bash
-kubectl mtv archive plan <plan-name> [plan-name2 ...] [flags]
+kubectl mtv archive plan --name <plan-name> [flags]     # Archive one plan
+kubectl mtv archive plans --name plan1,plan2 [flags]    # Archive multiple plans
 ```
 
-Archive one or more migration plans to preserve history while hiding from active lists.
+Archive one or more migration plans.
 
 ### unarchive - Restore Plans
 
 Restore archived migration plans.
 
-#### unarchive plan PLAN_NAME
+#### unarchive plan / unarchive plans
 
 ```bash
-kubectl mtv unarchive plan <plan-name> [plan-name2 ...] [flags]
+kubectl mtv unarchive plan --name <plan-name> [flags]   # Unarchive one plan
+kubectl mtv unarchive plans --name plan1,plan2 [flags]  # Unarchive multiple plans
 ```
 
-Restore one or more archived migration plans to active status.
+Restore one or more archived migration plans.
 
 ## Resource Modification Commands
 
@@ -572,12 +584,12 @@ Restore one or more archived migration plans to active status.
 
 Modify existing MTV resources.
 
-#### patch plan PLAN_NAME
+#### patch plan --plan-name PLAN_NAME
 
 Update migration plan settings.
 
 ```bash
-kubectl mtv patch plan <plan-name> [flags]
+kubectl mtv patch plan --plan-name <plan-name> [flags]
 ```
 
 **Plan-Level Flags:**
@@ -593,20 +605,20 @@ kubectl mtv patch plan <plan-name> [flags]
 **Examples:**
 ```bash
 # Change migration type
-kubectl mtv patch plan my-migration --migration-type warm
+kubectl mtv patch plan --plan-name my-migration --migration-type warm
 
 # Update placement settings
-kubectl mtv patch plan my-migration \
+kubectl mtv patch plan --plan-name my-migration \
   --target-affinity "REQUIRE pods(app=database) on node" \
   --convertor-affinity "PREFER nodes(storage=true) on node"
 ```
 
-#### patch planvm PLAN_NAME VM_NAME
+#### patch planvm --plan-name PLAN_NAME --vm-name VM_NAME
 
 Update settings for individual VMs within a plan.
 
 ```bash
-kubectl mtv patch planvm <plan-name> <vm-name> [flags]
+kubectl mtv patch planvm --plan-name <plan-name> --vm-name <vm-name> [flags]
 ```
 
 **VM-Specific Flags:**
@@ -623,23 +635,23 @@ kubectl mtv patch planvm <plan-name> <vm-name> [flags]
 **Examples:**
 ```bash
 # Customize VM name and instance type
-kubectl mtv patch planvm my-migration vm-web-01 \
+kubectl mtv patch planvm --plan-name my-migration --vm-name vm-web-01 \
   --target-name web-server-prod \
   --instance-type large
 
 # Add hooks to a VM
-kubectl mtv patch planvm my-migration vm-db-01 \
+kubectl mtv patch planvm --plan-name my-migration --vm-name vm-db-01 \
   --add-hook PreMigration:default/backup-hook \
   --add-hook PostMigration:default/validation-hook
 ```
 
-#### patch mapping MAPPING_NAME
+#### patch mapping --name MAPPING_NAME
 
 Update network or storage mappings.
 
 ```bash
-kubectl mtv patch mapping network <mapping-name> [flags]
-kubectl mtv patch mapping storage <mapping-name> [flags]
+kubectl mtv patch mapping network --name <mapping-name> [flags]
+kubectl mtv patch mapping storage --name <mapping-name> [flags]
 ```
 
 **Mapping Update Flags:**
@@ -650,20 +662,20 @@ kubectl mtv patch mapping storage <mapping-name> [flags]
 **Examples:**
 ```bash
 # Add network mapping pairs
-kubectl mtv patch mapping network prod-networks \
+kubectl mtv patch mapping network --name prod-networks \
   --add-pairs "DMZ Network:security/dmz-net,Backup Network:ignored"
 
 # Update storage mapping pairs
-kubectl mtv patch mapping storage enterprise-storage \
+kubectl mtv patch mapping storage --name enterprise-storage \
   --update-pairs "premium-ds:ultra-fast-ssd;volumeMode=Block"
 ```
 
-#### patch provider PROVIDER_NAME
+#### patch provider --name PROVIDER_NAME
 
 Update provider settings.
 
 ```bash
-kubectl mtv patch provider <provider-name> [flags]
+kubectl mtv patch provider --name <provider-name> [flags]
 ```
 
 **Provider Update Flags:**
@@ -740,29 +752,29 @@ kubectl mtv health [flags]
 kubectl mtv health
 
 # JSON output for automation
-kubectl mtv health -o json
+kubectl mtv health --output json
 
 # Fast check without log analysis
 kubectl mtv health --skip-logs
 
 # Cluster-wide check
-kubectl mtv health -A
+kubectl mtv health --all-namespaces
 
 # Namespace-scoped check
-kubectl mtv health -n production
+kubectl mtv health --namespace production
 ```
 
 ### settings - ForkliftController Settings Management
 
 View and configure ForkliftController settings.
 
-#### settings get [SETTING]
+#### settings get [--setting SETTING]
 
 Get current setting values.
 
 ```bash
 kubectl mtv settings [flags]
-kubectl mtv settings get [setting-name] [flags]
+kubectl mtv settings get [--setting <setting-name>] [flags]
 ```
 
 **Flags:**
@@ -778,50 +790,50 @@ kubectl mtv settings
 kubectl mtv settings --all
 
 # Get a specific setting
-kubectl mtv settings get controller_max_vm_inflight
+kubectl mtv settings get --setting controller_max_vm_inflight
 
 # Output as JSON
-kubectl mtv settings -o json
+kubectl mtv settings --output json
 ```
 
-#### settings set SETTING VALUE
+#### settings set --setting SETTING --value VALUE
 
 Set a ForkliftController setting value.
 
 ```bash
-kubectl mtv settings set <setting-name> <value>
+kubectl mtv settings set --setting <setting-name> --value <value>
 ```
 
 **Examples:**
 ```bash
 # Increase concurrent VM migrations
-kubectl mtv settings set controller_max_vm_inflight 40
+kubectl mtv settings set --setting controller_max_vm_inflight --value 40
 
 # Enable a feature flag
-kubectl mtv settings set feature_ocp_live_migration true
+kubectl mtv settings set --setting feature_ocp_live_migration --value true
 
 # Change log level
-kubectl mtv settings set controller_log_level 5
+kubectl mtv settings set --setting controller_log_level --value 5
 
 # Set virt-v2v memory limit
-kubectl mtv settings set virt_v2v_container_limits_memory 16Gi
+kubectl mtv settings set --setting virt_v2v_container_limits_memory --value 16Gi
 ```
 
-#### settings unset SETTING
+#### settings unset --setting SETTING
 
 Remove a setting to revert it to the default value.
 
 ```bash
-kubectl mtv settings unset <setting-name>
+kubectl mtv settings unset --setting <setting-name>
 ```
 
 **Examples:**
 ```bash
 # Revert max concurrent VMs to default
-kubectl mtv settings unset controller_max_vm_inflight
+kubectl mtv settings unset --setting controller_max_vm_inflight
 
 # Revert log level to default
-kubectl mtv settings unset controller_log_level
+kubectl mtv settings unset --setting controller_log_level
 ```
 
 ## Utility Commands
@@ -902,7 +914,7 @@ kubectl mtv help --machine get
 kubectl mtv help --machine --short
 
 # Output in YAML format
-kubectl mtv help --machine -o yaml
+kubectl mtv help --machine --output yaml
 
 # Only read-only commands
 kubectl mtv help --machine --read-only
@@ -920,7 +932,7 @@ The [Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-refere
 ### Basic Syntax
 
 ```
-kubectl mtv get inventory vm <provider> --query "where <condition>"
+kubectl mtv get inventory vms --provider <provider> --query "where <condition>"
 ```
 
 ### Operators
@@ -966,22 +978,22 @@ kubectl mtv get inventory vm <provider> --query "where <condition>"
 
 ```bash
 # Powered-on VMs with more than 4GB RAM
-kubectl mtv get inventory vm vsphere-prod -q "where powerState = 'poweredOn' and memoryMB > 4096"
+kubectl mtv get inventory vms --provider vsphere-prod --query "where powerState = 'poweredOn' and memoryMB > 4096"
 
 # VMs with names starting with "prod-"
-kubectl mtv get inventory vm vsphere-prod -q "where name like 'prod-%'"
+kubectl mtv get inventory vms --provider vsphere-prod --query "where name like 'prod-%'"
 
 # VMs with multiple disks and large total capacity
-kubectl mtv get inventory vm vsphere-prod -q "where len(disks) > 1 and sum(disks[*].capacityInBytes) > 53687091200"
+kubectl mtv get inventory vms --provider vsphere-prod --query "where len(disks) > 1 and sum(disks[*].capacityInBytes) > 53687091200"
 
 # VMs in specific power states
-kubectl mtv get inventory vm vsphere-prod -q "where powerState in ['poweredOn', 'suspended']"
+kubectl mtv get inventory vms --provider vsphere-prod --query "where powerState in ['poweredOn', 'suspended']"
 
 # Complex query with multiple conditions
-kubectl mtv get inventory vm vsphere-prod -q "where (name like 'web-%' or name like 'app-%') and powerState = 'poweredOn' and memoryMB between 2048 and 8192"
+kubectl mtv get inventory vms --provider vsphere-prod --query "where (name like 'web-%' or name like 'app-%') and powerState = 'poweredOn' and memoryMB between 2048 and 8192"
 
 # Regex match and not-match
-kubectl mtv get inventory vm vsphere-prod -q "where name ~= 'prod-.*' and name ~! 'test-.*'"
+kubectl mtv get inventory vms --provider vsphere-prod --query "where name ~= 'prod-.*' and name ~! 'test-.*'"
 ```
 
 ## KARL Syntax (Kubernetes Affinity Rule Language)
@@ -1029,52 +1041,52 @@ kubectl mtv get inventory vm vsphere-prod -q "where name ~= 'prod-.*' and name ~
 
 ```bash
 # 1. Create providers
-kubectl mtv create provider vsphere-source --type vsphere --url https://vcenter.company.com --username admin --password pass123
-kubectl mtv create provider openshift-target --type openshift --url https://api.openshift.company.com:6443 --token sha256~token
+kubectl mtv create provider --name vsphere-source --type vsphere --url https://vcenter.company.com --username admin --password pass123
+kubectl mtv create provider --name openshift-target --type openshift --url https://api.openshift.company.com:6443 --token sha256~token
 
 # 2. Create mappings (optional)
-kubectl mtv create mapping network net-mapping --source vsphere-source --target openshift-target --network-pairs "VLAN100:prod-network"
-kubectl mtv create mapping storage stor-mapping --source vsphere-source --target openshift-target --storage-pairs "datastore1:premium-ssd"
+kubectl mtv create mapping network --name net-mapping --source vsphere-source --target openshift-target --network-pairs "VLAN100:prod-network"
+kubectl mtv create mapping storage --name stor-mapping --source vsphere-source --target openshift-target --storage-pairs "datastore1:premium-ssd"
 
 # 3. Create migration plan
-kubectl mtv create plan my-migration --source vsphere-source --target openshift-target --vms vm1,vm2,vm3 --migration-type warm
+kubectl mtv create plan --name my-migration --source vsphere-source --target openshift-target --vms vm1,vm2,vm3 --migration-type warm
 
 # 4. Start migration
-kubectl mtv start plan my-migration
+kubectl mtv start plan --name my-migration
 
 # 5. Monitor progress
-kubectl mtv get plan my-migration --watch
+kubectl mtv get plan --name my-migration --watch
 
 # 6. Complete warm migration (if applicable)
-kubectl mtv cutover plan my-migration
+kubectl mtv cutover plan --name my-migration
 ```
 
 ### Inventory Exploration
 
 ```bash
 # List all VMs
-kubectl mtv get inventory vm vsphere-source
+kubectl mtv get inventory vms --provider vsphere-source
 
 # Filter and explore
-kubectl mtv get inventory vm vsphere-source -q "where powerState = 'poweredOn'"
-kubectl mtv get inventory vm vsphere-source -q "where memory.size > 4096" -o json
+kubectl mtv get inventory vms --provider vsphere-source --query "where powerState = 'poweredOn'"
+kubectl mtv get inventory vms --provider vsphere-source --query "where memory.size > 4096" --output json
 
 # Export for planning
-kubectl mtv get inventory vm vsphere-source -o planvms > migration-candidates.yaml
+kubectl mtv get inventory vms --provider vsphere-source --output planvms > migration-candidates.yaml
 ```
 
 ### Troubleshooting
 
 ```bash
 # Verbose output for debugging
-kubectl mtv get plan my-migration -v=2
+kubectl mtv get plan --name my-migration -v=2
 
 # Detailed resource information
-kubectl mtv describe plan my-migration
-kubectl mtv describe provider vsphere-source
+kubectl mtv describe plan --name my-migration
+kubectl mtv describe provider --name vsphere-source
 
 # Check inventory connectivity
-kubectl mtv get inventory vm vsphere-source -v=3
+kubectl mtv get inventory vms --provider vsphere-source -v=3
 ```
 
 ---

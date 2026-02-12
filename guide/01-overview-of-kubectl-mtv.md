@@ -55,7 +55,7 @@ For detailed information about migration types, see:
 
 Example query syntax:
 ```bash
-kubectl mtv get inventory vms vsphere-01 -q "where memoryMB > 4096 and powerState = 'poweredOn'"
+kubectl mtv get inventory vms --provider vsphere-01 --query "where memoryMB > 4096 and powerState = 'poweredOn'"
 ```
 
 ### 2. Flexible Mapping System

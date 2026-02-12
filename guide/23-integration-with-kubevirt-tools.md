@@ -315,20 +315,20 @@ NAMESPACE="production"
 echo "=== Phase 1: Migration with kubectl-mtv ==="
 
 # 1. Create and execute migration
-kubectl mtv create plan "$PLAN_NAME" \
+kubectl mtv create plan --name "$PLAN_NAME" \
   --source vsphere-prod \
   --target openshift-prod \
   --vms "web-01,web-02,web-03" \
   --target-namespace "$NAMESPACE" \
   --migration-type warm
 
-kubectl mtv start plan "$PLAN_NAME" \
+kubectl mtv start plan --name "$PLAN_NAME" \
   --cutover "$(date -d '+2 hours' --iso-8601=seconds)"
 
 # 2. Monitor migration completion
 echo "Waiting for migration completion..."
 while true; do
-  STATUS=$(kubectl mtv get plan "$PLAN_NAME" -o jsonpath='{.status.phase}')
+  STATUS=$(kubectl mtv get plan --name "$PLAN_NAME" --output jsonpath='{.status.phase}')
   if [ "$STATUS" = "Succeeded" ]; then
     echo "Migration completed successfully"
     break

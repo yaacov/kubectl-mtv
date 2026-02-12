@@ -21,7 +21,7 @@ var topicRegistry = []Topic{
 		Content: `Query Language (TSL) Syntax
 ==========================
 
-TSL is used to filter inventory results with -q "where ..." and to select
+TSL is used to filter inventory results with --query "where ..." and to select
 VMs for migration plans with --vms "where ...".
 
 Query Structure:
@@ -52,7 +52,7 @@ Array Access and SI Units:
 Field Access:
   Dot notation for nested fields: parent.id, guest.distribution
   To discover all available fields for your provider, run:
-    kubectl-mtv get inventory vm <provider> -o json
+    kubectl-mtv get inventory vm --provider <provider> --output json
 
 VM Fields by Provider
 ---------------------

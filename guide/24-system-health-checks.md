@@ -35,10 +35,10 @@ This runs all checks and displays a colored table report.
 kubectl mtv health
 
 # JSON output (for automation and scripting)
-kubectl mtv health -o json
+kubectl mtv health --output json
 
 # YAML output
-kubectl mtv health -o yaml
+kubectl mtv health --output yaml
 ```
 
 ### Flags
@@ -103,10 +103,10 @@ The `health` command handles namespaces differently for operator components and 
 
 ```bash
 # Check health scoped to a specific namespace
-kubectl mtv health -n my-migration-project
+kubectl mtv health --namespace my-migration-project
 
 # Check health across all namespaces
-kubectl mtv health -A
+kubectl mtv health --all-namespaces
 ```
 
 When neither `-n` nor `-A` is specified, providers and plans are scoped to the operator namespace.
@@ -134,17 +134,17 @@ kubectl mtv health --log-lines 500
 ### Cluster-Wide Health Report
 
 ```bash
-kubectl mtv health -A
+kubectl mtv health --all-namespaces
 ```
 
 ### JSON Output for CI/CD Pipelines
 
 ```bash
 # Get health report as JSON for automated processing
-kubectl mtv health -o json | jq '.overallStatus'
+kubectl mtv health --output json | jq '.overallStatus'
 
 # Check if the system is healthy
-if [ "$(kubectl mtv health -o json | jq -r '.overallStatus')" = "Healthy" ]; then
+if [ "$(kubectl mtv health --output json | jq -r '.overallStatus')" = "Healthy" ]; then
   echo "System is healthy, proceeding with migration"
 fi
 ```
@@ -152,7 +152,7 @@ fi
 ### Namespace-Scoped Check
 
 ```bash
-kubectl mtv health -n production-migrations
+kubectl mtv health --namespace production-migrations
 ```
 
 ## Next Steps

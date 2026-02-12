@@ -40,19 +40,19 @@ kubectl mtv settings get
 ### Get a Specific Setting
 
 ```bash
-kubectl mtv settings get controller_max_vm_inflight
+kubectl mtv settings get --setting controller_max_vm_inflight
 ```
 
 ### Set a Setting Value
 
 ```bash
-kubectl mtv settings set controller_max_vm_inflight 30
+kubectl mtv settings set --setting controller_max_vm_inflight --value 30
 ```
 
 ### Unset a Setting (Revert to Default)
 
 ```bash
-kubectl mtv settings unset controller_max_vm_inflight
+kubectl mtv settings unset --setting controller_max_vm_inflight
 ```
 
 ## Flags
@@ -122,7 +122,7 @@ kubectl mtv settings
 kubectl mtv settings --all
 
 # Get a specific extended setting
-kubectl mtv settings get --all inventory_container_limits_memory
+kubectl mtv settings get --setting inventory_container_limits_memory --all
 ```
 
 Both `settings set` and `settings unset` work with any valid setting name (supported or extended).
@@ -138,44 +138,44 @@ kubectl mtv settings
 ### Check a Specific Value
 
 ```bash
-kubectl mtv settings get controller_max_vm_inflight
+kubectl mtv settings get --setting controller_max_vm_inflight
 ```
 
 ### Enable a Feature Flag
 
 ```bash
-kubectl mtv settings set feature_ocp_live_migration true
+kubectl mtv settings set --setting feature_ocp_live_migration --value true
 ```
 
 ### Increase Concurrent VM Migrations
 
 ```bash
-kubectl mtv settings set controller_max_vm_inflight 40
+kubectl mtv settings set --setting controller_max_vm_inflight --value 40
 ```
 
 ### Increase virt-v2v Memory for Large VMs
 
 ```bash
-kubectl mtv settings set virt_v2v_container_limits_memory 16Gi
-kubectl mtv settings set virt_v2v_container_requests_memory 4Gi
+kubectl mtv settings set --setting virt_v2v_container_limits_memory --value 16Gi
+kubectl mtv settings set --setting virt_v2v_container_requests_memory --value 4Gi
 ```
 
 ### Raise Controller Log Level for Debugging
 
 ```bash
-kubectl mtv settings set controller_log_level 5
+kubectl mtv settings set --setting controller_log_level --value 5
 ```
 
 ### Revert a Setting to Its Default
 
 ```bash
-kubectl mtv settings unset controller_max_vm_inflight
+kubectl mtv settings unset --setting controller_max_vm_inflight
 ```
 
 ### Export Settings as JSON
 
 ```bash
-kubectl mtv settings -o json
+kubectl mtv settings --output json
 ```
 
 ## Next Steps

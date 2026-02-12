@@ -18,14 +18,14 @@ func NewInventoryDiskProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, 
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:               "disk-profile PROVIDER",
-		Short:             "Get disk profiles from a provider " + flags.ProvidersOVirt,
-		Long:              `Get disk profiles from an oVirt provider's inventory.`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+		Use:          "disk-profile",
+		Short:        "Get disk profiles from a provider",
+		Long:         `Get disk profiles from an oVirt provider's inventory.`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -33,8 +33,6 @@ func NewInventoryDiskProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, 
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			cfg := globalConfig.GetKubeConfigFlags()
 			allNamespaces := globalConfig.GetAllNamespaces()
@@ -50,11 +48,16 @@ func NewInventoryDiskProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, 
 			return inventory.ListDiskProfilesWithInsecure(ctx, cfg, provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -69,14 +72,14 @@ func NewInventoryNICProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:               "nic-profile PROVIDER",
-		Short:             "Get NIC profiles from a provider " + flags.ProvidersOVirt,
-		Long:              `Get vNIC profiles from an oVirt provider's inventory.`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+		Use:          "nic-profile",
+		Short:        "Get NIC profiles from a provider",
+		Long:         `Get vNIC profiles from an oVirt provider's inventory.`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -84,8 +87,6 @@ func NewInventoryNICProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			cfg := globalConfig.GetKubeConfigFlags()
 			allNamespaces := globalConfig.GetAllNamespaces()
@@ -101,11 +102,16 @@ func NewInventoryNICProfileCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 			return inventory.ListNICProfilesWithInsecure(ctx, cfg, provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {

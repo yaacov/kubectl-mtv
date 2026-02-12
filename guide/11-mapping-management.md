@@ -44,7 +44,7 @@ kubectl mtv get mappings network
 kubectl mtv get mappings storage
 
 # List mappings in specific namespace
-kubectl mtv get mappings network -n migration-namespace
+kubectl mtv get mappings network --namespace migration-namespace
 
 # List mappings across all namespaces
 kubectl mtv get mappings storage --all-namespaces
@@ -54,10 +54,10 @@ kubectl mtv get mappings storage --all-namespaces
 
 ```bash
 # Describe network mapping
-kubectl mtv describe mapping network my-network-mapping
+kubectl mtv describe mapping network --name my-network-mapping
 
 # Describe storage mapping
-kubectl mtv describe mapping storage my-storage-mapping
+kubectl mtv describe mapping storage --name my-storage-mapping
 
 # View mapping in YAML format
 kubectl get networkmapping my-network-mapping -o yaml
@@ -68,13 +68,13 @@ kubectl get storagemapping my-storage-mapping -o yaml
 
 ```bash
 # Delete specific network mapping
-kubectl mtv delete mapping network my-network-mapping
+kubectl mtv delete mapping network --name my-network-mapping
 
 # Delete specific storage mapping
-kubectl mtv delete mapping storage my-storage-mapping
+kubectl mtv delete mapping storage --name my-storage-mapping
 
 # Delete multiple mappings
-kubectl mtv delete mapping network mapping1 mapping2 mapping3
+kubectl mtv delete mapping network --name mapping1,mapping2,mapping3
 
 # Delete all network mappings in namespace (use with caution)
 kubectl mtv delete mapping network --all
@@ -92,7 +92,7 @@ Network mappings translate source VM networks to target Kubernetes networking:
 #### Basic Network Mapping Syntax
 
 ```bash
-kubectl mtv create mapping network NAME \
+kubectl mtv create mapping network --name NAME \
   --source SOURCE_PROVIDER \
   --target TARGET_PROVIDER \
   --network-pairs "source1:target1,source2:target2,..."
@@ -115,7 +115,7 @@ kubectl-mtv supports four network mapping formats verified from the command code
 
 ```bash
 # Simple network mapping for vSphere to OpenShift
-kubectl mtv create mapping network prod-network-mapping \
+kubectl mtv create mapping network --name prod-network-mapping \
   --source vsphere-prod \
   --target openshift-target \
   --network-pairs "VM Network:default,Management Network:multus-system/mgmt-net"
@@ -125,7 +125,7 @@ kubectl mtv create mapping network prod-network-mapping \
 
 ```bash
 # Comprehensive network mapping with multiple network types
-kubectl mtv create mapping network comprehensive-network \
+kubectl mtv create mapping network --name comprehensive-network \
   --source vsphere-prod \
   --target openshift-target \
   --network-pairs "Production VLAN:prod-network,Management Network:multus-system/management,DMZ Network:dmz-net,Backup Network:ignored"
@@ -135,7 +135,7 @@ kubectl mtv create mapping network comprehensive-network \
 
 ```bash
 # Development network mapping with simplified targeting
-kubectl mtv create mapping network dev-network-mapping \
+kubectl mtv create mapping network --name dev-network-mapping \
   --source vsphere-dev \
   --target openshift-dev \
   --network-pairs "Dev Network:default,Test Network:default,Isolated Network:ignored"
@@ -145,7 +145,7 @@ kubectl mtv create mapping network dev-network-mapping \
 
 ```bash
 # Cross-namespace network mapping
-kubectl mtv create mapping network cross-ns-mapping \
+kubectl mtv create mapping network --name cross-ns-mapping \
   --source ovirt-prod \
   --target openshift-target \
   --network-pairs "ovirtmgmt:openshift-sdn/default,production:prod-namespace/prod-net,dmz:security-namespace/dmz-network"
@@ -158,7 +158,7 @@ Storage mappings define how source storage systems map to target StorageClasses 
 #### Basic Storage Mapping Syntax
 
 ```bash
-kubectl mtv create mapping storage NAME \
+kubectl mtv create mapping storage --name NAME \
   --source SOURCE_PROVIDER \
   --target TARGET_PROVIDER \
   --storage-pairs "source1:storageclass1,source2:storageclass2,..."
@@ -208,7 +208,7 @@ Verified vendor list from command code:
 
 ```bash
 # Simple storage mapping for vSphere to OpenShift
-kubectl mtv create mapping storage basic-storage-mapping \
+kubectl mtv create mapping storage --name basic-storage-mapping \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "datastore1:fast-ssd,datastore2:standard-storage"
@@ -218,7 +218,7 @@ kubectl mtv create mapping storage basic-storage-mapping \
 
 ```bash
 # Storage mapping with volume modes and access patterns
-kubectl mtv create mapping storage advanced-storage \
+kubectl mtv create mapping storage --name advanced-storage \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "fast-datastore:premium-ssd;volumeMode=Block;accessMode=ReadWriteOnce,shared-datastore:shared-storage;volumeMode=Filesystem;accessMode=ReadWriteMany,archive-datastore:backup-storage;accessMode=ReadOnlyMany"
@@ -228,7 +228,7 @@ kubectl mtv create mapping storage advanced-storage \
 
 ```bash
 # Storage mapping with FlashSystem offloading
-kubectl mtv create mapping storage offload-flashsystem \
+kubectl mtv create mapping storage --name offload-flashsystem \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "production-ds:flashsystem-fast;offloadPlugin=vsphere;offloadVendor=flashsystem;offloadSecret=flashsystem-creds" \
@@ -240,7 +240,7 @@ kubectl mtv create mapping storage offload-flashsystem \
 
 ```bash
 # Create storage mapping with automatic offload secret creation
-kubectl mtv create mapping storage ontap-offload \
+kubectl mtv create mapping storage --name ontap-offload \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "netapp-datastore:ontap-gold;offloadPlugin=vsphere;offloadVendor=ontap" \
@@ -256,7 +256,7 @@ kubectl mtv create mapping storage ontap-offload \
 
 ```bash
 # Storage mapping with global defaults
-kubectl mtv create mapping storage default-options \
+kubectl mtv create mapping storage --name default-options \
   --source ovirt-prod \
   --target openshift-target \
   --storage-pairs "ovirt-data:standard-rwo,ovirt-shared:shared-rwx,ovirt-fast:premium-block" \
@@ -272,7 +272,7 @@ kubectl mtv create mapping storage default-options \
 
 ```bash
 # FlashSystem storage array offloading
-kubectl mtv create mapping storage flashsystem-prod \
+kubectl mtv create mapping storage --name flashsystem-prod \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "ssd-datastore:flashsystem-tier1;offloadPlugin=vsphere;offloadVendor=flashsystem;volumeMode=Block;accessMode=ReadWriteOnce" \
@@ -288,7 +288,7 @@ kubectl mtv create mapping storage flashsystem-prod \
 
 ```bash
 # Pure Storage FlashArray offloading
-kubectl mtv create mapping storage pure-flasharray \
+kubectl mtv create mapping storage --name pure-flasharray \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "pure-datastore:pure-block-gold;offloadPlugin=vsphere;offloadVendor=pureFlashArray;volumeMode=Block" \
@@ -302,7 +302,7 @@ kubectl mtv create mapping storage pure-flasharray \
 
 ```bash
 # Dell PowerMax storage array configuration
-kubectl mtv create mapping storage powermax-enterprise \
+kubectl mtv create mapping storage --name powermax-enterprise \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "powermax-gold:powermax-tier1;offloadPlugin=vsphere;offloadVendor=powermax;volumeMode=Block;accessMode=ReadWriteOnce" \
@@ -322,7 +322,7 @@ Mapping patching allows you to add, update, or remove pairs without recreating t
 
 ```bash
 # Add new network pairs to existing mapping
-kubectl mtv patch mapping network prod-network-mapping \
+kubectl mtv patch mapping network --name prod-network-mapping \
   --add-pairs "New VLAN:new-network,Guest Network:guest-net"
 ```
 
@@ -330,7 +330,7 @@ kubectl mtv patch mapping network prod-network-mapping \
 
 ```bash
 # Update existing network mappings
-kubectl mtv patch mapping network prod-network-mapping \
+kubectl mtv patch mapping network --name prod-network-mapping \
   --update-pairs "Management Network:multus-system/new-mgmt-net,Production VLAN:updated-prod-network"
 ```
 
@@ -338,7 +338,7 @@ kubectl mtv patch mapping network prod-network-mapping \
 
 ```bash
 # Remove networks from mapping
-kubectl mtv patch mapping network prod-network-mapping \
+kubectl mtv patch mapping network --name prod-network-mapping \
   --remove-pairs "Old Network,Deprecated VLAN"
 ```
 
@@ -346,7 +346,7 @@ kubectl mtv patch mapping network prod-network-mapping \
 
 ```bash
 # Perform multiple operations in single command
-kubectl mtv patch mapping network prod-network-mapping \
+kubectl mtv patch mapping network --name prod-network-mapping \
   --add-pairs "New Production:prod-new" \
   --update-pairs "Management Network:mgmt-updated" \
   --remove-pairs "Legacy Network"
@@ -358,7 +358,7 @@ kubectl mtv patch mapping network prod-network-mapping \
 
 ```bash
 # Add new storage pairs with enhanced options
-kubectl mtv patch mapping storage prod-storage-mapping \
+kubectl mtv patch mapping storage --name prod-storage-mapping \
   --add-pairs "new-datastore:premium-nvme;volumeMode=Block;accessMode=ReadWriteOnce,backup-datastore:backup-storage;volumeMode=Filesystem;accessMode=ReadOnlyMany"
 ```
 
@@ -366,7 +366,7 @@ kubectl mtv patch mapping storage prod-storage-mapping \
 
 ```bash
 # Update existing storage mappings with new options
-kubectl mtv patch mapping storage prod-storage-mapping \
+kubectl mtv patch mapping storage --name prod-storage-mapping \
   --update-pairs "fast-datastore:ultra-fast-ssd;volumeMode=Block;offloadPlugin=vsphere;offloadVendor=flashsystem"
 ```
 
@@ -374,7 +374,7 @@ kubectl mtv patch mapping storage prod-storage-mapping \
 
 ```bash
 # Remove storage pairs from mapping
-kubectl mtv patch mapping storage prod-storage-mapping \
+kubectl mtv patch mapping storage --name prod-storage-mapping \
   --remove-pairs "old-datastore,deprecated-storage"
 ```
 
@@ -382,7 +382,7 @@ kubectl mtv patch mapping storage prod-storage-mapping \
 
 ```bash
 # Add storage with complete offloading configuration
-kubectl mtv patch mapping storage enterprise-mapping \
+kubectl mtv patch mapping storage --name enterprise-mapping \
   --add-pairs "tier1-datastore:flashsystem-gold;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=flashsystem;offloadSecret=flashsystem-secret" \
   --default-volume-mode Block \
   --default-offload-plugin vsphere
@@ -394,13 +394,13 @@ kubectl mtv patch mapping storage enterprise-mapping \
 
 ```bash
 # Step 1: Create comprehensive network mapping
-kubectl mtv create mapping network enterprise-network \
+kubectl mtv create mapping network --name enterprise-network \
   --source vsphere-production \
   --target openshift-production \
   --network-pairs "Production VLAN:prod-network,Management Network:multus-system/mgmt-network,DMZ VLAN:security-namespace/dmz-net,Backup Network:ignored"
 
 # Step 2: Create enterprise storage mapping with offloading
-kubectl mtv create mapping storage enterprise-storage \
+kubectl mtv create mapping storage --name enterprise-storage \
   --source vsphere-production \
   --target openshift-production \
   --storage-pairs "Tier1-SSD:flashsystem-premium;volumeMode=Block;accessMode=ReadWriteOnce;offloadPlugin=vsphere;offloadVendor=flashsystem,Tier2-SATA:standard-storage;volumeMode=Filesystem;accessMode=ReadWriteOnce,Shared-NFS:shared-nfs;volumeMode=Filesystem;accessMode=ReadWriteMany" \
@@ -412,52 +412,52 @@ kubectl mtv create mapping storage enterprise-storage \
   --offload-storage-endpoint https://flashsystem.company.com:7443
 
 # Step 3: Verify mappings
-kubectl mtv describe mapping network enterprise-network
-kubectl mtv describe mapping storage enterprise-storage
+kubectl mtv describe mapping network --name enterprise-network
+kubectl mtv describe mapping storage --name enterprise-storage
 ```
 
 ### Example 2: Development Environment
 
 ```bash
 # Development network mapping (simple)
-kubectl mtv create mapping network dev-simple-network \
+kubectl mtv create mapping network --name dev-simple-network \
   --source vsphere-dev \
   --target openshift-dev \
   --network-pairs "Dev VLAN:default,Test Network:default,Management:ignored" \
-  -n development
+  --namespace development
 
 # Development storage mapping (basic)
-kubectl mtv create mapping storage dev-simple-storage \
+kubectl mtv create mapping storage --name dev-simple-storage \
   --source vsphere-dev \
   --target openshift-dev \
   --storage-pairs "dev-datastore:standard-ssd,test-datastore:test-storage" \
   --default-volume-mode Filesystem \
   --default-access-mode ReadWriteOnce \
-  -n development
+  --namespace development
 ```
 
 ### Example 3: Multi-Provider Setup
 
 ```bash
 # oVirt to OpenShift mapping
-kubectl mtv create mapping network ovirt-to-ocp \
+kubectl mtv create mapping network --name ovirt-to-ocp \
   --source ovirt-production \
   --target openshift-target \
   --network-pairs "ovirtmgmt:default,production:prod-net,dmz:dmz-network"
 
-kubectl mtv create mapping storage ovirt-storage \
+kubectl mtv create mapping storage --name ovirt-storage \
   --source ovirt-production \
   --target openshift-target \
   --storage-pairs "data:standard-rwo,shared:shared-rwx,fast:premium-ssd" \
   --default-volume-mode Filesystem
 
 # OpenStack to OpenShift mapping
-kubectl mtv create mapping network openstack-to-ocp \
+kubectl mtv create mapping network --name openstack-to-ocp \
   --source openstack-prod \
   --target openshift-target \
   --network-pairs "internal:default,external:multus-system/external-net,provider:provider-network"
 
-kubectl mtv create mapping storage openstack-storage \
+kubectl mtv create mapping storage --name openstack-storage \
   --source openstack-prod \
   --target openshift-target \
   --storage-pairs "__DEFAULT__:standard-rwo,ssd:premium-ssd,ceph:ceph-rbd" \
@@ -472,7 +472,7 @@ kubectl mtv create mapping storage openstack-storage \
 
 ```bash
 # Complex Multus network mapping with multiple namespaces
-kubectl mtv create mapping network multus-complex \
+kubectl mtv create mapping network --name multus-complex \
   --source vsphere-prod \
   --target openshift-target \
   --network-pairs "Frontend-VLAN:web-namespace/frontend-net,Database-VLAN:db-namespace/database-net,Management:kube-system/management,Monitoring:monitoring/prometheus-net,Storage-Network:rook-ceph/cluster-network"
@@ -482,7 +482,7 @@ kubectl mtv create mapping network multus-complex \
 
 ```bash
 # Security zone-based network mapping
-kubectl mtv create mapping network security-zones \
+kubectl mtv create mapping network --name security-zones \
   --source vsphere-security \
   --target openshift-security \
   --network-pairs "Public-DMZ:dmz-namespace/public-dmz,Internal-DMZ:dmz-namespace/internal-dmz,Secure-Zone:secure-namespace/secure-net,Management-Zone:mgmt-namespace/mgmt-secure,Guest-Network:ignored"
@@ -492,7 +492,7 @@ kubectl mtv create mapping network security-zones \
 
 ```bash
 # Map VLANs to specific namespaces
-kubectl mtv create mapping network vlan-namespace \
+kubectl mtv create mapping network --name vlan-namespace \
   --source vsphere-prod \
   --target openshift-target \
   --network-pairs "VLAN-100:production/prod-net,VLAN-200:development/dev-net,VLAN-300:testing/test-net,VLAN-400:staging/stage-net"
@@ -504,7 +504,7 @@ kubectl mtv create mapping network vlan-namespace \
 
 ```bash
 # Map storage tiers to appropriate StorageClasses
-kubectl mtv create mapping storage performance-tiers \
+kubectl mtv create mapping storage --name performance-tiers \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "NVMe-Tier1:ultra-fast-nvme;volumeMode=Block;accessMode=ReadWriteOnce,SSD-Tier2:fast-ssd;volumeMode=Block;accessMode=ReadWriteOnce,SATA-Tier3:standard-storage;volumeMode=Filesystem;accessMode=ReadWriteOnce,NFS-Shared:shared-nfs;volumeMode=Filesystem;accessMode=ReadWriteMany" \
@@ -515,7 +515,7 @@ kubectl mtv create mapping storage performance-tiers \
 
 ```bash
 # Application-specific storage class mapping
-kubectl mtv create mapping storage app-specific \
+kubectl mtv create mapping storage --name app-specific \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "Database-Storage:database-optimized;volumeMode=Block;accessMode=ReadWriteOnce,Web-Storage:web-optimized;volumeMode=Filesystem;accessMode=ReadWriteOnce,Log-Storage:log-aggregation;volumeMode=Filesystem;accessMode=ReadWriteMany,Backup-Storage:backup-tier;volumeMode=Filesystem;accessMode=ReadOnlyMany"
@@ -525,7 +525,7 @@ kubectl mtv create mapping storage app-specific \
 
 ```bash
 # Multiple storage vendor integration
-kubectl mtv create mapping storage multi-vendor \
+kubectl mtv create mapping storage --name multi-vendor \
   --source vsphere-enterprise \
   --target openshift-target \
   --storage-pairs "FlashSystem-Gold:flashsystem-tier1;offloadPlugin=vsphere;offloadVendor=flashsystem;volumeMode=Block,NetApp-Silver:ontap-tier2;offloadPlugin=vsphere;offloadVendor=ontap;volumeMode=Filesystem,Pure-Platinum:pure-tier0;offloadPlugin=vsphere;offloadVendor=pureFlashArray;volumeMode=Block,Dell-Bronze:powermax-tier3;offloadPlugin=vsphere;offloadVendor=powermax;volumeMode=Block" \
@@ -545,7 +545,7 @@ kubectl get networks -A | grep -E "(prod-net|mgmt-net|dmz-network)"
 kubectl get network-attachment-definitions -A
 
 # Test network connectivity
-kubectl mtv get inventory networks openshift-target
+kubectl mtv get inventory network --provider openshift-target
 ```
 
 ### Validate Storage Mappings
@@ -643,7 +643,7 @@ echo "ds1:sc1;volumeMode=Block,ds2:sc2;accessMode=ReadWriteMany" | tr ',' '\n'
 
 ```bash
 # Enable verbose logging
-kubectl mtv create mapping network test-mapping \
+kubectl mtv create mapping network --name test-mapping \
   --source vsphere-prod \
   --target openshift-target \
   --network-pairs "VM Network:default" \
@@ -659,7 +659,7 @@ Mappings integrate seamlessly with migration plan creation:
 
 ```bash
 # Create migration plan using mappings
-kubectl mtv create plan enterprise-migration \
+kubectl mtv create plan --name enterprise-migration \
   --source vsphere-production \
   --target openshift-production \
   --network-mapping enterprise-network \
@@ -667,7 +667,7 @@ kubectl mtv create plan enterprise-migration \
   --vms "web-server-01,db-server-01,app-server-01"
 
 # Alternative: Use inline mapping pairs
-kubectl mtv create plan inline-migration \
+kubectl mtv create plan --name inline-migration \
   --source vsphere-prod \
   --network-pairs "VM Network:default,Management:mgmt-net" \
   --storage-pairs "datastore1:standard-ssd,datastore2:premium-nvme" \

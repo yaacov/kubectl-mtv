@@ -1,6 +1,7 @@
 package archive
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -9,15 +10,15 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/archive/plan"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
-	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewPlanCmd creates the plan archiving command
 func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var all bool
+	var planNames []string
 
 	cmd := &cobra.Command{
-		Use:   "plan [NAME...] [--all]",
+		Use:   "plan",
 		Short: "Archive one or more migration plans",
 		Long: `Archive one or more migration plans.
 
@@ -25,21 +26,27 @@ Archiving a plan marks it as completed and stops any ongoing operations.
 Archived plans are retained for historical reference but cannot be started.
 Use 'unarchive' to restore a plan if needed.`,
 		Example: `  # Archive a completed plan
-  kubectl-mtv archive plan my-migration
+  kubectl-mtv archive plan --name my-migration
 
   # Archive multiple plans
-  kubectl-mtv archive plan plan1 plan2 plan3
+  kubectl-mtv archive plans --name plan1,plan2,plan3
 
   # Archive all plans in the namespace
-  kubectl-mtv archive plan --all`,
-		Args:              flags.ValidateAllFlagArgs(func() bool { return all }, 1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.PlanNameCompletion(kubeConfigFlags),
+  kubectl-mtv archive plans --all`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Validate mutual exclusivity of --name and --all
+			if all && len(planNames) > 0 {
+				return errors.New("cannot use --name with --all")
+			}
+			if !all && len(planNames) == 0 {
+				return errors.New("must specify --name or --all")
+			}
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
-			var planNames []string
 			if all {
 				// Get all plan names from the namespace
 				var err error
@@ -51,8 +58,6 @@ Use 'unarchive' to restore a plan if needed.`,
 					fmt.Printf("No plans found in namespace %s\n", namespace)
 					return nil
 				}
-			} else {
-				planNames = args
 			}
 
 			// Loop over each plan name and archive it
@@ -66,7 +71,12 @@ Use 'unarchive' to restore a plan if needed.`,
 		},
 	}
 
+	cmd.Flags().StringSliceVarP(&planNames, "name", "M", nil, "Plan name(s) to archive (comma-separated, e.g. \"plan1,plan2\")")
+	cmd.Flags().StringSliceVar(&planNames, "names", nil, "Alias for --name")
+	_ = cmd.Flags().MarkHidden("names")
 	cmd.Flags().BoolVar(&all, "all", false, "Archive all migration plans in the namespace")
+
+	_ = cmd.RegisterFlagCompletionFunc("name", completion.PlanNameCompletion(kubeConfigFlags))
 
 	return cmd
 }
