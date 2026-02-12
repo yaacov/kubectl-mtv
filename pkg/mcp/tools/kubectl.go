@@ -16,9 +16,9 @@ import (
 type KubectlDebugInput struct {
 	Action string `json:"action" jsonschema:"logs | get | describe | events"`
 
-	ResourceType string `json:"resource_type,omitempty" jsonschema:"Resource type (pods, pvc, datavolume, virtualmachine, events)"`
+	ResourceType string `json:"resource_type,omitempty" jsonschema:"Resource type (pods, pvc, datavolume, virtualmachine, events, jobs, configmaps, deployments, services, or any k8s resource)"`
 
-	Name string `json:"name,omitempty" jsonschema:"Resource name. Logs: deployments/name or pod name. get/describe: optional."`
+	Name string `json:"name,omitempty" jsonschema:"Resource name. Logs: prefer deployments/name for stable names (e.g. deployments/forklift-controller) since pod names have random suffixes. get/describe: optional."`
 
 	Namespace string `json:"namespace,omitempty" jsonschema:"Kubernetes namespace"`
 
@@ -184,7 +184,9 @@ Actions: logs, get, describe, events.
 Logs: name (required), container, previous, tail_lines, since, grep, ignore_case, no_timestamps, log_format, filter_*.
 Get/describe: resource_type (required), name, labels, output.
 Events: for_resource, field_selector, sort_by.
-filter_* params apply to forklift-controller JSON logs only.`,
+filter_* params apply to forklift-controller JSON logs only.
+Logs tip: use deployments/name (e.g. deployments/forklift-controller) for stable names; pod names have random suffixes.
+Get/describe tip: resource_type accepts any k8s resource (pods, pvc, datavolume, virtualmachine, jobs, configmaps, deployments, services, etc).`,
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{

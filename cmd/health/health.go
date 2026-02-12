@@ -26,7 +26,7 @@ func NewHealthCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig G
 
 	cmd := &cobra.Command{
 		Use:   "health",
-		Short: "Check the health of the MTV/Forklift system",
+		Short: "Check the health and deployment status of the MTV/Forklift system",
 		Long: `Perform comprehensive health checks on the MTV/Forklift migration system.
 
 This command checks:
