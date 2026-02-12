@@ -28,6 +28,16 @@ FORKLIFT_PATH ?= ../../kubev2v/forklift
 
 all: kubectl-mtv
 
+## help: Show this help message
+.PHONY: help
+help:
+	@echo "Usage: make [target]"
+	@echo ""
+	@echo "Targets:"
+	@grep -E '^## [a-zA-Z0-9_-]+:' $(MAKEFILE_LIST) | sort | \
+		awk -F ': ' '{printf "  %-25s %s\n", substr($$1, 4), $$2}'
+
+## install-tools: Install golangci-lint and other development tools
 .PHONY: install-tools
 install-tools:
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
@@ -38,20 +48,23 @@ kubemtv_pkg := $(wildcard ./pkg/**/*.go)
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 
+## kubectl-mtv: Build the kubectl-mtv binary for current platform
 kubectl-mtv: clean $(kubemtv_cmd) $(kubemtv_pkg)
 	@echo "Building for ${GOOS}/${GOARCH}"
 	CGO_ENABLED=0 go build -ldflags='-X github.com/yaacov/kubectl-mtv/cmd.clientVersion=${VERSION}' -o kubectl-mtv $(kubemtv_cmd)
 
+## lint: Run go vet and golangci-lint on codebase
 .PHONY: lint
 lint:
 	go vet ./pkg/... ./cmd/...
 	$(shell go env GOPATH)/bin/golangci-lint run ./pkg/... ./cmd/...
 
+## fmt: Format Go code with go fmt
 .PHONY: fmt
 fmt:
 	go fmt ./pkg/... ./cmd/...
 
-# Cross-compilation targets
+## build-linux-amd64: Cross-compile for linux/amd64
 .PHONY: build-linux-amd64
 build-linux-amd64: $(kubemtv_cmd) $(kubemtv_pkg)
 	@echo "Building for linux/amd64"
@@ -61,6 +74,7 @@ build-linux-amd64: $(kubemtv_cmd) $(kubemtv_pkg)
 		-o kubectl-mtv-linux-amd64 \
 		$(kubemtv_cmd)
 
+## build-linux-arm64: Cross-compile for linux/arm64
 .PHONY: build-linux-arm64
 build-linux-arm64: $(kubemtv_cmd) $(kubemtv_pkg)
 	@echo "Building for linux/arm64"
@@ -70,6 +84,7 @@ build-linux-arm64: $(kubemtv_cmd) $(kubemtv_pkg)
 		-o kubectl-mtv-linux-arm64 \
 		$(kubemtv_cmd)
 
+## build-darwin-amd64: Cross-compile for darwin/amd64
 .PHONY: build-darwin-amd64
 build-darwin-amd64: $(kubemtv_cmd) $(kubemtv_pkg)
 	@echo "Building for darwin/amd64"
@@ -79,6 +94,7 @@ build-darwin-amd64: $(kubemtv_cmd) $(kubemtv_pkg)
 		-o kubectl-mtv-darwin-amd64 \
 		$(kubemtv_cmd)
 
+## build-darwin-arm64: Cross-compile for darwin/arm64
 .PHONY: build-darwin-arm64
 build-darwin-arm64: $(kubemtv_cmd) $(kubemtv_pkg)
 	@echo "Building for darwin/arm64"
@@ -88,6 +104,7 @@ build-darwin-arm64: $(kubemtv_cmd) $(kubemtv_pkg)
 		-o kubectl-mtv-darwin-arm64 \
 		$(kubemtv_cmd)
 
+## build-windows-amd64: Cross-compile for windows/amd64
 .PHONY: build-windows-amd64
 build-windows-amd64: $(kubemtv_cmd) $(kubemtv_pkg)
 	@echo "Building for windows/amd64"
@@ -97,11 +114,11 @@ build-windows-amd64: $(kubemtv_cmd) $(kubemtv_pkg)
 		-o kubectl-mtv-windows-amd64.exe \
 		$(kubemtv_cmd)
 
-# Build all platforms
+## build-all: Build for all platforms (linux, darwin, windows)
 .PHONY: build-all
 build-all: clean build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64 build-windows-amd64
 
-# Create release archives for all platforms
+## dist-all: Create release archives and checksums for all platforms
 .PHONY: dist-all
 dist-all: build-all
 	@echo "Creating release archives..."
@@ -117,11 +134,13 @@ dist-all: build-all
 	sha256sum kubectl-mtv-${VERSION}-darwin-arm64.tar.gz > kubectl-mtv-${VERSION}-darwin-arm64.tar.gz.sha256sum
 	sha256sum kubectl-mtv-${VERSION}-windows-amd64.zip > kubectl-mtv-${VERSION}-windows-amd64.zip.sha256sum
 
+## dist: Create tarball and checksum for current platform
 .PHONY: dist
 dist: kubectl-mtv
 	tar -zcvf kubectl-mtv.tar.gz LICENSE kubectl-mtv
 	sha256sum kubectl-mtv.tar.gz > kubectl-mtv.tar.gz.sha256sum
 
+## clean: Remove build artifacts
 .PHONY: clean
 clean:
 	rm -f kubectl-mtv
@@ -137,34 +156,45 @@ clean:
 	rm -f kubectl-mtv-*-*.tar.gz.sha256sum
 	rm -f kubectl-mtv-*-*.zip.sha256sum
 
+## test: Run unit tests with coverage
 .PHONY: test
 test:
-	go test -v -cover ./pkg/... ./cmd/...
-	go test -coverprofile=coverage.out ./pkg/... ./cmd/...
+	go test -v -coverprofile=coverage.out ./pkg/... ./cmd/...
 	go tool cover -func=coverage.out
 	@rm coverage.out
 
+## dump-mcp-tools: Dump MCP tools/list response verbatim from kubectl-mtv MCP server
+.PHONY: dump-mcp-tools
+dump-mcp-tools: kubectl-mtv
+	@echo "Dumping MCP tools/list response (stdio mode)..."
+	@python3 scripts/dump-mcp-tools.py --stdio ./kubectl-mtv mcp-server
+
+## verify-defaults: Verify settings defaults against forklift (FORKLIFT_PATH)
 .PHONY: verify-defaults
 verify-defaults:
 	@echo "Verifying settings defaults against forklift..."
 	@./scripts/verify-defaults.sh $(FORKLIFT_PATH)
 
+## test-e2e: Run full e2e test suite
 .PHONY: test-e2e
 test-e2e: kubectl-mtv
 	@echo "Running e2e tests..."
 	cd tests/e2e && python -m pytest -v
 
+## test-e2e-provider: Run provider e2e tests only
 .PHONY: test-e2e-provider
 test-e2e-provider: kubectl-mtv
 	@echo "Running provider e2e tests..."
 	cd tests/e2e && python -m pytest -v -m provider
 
+## test-cleanup: Clean up test namespaces
 .PHONY: test-cleanup
 test-cleanup:
 	@echo "Cleaning up test namespaces..."
 	@kubectl get namespaces -o name | grep "namespace/kubectl-mtv-shared-" | xargs -r kubectl delete --ignore-not-found=true
 	@echo "Test namespaces cleaned up."
 
+## test-list-namespaces: List current test namespaces
 .PHONY: test-list-namespaces
 test-list-namespaces:
 	@echo "Current test namespaces:"

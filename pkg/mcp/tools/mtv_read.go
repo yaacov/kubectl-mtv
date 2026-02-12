@@ -12,30 +12,21 @@ import (
 
 // MTVReadInput represents the input for the mtv_read tool.
 type MTVReadInput struct {
-	// Command is the kubectl-mtv command to execute (e.g., "get plan", "get inventory vm", "describe plan")
-	Command string `json:"command" jsonschema:"kubectl-mtv command path (e.g. get plan, get inventory vm, describe mapping)"`
+	Command string `json:"command" jsonschema:"Command path (e.g. get plan, get inventory vm, describe mapping)"`
 
-	// Args are positional arguments for the command (e.g., plan name, provider name)
-	Args []string `json:"args,omitempty" jsonschema:"Positional arguments (e.g. resource name, provider name)"`
+	Args []string `json:"args,omitempty" jsonschema:"Positional args (resource name, provider name)"`
 
-	// Flags are command-specific flags as key-value pairs (values can be strings, numbers, or booleans)
-	Flags map[string]any `json:"flags,omitempty" jsonschema:"Command flags as key-value pairs (e.g. output: json, query: \"where len(disks) > 1\", extended: true)"`
+	Flags map[string]any `json:"flags,omitempty" jsonschema:"Flags as key-value pairs (e.g. output: json, query: \"where len(disks) > 1\")"`
 
-	// Namespace is the Kubernetes namespace (shortcut for -n flag)
-	Namespace string `json:"namespace,omitempty" jsonschema:"Target Kubernetes namespace"`
+	Namespace string `json:"namespace,omitempty" jsonschema:"Kubernetes namespace"`
 
-	// AllNamespaces queries across all namespaces (shortcut for -A flag)
-	AllNamespaces bool `json:"all_namespaces,omitempty" jsonschema:"Query across all namespaces"`
+	AllNamespaces bool `json:"all_namespaces,omitempty" jsonschema:"Query all namespaces"`
 
-	// InventoryURL is the base URL for the inventory service
-	InventoryURL string `json:"inventory_url,omitempty" jsonschema:"Base URL for inventory service (for provider inventory queries)"`
+	InventoryURL string `json:"inventory_url,omitempty" jsonschema:"Inventory service URL (provider inventory queries)"`
 
-	// DryRun shows the command without executing
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"Show command without executing (educational mode)"`
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"Preview without executing"`
 
-	// Fields optionally filters JSON response to include only the specified top-level fields.
-	// Example: ["name", "id", "concerns", "powerState"] to get a compact response.
-	Fields []string `json:"fields,omitempty" jsonschema:"Optional list of field names to include in JSON response (e.g. [name, id, concerns]). When set, only these top-level fields are returned per item, reducing response size for large queries."`
+	Fields []string `json:"fields,omitempty" jsonschema:"Limit JSON to these top-level keys only (e.g. [name, id, concerns])"`
 }
 
 // GetMTVReadTool returns the tool definition for read-only MTV commands.
@@ -48,17 +39,17 @@ func GetMTVReadTool(registry *discovery.Registry) *mcp.Tool {
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "The executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
+				"command":      map[string]any{"type": "string", "description": "Executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
 				"data": map[string]any{
-					"description": "Structured JSON response data (object or array)",
+					"description": "Response data (object or array)",
 					"oneOf": []map[string]any{
 						{"type": "object"},
 						{"type": "array"},
 					},
 				},
-				"output": map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
-				"stderr": map[string]any{"type": "string", "description": "Error output if any"},
+				"output": map[string]any{"type": "string", "description": "Text output"},
+				"stderr": map[string]any{"type": "string", "description": "Error output"},
 			},
 		},
 	}
@@ -76,17 +67,17 @@ func GetMinimalMTVReadTool(registry *discovery.Registry) *mcp.Tool {
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "The executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
+				"command":      map[string]any{"type": "string", "description": "Executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
 				"data": map[string]any{
-					"description": "Structured JSON response data (object or array)",
+					"description": "Response data (object or array)",
 					"oneOf": []map[string]any{
 						{"type": "object"},
 						{"type": "array"},
 					},
 				},
-				"output": map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
-				"stderr": map[string]any{"type": "string", "description": "Error output if any"},
+				"output": map[string]any{"type": "string", "description": "Text output"},
+				"stderr": map[string]any{"type": "string", "description": "Error output"},
 			},
 		},
 	}
