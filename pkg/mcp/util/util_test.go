@@ -462,6 +462,218 @@ func TestWithKubeCredsFromHeaders(t *testing.T) {
 	}
 }
 
+// --- Default kube credentials tests ---
+
+func TestDefaultKubeServer(t *testing.T) {
+	// Save and restore
+	orig := GetDefaultKubeServer()
+	defer SetDefaultKubeServer(orig)
+
+	// Default is empty
+	SetDefaultKubeServer("")
+	if got := GetDefaultKubeServer(); got != "" {
+		t.Errorf("GetDefaultKubeServer() should be empty, got %q", got)
+	}
+
+	// Set a server
+	SetDefaultKubeServer("https://api.example.com:6443")
+	if got := GetDefaultKubeServer(); got != "https://api.example.com:6443" {
+		t.Errorf("GetDefaultKubeServer() = %q, want %q", got, "https://api.example.com:6443")
+	}
+
+	// Clear it
+	SetDefaultKubeServer("")
+	if got := GetDefaultKubeServer(); got != "" {
+		t.Errorf("GetDefaultKubeServer() should be empty after clearing, got %q", got)
+	}
+}
+
+func TestDefaultKubeToken(t *testing.T) {
+	// Save and restore
+	orig := GetDefaultKubeToken()
+	defer SetDefaultKubeToken(orig)
+
+	// Default is empty
+	SetDefaultKubeToken("")
+	if got := GetDefaultKubeToken(); got != "" {
+		t.Errorf("GetDefaultKubeToken() should be empty, got %q", got)
+	}
+
+	// Set a token
+	SetDefaultKubeToken("my-cli-token")
+	if got := GetDefaultKubeToken(); got != "my-cli-token" {
+		t.Errorf("GetDefaultKubeToken() = %q, want %q", got, "my-cli-token")
+	}
+
+	// Clear it
+	SetDefaultKubeToken("")
+	if got := GetDefaultKubeToken(); got != "" {
+		t.Errorf("GetDefaultKubeToken() should be empty after clearing, got %q", got)
+	}
+}
+
+func TestRunKubectlMTVCommand_DefaultCredsFallback(t *testing.T) {
+	// Save and restore defaults
+	origServer := GetDefaultKubeServer()
+	origToken := GetDefaultKubeToken()
+	defer func() {
+		SetDefaultKubeServer(origServer)
+		SetDefaultKubeToken(origToken)
+	}()
+
+	// Set CLI defaults
+	SetDefaultKubeServer("https://cli-default.example.com:6443")
+	SetDefaultKubeToken("cli-default-token")
+
+	// Use dry run mode to capture the command without executing
+	ctx := WithDryRun(context.Background(), true)
+
+	result, err := RunKubectlMTVCommand(ctx, []string{"get", "plan"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify CLI defaults are used (token is sanitized in output)
+	if !strings.Contains(result, "--server") {
+		t.Errorf("expected --server flag in command, got: %s", result)
+	}
+	if !strings.Contains(result, "cli-default.example.com") {
+		t.Errorf("expected CLI default server URL in command, got: %s", result)
+	}
+	if !strings.Contains(result, "--token") {
+		t.Errorf("expected --token flag in command, got: %s", result)
+	}
+}
+
+func TestRunKubectlMTVCommand_ContextOverridesDefaults(t *testing.T) {
+	// Save and restore defaults
+	origServer := GetDefaultKubeServer()
+	origToken := GetDefaultKubeToken()
+	defer func() {
+		SetDefaultKubeServer(origServer)
+		SetDefaultKubeToken(origToken)
+	}()
+
+	// Set CLI defaults
+	SetDefaultKubeServer("https://cli-default.example.com:6443")
+	SetDefaultKubeToken("cli-default-token")
+
+	// Set context values (simulating HTTP headers) that should override CLI defaults
+	ctx := context.Background()
+	ctx = WithKubeServer(ctx, "https://header-override.example.com:6443")
+	ctx = WithKubeToken(ctx, "header-override-token")
+	ctx = WithDryRun(ctx, true)
+
+	result, err := RunKubectlMTVCommand(ctx, []string{"get", "plan"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Context values should be used, not CLI defaults
+	if !strings.Contains(result, "header-override.example.com") {
+		t.Errorf("expected context server URL to override CLI default, got: %s", result)
+	}
+	if strings.Contains(result, "cli-default.example.com") {
+		t.Errorf("CLI default server should NOT appear when context has server, got: %s", result)
+	}
+}
+
+func TestRunKubectlMTVCommand_NoCredsWhenNoneSet(t *testing.T) {
+	// Save and restore defaults
+	origServer := GetDefaultKubeServer()
+	origToken := GetDefaultKubeToken()
+	defer func() {
+		SetDefaultKubeServer(origServer)
+		SetDefaultKubeToken(origToken)
+	}()
+
+	// Clear CLI defaults
+	SetDefaultKubeServer("")
+	SetDefaultKubeToken("")
+
+	// Use dry run mode with no context credentials
+	ctx := WithDryRun(context.Background(), true)
+
+	result, err := RunKubectlMTVCommand(ctx, []string{"get", "plan"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// No --server or --token should appear
+	if strings.Contains(result, "--server") {
+		t.Errorf("--server flag should NOT appear when no creds set, got: %s", result)
+	}
+	if strings.Contains(result, "--token") {
+		t.Errorf("--token flag should NOT appear when no creds set, got: %s", result)
+	}
+}
+
+func TestRunKubectlCommand_DefaultCredsFallback(t *testing.T) {
+	// Save and restore defaults
+	origServer := GetDefaultKubeServer()
+	origToken := GetDefaultKubeToken()
+	defer func() {
+		SetDefaultKubeServer(origServer)
+		SetDefaultKubeToken(origToken)
+	}()
+
+	// Set CLI defaults
+	SetDefaultKubeServer("https://cli-default.example.com:6443")
+	SetDefaultKubeToken("cli-default-token")
+
+	// Use dry run mode to capture the command without executing
+	ctx := WithDryRun(context.Background(), true)
+
+	result, err := RunKubectlCommand(ctx, []string{"get", "pods"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify CLI defaults are used
+	if !strings.Contains(result, "--server") {
+		t.Errorf("expected --server flag in command, got: %s", result)
+	}
+	if !strings.Contains(result, "cli-default.example.com") {
+		t.Errorf("expected CLI default server URL in command, got: %s", result)
+	}
+	if !strings.Contains(result, "--token") {
+		t.Errorf("expected --token flag in command, got: %s", result)
+	}
+}
+
+func TestRunKubectlCommand_ContextOverridesDefaults(t *testing.T) {
+	// Save and restore defaults
+	origServer := GetDefaultKubeServer()
+	origToken := GetDefaultKubeToken()
+	defer func() {
+		SetDefaultKubeServer(origServer)
+		SetDefaultKubeToken(origToken)
+	}()
+
+	// Set CLI defaults
+	SetDefaultKubeServer("https://cli-default.example.com:6443")
+	SetDefaultKubeToken("cli-default-token")
+
+	// Set context values (simulating HTTP headers) that should override CLI defaults
+	ctx := context.Background()
+	ctx = WithKubeServer(ctx, "https://header-override.example.com:6443")
+	ctx = WithKubeToken(ctx, "header-override-token")
+	ctx = WithDryRun(ctx, true)
+
+	result, err := RunKubectlCommand(ctx, []string{"get", "pods"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Context values should be used, not CLI defaults
+	if !strings.Contains(result, "header-override.example.com") {
+		t.Errorf("expected context server URL to override CLI default, got: %s", result)
+	}
+	if strings.Contains(result, "cli-default.example.com") {
+		t.Errorf("CLI default server should NOT appear when context has server, got: %s", result)
+	}
+}
+
 // --- Output format tests ---
 
 func TestOutputFormat(t *testing.T) {
