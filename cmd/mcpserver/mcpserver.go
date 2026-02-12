@@ -193,9 +193,11 @@ func createMCPServer() (*mcp.Server, error) {
 
 	// Register tools with minimal descriptions (the input schema covers parameter usage).
 	// The mtv_help tool provides on-demand detailed help for any command or topic.
-	mcp.AddTool(server, tools.GetMinimalMTVReadTool(registry), tools.HandleMTVRead(registry))
-	mcp.AddTool(server, tools.GetMinimalMTVWriteTool(registry), tools.HandleMTVWrite(registry))
-	mcp.AddTool(server, tools.GetMinimalKubectlDebugTool(), tools.HandleKubectlDebug)
+	// Use AddToolWithCoercion for tools with boolean parameters to handle string
+	// booleans ("True"/"true") from AI models that don't send proper JSON booleans.
+	tools.AddToolWithCoercion(server, tools.GetMinimalMTVReadTool(registry), tools.HandleMTVRead(registry))
+	tools.AddToolWithCoercion(server, tools.GetMinimalMTVWriteTool(registry), tools.HandleMTVWrite(registry))
+	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlDebugTool(), tools.HandleKubectlDebug)
 	mcp.AddTool(server, tools.GetMTVHelpTool(), tools.HandleMTVHelp)
 
 	return server, nil

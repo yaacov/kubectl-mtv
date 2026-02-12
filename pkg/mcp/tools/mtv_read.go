@@ -209,6 +209,15 @@ func buildArgs(cmdPath string, positionalArgs []string, flags map[string]any, na
 	// Add positional arguments
 	args = append(args, positionalArgs...)
 
+	// Merge all_namespaces from flags as fallback (for clients that pass it via flags map)
+	if !allNamespaces && flags != nil {
+		if v, ok := flags["all_namespaces"]; ok {
+			allNamespaces = parseBoolValue(v)
+		} else if v, ok := flags["A"]; ok {
+			allNamespaces = parseBoolValue(v)
+		}
+	}
+
 	// Add namespace flags
 	if allNamespaces {
 		args = append(args, "-A")
@@ -317,4 +326,23 @@ func appendNormalizedFlags(args []string, flags map[string]any, skipFlags map[st
 	}
 
 	return args
+}
+
+// parseBoolValue interprets a value from the flags map as a boolean.
+// It handles bool, string ("true"/"True"/"TRUE"/"1"/"false"/"False"/"FALSE"/"0"),
+// and float64 (JSON numbers: 1 = true, 0 = false).
+func parseBoolValue(v any) bool {
+	switch val := v.(type) {
+	case bool:
+		return val
+	case string:
+		if strings.EqualFold(val, "true") || val == "1" {
+			return true
+		}
+		return false
+	case float64:
+		return val != 0
+	default:
+		return false
+	}
 }
