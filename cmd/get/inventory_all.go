@@ -26,11 +26,11 @@ func NewInventoryNetworkCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 
 Queries the MTV inventory service to list networks available in the source provider.
 Use --query (-q) to filter results using TSL query syntax.`,
-		Example: `  # List all networks from a vSphere provider
-  kubectl-mtv get inventory network vsphere-prod
-
-  # Filter networks by name
+		Example: `  # Filter networks by name
   kubectl-mtv get inventory network vsphere-prod -q "where name ~= 'VM Network.*'"
+
+  # List all networks from a provider
+  kubectl-mtv get inventory network vsphere-prod
 
   # Output as JSON
   kubectl-mtv get inventory network vsphere-prod -o json`,
@@ -61,7 +61,7 @@ Use --query (-q) to filter results using TSL query syntax.`,
 	}
 
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
-	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount > 4\")")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'VM Network.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
 	// Add completion for output format flag
@@ -87,11 +87,11 @@ func NewInventoryStorageCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 
 Queries the MTV inventory service to list storage domains (oVirt), datastores (vSphere),
 or storage classes (OpenShift) available in the source provider.`,
-		Example: `  # List all storage from a vSphere provider
-  kubectl-mtv get inventory storage vsphere-prod
-
-  # Filter storage by name pattern
+		Example: `  # Filter storage by name pattern
   kubectl-mtv get inventory storage ovirt-prod -q "where name ~= 'data.*'"
+
+  # List all storage from a provider
+  kubectl-mtv get inventory storage vsphere-prod
 
   # Output as YAML
   kubectl-mtv get inventory storage vsphere-prod -o yaml`,
@@ -122,7 +122,7 @@ or storage classes (OpenShift) available in the source provider.`,
 	}
 
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
-	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount > 4\")")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'data.*' and type = 'VMFS'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
 	// Add completion for output format flag
@@ -158,6 +158,7 @@ Query Language (TSL):
     -q "where name ~= 'prod-.*'"
     -q "where powerState = 'poweredOn' and memoryMB > 4096"
     -q "where len(disks) > 1 and cpuCount <= 8"
+    -q "where any(concerns[*].category = 'Critical')"
     -q "where name like '%web%' order by memoryMB desc limit 10"
 
   Supports comparison, regex, logical operators, array functions (len(), any(), all()),
@@ -167,18 +168,20 @@ Query Language (TSL):
     kubectl-mtv get inventory vm <provider> -o json
 
   Run 'kubectl-mtv help tsl' for the full syntax reference and field list.`,
-		Example: `  # List all VMs from a vSphere provider
+		Example: `  # Find VMs with multiple NICs (array length)
+  kubectl-mtv get inventory vm vsphere-prod -q "where len(nics) >= 2 and cpuCount > 1"
+
+  # Find VMs with shared disks (any element match)
+  kubectl-mtv get inventory vm vsphere-prod -q "where any(disks[*].shared = true)"
+
+  # Find VMs with critical migration concerns
+  kubectl-mtv get inventory vm vsphere-prod -q "where any(concerns[*].category = 'Critical')"
+
+  # Filter VMs by name, CPU, and memory
+  kubectl-mtv get inventory vm vsphere-prod -q "where name ~= 'web-.*' and memoryMB > 4096"
+
+  # List all VMs from a provider
   kubectl-mtv get inventory vm vsphere-prod
-
-  # Filter VMs by name pattern
-  kubectl-mtv get inventory vm vsphere-prod -q "where name ~= 'web-.*'"
-
-  # Get VMs with more than 4 CPUs and 8GB memory
-  kubectl-mtv get inventory vm vsphere-prod -q "where cpuCount > 4 and memoryMB > 8192"
-
-  # Find VMs with multiple disks or networks
-  kubectl-mtv get inventory vm vsphere-prod -q "where len(disks) = 2"
-  kubectl-mtv get inventory vm vsphere-prod -q "where len(networks) = 2"
 
   # Show extended VM details
   kubectl-mtv get inventory vm vsphere-prod --extended

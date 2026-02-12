@@ -14,11 +14,7 @@ import (
 type MTVWriteInput struct {
 	Command string `json:"command" jsonschema:"Command path (e.g. create provider, delete plan, patch mapping)"`
 
-	Args []string `json:"args,omitempty" jsonschema:"Positional args (resource name)"`
-
-	Flags map[string]any `json:"flags,omitempty" jsonschema:"Flags as key-value pairs (e.g. type: vsphere, url: https://vcenter.example.com)"`
-
-	Namespace string `json:"namespace,omitempty" jsonschema:"Kubernetes namespace"`
+	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters including positional args and options (e.g. name: \"my-provider\", type: \"vsphere\", url: \"https://vcenter/sdk\", namespace: \"ns\")"`
 
 	DryRun bool `json:"dry_run,omitempty" jsonschema:"Preview without executing"`
 }
@@ -94,8 +90,11 @@ func HandleMTVWrite(registry *discovery.Registry) func(context.Context, *mcp.Cal
 			ctx = util.WithDryRun(ctx, true)
 		}
 
+		// Extract positional args from named entries in flags
+		positionalArgs := extractPositionalArgs(registry.GetCommand(cmdPath), input.Flags)
+
 		// Build command arguments
-		args := buildWriteArgs(cmdPath, input.Args, input.Flags, input.Namespace)
+		args := buildWriteArgs(cmdPath, positionalArgs, input.Flags)
 
 		// Execute command
 		result, err := util.RunKubectlMTVCommand(ctx, args)
@@ -109,12 +108,18 @@ func HandleMTVWrite(registry *discovery.Registry) func(context.Context, *mcp.Cal
 			return nil, nil, err
 		}
 
+		// Check for CLI errors and surface as MCP IsError response
+		if errResult := buildCLIErrorResult(data); errResult != nil {
+			return errResult, nil, nil
+		}
+
 		return nil, data, nil
 	}
 }
 
 // buildWriteArgs builds the command-line arguments for kubectl-mtv write commands.
-func buildWriteArgs(cmdPath string, positionalArgs []string, flags map[string]any, namespace string) []string {
+// All parameters (namespace, etc.) are extracted from the flags map.
+func buildWriteArgs(cmdPath string, positionalArgs []string, flags map[string]any) []string {
 	var args []string
 
 	// Add command path parts
@@ -123,6 +128,16 @@ func buildWriteArgs(cmdPath string, positionalArgs []string, flags map[string]an
 
 	// Add positional arguments
 	args = append(args, positionalArgs...)
+
+	// Extract namespace from flags
+	var namespace string
+	if flags != nil {
+		if v, ok := flags["namespace"]; ok {
+			namespace = fmt.Sprintf("%v", v)
+		} else if v, ok := flags["n"]; ok {
+			namespace = fmt.Sprintf("%v", v)
+		}
+	}
 
 	// Add namespace flag
 	if namespace != "" {

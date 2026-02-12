@@ -9,8 +9,11 @@ type HelpSchema struct {
 	CLIVersion string `json:"cli_version" yaml:"cli_version"`
 	// Name is the CLI name ("kubectl-mtv")
 	Name string `json:"name" yaml:"name"`
-	// Description is the CLI description
+	// Description is the CLI short description
 	Description string `json:"description" yaml:"description"`
+	// LongDescription is the extended CLI description with domain context
+	// (e.g., "Migrate virtual machines from VMware vSphere, oVirt...")
+	LongDescription string `json:"long_description,omitempty" yaml:"long_description,omitempty"`
 	// Commands contains all leaf commands
 	Commands []Command `json:"commands" yaml:"commands"`
 	// GlobalFlags contains flags available to all commands
@@ -44,6 +47,10 @@ type Command struct {
 	PositionalArgs []PositionalArg `json:"positional_args,omitempty" yaml:"positional_args,omitempty"`
 	// Examples are usage examples
 	Examples []Example `json:"examples,omitempty" yaml:"examples,omitempty"`
+	// Runnable indicates whether the command can be executed directly.
+	// Non-runnable commands are structural parents (e.g., "get inventory")
+	// included for their description metadata.
+	Runnable bool `json:"runnable" yaml:"runnable"`
 }
 
 // Flag represents a command-line flag.
@@ -64,6 +71,9 @@ type Flag struct {
 	Enum []string `json:"enum,omitempty" yaml:"enum,omitempty"`
 	// Hidden indicates whether the flag is hidden from normal help
 	Hidden bool `json:"hidden,omitempty" yaml:"hidden,omitempty"`
+	// LLMRelevant indicates whether the flag should be included in AI/MCP tool descriptions.
+	// Set via the "llm-relevant" pflag annotation on global flags.
+	LLMRelevant bool `json:"llm_relevant,omitempty" yaml:"llm_relevant,omitempty"`
 	// Providers lists which providers support this flag (empty = all)
 	// Extracted from [providers: x, y] hints in the flag description
 	Providers []string `json:"providers,omitempty" yaml:"providers,omitempty"`

@@ -54,7 +54,6 @@ func TestBuildWriteArgs(t *testing.T) {
 		cmdPath      string
 		args         []string
 		flags        map[string]any
-		namespace    string
 		wantContains []string
 		wantMissing  []string
 	}{
@@ -70,10 +69,10 @@ func TestBuildWriteArgs(t *testing.T) {
 			wantContains: []string{"delete", "plan", "my-plan"},
 		},
 		{
-			name:         "with namespace",
+			name:         "with namespace in flags",
 			cmdPath:      "start/plan",
 			args:         []string{"my-plan"},
-			namespace:    "demo",
+			flags:        map[string]any{"namespace": "demo"},
 			wantContains: []string{"start", "plan", "my-plan", "-n", "demo"},
 		},
 		{
@@ -95,19 +94,18 @@ func TestBuildWriteArgs(t *testing.T) {
 			wantMissing:  []string{"-o"},
 		},
 		{
-			name:         "namespace in flags is skipped",
+			name:         "namespace extracted from flags not duplicated",
 			cmdPath:      "start/plan",
 			args:         []string{"my-plan"},
-			namespace:    "real-ns",
-			flags:        map[string]any{"namespace": "ignored"},
+			flags:        map[string]any{"namespace": "real-ns"},
 			wantContains: []string{"-n", "real-ns"},
-			wantMissing:  []string{"ignored"},
+			wantMissing:  []string{"--namespace"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildWriteArgs(tt.cmdPath, tt.args, tt.flags, tt.namespace)
+			result := buildWriteArgs(tt.cmdPath, tt.args, tt.flags)
 			joined := strings.Join(result, " ")
 
 			for _, want := range tt.wantContains {
@@ -170,9 +168,18 @@ func TestHandleMTVWrite_DryRun(t *testing.T) {
 			"get/plan": {Path: []string{"get", "plan"}, PathString: "get plan", Description: "Get plans"},
 		},
 		ReadWrite: map[string]*discovery.Command{
-			"create/provider": {Path: []string{"create", "provider"}, PathString: "create provider", Description: "Create provider"},
-			"delete/plan":     {Path: []string{"delete", "plan"}, PathString: "delete plan", Description: "Delete plan"},
-			"start/plan":      {Path: []string{"start", "plan"}, PathString: "start plan", Description: "Start plan"},
+			"create/provider": {
+				Path: []string{"create", "provider"}, PathString: "create provider", Description: "Create provider",
+				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: true}},
+			},
+			"delete/plan": {
+				Path: []string{"delete", "plan"}, PathString: "delete plan", Description: "Delete plan",
+				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: false, Variadic: true}},
+			},
+			"start/plan": {
+				Path: []string{"start", "plan"}, PathString: "start plan", Description: "Start plan",
+				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: false, Variadic: true}},
+			},
 		},
 	}
 
@@ -186,11 +193,11 @@ func TestHandleMTVWrite_DryRun(t *testing.T) {
 		wantContains []string
 	}{
 		{
-			name: "create provider with flags",
+			name: "create provider with named arg in flags",
 			input: MTVWriteInput{
 				Command: "create provider",
-				Args:    []string{"my-vsphere"},
 				Flags: map[string]any{
+					"name": "my-vsphere",
 					"type": "vsphere",
 					"url":  "https://vcenter.example.com",
 				},
@@ -199,20 +206,19 @@ func TestHandleMTVWrite_DryRun(t *testing.T) {
 			wantContains: []string{"kubectl-mtv", "create", "provider", "my-vsphere", "--type", "vsphere", "--url"},
 		},
 		{
-			name: "delete plan with namespace",
+			name: "delete plan with named arg and namespace",
 			input: MTVWriteInput{
-				Command:   "delete plan",
-				Args:      []string{"old-plan"},
-				Namespace: "demo",
-				DryRun:    true,
+				Command: "delete plan",
+				Flags:   map[string]any{"name": "old-plan", "namespace": "demo"},
+				DryRun:  true,
 			},
 			wantContains: []string{"kubectl-mtv", "delete", "plan", "old-plan", "-n", "demo"},
 		},
 		{
-			name: "start plan",
+			name: "start plan with named arg",
 			input: MTVWriteInput{
 				Command: "start plan",
-				Args:    []string{"my-plan"},
+				Flags:   map[string]any{"name": "my-plan"},
 				DryRun:  true,
 			},
 			wantContains: []string{"kubectl-mtv", "start", "plan", "my-plan"},

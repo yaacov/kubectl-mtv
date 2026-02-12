@@ -77,24 +77,41 @@ type EnumValuer interface {
 // Generate creates a HelpSchema from a Cobra command tree.
 func Generate(rootCmd *cobra.Command, cliVersion string, opts Options) *HelpSchema {
 	schema := &HelpSchema{
-		Version:     SchemaVersion,
-		CLIVersion:  cliVersion,
-		Name:        rootCmd.Name(),
-		Description: rootCmd.Short,
-		Commands:    []Command{},
-		GlobalFlags: []Flag{},
+		Version:         SchemaVersion,
+		CLIVersion:      cliVersion,
+		Name:            rootCmd.Name(),
+		Description:     rootCmd.Short,
+		LongDescription: rootCmd.Long,
+		Commands:        []Command{},
+		GlobalFlags:     []Flag{},
 	}
 
 	// Walk command tree - automatically discovers all commands
 	walkCommands(rootCmd, []string{}, func(cmd *cobra.Command, path []string) {
-		// Skip non-runnable commands (groups without RunE)
-		if !cmd.Runnable() {
-			return
-		}
-
 		// Skip hidden commands unless requested
 		if cmd.Hidden && !opts.IncludeHidden {
 			return
+		}
+
+		runnable := cmd.Runnable()
+
+		// Include non-runnable commands only if they are at depth ≥ 2
+		// (e.g., "get inventory") and have 3+ runnable children.
+		// This provides description metadata for sibling-group compaction
+		// without including top-level structural parents like "get" or "create".
+		if !runnable {
+			if len(path) < 2 {
+				return
+			}
+			runnableChildren := 0
+			for _, child := range cmd.Commands() {
+				if child.Runnable() {
+					runnableChildren++
+				}
+			}
+			if runnableChildren < 3 {
+				return
+			}
 		}
 
 		// Apply category filter
@@ -106,7 +123,9 @@ func Generate(rootCmd *cobra.Command, cliVersion string, opts Options) *HelpSche
 			return
 		}
 
-		schema.Commands = append(schema.Commands, commandToSchema(cmd, path, opts))
+		c := commandToSchema(cmd, path, opts)
+		c.Runnable = runnable
+		schema.Commands = append(schema.Commands, c)
 	})
 
 	// Extract global flags from persistent flags
@@ -219,12 +238,21 @@ func flagToSchema(f *pflag.Flag) Flag {
 	providers, description := parseProviderHints(description)
 	migrationTypes, description := parseMigrationHints(description)
 
+	// Check for the "llm-relevant" pflag annotation
+	llmRelevant := false
+	if ann := f.Annotations; ann != nil {
+		if _, ok := ann["llm-relevant"]; ok {
+			llmRelevant = true
+		}
+	}
+
 	flag := Flag{
 		Name:           f.Name,
 		Shorthand:      f.Shorthand,
 		Type:           f.Value.Type(),
 		Description:    description,
 		Hidden:         f.Hidden,
+		LLMRelevant:    llmRelevant,
 		Providers:      providers,
 		MigrationTypes: migrationTypes,
 	}
@@ -356,6 +384,16 @@ func parsePositionalArgs(usage string) []PositionalArg {
 //
 //	# Comment describing the example
 //	command args
+//
+// Multi-line examples using backslash continuations are joined into a single
+// command string so that downstream consumers (e.g. MCP example conversion)
+// see the full command with all flags:
+//
+//	kubectl-mtv create provider vsphere-prod \
+//	  --type vsphere \
+//	  --url https://vcenter/sdk
+//
+// becomes: "kubectl-mtv create provider vsphere-prod --type vsphere --url https://vcenter/sdk"
 func parseExamples(exampleText string) []Example {
 	if exampleText == "" {
 		return nil
@@ -365,6 +403,7 @@ func parseExamples(exampleText string) []Example {
 	lines := strings.Split(exampleText, "\n")
 
 	var currentDesc string
+	var pendingCmd string // accumulates backslash-continued lines
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
@@ -372,16 +411,51 @@ func parseExamples(exampleText string) []Example {
 		}
 
 		if strings.HasPrefix(line, "#") {
-			// This is a description comment
+			// Flush any pending command before starting a new description
+			if pendingCmd != "" {
+				examples = append(examples, Example{
+					Description: currentDesc,
+					Command:     pendingCmd,
+				})
+				pendingCmd = ""
+			}
+			// This is a description comment (overwrites any previous unused description)
 			currentDesc = strings.TrimSpace(strings.TrimPrefix(line, "#"))
+		} else if strings.HasSuffix(line, "\\") {
+			// Backslash continuation: strip the trailing '\' and accumulate
+			part := strings.TrimSpace(strings.TrimSuffix(line, "\\"))
+			if pendingCmd == "" {
+				pendingCmd = part
+			} else {
+				pendingCmd += " " + part
+			}
 		} else {
-			// This is a command
-			examples = append(examples, Example{
-				Description: currentDesc,
-				Command:     line,
-			})
+			// Final line of a command (no trailing backslash)
+			if pendingCmd != "" {
+				// Join with accumulated continuation lines
+				pendingCmd += " " + line
+				examples = append(examples, Example{
+					Description: currentDesc,
+					Command:     pendingCmd,
+				})
+				pendingCmd = ""
+			} else {
+				// Single-line command
+				examples = append(examples, Example{
+					Description: currentDesc,
+					Command:     line,
+				})
+			}
 			currentDesc = ""
 		}
+	}
+
+	// Flush any trailing continued command (edge case: example ends with '\')
+	if pendingCmd != "" {
+		examples = append(examples, Example{
+			Description: currentDesc,
+			Command:     pendingCmd,
+		})
 	}
 
 	return examples

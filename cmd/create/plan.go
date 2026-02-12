@@ -92,9 +92,23 @@ network/storage mappings. VMs can be specified as:
   - TSL query: --vms "where name ~= 'prod-.*' and cpuCount <= 8"
   - YAML/JSON file: --vms @vms.yaml
 
+Providers:
+  --source is the name of the source provider resource (e.g. "vsphere-prod").
+  --target is the name of the target provider resource (e.g. "host", "ocp-target").
+  If --target is omitted, the first OpenShift provider in the namespace is used.
+
 Network and storage mappings can be created inline using --network-pairs and
 --storage-pairs, or reference existing mapping resources with --network-mapping
 and --storage-mapping.
+
+Mapping Pair Formats:
+  --network-pairs format: "source_network:target" (comma-separated for multiple)
+    target can be a network name, namespace/name, "default" (pod networking), or "ignored" (skip).
+    Example: "VM Network:default" or "prod-net:myns/br-ext,mgmt-net:default"
+
+  --storage-pairs format: "source_datastore:storage_class" (comma-separated for multiple)
+    Maps source datastores to OpenShift storage classes.
+    Example: "datastore1:standard" or "ds1:fast-ssd,ds2:economy"
 
 Query Language (TSL):
   The --vms flag accepts TSL queries to select VMs dynamically:
@@ -109,7 +123,11 @@ Affinity Syntax (KARL):
     --convertor-affinity "PREFER pods(app=cache) on zone weight=80"
   Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.
   Run 'kubectl-mtv help karl' for the full syntax reference.`,
-		Example: `  # Create a plan with specific VMs
+		Example: `  # Create a plan with specific VMs and inline mappings
+  # --target is the name of the target provider resource (omit to auto-detect)
+  # --network-pairs maps source networks to target: "source:target"
+  #   use "default" as target for pod networking
+  # --storage-pairs maps source datastores to storage classes: "source:storageclass"
   kubectl-mtv create plan my-migration \
     --source vsphere-prod \
     --target host \
@@ -117,7 +135,15 @@ Affinity Syntax (KARL):
     --network-pairs "VM Network:default" \
     --storage-pairs "datastore1:standard"
 
-  # Create a plan using VM query
+  # Multiple network and storage mappings (comma-separated pairs)
+  kubectl-mtv create plan multi-map \
+    --source vsphere-prod \
+    --target host \
+    --vms "app-vm,cache-vm" \
+    --network-pairs "VM Network:default,Production:myns/br-ext" \
+    --storage-pairs "datastore1:fast-ssd,datastore2:economy"
+
+  # Create a plan using VM query to select VMs dynamically
   kubectl-mtv create plan batch-migration \
     --source vsphere-prod \
     --target host \
@@ -125,7 +151,7 @@ Affinity Syntax (KARL):
     --default-target-network default \
     --default-target-storage-class standard
 
-  # Create a warm migration plan with scheduled cutover
+  # Create a warm migration plan
   kubectl-mtv create plan warm-migration \
     --source vsphere-prod \
     --target host \

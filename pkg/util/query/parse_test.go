@@ -240,6 +240,46 @@ func TestParseQueryString(t *testing.T) {
 				HasLimit:   true,
 			},
 		},
+		// Bare expression heuristic tests: auto-prepend "where"
+		{
+			name:  "bare filter expression",
+			query: "cpuCount > 4",
+			expected: &QueryOptions{
+				Select:     nil,
+				HasSelect:  false,
+				Where:      "cpuCount > 4",
+				OrderBy:    nil,
+				HasOrderBy: false,
+				Limit:      -1,
+				HasLimit:   false,
+			},
+		},
+		{
+			name:  "bare compound filter",
+			query: "name ~ 'web' and memoryMB > 8192",
+			expected: &QueryOptions{
+				Select:     nil,
+				HasSelect:  false,
+				Where:      "name ~ 'web' and memoryMB > 8192",
+				OrderBy:    nil,
+				HasOrderBy: false,
+				Limit:      -1,
+				HasLimit:   false,
+			},
+		},
+		{
+			name:  "bare filter with trailing limit",
+			query: "name = 'test' limit 5",
+			expected: &QueryOptions{
+				Select:     nil,
+				HasSelect:  false,
+				Where:      "name = 'test'",
+				OrderBy:    nil,
+				HasOrderBy: false,
+				Limit:      5,
+				HasLimit:   true,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -250,6 +290,37 @@ func TestParseQueryString(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.expected) {
 				t.Errorf("ParseQueryString(%q) =\n  %#v\nexpected\n  %#v", tt.query, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestHasQueryKeywordPrefix(t *testing.T) {
+	tests := []struct {
+		query  string
+		expect bool
+	}{
+		{"select name", true},
+		{"SELECT name", true},
+		{"where cpuCount > 4", true},
+		{"WHERE cpuCount > 4", true},
+		{"order by name", true},
+		{"ORDER BY name", true},
+		{"sort by name", true},
+		{"SORT BY name", true},
+		{"limit 10", true},
+		{"LIMIT 10", true},
+		{"cpuCount > 4", false},
+		{"name ~ 'web'", false},
+		{"status = 'active' limit 5", false},
+		{"  where name = 'x'", true}, // leading whitespace
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.query, func(t *testing.T) {
+			got := hasQueryKeywordPrefix(tt.query)
+			if got != tt.expect {
+				t.Errorf("hasQueryKeywordPrefix(%q) = %v, want %v", tt.query, got, tt.expect)
 			}
 		})
 	}

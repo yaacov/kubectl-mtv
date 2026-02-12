@@ -115,6 +115,34 @@ func GetOutputFormat() string {
 	return outputFormat
 }
 
+// defaultKubeServer stores the default Kubernetes API server URL set via CLI flags.
+// This is used as a fallback when no server URL is provided in the request context (HTTP headers).
+var defaultKubeServer string
+
+// SetDefaultKubeServer sets the default Kubernetes API server URL from CLI flags.
+func SetDefaultKubeServer(server string) {
+	defaultKubeServer = server
+}
+
+// GetDefaultKubeServer returns the default Kubernetes API server URL set via CLI flags.
+func GetDefaultKubeServer() string {
+	return defaultKubeServer
+}
+
+// defaultKubeToken stores the default Kubernetes authentication token set via CLI flags.
+// This is used as a fallback when no token is provided in the request context (HTTP headers).
+var defaultKubeToken string
+
+// SetDefaultKubeToken sets the default Kubernetes authentication token from CLI flags.
+func SetDefaultKubeToken(token string) {
+	defaultKubeToken = token
+}
+
+// GetDefaultKubeToken returns the default Kubernetes authentication token set via CLI flags.
+func GetDefaultKubeToken() string {
+	return defaultKubeToken
+}
+
 // CommandResponse represents the structured response from command execution
 type CommandResponse struct {
 	Command     string `json:"command"`
@@ -127,20 +155,25 @@ type CommandResponse struct {
 // It accepts a context which may contain a Kubernetes token and/or server URL for authentication.
 // If a token is present in the context, it will be passed via the --token flag.
 // If a server URL is present in the context, it will be passed via the --server flag.
-// If neither is present, it falls back to the default kubeconfig behavior.
+// If neither is present, it falls back to CLI default values, then to the default kubeconfig behavior.
+// Precedence: context (HTTP headers) > CLI defaults > kubeconfig (implicit).
 // If dry run mode is enabled in the context, it returns a teaching response instead of executing.
 func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
-	// Check if we have a server URL in the context and prepend --server flag
+	// Check context first (HTTP headers), then fall back to CLI defaults for --server flag
 	// Server flag is prepended first so it appears before --token in the final command
 	if server, ok := GetKubeServer(ctx); ok && server != "" {
 		args = append([]string{"--server", server}, args...)
+	} else if defaultKubeServer != "" {
+		args = append([]string{"--server", defaultKubeServer}, args...)
 	}
 
-	// Check if we have a token in the context and prepend --token flag
+	// Check context first (HTTP headers), then fall back to CLI defaults for --token flag
 	if token, ok := GetKubeToken(ctx); ok && token != "" {
 		// Insert --token flag at the beginning of args (after subcommand if present)
 		// This ensures it's processed before any other flags
 		args = append([]string{"--token", token}, args...)
+	} else if defaultKubeToken != "" {
+		args = append([]string{"--token", defaultKubeToken}, args...)
 	}
 
 	// Check if we're in dry run mode
@@ -215,20 +248,25 @@ func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
 // It accepts a context which may contain a Kubernetes token and/or server URL for authentication.
 // If a token is present in the context, it will be passed via the --token flag.
 // If a server URL is present in the context, it will be passed via the --server flag.
-// If neither is present, it falls back to the default kubeconfig behavior.
+// If neither is present, it falls back to CLI default values, then to the default kubeconfig behavior.
+// Precedence: context (HTTP headers) > CLI defaults > kubeconfig (implicit).
 // If dry run mode is enabled in the context, it returns a teaching response instead of executing.
 func RunKubectlCommand(ctx context.Context, args []string) (string, error) {
-	// Check if we have a server URL in the context and prepend --server flag
+	// Check context first (HTTP headers), then fall back to CLI defaults for --server flag
 	// Server flag is prepended first so it appears before --token in the final command
 	if server, ok := GetKubeServer(ctx); ok && server != "" {
 		args = append([]string{"--server", server}, args...)
+	} else if defaultKubeServer != "" {
+		args = append([]string{"--server", defaultKubeServer}, args...)
 	}
 
-	// Check if we have a token in the context and prepend --token flag
+	// Check context first (HTTP headers), then fall back to CLI defaults for --token flag
 	if token, ok := GetKubeToken(ctx); ok && token != "" {
 		// Insert --token flag at the beginning of args (after subcommand if present)
 		// This ensures it's processed before any other flags
 		args = append([]string{"--token", token}, args...)
+	} else if defaultKubeToken != "" {
+		args = append([]string{"--token", defaultKubeToken}, args...)
 	}
 
 	// Check if we're in dry run mode

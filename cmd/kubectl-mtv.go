@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 
@@ -141,8 +142,8 @@ func init() {
 	rootCmd = &cobra.Command{
 		Use:   "kubectl-mtv",
 		Short: "Migration Toolkit for Virtualization CLI",
-		Long: `Migration Toolkit for Virtualization (MTV) CLI
-A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files to KubeVirt.`,
+		Long: `Migration Toolkit for Virtualization (MTV) CLI.
+Migrate virtual machines from VMware vSphere, oVirt (RHV), OpenStack, and OVA to KubeVirt on OpenShift/Kubernetes.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// Initialize klog with the verbosity level
 			klog.InitFlags(nil)
@@ -165,6 +166,11 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 	rootCmd.PersistentFlags().StringVarP(&globalConfig.InventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
 	rootCmd.PersistentFlags().BoolVar(&globalConfig.InventoryInsecureSkipTLS, "inventory-insecure-skip-tls", os.Getenv("MTV_INVENTORY_INSECURE_SKIP_TLS") == "true", "Skip TLS verification for inventory service connections")
 
+	// Mark global flags that should appear in AI/MCP tool descriptions.
+	// These are surfaced via the "llm-relevant" pflag annotation, which the help
+	// generator reads and sets in the machine-readable schema.
+	markLLMRelevant(rootCmd.PersistentFlags(), "namespace", "all-namespaces", "inventory-url", "verbose")
+
 	// Add standard commands for various resources - directly using package functions
 	rootCmd.AddCommand(get.NewGetCmd(kubeConfigFlags, globalConfig))
 	rootCmd.AddCommand(delete.NewDeleteCmd(kubeConfigFlags))
@@ -185,7 +191,7 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 	// Health command - check MTV system health
 	rootCmd.AddCommand(health.NewHealthCmd(kubeConfigFlags, globalConfig))
 
-	// Settings command - view and manage ForkliftController settings
+	// Settings command - view ForkliftController settings
 	rootCmd.AddCommand(settings.NewSettingsCmd(kubeConfigFlags, globalConfig))
 
 	// MCP Server command - start the Model Context Protocol server
@@ -194,4 +200,23 @@ A kubectl plugin for migrating VMs from oVirt, VMware, OpenStack, and OVA files 
 	// Help command - replace default Cobra help with our enhanced version
 	// that supports machine-readable output for MCP server integration
 	rootCmd.SetHelpCommand(help.NewHelpCmd(rootCmd, clientVersion))
+}
+
+// LLMRelevantAnnotation is the pflag annotation key used to mark flags
+// that should be included in AI/MCP tool descriptions.
+const LLMRelevantAnnotation = "llm-relevant"
+
+// markLLMRelevant annotates the named flags as relevant for LLM/MCP tool descriptions.
+// The help generator reads this annotation and sets the llm_relevant field in the schema.
+func markLLMRelevant(flags *pflag.FlagSet, names ...string) {
+	for _, name := range names {
+		f := flags.Lookup(name)
+		if f == nil {
+			continue
+		}
+		if f.Annotations == nil {
+			f.Annotations = make(map[string][]string)
+		}
+		f.Annotations[LLMRelevantAnnotation] = []string{"true"}
+	}
 }

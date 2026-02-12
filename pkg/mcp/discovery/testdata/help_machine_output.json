@@ -3,6 +3,7 @@
   "cli_version": "unknown",
   "name": "kubectl-mtv",
   "description": "Migration Toolkit for Virtualization CLI",
+  "long_description": "Migration Toolkit for Virtualization (MTV) CLI.\nMigrate virtual machines from VMware vSphere, oVirt (RHV), OpenStack, and OVA to KubeVirt on OpenShift/Kubernetes.",
   "commands": [
     {
       "name": "plan",
@@ -47,7 +48,8 @@
           "description": "Archive all plans in the namespace",
           "command": "kubectl-mtv archive plan --all"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "plan",
@@ -84,7 +86,8 @@
           "description": "Cancel VMs from a file",
           "command": "kubectl-mtv cancel plan my-migration --vms @failed-vms.yaml"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "bash",
@@ -105,7 +108,8 @@
           "description": "disable completion descriptions",
           "required": false
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "fish",
@@ -126,7 +130,8 @@
           "description": "disable completion descriptions",
           "required": false
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "powershell",
@@ -147,7 +152,8 @@
           "description": "disable completion descriptions",
           "required": false
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "zsh",
@@ -168,7 +174,8 @@
           "description": "disable completion descriptions",
           "required": false
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "hook",
@@ -215,7 +222,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "host",
@@ -295,7 +303,8 @@
           "description": "",
           "required": false
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "network",
@@ -341,37 +350,14 @@
       "examples": [
         {
           "description": "Create a network mapping to pod networking",
-          "command": "kubectl-mtv create mapping network my-net-map \\"
-        },
-        {
-          "description": "",
-          "command": "--source vsphere-prod \\"
-        },
-        {
-          "description": "",
-          "command": "--target host \\"
-        },
-        {
-          "description": "",
-          "command": "--network-pairs \"VM Network:default\""
+          "command": "kubectl-mtv create mapping network my-net-map --source vsphere-prod --target host --network-pairs \"VM Network:default\""
         },
         {
           "description": "Create a network mapping to a specific NAD",
-          "command": "kubectl-mtv create mapping network my-net-map \\"
-        },
-        {
-          "description": "",
-          "command": "--source vsphere-prod \\"
-        },
-        {
-          "description": "",
-          "command": "--target host \\"
-        },
-        {
-          "description": "",
-          "command": "--network-pairs \"VM Network:openshift-cnv/br-external,Management:default\""
+          "command": "kubectl-mtv create mapping network my-net-map --source vsphere-prod --target host --network-pairs \"VM Network:openshift-cnv/br-external,Management:default\""
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "storage",
@@ -496,57 +482,18 @@
       "examples": [
         {
           "description": "Create a simple storage mapping",
-          "command": "kubectl-mtv create mapping storage my-storage-map \\"
-        },
-        {
-          "description": "",
-          "command": "--source vsphere-prod \\"
-        },
-        {
-          "description": "",
-          "command": "--target host \\"
-        },
-        {
-          "description": "",
-          "command": "--storage-pairs \"datastore1:standard,datastore2:fast\""
+          "command": "kubectl-mtv create mapping storage my-storage-map --source vsphere-prod --target host --storage-pairs \"datastore1:standard,datastore2:fast\""
         },
         {
           "description": "Create a storage mapping with volume mode",
-          "command": "kubectl-mtv create mapping storage my-storage-map \\"
-        },
-        {
-          "description": "",
-          "command": "--source vsphere-prod \\"
-        },
-        {
-          "description": "",
-          "command": "--target host \\"
-        },
-        {
-          "description": "",
-          "command": "--storage-pairs \"datastore1:ocs-storagecluster-ceph-rbd\" \\"
-        },
-        {
-          "description": "",
-          "command": "--default-volume-mode Block"
+          "command": "kubectl-mtv create mapping storage my-storage-map --source vsphere-prod --target host --storage-pairs \"datastore1:ocs-storagecluster-ceph-rbd\" --default-volume-mode Block"
         },
         {
           "description": "Create a storage mapping with offload plugin",
-          "command": "kubectl-mtv create mapping storage my-storage-map \\"
-        },
-        {
-          "description": "",
-          "command": "--source vsphere-prod \\"
-        },
-        {
-          "description": "",
-          "command": "--target host \\"
-        },
-        {
-          "description": "",
-          "command": "--storage-pairs \"datastore1:ocs-storagecluster-ceph-rbd;offloadPlugin=vsphere;offloadVendor=ontap\""
+          "command": "kubectl-mtv create mapping storage my-storage-map --source vsphere-prod --target host --storage-pairs \"datastore1:ocs-storagecluster-ceph-rbd;offloadPlugin=vsphere;offloadVendor=ontap\""
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "plan",
@@ -556,7 +503,7 @@
       ],
       "path_string": "create plan",
       "description": "Create a migration plan",
-      "long_description": "Create a migration plan to move VMs from a source provider to OpenShift.\n\nA plan defines which VMs to migrate, the source and target providers, and\nnetwork/storage mappings. VMs can be specified as:\n  - Comma-separated names: --vms \"vm1,vm2,vm3\"\n  - TSL query: --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n  - YAML/JSON file: --vms @vms.yaml\n\nNetwork and storage mappings can be created inline using --network-pairs and\n--storage-pairs, or reference existing mapping resources with --network-mapping\nand --storage-mapping.\n\nQuery Language (TSL):\n  The --vms flag accepts TSL queries to select VMs dynamically:\n    --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n    --vms \"where powerState = 'poweredOn' and memoryMB \u003e 4096\"\n    --vms \"where len(disks) \u003e 1\"\n  Run 'kubectl-mtv help tsl' for the full syntax reference and field list.\n\nAffinity Syntax (KARL):\n  The --target-affinity and --convertor-affinity flags use KARL syntax:\n    --target-affinity \"REQUIRE pods(app=database) on node\"\n    --convertor-affinity \"PREFER pods(app=cache) on zone weight=80\"\n  Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.\n  Run 'kubectl-mtv help karl' for the full syntax reference.",
+      "long_description": "Create a migration plan to move VMs from a source provider to OpenShift.\n\nA plan defines which VMs to migrate, the source and target providers, and\nnetwork/storage mappings. VMs can be specified as:\n  - Comma-separated names: --vms \"vm1,vm2,vm3\"\n  - TSL query: --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n  - YAML/JSON file: --vms @vms.yaml\n\nProviders:\n  --source is the name of the source provider resource (e.g. \"vsphere-prod\").\n  --target is the name of the target provider resource (e.g. \"host\", \"ocp-target\").\n  If --target is omitted, the first OpenShift provider in the namespace is used.\n\nNetwork and storage mappings can be created inline using --network-pairs and\n--storage-pairs, or reference existing mapping resources with --network-mapping\nand --storage-mapping.\n\nMapping Pair Formats:\n  --network-pairs format: \"source_network:target\" (comma-separated for multiple)\n    target can be a network name, namespace/name, \"default\" (pod networking), or \"ignored\" (skip).\n    Example: \"VM Network:default\" or \"prod-net:myns/br-ext,mgmt-net:default\"\n\n  --storage-pairs format: \"source_datastore:storage_class\" (comma-separated for multiple)\n    Maps source datastores to OpenShift storage classes.\n    Example: \"datastore1:standard\" or \"ds1:fast-ssd,ds2:economy\"\n\nQuery Language (TSL):\n  The --vms flag accepts TSL queries to select VMs dynamically:\n    --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n    --vms \"where powerState = 'poweredOn' and memoryMB \u003e 4096\"\n    --vms \"where len(disks) \u003e 1\"\n  Run 'kubectl-mtv help tsl' for the full syntax reference and field list.\n\nAffinity Syntax (KARL):\n  The --target-affinity and --convertor-affinity flags use KARL syntax:\n    --target-affinity \"REQUIRE pods(app=database) on node\"\n    --convertor-affinity \"PREFER pods(app=cache) on zone weight=80\"\n  Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.\n  Run 'kubectl-mtv help karl' for the full syntax reference.",
       "usage": "kubectl-mtv create plan NAME [flags]",
       "category": "write",
       "flags": [
@@ -1001,72 +948,20 @@
       ],
       "examples": [
         {
-          "description": "Create a plan with specific VMs",
-          "command": "kubectl-mtv create plan my-migration \\"
+          "description": "--storage-pairs maps source datastores to storage classes: \"source:storageclass\"",
+          "command": "kubectl-mtv create plan my-migration --source vsphere-prod --target host --vms \"web-server,db-server\" --network-pairs \"VM Network:default\" --storage-pairs \"datastore1:standard\""
         },
         {
-          "description": "",
-          "command": "--source vsphere-prod \\"
+          "description": "Multiple network and storage mappings (comma-separated pairs)",
+          "command": "kubectl-mtv create plan multi-map --source vsphere-prod --target host --vms \"app-vm,cache-vm\" --network-pairs \"VM Network:default,Production:myns/br-ext\" --storage-pairs \"datastore1:fast-ssd,datastore2:economy\""
         },
         {
-          "description": "",
-          "command": "--target host \\"
+          "description": "Create a plan using VM query to select VMs dynamically",
+          "command": "kubectl-mtv create plan batch-migration --source vsphere-prod --target host --vms \"where name ~= 'legacy-.*'\" --default-target-network default --default-target-storage-class standard"
         },
         {
-          "description": "",
-          "command": "--vms \"web-server,db-server\" \\"
-        },
-        {
-          "description": "",
-          "command": "--network-pairs \"VM Network:default\" \\"
-        },
-        {
-          "description": "",
-          "command": "--storage-pairs \"datastore1:standard\""
-        },
-        {
-          "description": "Create a plan using VM query",
-          "command": "kubectl-mtv create plan batch-migration \\"
-        },
-        {
-          "description": "",
-          "command": "--source vsphere-prod \\"
-        },
-        {
-          "description": "",
-          "command": "--target host \\"
-        },
-        {
-          "description": "",
-          "command": "--vms \"where name ~= 'legacy-.*'\" \\"
-        },
-        {
-          "description": "",
-          "command": "--default-target-network default \\"
-        },
-        {
-          "description": "",
-          "command": "--default-target-storage-class standard"
-        },
-        {
-          "description": "Create a warm migration plan with scheduled cutover",
-          "command": "kubectl-mtv create plan warm-migration \\"
-        },
-        {
-          "description": "",
-          "command": "--source vsphere-prod \\"
-        },
-        {
-          "description": "",
-          "command": "--target host \\"
-        },
-        {
-          "description": "",
-          "command": "--vms \"critical-vm\" \\"
-        },
-        {
-          "description": "",
-          "command": "--migration-type warm"
+          "description": "Create a warm migration plan",
+          "command": "kubectl-mtv create plan warm-migration --source vsphere-prod --target host --vms \"critical-vm\" --migration-type warm"
         },
         {
           "description": "Create a plan from VM file",
@@ -1074,29 +969,10 @@
         },
         {
           "description": "",
-          "command": "kubectl-mtv create plan file-migration \\"
-        },
-        {
-          "description": "",
-          "command": "--source vsphere-prod \\"
-        },
-        {
-          "description": "",
-          "command": "--target host \\"
-        },
-        {
-          "description": "",
-          "command": "--vms @vms.yaml \\"
-        },
-        {
-          "description": "",
-          "command": "--default-target-network default \\"
-        },
-        {
-          "description": "",
-          "command": "--default-target-storage-class standard"
+          "command": "kubectl-mtv create plan file-migration --source vsphere-prod --target host --vms @vms.yaml --default-target-network default --default-target-storage-class standard"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "provider",
@@ -1358,117 +1234,26 @@
       "examples": [
         {
           "description": "Create a vSphere provider",
-          "command": "kubectl-mtv create provider vsphere-prod \\"
-        },
-        {
-          "description": "",
-          "command": "--type vsphere \\"
-        },
-        {
-          "description": "",
-          "command": "--url https://vcenter.example.com/sdk \\"
-        },
-        {
-          "description": "",
-          "command": "--username admin@vsphere.local \\"
-        },
-        {
-          "description": "",
-          "command": "--password 'secret' \\"
-        },
-        {
-          "description": "",
-          "command": "--vddk-init-image quay.io/kubev2v/vddk:latest"
+          "command": "kubectl-mtv create provider vsphere-prod --type vsphere --url https://vcenter.example.com/sdk --username admin@vsphere.local --password 'secret' --vddk-init-image quay.io/kubev2v/vddk:latest"
         },
         {
           "description": "Create an oVirt provider",
-          "command": "kubectl-mtv create provider ovirt-prod \\"
-        },
-        {
-          "description": "",
-          "command": "--type ovirt \\"
-        },
-        {
-          "description": "",
-          "command": "--url https://rhv-manager.example.com/ovirt-engine/api \\"
-        },
-        {
-          "description": "",
-          "command": "--username admin@internal \\"
-        },
-        {
-          "description": "",
-          "command": "--password 'secret'"
+          "command": "kubectl-mtv create provider ovirt-prod --type ovirt --url https://rhv-manager.example.com/ovirt-engine/api --username admin@internal --password 'secret'"
         },
         {
           "description": "Create an OpenShift target provider",
-          "command": "kubectl-mtv create provider host \\"
-        },
-        {
-          "description": "",
-          "command": "--type openshift \\"
-        },
-        {
-          "description": "",
-          "command": "--url https://api.cluster.example.com:6443 \\"
-        },
-        {
-          "description": "",
-          "command": "--token 'eyJhbGciOiJSUzI1NiIsInR5...'"
+          "command": "kubectl-mtv create provider host --type openshift --url https://api.cluster.example.com:6443 --token 'eyJhbGciOiJSUzI1NiIsInR5...'"
         },
         {
           "description": "Create an OpenStack provider",
-          "command": "kubectl-mtv create provider openstack-prod \\"
-        },
-        {
-          "description": "",
-          "command": "--type openstack \\"
-        },
-        {
-          "description": "",
-          "command": "--url https://keystone.example.com:5000/v3 \\"
-        },
-        {
-          "description": "",
-          "command": "--username admin \\"
-        },
-        {
-          "description": "",
-          "command": "--password 'secret' \\"
-        },
-        {
-          "description": "",
-          "command": "--provider-domain-name Default \\"
-        },
-        {
-          "description": "",
-          "command": "--provider-project-name admin"
+          "command": "kubectl-mtv create provider openstack-prod --type openstack --url https://keystone.example.com:5000/v3 --username admin --password 'secret' --provider-domain-name Default --provider-project-name admin"
         },
         {
           "description": "Create a HyperV provider",
-          "command": "kubectl-mtv create provider my-hyperv \\"
-        },
-        {
-          "description": "",
-          "command": "--type hyperv \\"
-        },
-        {
-          "description": "",
-          "command": "--url https://192.168.1.100 \\"
-        },
-        {
-          "description": "",
-          "command": "--username Administrator \\"
-        },
-        {
-          "description": "",
-          "command": "--password 'MyPassword' \\"
-        },
-        {
-          "description": "",
-          "command": "--smb-url '//192.168.1.100/VMShare'"
+          "command": "kubectl-mtv create provider my-hyperv --type hyperv --url https://192.168.1.100 --username Administrator --password 'MyPassword' --smb-url '//192.168.1.100/VMShare'"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "vddk-image",
@@ -1548,89 +1333,26 @@
       "examples": [
         {
           "description": "Build VDDK image using podman",
-          "command": "kubectl-mtv create vddk-image \\"
-        },
-        {
-          "description": "",
-          "command": "--tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \\"
-        },
-        {
-          "description": "",
-          "command": "--tag quay.io/myorg/vddk:8.0.1"
+          "command": "kubectl-mtv create vddk-image --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz --tag quay.io/myorg/vddk:8.0.1"
         },
         {
           "description": "Build and push to registry",
-          "command": "kubectl-mtv create vddk-image \\"
-        },
-        {
-          "description": "",
-          "command": "--tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \\"
-        },
-        {
-          "description": "",
-          "command": "--tag quay.io/myorg/vddk:8.0.1 \\"
-        },
-        {
-          "description": "",
-          "command": "--push"
+          "command": "kubectl-mtv create vddk-image --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz --tag quay.io/myorg/vddk:8.0.1 --push"
         },
         {
           "description": "Build, push, and configure as global VDDK image in ForkliftController",
-          "command": "kubectl-mtv create vddk-image \\"
-        },
-        {
-          "description": "",
-          "command": "--tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \\"
-        },
-        {
-          "description": "",
-          "command": "--tag quay.io/myorg/vddk:8.0.1 \\"
-        },
-        {
-          "description": "",
-          "command": "--push \\"
-        },
-        {
-          "description": "",
-          "command": "--set-controller-image"
+          "command": "kubectl-mtv create vddk-image --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz --tag quay.io/myorg/vddk:8.0.1 --push --set-controller-image"
         },
         {
           "description": "Use specific container runtime",
-          "command": "kubectl-mtv create vddk-image \\"
-        },
-        {
-          "description": "",
-          "command": "--tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \\"
-        },
-        {
-          "description": "",
-          "command": "--tag quay.io/myorg/vddk:8.0.1 \\"
-        },
-        {
-          "description": "",
-          "command": "--runtime docker"
+          "command": "kubectl-mtv create vddk-image --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz --tag quay.io/myorg/vddk:8.0.1 --runtime docker"
         },
         {
           "description": "Push to insecure registry (self-signed certificate)",
-          "command": "kubectl-mtv create vddk-image \\"
-        },
-        {
-          "description": "",
-          "command": "--tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz \\"
-        },
-        {
-          "description": "",
-          "command": "--tag internal-registry.local:5000/vddk:8.0.1 \\"
-        },
-        {
-          "description": "",
-          "command": "--push \\"
-        },
-        {
-          "description": "",
-          "command": "--push-insecure-skip-tls"
+          "command": "kubectl-mtv create vddk-image --tar VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz --tag internal-registry.local:5000/vddk:8.0.1 --push --push-insecure-skip-tls"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "plan",
@@ -1686,7 +1408,8 @@
           "description": "Cutover multiple plans",
           "command": "kubectl-mtv cutover plan plan1 plan2 plan3"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "hook",
@@ -1716,7 +1439,8 @@
           "description": "",
           "required": false
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "host",
@@ -1746,7 +1470,8 @@
           "description": "",
           "required": false
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "mapping",
@@ -1762,7 +1487,8 @@
         "mappings"
       ],
       "category": "write",
-      "flags": []
+      "flags": [],
+      "runnable": true
     },
     {
       "name": "network",
@@ -1801,7 +1527,8 @@
           "description": "Delete all network mappings",
           "command": "kubectl-mtv delete mapping network --all"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "storage",
@@ -1840,7 +1567,8 @@
           "description": "Delete all storage mappings",
           "command": "kubectl-mtv delete mapping storage --all"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "plan",
@@ -1907,7 +1635,8 @@
           "description": "Delete all plans in namespace",
           "command": "kubectl-mtv delete plan --all"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "provider",
@@ -1952,7 +1681,8 @@
           "description": "Delete all providers in namespace",
           "command": "kubectl-mtv delete provider --all"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "hook",
@@ -1978,7 +1708,8 @@
           "description": "Describe a hook",
           "command": "kubectl-mtv describe hook my-post-hook"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "host",
@@ -2004,7 +1735,8 @@
           "description": "Describe a host",
           "command": "kubectl-mtv describe host esxi-host-1"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "mapping",
@@ -2017,7 +1749,8 @@
       "long_description": "Describe network and storage mappings.\n\nShows detailed configuration of mappings including source/target pairs,\nprovider references, and status conditions.",
       "usage": "kubectl-mtv describe mapping",
       "category": "read",
-      "flags": []
+      "flags": [],
+      "runnable": true
     },
     {
       "name": "network",
@@ -2044,7 +1777,8 @@
           "description": "Describe a network mapping",
           "command": "kubectl-mtv describe mapping network my-net-map"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "storage",
@@ -2071,7 +1805,8 @@
           "description": "Describe a storage mapping",
           "command": "kubectl-mtv describe mapping storage my-storage-map"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "plan",
@@ -2131,7 +1866,8 @@
           "description": "Watch VM status with live updates",
           "command": "kubectl-mtv describe plan my-migration --vm web-server -w"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "hook",
@@ -2190,7 +1926,8 @@
           "description": "Watch hook status changes",
           "command": "kubectl-mtv get hook -w"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "host",
@@ -2249,7 +1986,22 @@
           "description": "Watch host status changes",
           "command": "kubectl-mtv get host -w"
         }
-      ]
+      ],
+      "runnable": true
+    },
+    {
+      "name": "inventory",
+      "path": [
+        "get",
+        "inventory"
+      ],
+      "path_string": "get inventory",
+      "description": "Get inventory resources",
+      "long_description": "Get inventory resources from providers via the MTV inventory service.\n\nThe inventory service provides access to source provider resources (VMs, networks,\nstorage, hosts, etc.) without directly connecting to the provider. Resources are\ncached and can be queried using TSL (Tree Search Language) filters.\n\nAvailable resource types vary by provider:\n  - All providers: vm, network, storage\n  - vSphere/oVirt: host, datacenter, cluster, disk\n  - vSphere: datastore, folder, resourcepool\n  - oVirt: diskprofile, nicprofile\n  - OpenStack: instance, image, flavor, project, volume, volumetype, snapshot, subnet\n  - OpenShift: namespace, pvc, datavolume\n  - EC2: ec2instance, ec2volume, ec2volumetype, ec2network",
+      "usage": "kubectl-mtv get inventory",
+      "category": "read",
+      "flags": [],
+      "runnable": false
     },
     {
       "name": "cluster",
@@ -2288,7 +2040,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2309,18 +2061,19 @@
       ],
       "examples": [
         {
-          "description": "List all clusters from a vSphere provider",
-          "command": "kubectl-mtv get inventory cluster vsphere-prod"
-        },
-        {
           "description": "Filter clusters by datacenter",
           "command": "kubectl-mtv get inventory cluster vsphere-prod -q \"where datacenter = 'DC1'\""
+        },
+        {
+          "description": "List all clusters from a provider",
+          "command": "kubectl-mtv get inventory cluster vsphere-prod"
         },
         {
           "description": "Output as JSON",
           "command": "kubectl-mtv get inventory cluster vsphere-prod -o json"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "data-volume",
@@ -2359,7 +2112,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2377,7 +2130,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "datacenter",
@@ -2416,7 +2170,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2437,18 +2191,19 @@
       ],
       "examples": [
         {
-          "description": "List all datacenters from a vSphere provider",
-          "command": "kubectl-mtv get inventory datacenter vsphere-prod"
-        },
-        {
           "description": "Filter datacenters by name",
           "command": "kubectl-mtv get inventory datacenter vsphere-prod -q \"where name ~= 'DC.*'\""
+        },
+        {
+          "description": "List all datacenters from a provider",
+          "command": "kubectl-mtv get inventory datacenter vsphere-prod"
         },
         {
           "description": "Output as YAML",
           "command": "kubectl-mtv get inventory datacenter vsphere-prod -o yaml"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "datastore",
@@ -2486,7 +2241,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2504,7 +2259,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "disk",
@@ -2543,7 +2299,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2564,18 +2320,19 @@
       ],
       "examples": [
         {
-          "description": "List all disks from an oVirt provider",
-          "command": "kubectl-mtv get inventory disk ovirt-prod"
+          "description": "Filter disks by size using SI units (greater than 100GB)",
+          "command": "kubectl-mtv get inventory disk vsphere-prod -q \"where capacity \u003e 100Gi\""
         },
         {
-          "description": "Filter disks by size (greater than 100GB)",
-          "command": "kubectl-mtv get inventory disk vsphere-prod -q \"where capacity \u003e 107374182400\""
+          "description": "List all disks from a provider",
+          "command": "kubectl-mtv get inventory disk ovirt-prod"
         },
         {
           "description": "Output as JSON",
           "command": "kubectl-mtv get inventory disk vsphere-prod -o json"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "disk-profile",
@@ -2614,7 +2371,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2632,7 +2389,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "ec2-instance",
@@ -2670,7 +2428,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2688,7 +2446,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "ec2-network",
@@ -2726,7 +2485,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2744,7 +2503,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "ec2-volume",
@@ -2782,7 +2542,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2800,7 +2560,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "ec2-volume-type",
@@ -2839,7 +2600,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2857,7 +2618,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "flavor",
@@ -2895,7 +2657,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2913,7 +2675,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "folder",
@@ -2951,7 +2714,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -2969,7 +2732,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "host",
@@ -3008,7 +2772,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3029,18 +2793,19 @@
       ],
       "examples": [
         {
-          "description": "List all hosts from a vSphere provider",
-          "command": "kubectl-mtv get inventory host vsphere-prod"
-        },
-        {
           "description": "Filter hosts by cluster",
           "command": "kubectl-mtv get inventory host vsphere-prod -q \"where cluster = 'production'\""
+        },
+        {
+          "description": "List all hosts from a provider",
+          "command": "kubectl-mtv get inventory host vsphere-prod"
         },
         {
           "description": "Output as JSON",
           "command": "kubectl-mtv get inventory host vsphere-prod -o json"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "image",
@@ -3078,7 +2843,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3096,7 +2861,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "instance",
@@ -3134,7 +2900,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3152,7 +2918,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "namespace",
@@ -3190,7 +2957,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3208,7 +2975,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "network",
@@ -3243,7 +3011,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'VM Network.*'\")",
           "required": false
         },
         {
@@ -3264,18 +3032,19 @@
       ],
       "examples": [
         {
-          "description": "List all networks from a vSphere provider",
-          "command": "kubectl-mtv get inventory network vsphere-prod"
-        },
-        {
           "description": "Filter networks by name",
           "command": "kubectl-mtv get inventory network vsphere-prod -q \"where name ~= 'VM Network.*'\""
+        },
+        {
+          "description": "List all networks from a provider",
+          "command": "kubectl-mtv get inventory network vsphere-prod"
         },
         {
           "description": "Output as JSON",
           "command": "kubectl-mtv get inventory network vsphere-prod -o json"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "nic-profile",
@@ -3314,7 +3083,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3332,7 +3101,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "project",
@@ -3370,7 +3140,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3388,7 +3158,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "provider",
@@ -3423,7 +3194,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3441,7 +3212,8 @@
           "description": "",
           "required": false
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "pvc",
@@ -3480,7 +3252,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3498,7 +3270,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "resource-pool",
@@ -3537,7 +3310,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3555,7 +3328,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "snapshot",
@@ -3593,7 +3367,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3611,7 +3385,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "storage",
@@ -3646,7 +3421,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'data.*' and type = 'VMFS'\")",
           "required": false
         },
         {
@@ -3667,18 +3442,19 @@
       ],
       "examples": [
         {
-          "description": "List all storage from a vSphere provider",
-          "command": "kubectl-mtv get inventory storage vsphere-prod"
-        },
-        {
           "description": "Filter storage by name pattern",
           "command": "kubectl-mtv get inventory storage ovirt-prod -q \"where name ~= 'data.*'\""
+        },
+        {
+          "description": "List all storage from a provider",
+          "command": "kubectl-mtv get inventory storage vsphere-prod"
         },
         {
           "description": "Output as YAML",
           "command": "kubectl-mtv get inventory storage vsphere-prod -o yaml"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "subnet",
@@ -3716,7 +3492,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3734,7 +3510,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "vm",
@@ -3745,7 +3522,7 @@
       ],
       "path_string": "get inventory vm",
       "description": "Get VMs from a provider",
-      "long_description": "Get virtual machines from a provider's inventory.\n\nQueries the MTV inventory service to list VMs available for migration.\nUse --query (-q) to filter results using TSL query syntax. The --extended\nflag shows additional VM details.\n\nOutput format 'planvms' generates YAML suitable for use with 'create plan --vms @file'.\n\nQuery Language (TSL):\n  Use -q \"where ...\" to filter inventory results with TSL query syntax:\n    -q \"where name ~= 'prod-.*'\"\n    -q \"where powerState = 'poweredOn' and memoryMB \u003e 4096\"\n    -q \"where len(disks) \u003e 1 and cpuCount \u003c= 8\"\n    -q \"where name like '%web%' order by memoryMB desc limit 10\"\n\n  Supports comparison, regex, logical operators, array functions (len(), any(), all()),\n  SI units (Ki, Mi, Gi), sorting (ORDER BY), and limiting (LIMIT).\n\n  To discover available fields for your provider, run:\n    kubectl-mtv get inventory vm \u003cprovider\u003e -o json\n\n  Run 'kubectl-mtv help tsl' for the full syntax reference and field list.",
+      "long_description": "Get virtual machines from a provider's inventory.\n\nQueries the MTV inventory service to list VMs available for migration.\nUse --query (-q) to filter results using TSL query syntax. The --extended\nflag shows additional VM details.\n\nOutput format 'planvms' generates YAML suitable for use with 'create plan --vms @file'.\n\nQuery Language (TSL):\n  Use -q \"where ...\" to filter inventory results with TSL query syntax:\n    -q \"where name ~= 'prod-.*'\"\n    -q \"where powerState = 'poweredOn' and memoryMB \u003e 4096\"\n    -q \"where len(disks) \u003e 1 and cpuCount \u003c= 8\"\n    -q \"where any(concerns[*].category = 'Critical')\"\n    -q \"where name like '%web%' order by memoryMB desc limit 10\"\n\n  Supports comparison, regex, logical operators, array functions (len(), any(), all()),\n  SI units (Ki, Mi, Gi), sorting (ORDER BY), and limiting (LIMIT).\n\n  To discover available fields for your provider, run:\n    kubectl-mtv get inventory vm \u003cprovider\u003e -o json\n\n  Run 'kubectl-mtv help tsl' for the full syntax reference and field list.",
       "usage": "kubectl-mtv get inventory vm PROVIDER [flags]",
       "aliases": [
         "vms"
@@ -3798,24 +3575,24 @@
       ],
       "examples": [
         {
-          "description": "List all VMs from a vSphere provider",
+          "description": "Find VMs with multiple NICs (array length)",
+          "command": "kubectl-mtv get inventory vm vsphere-prod -q \"where len(nics) \u003e= 2 and cpuCount \u003e 1\""
+        },
+        {
+          "description": "Find VMs with shared disks (any element match)",
+          "command": "kubectl-mtv get inventory vm vsphere-prod -q \"where any(disks[*].shared = true)\""
+        },
+        {
+          "description": "Find VMs with critical migration concerns",
+          "command": "kubectl-mtv get inventory vm vsphere-prod -q \"where any(concerns[*].category = 'Critical')\""
+        },
+        {
+          "description": "Filter VMs by name, CPU, and memory",
+          "command": "kubectl-mtv get inventory vm vsphere-prod -q \"where name ~= 'web-.*' and memoryMB \u003e 4096\""
+        },
+        {
+          "description": "List all VMs from a provider",
           "command": "kubectl-mtv get inventory vm vsphere-prod"
-        },
-        {
-          "description": "Filter VMs by name pattern",
-          "command": "kubectl-mtv get inventory vm vsphere-prod -q \"where name ~= 'web-.*'\""
-        },
-        {
-          "description": "Get VMs with more than 4 CPUs and 8GB memory",
-          "command": "kubectl-mtv get inventory vm vsphere-prod -q \"where cpuCount \u003e 4 and memoryMB \u003e 8192\""
-        },
-        {
-          "description": "Find VMs with multiple disks or networks",
-          "command": "kubectl-mtv get inventory vm vsphere-prod -q \"where len(disks) = 2\""
-        },
-        {
-          "description": "",
-          "command": "kubectl-mtv get inventory vm vsphere-prod -q \"where len(networks) = 2\""
         },
         {
           "description": "Show extended VM details",
@@ -3829,7 +3606,8 @@
           "description": "",
           "command": "kubectl-mtv create plan my-migration --vms @vms.yaml"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "volume",
@@ -3867,7 +3645,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3885,7 +3663,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "volumetype",
@@ -3924,7 +3703,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
           "required": false
         },
         {
@@ -3942,7 +3721,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "mapping",
@@ -3958,7 +3738,8 @@
         "mappings"
       ],
       "category": "read",
-      "flags": []
+      "flags": [],
+      "runnable": true
     },
     {
       "name": "network",
@@ -4015,7 +3796,8 @@
           "description": "Watch network mapping changes",
           "command": "kubectl-mtv get mapping network -w"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "storage",
@@ -4072,7 +3854,8 @@
           "description": "Watch storage mapping changes",
           "command": "kubectl-mtv get mapping storage -w"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "plan",
@@ -4161,7 +3944,8 @@
           "description": "Get both VM and disk transfer status",
           "command": "kubectl-mtv get plan my-migration --vms --disk"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "provider",
@@ -4224,7 +4008,8 @@
           "description": "Watch provider status changes",
           "command": "kubectl-mtv get provider -w"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "health",
@@ -4264,7 +4049,8 @@
           "description": "Skip pod log analysis (faster but less thorough)",
           "required": false
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "help",
@@ -4374,7 +4160,8 @@
           "description": "Get TSL reference in machine-readable format",
           "command": "kubectl-mtv help --machine tsl"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "mcp-server",
@@ -4383,7 +4170,7 @@
       ],
       "path_string": "mcp-server",
       "description": "Start the MCP (Model Context Protocol) server",
-      "long_description": "Start the MCP (Model Context Protocol) server for kubectl-mtv.\n\nThis server provides AI assistants with access to kubectl-mtv resources.\nUSE WITH CAUTION: Includes write operations that can modify resources.\n\nModes:\n  Default: Stdio mode for AI assistant integration\n  --sse:   HTTP server mode with optional TLS\n\nSecurity:\n  --cert-file:   Path to TLS certificate file (enables TLS when both cert and key provided)\n  --key-file:    Path to TLS private key file (enables TLS when both cert and key provided)\n\nSSE Mode Authentication (HTTP Headers):\n  In SSE mode, the following HTTP headers are supported for Kubernetes authentication:\n\n  Authorization: Bearer \u003ctoken\u003e\n    Kubernetes authentication token. Passed to kubectl via --token flag.\n\n  X-Kubernetes-Server: \u003curl\u003e\n    Kubernetes API server URL. Passed to kubectl via --server flag.\n\n  If headers are not provided, the server falls back to the default kubeconfig behavior.\n\nQuick Setup for AI Assistants:\n\nClaude Desktop: claude mcp add kubectl-mtv kubectl mtv mcp-server\nCursor IDE: Settings → MCP → Add Server (Name: kubectl-mtv, Command: kubectl, Args: mtv mcp-server)\n\nManual Claude config: Add to claude_desktop_config.json:\n  \"kubectl-mtv\": {\"command\": \"kubectl\", \"args\": [\"mtv\", \"mcp-server\"]}",
+      "long_description": "Start the MCP (Model Context Protocol) server for kubectl-mtv.\n\nThis server provides AI assistants with access to kubectl-mtv resources.\nUSE WITH CAUTION: Includes write operations that can modify resources.\n\nModes:\n  Default: Stdio mode for AI assistant integration\n  --sse:   HTTP server mode with optional TLS\n\nSecurity:\n  --cert-file:   Path to TLS certificate file (enables TLS when both cert and key provided)\n  --key-file:    Path to TLS private key file (enables TLS when both cert and key provided)\n\nKubernetes Authentication:\n  --server:  Kubernetes API server URL (passed to kubectl via --server flag)\n  --token:   Kubernetes authentication token (passed to kubectl via --token flag)\n\n  These flags set default credentials for all requests. They work in both stdio and SSE modes.\n\nSSE Mode Authentication (HTTP Headers):\n  In SSE mode, the following HTTP headers are also supported for per-request authentication:\n\n  Authorization: Bearer \u003ctoken\u003e\n    Kubernetes authentication token. Passed to kubectl via --token flag.\n\n  X-Kubernetes-Server: \u003curl\u003e\n    Kubernetes API server URL. Passed to kubectl via --server flag.\n\n  Precedence: HTTP headers (per-request) \u003e CLI flags (--server/--token) \u003e kubeconfig (implicit).\n\nQuick Setup for AI Assistants:\n\nClaude Desktop: claude mcp add kubectl-mtv kubectl mtv mcp-server\nCursor IDE: Settings → MCP → Add Server (Name: kubectl-mtv, Command: kubectl, Args: mtv mcp-server)\n\nManual Claude config: Add to claude_desktop_config.json:\n  \"kubectl-mtv\": {\"command\": \"kubectl\", \"args\": [\"mtv\", \"mcp-server\"]}",
       "usage": "kubectl-mtv mcp-server [flags]",
       "category": "admin",
       "flags": [
@@ -4409,8 +4196,8 @@
         {
           "name": "output-format",
           "type": "string",
-          "default": "json",
-          "description": "Default output format for commands: json or text",
+          "default": "text",
+          "description": "Default output format for commands: text (table) or json",
           "required": false
         },
         {
@@ -4421,13 +4208,26 @@
           "required": false
         },
         {
+          "name": "server",
+          "type": "string",
+          "description": "Kubernetes API server URL (passed to kubectl via --server flag)",
+          "required": false
+        },
+        {
           "name": "sse",
           "type": "bool",
           "default": false,
           "description": "Run in SSE (Server-Sent Events) mode over HTTP",
           "required": false
+        },
+        {
+          "name": "token",
+          "type": "string",
+          "description": "Kubernetes authentication token (passed to kubectl via --token flag)",
+          "required": false
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "patch",
@@ -4439,7 +4239,8 @@
       "long_description": "Patch various Migration Toolkit for Virtualization resources",
       "usage": "kubectl-mtv patch",
       "category": "write",
-      "flags": []
+      "flags": [],
+      "runnable": true
     },
     {
       "name": "mapping",
@@ -4452,7 +4253,8 @@
       "long_description": "Patch network and storage mappings by adding, updating, or removing pairs",
       "usage": "kubectl-mtv patch mapping",
       "category": "write",
-      "flags": []
+      "flags": [],
+      "runnable": true
     },
     {
       "name": "network",
@@ -4492,7 +4294,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "storage",
@@ -4562,7 +4365,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "plan",
@@ -4849,7 +4653,8 @@
           "description": "Configure convertor pod scheduling",
           "command": "kubectl-mtv patch plan my-migration --convertor-node-selector node-role=worker"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "planvm",
@@ -4969,7 +4774,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "provider",
@@ -5192,7 +4998,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "settings",
@@ -5225,7 +5032,8 @@
             "yaml"
           ]
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "get",
@@ -5266,7 +5074,8 @@
           "description": "",
           "required": false
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "set",
@@ -5291,7 +5100,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "unset",
@@ -5311,7 +5121,8 @@
           "description": "",
           "required": true
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "plan",
@@ -5397,7 +5208,8 @@
           "description": "Dry-run: output all Migration CRs in namespace",
           "command": "kubectl-mtv start plan --all --dry-run"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "plan",
@@ -5442,7 +5254,8 @@
           "description": "Unarchive all archived plans in the namespace",
           "command": "kubectl-mtv unarchive plan --all"
         }
-      ]
+      ],
+      "runnable": true
     },
     {
       "name": "version",
@@ -5475,7 +5288,8 @@
             "yaml"
           ]
         }
-      ]
+      ],
+      "runnable": true
     }
   ],
   "global_flags": [
@@ -5485,7 +5299,8 @@
       "type": "bool",
       "default": false,
       "description": "list resources across all namespaces",
-      "required": false
+      "required": false,
+      "llm_relevant": true
     },
     {
       "name": "as",
@@ -5569,7 +5384,8 @@
       "shorthand": "i",
       "type": "string",
       "description": "Base URL for the inventory service",
-      "required": false
+      "required": false,
+      "llm_relevant": true
     },
     {
       "name": "kubeconfig",
@@ -5582,7 +5398,8 @@
       "shorthand": "n",
       "type": "string",
       "description": "If present, the namespace scope for this CLI request",
-      "required": false
+      "required": false,
+      "llm_relevant": true
     },
     {
       "name": "request-timeout",
@@ -5629,7 +5446,8 @@
       "type": "int",
       "default": 0,
       "description": "verbose output level (0=silent, 1=info, 2=debug, 3=trace)",
-      "required": false
+      "required": false,
+      "llm_relevant": true
     }
   ]
 }

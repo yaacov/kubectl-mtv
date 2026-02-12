@@ -26,6 +26,8 @@ var (
 	certFile     string
 	keyFile      string
 	outputFormat string
+	kubeServer   string
+	kubeToken    string
 )
 
 // NewMCPServerCmd creates the mcp-server command
@@ -46,8 +48,14 @@ Security:
   --cert-file:   Path to TLS certificate file (enables TLS when both cert and key provided)
   --key-file:    Path to TLS private key file (enables TLS when both cert and key provided)
 
+Kubernetes Authentication:
+  --server:  Kubernetes API server URL (passed to kubectl via --server flag)
+  --token:   Kubernetes authentication token (passed to kubectl via --token flag)
+
+  These flags set default credentials for all requests. They work in both stdio and SSE modes.
+
 SSE Mode Authentication (HTTP Headers):
-  In SSE mode, the following HTTP headers are supported for Kubernetes authentication:
+  In SSE mode, the following HTTP headers are also supported for per-request authentication:
 
   Authorization: Bearer <token>
     Kubernetes authentication token. Passed to kubectl via --token flag.
@@ -55,7 +63,7 @@ SSE Mode Authentication (HTTP Headers):
   X-Kubernetes-Server: <url>
     Kubernetes API server URL. Passed to kubectl via --server flag.
 
-  If headers are not provided, the server falls back to the default kubeconfig behavior.
+  Precedence: HTTP headers (per-request) > CLI flags (--server/--token) > kubeconfig (implicit).
 
 Quick Setup for AI Assistants:
 
@@ -73,6 +81,11 @@ Manual Claude config: Add to claude_desktop_config.json:
 
 			// Set the output format for MCP responses
 			util.SetOutputFormat(outputFormat)
+
+			// Set default Kubernetes credentials from CLI flags
+			// These serve as fallback when HTTP headers don't provide credentials
+			util.SetDefaultKubeServer(kubeServer)
+			util.SetDefaultKubeToken(kubeToken)
 
 			// Create a context that listens for interrupt signals
 			ctx, cancel := context.WithCancel(context.Background())
@@ -173,6 +186,8 @@ Manual Claude config: Add to claude_desktop_config.json:
 	mcpCmd.Flags().StringVar(&certFile, "cert-file", "", "Path to TLS certificate file (enables TLS when used with --key-file)")
 	mcpCmd.Flags().StringVar(&keyFile, "key-file", "", "Path to TLS private key file (enables TLS when used with --cert-file)")
 	mcpCmd.Flags().StringVar(&outputFormat, "output-format", "text", "Default output format for commands: text (table) or json")
+	mcpCmd.Flags().StringVar(&kubeServer, "server", "", "Kubernetes API server URL (passed to kubectl via --server flag)")
+	mcpCmd.Flags().StringVar(&kubeToken, "token", "", "Kubernetes authentication token (passed to kubectl via --token flag)")
 
 	return mcpCmd
 }
@@ -197,7 +212,8 @@ func createMCPServer() (*mcp.Server, error) {
 	// booleans ("True"/"true") from AI models that don't send proper JSON booleans.
 	tools.AddToolWithCoercion(server, tools.GetMinimalMTVReadTool(registry), tools.HandleMTVRead(registry))
 	tools.AddToolWithCoercion(server, tools.GetMinimalMTVWriteTool(registry), tools.HandleMTVWrite(registry))
-	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlDebugTool(), tools.HandleKubectlDebug)
+	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlLogsTool(), tools.HandleKubectlLogs)
+	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlTool(), tools.HandleKubectl)
 	mcp.AddTool(server, tools.GetMTVHelpTool(), tools.HandleMTVHelp)
 
 	return server, nil
