@@ -172,7 +172,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 	mcpCmd.Flags().StringVar(&host, "host", "127.0.0.1", "Host address to bind to for SSE mode")
 	mcpCmd.Flags().StringVar(&certFile, "cert-file", "", "Path to TLS certificate file (enables TLS when used with --key-file)")
 	mcpCmd.Flags().StringVar(&keyFile, "key-file", "", "Path to TLS private key file (enables TLS when used with --cert-file)")
-	mcpCmd.Flags().StringVar(&outputFormat, "output-format", "json", "Default output format for commands: json or text")
+	mcpCmd.Flags().StringVar(&outputFormat, "output-format", "text", "Default output format for commands: text (table) or json")
 
 	return mcpCmd
 }

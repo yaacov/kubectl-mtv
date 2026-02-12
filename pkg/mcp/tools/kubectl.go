@@ -14,85 +14,51 @@ import (
 
 // KubectlDebugInput represents the input for the kubectl_debug tool.
 type KubectlDebugInput struct {
-	// Action is the kubectl action to perform: "logs", "get", "describe", or "events"
-	Action string `json:"action" jsonschema:"kubectl action: logs for pod logs, get for listing resources, describe for resource details, events for event querying"`
+	Action string `json:"action" jsonschema:"logs | get | describe | events"`
 
-	// ResourceType is the Kubernetes resource type (for get/describe actions)
-	ResourceType string `json:"resource_type,omitempty" jsonschema:"Resource type for get/describe (e.g. pods, pvc, datavolume, virtualmachine, events)"`
+	ResourceType string `json:"resource_type,omitempty" jsonschema:"Resource type (pods, pvc, datavolume, virtualmachine, events)"`
 
-	// Name is the specific resource name (optional for get, required for logs).
-	// For logs, supports pod names or resource/name format (e.g. "deployments/forklift-controller").
-	Name string `json:"name,omitempty" jsonschema:"Resource name (required for logs, optional for get/describe). For logs, use deployments/name (e.g. deployments/forklift-controller) to avoid looking up pod names, or use a pod name directly."`
+	Name string `json:"name,omitempty" jsonschema:"Resource name. Logs: deployments/name or pod name. get/describe: optional."`
 
-	// Namespace is the Kubernetes namespace
-	Namespace string `json:"namespace,omitempty" jsonschema:"Target Kubernetes namespace"`
+	Namespace string `json:"namespace,omitempty" jsonschema:"Kubernetes namespace"`
 
-	// AllNamespaces queries across all namespaces
-	AllNamespaces bool `json:"all_namespaces,omitempty" jsonschema:"Query across all namespaces (for get action)"`
+	AllNamespaces bool `json:"all_namespaces,omitempty" jsonschema:"Query all namespaces"`
 
-	// Labels is a label selector for filtering resources
 	Labels string `json:"labels,omitempty" jsonschema:"Label selector (e.g. plan=my-plan,vmID=vm-123)"`
 
-	// Container specifies which container to get logs from
-	Container string `json:"container,omitempty" jsonschema:"Container name for logs (when pod has multiple containers)"`
+	Container string `json:"container,omitempty" jsonschema:"Container (multi-container pods)"`
 
-	// Previous gets logs from the previous container instance
-	Previous bool `json:"previous,omitempty" jsonschema:"Get logs from previous container instance (for crashed containers)"`
+	Previous bool `json:"previous,omitempty" jsonschema:"Logs from crashed container"`
 
-	// TailLines limits the number of log lines returned (default: 500, use -1 for all logs)
-	TailLines int `json:"tail_lines,omitempty" jsonschema:"Number of log lines to return from the end (default: 500, use -1 for all logs)"`
+	TailLines int `json:"tail_lines,omitempty" jsonschema:"Log lines from end (default 500, -1 for all)"`
 
-	// Since returns logs newer than a relative duration (e.g., "1h", "30m")
-	Since string `json:"since,omitempty" jsonschema:"Return logs newer than duration (e.g. 1h, 30m, 5s)"`
+	Since string `json:"since,omitempty" jsonschema:"Logs newer than (e.g. 1h, 30m)"`
 
-	// Output format for get/describe (json, yaml, wide, or name)
-	Output string `json:"output,omitempty" jsonschema:"Output format: json, yaml, wide, name (default: json for get)"`
+	Output string `json:"output,omitempty" jsonschema:"Output: json, yaml, wide, name"`
 
-	// DryRun shows the command without executing
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"Show command without executing (educational mode)"`
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"Preview without executing"`
 
-	// FieldSelector filters resources by field (for events action)
-	FieldSelector string `json:"field_selector,omitempty" jsonschema:"Field selector for events (e.g. involvedObject.name=my-pod, type=Warning, reason=FailedScheduling)"`
+	FieldSelector string `json:"field_selector,omitempty" jsonschema:"Events field filter (e.g. type=Warning, reason=FailedScheduling)"`
 
-	// SortBy sorts the output by a JSONPath expression (for events action)
-	SortBy string `json:"sort_by,omitempty" jsonschema:"Sort events by JSONPath (e.g. .lastTimestamp, .metadata.creationTimestamp)"`
+	SortBy string `json:"sort_by,omitempty" jsonschema:"Sort events by JSONPath (e.g. .lastTimestamp)"`
 
-	// ForResource gets events for a specific resource (for events action)
-	ForResource string `json:"for_resource,omitempty" jsonschema:"Get events for a specific resource (e.g. pod/my-pod, pvc/my-pvc)"`
+	ForResource string `json:"for_resource,omitempty" jsonschema:"Events for resource (e.g. pod/my-pod, pvc/my-pvc)"`
 
-	// Timestamps shows timestamps in log output (enabled by default, use no_timestamps to disable)
-	Timestamps bool `json:"timestamps,omitempty" jsonschema:"Show timestamps in log output (enabled by default)"`
+	Grep string `json:"grep,omitempty" jsonschema:"Filter logs by regex (e.g. error|warning)"`
 
-	// Grep filters log lines by regex pattern (server-side filtering)
-	Grep string `json:"grep,omitempty" jsonschema:"Filter log lines by regex pattern (e.g. error|warning|failed)"`
+	IgnoreCase bool `json:"ignore_case,omitempty" jsonschema:"Case-insensitive grep"`
 
-	// IgnoreCase makes grep pattern matching case-insensitive
-	IgnoreCase bool `json:"ignore_case,omitempty" jsonschema:"Case-insensitive grep pattern matching"`
+	NoTimestamps bool `json:"no_timestamps,omitempty" jsonschema:"Disable timestamps"`
 
-	// NoTimestamps disables the default timestamp display in logs
-	NoTimestamps bool `json:"no_timestamps,omitempty" jsonschema:"Disable timestamps in log output (timestamps are shown by default)"`
+	LogFormat string `json:"log_format,omitempty" jsonschema:"Log format: json, text, pretty"`
 
-	// LogFormat specifies output format for logs (text, json, pretty) - defaults to "json"
-	LogFormat string `json:"log_format,omitempty" jsonschema:"Log output format: json (default, parsed array), text (raw JSONL), pretty (human-readable)"`
-
-	// JSON log filtering for forklift controller structured logs
-	// FilterPlan filters logs by plan name
-	FilterPlan string `json:"filter_plan,omitempty" jsonschema:"Filter logs by plan name (for forklift controller JSON logs)"`
-
-	// FilterProvider filters logs by provider name
-	FilterProvider string `json:"filter_provider,omitempty" jsonschema:"Filter logs by provider name (for forklift controller JSON logs)"`
-
-	// FilterVM filters logs by VM name/ID
-	FilterVM string `json:"filter_vm,omitempty" jsonschema:"Filter logs by VM name or ID (for forklift controller JSON logs)"`
-
-	// FilterMigration filters logs by migration name
-	FilterMigration string `json:"filter_migration,omitempty" jsonschema:"Filter logs by migration name (for forklift controller JSON logs)"`
-
-	// FilterLevel filters logs by log level (info, debug, error, warn)
-	FilterLevel string `json:"filter_level,omitempty" jsonschema:"Filter logs by level: info, debug, error, warn (for forklift controller JSON logs)"`
-
-	// FilterLogger filters logs by logger type (plan, provider, migration, networkMap, storageMap)
-	FilterLogger string `json:"filter_logger,omitempty" jsonschema:"Filter logs by logger type: plan, provider, migration, networkMap, storageMap (for forklift controller JSON logs)"`
+	// filter_*: structured log filtering for forklift-controller JSON logs
+	FilterPlan      string `json:"filter_plan,omitempty" jsonschema:"Filter by plan name"`
+	FilterProvider  string `json:"filter_provider,omitempty" jsonschema:"Filter by provider name"`
+	FilterVM        string `json:"filter_vm,omitempty" jsonschema:"Filter by VM name/ID"`
+	FilterMigration string `json:"filter_migration,omitempty" jsonschema:"Filter by migration name"`
+	FilterLevel     string `json:"filter_level,omitempty" jsonschema:"Filter by level: info, debug, error, warn"`
+	FilterLogger    string `json:"filter_logger,omitempty" jsonschema:"Filter by logger: plan, provider, migration, networkMap, storageMap"`
 }
 
 // GetKubectlDebugTool returns the tool definition for kubectl debugging.
@@ -212,19 +178,21 @@ Tips:
 // The description only needs to list valid action values since action is a free-form string.
 func GetMinimalKubectlDebugTool() *mcp.Tool {
 	return &mcp.Tool{
-		Name:        "kubectl_debug",
-		Description: "Debug MTV migrations using standard kubectl commands.\nActions: logs, get, describe, events",
+		Name: "kubectl_debug",
+		Description: `Debug MTV migrations via kubectl.
+Actions: logs, get, describe, events.
+Logs: name (required), container, previous, tail_lines, since, grep, ignore_case, no_timestamps, log_format, filter_*.
+Get/describe: resource_type (required), name, labels, output.
+Events: for_resource, field_selector, sort_by.
+filter_* params apply to forklift-controller JSON logs only.`,
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "The executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
-				"data": map[string]any{
-					"type":        "object",
-					"description": "Structured response data",
-				},
-				"output": map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
-				"stderr": map[string]any{"type": "string", "description": "Error output if any"},
+				"command":      map[string]any{"type": "string", "description": "Executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
+				"data":         map[string]any{"type": "object", "description": "Response data"},
+				"output":       map[string]any{"type": "string", "description": "Text output"},
+				"stderr":       map[string]any{"type": "string", "description": "Error output"},
 			},
 		},
 	}
@@ -393,9 +361,8 @@ func buildLogsArgs(input KubectlDebugInput) []string {
 		args = append(args, "--since", input.Since)
 	}
 
-	// Timestamps - default to true unless explicitly disabled with NoTimestamps
-	// The legacy Timestamps field can also enable timestamps explicitly
-	if !input.NoTimestamps || input.Timestamps {
+	// Timestamps enabled by default; use no_timestamps=true to disable
+	if !input.NoTimestamps {
 		args = append(args, "--timestamps")
 	}
 

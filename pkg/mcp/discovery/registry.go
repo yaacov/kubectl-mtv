@@ -183,21 +183,39 @@ func (r *Registry) GenerateReadWriteDescription() string {
 // The input schema (jsonschema tags on MTVReadInput) already describes parameters.
 func (r *Registry) GenerateMinimalReadOnlyDescription() string {
 	var sb strings.Builder
-	sb.WriteString("Execute read-only kubectl-mtv commands to query MTV resources.\n\n")
-	sb.WriteString("Available commands:\n")
+	sb.WriteString("Query MTV resources (read-only).\n\n")
+	sb.WriteString("Commands:\n")
 
+	// Collect inventory resource names separately to compact them
+	var inventoryResources []string
 	commands := r.ListReadOnlyCommands()
 	for _, key := range commands {
 		cmd := r.ReadOnly[key]
+		if strings.HasPrefix(key, "get/inventory/") {
+			// Extract the resource name (last path element) and any positional args
+			parts := strings.Split(key, "/")
+			resource := parts[len(parts)-1]
+			posArgs := cmd.PositionalArgsString()
+			if posArgs != "" && posArgs != "PROVIDER" {
+				// Special case like "provider [PROVIDER_NAME]"
+				resource += " " + posArgs
+			}
+			inventoryResources = append(inventoryResources, resource)
+			continue
+		}
 		usage := formatUsageShort(cmd)
 		sb.WriteString(fmt.Sprintf("- %s - %s\n", usage, cmd.Description))
 	}
 
-	sb.WriteString("\nUse mtv_help to get detailed flags, query syntax, and examples for any command.\n")
-	sb.WriteString("Use the 'fields' parameter to limit JSON response size (e.g. fields: [\"name\", \"id\", \"concerns\"]).\n")
+	// Write compacted inventory block
+	if len(inventoryResources) > 0 {
+		sb.WriteString("- get inventory RESOURCE PROVIDER - Query provider inventory.\n")
+		sb.WriteString(fmt.Sprintf("  Resources: %s\n", strings.Join(inventoryResources, ", ")))
+	}
 
-	sb.WriteString("\nEnvironment Variable References:\n")
-	sb.WriteString("- Use ${ENV_VAR_NAME} syntax to pass environment variable references as flag values\n")
+	sb.WriteString("\nDefault output is table. For structured data, use flags: {output: \"json\"} with fields to limit size.\n")
+	sb.WriteString("Use mtv_help for flags, query syntax (TSL), and examples.\n")
+	sb.WriteString("Flags support ${VAR} env refs (resolved at runtime).\n")
 
 	return sb.String()
 }
@@ -206,24 +224,30 @@ func (r *Registry) GenerateMinimalReadOnlyDescription() string {
 // It includes only the command list and hints to use mtv_help for details.
 // The input schema (jsonschema tags on MTVWriteInput) already describes parameters.
 func (r *Registry) GenerateMinimalReadWriteDescription() string {
+	// Commands irrelevant to LLM use: shell completions, meta commands, bare parent commands
+	skipCommands := map[string]bool{
+		"completion/bash": true, "completion/fish": true,
+		"completion/powershell": true, "completion/zsh": true,
+		"help": true, "mcp-server": true, "version": true,
+		"patch": true, // bare parent; real commands are patch/plan, patch/mapping/*
+	}
+
 	var sb strings.Builder
-	sb.WriteString("Execute kubectl-mtv commands that modify cluster state.\n\n")
-	sb.WriteString("Available commands:\n")
+	sb.WriteString("Create, modify, or delete MTV resources (write operations).\n\n")
+	sb.WriteString("Commands:\n")
 
 	commands := r.ListReadWriteCommands()
 	for _, key := range commands {
+		if skipCommands[key] {
+			continue
+		}
 		cmd := r.ReadWrite[key]
 		usage := formatUsageShort(cmd)
 		sb.WriteString(fmt.Sprintf("- %s - %s\n", usage, cmd.Description))
 	}
 
-	sb.WriteString("\nAlways call mtv_help before using create or patch commands to learn required flags.\n")
-	sb.WriteString("Use mtv_help for query syntax (TSL) and affinity rules (KARL).\n")
-
-	sb.WriteString("\nEnvironment Variable References:\n")
-	sb.WriteString("- Use ${ENV_VAR_NAME} syntax to pass environment variable references as flag values\n")
-	sb.WriteString("- Env vars can be embedded in strings (e.g., url: \"${GOVC_URL}/sdk\", password: \"${VCENTER_PASSWORD}\")\n")
-	sb.WriteString("- IMPORTANT: Only ${VAR} format is recognized. Bare $VAR is treated as literal value.\n")
+	sb.WriteString("\nCall mtv_help before create/patch to learn required flags, TSL query syntax, and KARL affinity rules.\n")
+	sb.WriteString("Flags support ${VAR} env refs (e.g. url: \"${GOVC_URL}/sdk\"). Only ${VAR} format is recognized.\n")
 
 	return sb.String()
 }

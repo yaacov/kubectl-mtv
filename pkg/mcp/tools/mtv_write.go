@@ -12,20 +12,15 @@ import (
 
 // MTVWriteInput represents the input for the mtv_write tool.
 type MTVWriteInput struct {
-	// Command is the kubectl-mtv command to execute (e.g., "create provider", "delete plan", "start plan")
-	Command string `json:"command" jsonschema:"kubectl-mtv command path (e.g. create provider, delete plan, patch mapping)"`
+	Command string `json:"command" jsonschema:"Command path (e.g. create provider, delete plan, patch mapping)"`
 
-	// Args are positional arguments for the command (e.g., resource name)
-	Args []string `json:"args,omitempty" jsonschema:"Positional arguments (e.g. resource name to create/delete)"`
+	Args []string `json:"args,omitempty" jsonschema:"Positional args (resource name)"`
 
-	// Flags are command-specific flags as key-value pairs (values can be strings, numbers, or booleans)
-	Flags map[string]any `json:"flags,omitempty" jsonschema:"Command flags as key-value pairs (e.g. type: vsphere, url: https://vcenter.example.com, wait: true)"`
+	Flags map[string]any `json:"flags,omitempty" jsonschema:"Flags as key-value pairs (e.g. type: vsphere, url: https://vcenter.example.com)"`
 
-	// Namespace is the Kubernetes namespace (shortcut for -n flag)
-	Namespace string `json:"namespace,omitempty" jsonschema:"Target Kubernetes namespace"`
+	Namespace string `json:"namespace,omitempty" jsonschema:"Kubernetes namespace"`
 
-	// DryRun shows the command without executing
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"Show command without executing (educational mode)"`
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"Preview without executing"`
 }
 
 // GetMTVWriteTool returns the tool definition for read-write MTV commands.
@@ -38,11 +33,11 @@ func GetMTVWriteTool(registry *discovery.Registry) *mcp.Tool {
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "The executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
-				"data":         map[string]any{"type": "object", "description": "Structured JSON response data"},
-				"output":       map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
-				"stderr":       map[string]any{"type": "string", "description": "Error output if any"},
+				"command":      map[string]any{"type": "string", "description": "Executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
+				"data":         map[string]any{"type": "object", "description": "Response data"},
+				"output":       map[string]any{"type": "string", "description": "Text output"},
+				"stderr":       map[string]any{"type": "string", "description": "Error output"},
 			},
 		},
 	}
@@ -60,11 +55,11 @@ func GetMinimalMTVWriteTool(registry *discovery.Registry) *mcp.Tool {
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "The executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
-				"data":         map[string]any{"type": "object", "description": "Structured JSON response data"},
-				"output":       map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
-				"stderr":       map[string]any{"type": "string", "description": "Error output if any"},
+				"command":      map[string]any{"type": "string", "description": "Executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
+				"data":         map[string]any{"type": "object", "description": "Response data"},
+				"output":       map[string]any{"type": "string", "description": "Text output"},
+				"stderr":       map[string]any{"type": "string", "description": "Error output"},
 			},
 		},
 	}

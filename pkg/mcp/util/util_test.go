@@ -469,21 +469,21 @@ func TestOutputFormat(t *testing.T) {
 	orig := GetOutputFormat()
 	defer SetOutputFormat(orig)
 
-	// Default is "json"
+	// Default is "text"
 	SetOutputFormat("")
-	if got := GetOutputFormat(); got != "json" {
-		t.Errorf("SetOutputFormat(\"\") should default to \"json\", got %q", got)
-	}
-
-	// Set to text
-	SetOutputFormat("text")
 	if got := GetOutputFormat(); got != "text" {
-		t.Errorf("SetOutputFormat(\"text\") = %q, want \"text\"", got)
+		t.Errorf("SetOutputFormat(\"\") should default to \"text\", got %q", got)
 	}
 
-	// Set back to json
+	// Set to json
 	SetOutputFormat("json")
 	if got := GetOutputFormat(); got != "json" {
 		t.Errorf("SetOutputFormat(\"json\") = %q, want \"json\"", got)
+	}
+
+	// Set back to text
+	SetOutputFormat("text")
+	if got := GetOutputFormat(); got != "text" {
+		t.Errorf("SetOutputFormat(\"text\") = %q, want \"text\"", got)
 	}
 }

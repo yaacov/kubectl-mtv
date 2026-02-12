@@ -13,33 +13,31 @@ import (
 type MTVHelpInput struct {
 	// Command is the kubectl-mtv command or topic to get help for.
 	// Examples: "create plan", "get inventory vm", "tsl", "karl"
-	Command string `json:"command" jsonschema:"Command or topic to get help for (e.g. create plan, get inventory vm, tsl, karl)"`
+	Command string `json:"command" jsonschema:"Command or topic (e.g. create plan, get inventory vm, tsl, karl)"`
 }
 
 // GetMTVHelpTool returns the tool definition for on-demand help.
 func GetMTVHelpTool() *mcp.Tool {
 	return &mcp.Tool{
 		Name: "mtv_help",
-		Description: `Get detailed help for kubectl-mtv commands and syntax references.
+		Description: `Get help: flags, usage, examples for any command, or syntax refs for topics.
 
-Returns flags, usage, and examples for any command, or full syntax references for topics.
-
-Commands: any command from mtv_read or mtv_write (e.g. "create plan", "get inventory vm")
+Commands: any from mtv_read/mtv_write (e.g. "create plan", "get inventory vm")
 Topics: "tsl" (query language), "karl" (affinity rules)`,
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "The executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
+				"command":      map[string]any{"type": "string", "description": "Executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
 				"data": map[string]any{
-					"description": "Structured help output (object or array)",
+					"description": "Help output (object or array)",
 					"oneOf": []map[string]any{
 						{"type": "object"},
 						{"type": "array"},
 					},
 				},
-				"output": map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
-				"stderr": map[string]any{"type": "string", "description": "Error output if any"},
+				"output": map[string]any{"type": "string", "description": "Text output"},
+				"stderr": map[string]any{"type": "string", "description": "Error output"},
 			},
 		},
 	}

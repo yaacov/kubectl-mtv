@@ -98,13 +98,13 @@ func GetDryRun(ctx context.Context) bool {
 }
 
 // outputFormat stores the configured output format for MCP responses
-var outputFormat = "json"
+var outputFormat = "text"
 
 // SetOutputFormat sets the output format for MCP responses.
-// Valid values are "json" (default) or "text".
+// Valid values are "text" (default, table output) or "json".
 func SetOutputFormat(format string) {
 	if format == "" {
-		outputFormat = "json"
+		outputFormat = "text"
 	} else {
 		outputFormat = format
 	}
