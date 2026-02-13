@@ -1,0 +1,31 @@
+# OLSConfig patch — register kubectl-mtv MCP server with OpenShift Lightspeed
+#
+# The OLSConfig "cluster" is a singleton that already exists when the
+# Lightspeed operator is installed.  This file is a strategic-merge patch
+# that ADDS the MCP server config without overwriting existing LLM settings.
+#
+# Apply with:
+#   oc patch olsconfig cluster --type merge -p "$(cat deploy/olsconfig-patch.yaml)"
+#
+# Remove with:
+#   oc patch olsconfig cluster --type json \
+#     -p '[{"op":"remove","path":"/spec/mcpServers"},{"op":"remove","path":"/spec/featureGates"}]'
+#
+# Header valueFrom types:
+#   client     — forward the logged-in UI user's own Bearer token (recommended)
+#   kubernetes — use the Lightspeed operator's SA token
+#   secret     — use a value from a named Secret (secretRef.name)
+#
+spec:
+  featureGates:
+    - MCPServer
+  mcpServers:
+    - name: kubectl-mtv
+      url: https://kubectl-mtv-mcp-server.openshift-mtv.svc:8443/sse
+      timeout: 30
+      headers:
+        - name: Authorization
+          valueFrom:
+            type: client
+  ols:
+    introspectionEnabled: true

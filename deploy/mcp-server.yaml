@@ -1,0 +1,145 @@
+# kubectl-mtv MCP Server — OpenShift Deployment
+#
+# Deploys the MCP server Pod + Service in SSE mode on an OpenShift cluster.
+# Lightspeed integration is handled separately (see deploy/olsconfig-patch.yaml).
+#
+# Quick start:
+#   oc apply -f deploy/mcp-server.yaml          # pod + service
+#   oc patch olsconfig cluster --type merge \    # register with Lightspeed
+#     -p "$(cat deploy/olsconfig-patch.yaml)"
+#
+# How authentication works:
+#   The OLSConfig header uses valueFrom type "client", which makes
+#   Lightspeed forward the logged-in UI user's token on every request.
+#
+#   1. User interacts with Lightspeed in the OpenShift console.
+#   2. Lightspeed sends "Authorization: Bearer <user-token>" to the MCP server.
+#   3. The MCP server extracts the token from the header.
+#   4. kubectl is called with --server https://kubernetes.default.svc --token <user-token>.
+#   5. The Kubernetes API authenticates and authorizes using that user's identity.
+#
+#   The pod itself has NO RBAC bindings — permissions are entirely
+#   determined by the UI user's own token. No shared credentials.
+#
+# TLS:
+#   The Service is annotated with service.beta.openshift.io/serving-cert-secret-name.
+#   OpenShift's service-ca operator automatically generates a TLS certificate
+#   signed by the cluster service CA and stores it in the named Secret.
+#   The Pod mounts this Secret and the MCP server serves HTTPS.
+#
+# SSE endpoint: https://kubectl-mtv-mcp-server.openshift-mtv.svc:8443/sse
+# ---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubectl-mtv-mcp-server
+  namespace: openshift-mtv
+  labels:
+    app.kubernetes.io/name: kubectl-mtv-mcp-server
+    app.kubernetes.io/component: mcp-server
+    app.kubernetes.io/part-of: kubectl-mtv
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubectl-mtv-mcp-server
+  namespace: openshift-mtv
+  labels:
+    app.kubernetes.io/name: kubectl-mtv-mcp-server
+    app.kubernetes.io/component: mcp-server
+    app.kubernetes.io/part-of: kubectl-mtv
+spec:
+  serviceAccountName: kubectl-mtv-mcp-server
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: mcp-server
+      image: quay.io/yaacov/kubectl-mtv-mcp-server:latest
+      ports:
+        - name: https
+          containerPort: 8443
+          protocol: TCP
+      env:
+        - name: MCP_HOST
+          value: "0.0.0.0"
+        - name: MCP_PORT
+          value: "8443"
+        - name: MCP_OUTPUT_FORMAT
+          value: "text"
+        - name: MCP_MAX_RESPONSE_CHARS
+          value: "0"
+        - name: MCP_KUBE_SERVER
+          value: "https://kubernetes.default.svc"
+        - name: MCP_CERT_FILE
+          value: "/etc/tls/private/tls.crt"
+        - name: MCP_KEY_FILE
+          value: "/etc/tls/private/tls.key"
+
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+      readinessProbe:
+        tcpSocket:
+          port: https
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      livenessProbe:
+        tcpSocket:
+          port: https
+        initialDelaySeconds: 10
+        periodSeconds: 30
+      volumeMounts:
+        - name: tls
+          mountPath: /etc/tls/private
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+        - name: home
+          mountPath: /home/mtv
+  volumes:
+    - name: tls
+      secret:
+        secretName: kubectl-mtv-mcp-server-tls
+    - name: tmp
+      emptyDir: {}
+    - name: home
+      emptyDir: {}
+  restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubectl-mtv-mcp-server
+  namespace: openshift-mtv
+  labels:
+    app.kubernetes.io/name: kubectl-mtv-mcp-server
+    app.kubernetes.io/component: mcp-server
+    app.kubernetes.io/part-of: kubectl-mtv
+  annotations:
+    # OpenShift service-ca operator: auto-generate a TLS cert/key pair
+    # for this service and store it in the named Secret.
+    service.beta.openshift.io/serving-cert-secret-name: kubectl-mtv-mcp-server-tls
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: kubectl-mtv-mcp-server
+  ports:
+    - name: https
+      port: 8443
+      targetPort: https
+      protocol: TCP
+
