@@ -119,6 +119,10 @@ All MCP server flags are verified from the implementation:
 | `--port` | string | `8080` | Port to listen on for SSE mode |
 | `--cert-file` | string | `""` | Path to TLS certificate file (enables TLS when used with --key-file) |
 | `--key-file` | string | `""` | Path to TLS private key file (enables TLS when used with --cert-file) |
+| `--output-format` | string | `text` | Default output format for commands: `text` (table) or `json` |
+| `--server` | string | `""` | Kubernetes API server URL (passed to kubectl via --server flag) |
+| `--token` | string | `""` | Kubernetes authentication token (passed to kubectl via --token flag) |
+| `--max-response-chars` | int | `0` | Max characters for text output (`0` = unlimited). Truncates long responses to help small LLMs stay within context window limits |
 
 ### Usage Examples
 
@@ -132,6 +136,24 @@ kubectl mtv mcp-server
 kubectl mtv mcp-server --sse --host 127.0.0.1 --port 8080
 ```
 
+#### Remote Cluster Authentication
+
+Use `--server` and `--token` to connect to a remote cluster without relying on a local kubeconfig. These flags work in both stdio and SSE modes:
+
+```bash
+# Stdio mode with explicit credentials (e.g., for AI assistant integration)
+kubectl mtv mcp-server \
+  --server https://api.prod-cluster.example.com:6443 \
+  --token "$SERVICE_ACCOUNT_TOKEN"
+
+# SSE mode with explicit credentials
+kubectl mtv mcp-server --sse \
+  --server https://api.prod-cluster.example.com:6443 \
+  --token "$SERVICE_ACCOUNT_TOKEN"
+```
+
+**Credential Precedence**: HTTP headers (per-request, SSE only) > CLI flags (`--server`/`--token`) > kubeconfig (implicit).
+
 #### Production Mode
 
 ```bash
@@ -141,6 +163,15 @@ kubectl mtv mcp-server --sse \
   --port 443 \
   --cert-file /etc/ssl/certs/mcp-server.crt \
   --key-file /etc/ssl/private/mcp-server.key
+
+# Production with TLS and explicit cluster credentials
+kubectl mtv mcp-server --sse \
+  --host 0.0.0.0 \
+  --port 443 \
+  --cert-file /etc/ssl/certs/mcp-server.crt \
+  --key-file /etc/ssl/private/mcp-server.key \
+  --server https://api.prod-cluster.example.com:6443 \
+  --token "$SERVICE_ACCOUNT_TOKEN"
 
 # Production with custom port and security
 kubectl mtv mcp-server --sse \
@@ -224,6 +255,25 @@ Create or edit `claude_desktop_config.json`:
 ```
 
 **Step 3: Advanced Claude Configuration**
+
+Using `--server` and `--token` flags for a remote cluster (no kubeconfig needed):
+
+```json
+{
+  "mcpServers": {
+    "kubectl-mtv-remote": {
+      "command": "kubectl",
+      "args": [
+        "mtv", "mcp-server",
+        "--server", "https://api.prod-cluster.example.com:6443",
+        "--token", "eyJhbGciOi..."
+      ]
+    }
+  }
+}
+```
+
+Using kubeconfig with environment variables:
 
 ```json
 {
@@ -754,6 +804,59 @@ kubectl mtv mcp-server -v=3
 
 # Check for network issues (SSE mode)
 netstat -tlnp | grep 8080
+```
+
+## Optimizing for Small Language Models
+
+Small language models (< 30B parameters) may struggle with structured multi-turn tool use. The MCP server includes several built-in features to help, and there are client-side tuning options as well.
+
+### Common Problems
+
+Small models can exhibit these failure modes when using MCP tools:
+
+- **CLI command mimicry**: The model generates raw CLI strings instead of structured `{command, flags}` tool calls
+- **Hallucinated tool results**: The model fabricates output and embeds it into the next call
+- **Format regression**: The model falls back to its native tool-calling delimiters instead of the MCP protocol
+
+### Server-Side Mitigations
+
+The MCP server automatically strips CLI command echoes from tool responses and validates input with corrective error messages. These are enabled by default and require no configuration.
+
+To limit response sizes (preventing long outputs from overwhelming the model's context window), use the `--max-response-chars` flag:
+
+```bash
+# Limit responses to 4000 characters (good starting point for small models)
+kubectl mtv mcp-server --max-response-chars 4000
+```
+
+The default is `0` (unlimited -- no truncation). When a response is truncated, the server appends a hint:
+
+```
+[truncated at 4000 chars. Use flags: {output: "json"} with fields: ["name", "id"] to get specific data]
+```
+
+### Client-Side Inference Settings
+
+Configure these in your LLM hosting platform or client application:
+
+| Setting | Recommended Value | Why |
+|---------|-------------------|-----|
+| `temperature` | `0.0` - `0.1` | Minimizes format drift and hallucinated outputs |
+| `max_tokens` | `1000` - `2000` | Prevents runaway generation mixing reasoning and garbled tool calls |
+| `parallel_tool_calls` | `false` | Forces one tool call at a time, reducing confusion |
+| `tool_choice` | `"auto"` | Prevents mixing free-form text with tool-call syntax |
+
+### Example: Small Model Configuration
+
+```json
+{
+  "mcpServers": {
+    "kubectl-mtv": {
+      "command": "kubectl",
+      "args": ["mtv", "mcp-server", "--max-response-chars", "4000"]
+    }
+  }
+}
 ```
 
 ## Best Practices for MCP Integration

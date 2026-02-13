@@ -16,7 +16,19 @@ type MTVWriteInput struct {
 
 	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters including positional args and options (e.g. name: \"my-provider\", type: \"vsphere\", url: \"https://vcenter/sdk\", namespace: \"ns\")"`
 
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, returns the command that would be executed without running it"`
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, does not execute. Returns the equivalent CLI command in the output field instead"`
+}
+
+// GetUltraMinimalMTVWriteTool returns the smallest possible tool definition for read-write
+// MTV commands, optimized for very small models (< 8B parameters).
+func GetUltraMinimalMTVWriteTool(registry *discovery.Registry) *mcp.Tool {
+	description := registry.GenerateUltraMinimalReadWriteDescription()
+
+	return &mcp.Tool{
+		Name:         "mtv_write",
+		Description:  description,
+		OutputSchema: mtvOutputSchema,
+	}
 }
 
 // GetMTVWriteTool returns the tool definition for read-write MTV commands.
@@ -24,18 +36,9 @@ func GetMTVWriteTool(registry *discovery.Registry) *mcp.Tool {
 	description := registry.GenerateReadWriteDescription()
 
 	return &mcp.Tool{
-		Name:        "mtv_write",
-		Description: description,
-		OutputSchema: map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "Executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
-				"data":         map[string]any{"type": "object", "description": "Response data"},
-				"output":       map[string]any{"type": "string", "description": "Text output"},
-				"stderr":       map[string]any{"type": "string", "description": "Error output"},
-			},
-		},
+		Name:         "mtv_write",
+		Description:  description,
+		OutputSchema: mtvOutputSchema,
 	}
 }
 
@@ -46,18 +49,9 @@ func GetMinimalMTVWriteTool(registry *discovery.Registry) *mcp.Tool {
 	description := registry.GenerateMinimalReadWriteDescription()
 
 	return &mcp.Tool{
-		Name:        "mtv_write",
-		Description: description,
-		OutputSchema: map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "Executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
-				"data":         map[string]any{"type": "object", "description": "Response data"},
-				"output":       map[string]any{"type": "string", "description": "Text output"},
-				"stderr":       map[string]any{"type": "string", "description": "Error output"},
-			},
-		},
+		Name:         "mtv_write",
+		Description:  description,
+		OutputSchema: mtvOutputSchema,
 	}
 }
 
@@ -67,6 +61,11 @@ func HandleMTVWrite(registry *discovery.Registry) func(context.Context, *mcp.Cal
 		// Extract K8s credentials from HTTP headers (for SSE mode)
 		if req.Extra != nil && req.Extra.Header != nil {
 			ctx = util.WithKubeCredsFromHeaders(ctx, req.Extra.Header)
+		}
+
+		// Validate input to catch common small-LLM mistakes early
+		if err := validateCommandInput(input.Command); err != nil {
+			return nil, nil, err
 		}
 
 		// Normalize command path

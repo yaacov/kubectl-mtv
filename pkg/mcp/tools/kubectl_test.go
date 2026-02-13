@@ -45,10 +45,14 @@ func TestGetMinimalKubectlLogsTool(t *testing.T) {
 	if !ok {
 		t.Fatal("OutputSchema should have properties")
 	}
-	for _, key := range []string{"command", "return_value", "data", "output", "stderr"} {
+	for _, key := range []string{"return_value", "data", "output", "stderr"} {
 		if _, exists := props[key]; !exists {
 			t.Errorf("OutputSchema.properties should contain %q", key)
 		}
+	}
+	// "command" should NOT be in the output schema (stripped to prevent CLI mimicry)
+	if _, exists := props["command"]; exists {
+		t.Error("OutputSchema.properties should NOT contain 'command' (stripped to help small LLMs)")
 	}
 }
 
@@ -90,10 +94,14 @@ func TestGetMinimalKubectlTool(t *testing.T) {
 	if !ok {
 		t.Fatal("OutputSchema should have properties")
 	}
-	for _, key := range []string{"command", "return_value", "data", "output", "stderr"} {
+	for _, key := range []string{"return_value", "data", "output", "stderr"} {
 		if _, exists := props[key]; !exists {
 			t.Errorf("OutputSchema.properties should contain %q", key)
 		}
+	}
+	// "command" should NOT be in the output schema (stripped to prevent CLI mimicry)
+	if _, exists := props["command"]; exists {
+		t.Error("OutputSchema.properties should NOT contain 'command' (stripped to help small LLMs)")
 	}
 }
 
@@ -444,14 +452,15 @@ func TestHandleKubectlLogs_DryRun(t *testing.T) {
 				t.Fatalf("expected map[string]interface{}, got %T", data)
 			}
 
-			command, ok := dataMap["command"].(string)
+			// In dry-run mode, the CLI command is in "output" (command field is stripped)
+			output, ok := dataMap["output"].(string)
 			if !ok {
-				t.Fatal("response should have 'command' string field")
+				t.Fatal("response should have 'output' string field in dry-run mode")
 			}
 
 			for _, want := range tt.wantContains {
-				if !strings.Contains(command, want) {
-					t.Errorf("command = %q, should contain %q", command, want)
+				if !strings.Contains(output, want) {
+					t.Errorf("output = %q, should contain %q", output, want)
 				}
 			}
 		})
@@ -512,14 +521,15 @@ func TestHandleKubectl_DryRun(t *testing.T) {
 				t.Fatalf("expected map[string]interface{}, got %T", data)
 			}
 
-			command, ok := dataMap["command"].(string)
+			// In dry-run mode, the CLI command is in "output" (command field is stripped)
+			output, ok := dataMap["output"].(string)
 			if !ok {
-				t.Fatal("response should have 'command' string field")
+				t.Fatal("response should have 'output' string field in dry-run mode")
 			}
 
 			for _, want := range tt.wantContains {
-				if !strings.Contains(command, want) {
-					t.Errorf("command = %q, should contain %q", command, want)
+				if !strings.Contains(output, want) {
+					t.Errorf("output = %q, should contain %q", output, want)
 				}
 			}
 		})

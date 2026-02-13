@@ -78,10 +78,14 @@ func TestGetMTVReadTool(t *testing.T) {
 	if !ok {
 		t.Fatal("OutputSchema should have properties")
 	}
-	for _, key := range []string{"command", "return_value", "data", "output", "stderr"} {
+	for _, key := range []string{"return_value", "data", "output", "stderr"} {
 		if _, exists := props[key]; !exists {
 			t.Errorf("OutputSchema.properties should contain %q", key)
 		}
+	}
+	// "command" should NOT be in the output schema (stripped to prevent CLI mimicry)
+	if _, exists := props["command"]; exists {
+		t.Error("OutputSchema.properties should NOT contain 'command' (stripped to help small LLMs)")
 	}
 }
 
@@ -300,6 +304,81 @@ func TestAppendNormalizedFlags(t *testing.T) {
 	}
 }
 
+// --- validateCommandInput tests ---
+
+func TestValidateCommandInput(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantError string
+	}{
+		{
+			name:  "valid simple command",
+			input: "get plan",
+		},
+		{
+			name:  "valid inventory command",
+			input: "get inventory vm",
+		},
+		{
+			name:  "valid single word",
+			input: "health",
+		},
+		{
+			name:      "full CLI command with kubectl-mtv prefix",
+			input:     "kubectl-mtv get plan --namespace demo",
+			wantError: "subcommand path",
+		},
+		{
+			name:      "full CLI command with kubectl prefix",
+			input:     "kubectl get pods",
+			wantError: "subcommand path",
+		},
+		{
+			name:      "embedded tool output with return_value",
+			input:     `get plan {"return_value": 0, "output": "..."}`,
+			wantError: "previous tool response",
+		},
+		{
+			name:      "embedded tool output with stdout",
+			input:     `{"stdout": "some output"}`,
+			wantError: "previous tool response",
+		},
+		{
+			name:      "embedded TOOL_CALLS marker",
+			input:     `get plan[TOOL_CALLS]more stuff`,
+			wantError: "previous tool response",
+		},
+		{
+			name:      "overly long command string",
+			input:     strings.Repeat("a", 201),
+			wantError: "too long",
+		},
+		{
+			name:  "command at exactly 200 chars is ok",
+			input: strings.Repeat("a", 200),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateCommandInput(tt.input)
+			if tt.wantError == "" {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			} else {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				if !strings.Contains(err.Error(), tt.wantError) {
+					t.Errorf("error = %q, should contain %q", err.Error(), tt.wantError)
+				}
+			}
+		})
+	}
+}
+
 // --- Handler validation error tests ---
 
 func TestHandleMTVRead_ValidationErrors(t *testing.T) {
@@ -322,6 +401,16 @@ func TestHandleMTVRead_ValidationErrors(t *testing.T) {
 			name:      "write command rejected",
 			input:     MTVReadInput{Command: "create plan"},
 			wantError: "write operation",
+		},
+		{
+			name:      "full CLI command rejected",
+			input:     MTVReadInput{Command: "kubectl-mtv get plan --namespace demo"},
+			wantError: "subcommand path",
+		},
+		{
+			name:      "embedded tool output rejected",
+			input:     MTVReadInput{Command: `get plan {"return_value": 0}`},
+			wantError: "previous tool response",
 		},
 	}
 
@@ -432,14 +521,20 @@ func TestHandleMTVRead_DryRun(t *testing.T) {
 				t.Fatalf("expected map[string]interface{}, got %T", data)
 			}
 
-			command, ok := dataMap["command"].(string)
+			// In dry-run mode, the CLI command is in "output" (command field is stripped)
+			output, ok := dataMap["output"].(string)
 			if !ok {
-				t.Fatal("response should have 'command' string field")
+				t.Fatal("response should have 'output' string field in dry-run mode")
+			}
+
+			// "command" field should NOT be present (stripped to prevent CLI mimicry)
+			if _, exists := dataMap["command"]; exists {
+				t.Error("response should NOT contain 'command' field (stripped to help small LLMs)")
 			}
 
 			for _, want := range tt.wantContains {
-				if !strings.Contains(command, want) {
-					t.Errorf("command = %q, should contain %q", command, want)
+				if !strings.Contains(output, want) {
+					t.Errorf("output = %q, should contain %q", output, want)
 				}
 			}
 		})
@@ -609,7 +704,6 @@ func TestLiveToolContextSize(t *testing.T) {
 
 func TestFilterResponseFields_ArrayData(t *testing.T) {
 	data := map[string]interface{}{
-		"command":      "kubectl-mtv get inventory vm --provider vsphere-provider --namespace demo --output json",
 		"return_value": float64(0),
 		"data": []interface{}{
 			map[string]interface{}{
@@ -634,9 +728,6 @@ func TestFilterResponseFields_ArrayData(t *testing.T) {
 	result := filterResponseFields(data, []string{"name", "id", "concerns"})
 
 	// Envelope fields should be preserved
-	if result["command"] != "kubectl-mtv get inventory vm --provider vsphere-provider --namespace demo --output json" {
-		t.Error("command envelope field should be preserved")
-	}
 	if result["return_value"] != float64(0) {
 		t.Error("return_value envelope field should be preserved")
 	}
@@ -675,7 +766,6 @@ func TestFilterResponseFields_ArrayData(t *testing.T) {
 
 func TestFilterResponseFields_ObjectData(t *testing.T) {
 	data := map[string]interface{}{
-		"command":      "kubectl-mtv health --output json",
 		"return_value": float64(0),
 		"data": map[string]interface{}{
 			"overallStatus": "Healthy",
@@ -708,7 +798,6 @@ func TestFilterResponseFields_ObjectData(t *testing.T) {
 
 func TestFilterResponseFields_EmptyFields(t *testing.T) {
 	data := map[string]interface{}{
-		"command":      "test",
 		"return_value": float64(0),
 		"data": []interface{}{
 			map[string]interface{}{"name": "vm-1", "id": "vm-101"},
@@ -730,7 +819,6 @@ func TestFilterResponseFields_EmptyFields(t *testing.T) {
 
 func TestFilterResponseFields_NoDataKey(t *testing.T) {
 	data := map[string]interface{}{
-		"command":      "test",
 		"return_value": float64(0),
 		"output":       "some plain text output",
 	}
@@ -741,14 +829,10 @@ func TestFilterResponseFields_NoDataKey(t *testing.T) {
 	if result["output"] != "some plain text output" {
 		t.Error("output should be preserved when no data key exists")
 	}
-	if result["command"] != "test" {
-		t.Error("command should be preserved")
-	}
 }
 
 func TestFilterResponseFields_NonObjectItems(t *testing.T) {
 	data := map[string]interface{}{
-		"command":      "test",
 		"return_value": float64(0),
 		"data": []interface{}{
 			"string-item",
@@ -788,7 +872,6 @@ func TestFilterResponseFields_NonObjectItems(t *testing.T) {
 func TestBuildCLIErrorResult_Success(t *testing.T) {
 	// return_value == 0 should return nil (no error)
 	data := map[string]interface{}{
-		"command":      "kubectl-mtv get plan --output json",
 		"return_value": float64(0),
 		"data":         []interface{}{},
 	}
@@ -801,9 +884,7 @@ func TestBuildCLIErrorResult_Success(t *testing.T) {
 
 func TestBuildCLIErrorResult_MissingReturnValue(t *testing.T) {
 	// No return_value key should return nil (no error)
-	data := map[string]interface{}{
-		"command": "kubectl-mtv health",
-	}
+	data := map[string]interface{}{}
 
 	result := buildCLIErrorResult(data)
 	if result != nil {
@@ -813,7 +894,6 @@ func TestBuildCLIErrorResult_MissingReturnValue(t *testing.T) {
 
 func TestBuildCLIErrorResult_NonZeroExit(t *testing.T) {
 	data := map[string]interface{}{
-		"command":      "kubectl-mtv get inventory vm --provider vsphere-provider --output json",
 		"return_value": float64(1),
 		"stderr":       "Error: failed to get provider 'vsphere-provider': providers.forklift.konveyor.io \"vsphere-provider\" not found\n",
 		"stdout":       "",
@@ -835,21 +915,17 @@ func TestBuildCLIErrorResult_NonZeroExit(t *testing.T) {
 		t.Fatalf("content should be TextContent, got %T", result.Content[0])
 	}
 
-	// Should contain the command, exit code, and stderr message
+	// Should contain exit code and stderr message
 	if !strings.Contains(text.Text, "exit 1") {
 		t.Errorf("error text should contain exit code, got: %s", text.Text)
 	}
 	if !strings.Contains(text.Text, "vsphere-provider") {
 		t.Errorf("error text should contain stderr message, got: %s", text.Text)
 	}
-	if !strings.Contains(text.Text, "kubectl-mtv get inventory vm") {
-		t.Errorf("error text should contain command, got: %s", text.Text)
-	}
 }
 
 func TestBuildCLIErrorResult_NoStderr(t *testing.T) {
 	data := map[string]interface{}{
-		"command":      "kubectl-mtv get plan --output json",
 		"return_value": float64(2),
 		"stderr":       "",
 	}
@@ -868,7 +944,7 @@ func TestBuildCLIErrorResult_NoStderr(t *testing.T) {
 	}
 }
 
-func TestBuildCLIErrorResult_NoCommand(t *testing.T) {
+func TestBuildCLIErrorResult_StderrOnly(t *testing.T) {
 	data := map[string]interface{}{
 		"return_value": float64(1),
 		"stderr":       "some error",
@@ -880,13 +956,11 @@ func TestBuildCLIErrorResult_NoCommand(t *testing.T) {
 	}
 
 	text := result.Content[0].(*mcp.TextContent)
-	// Should still work without command
 	if !strings.Contains(text.Text, "some error") {
 		t.Errorf("error text should contain stderr, got: %s", text.Text)
 	}
-	// Should not have the "[command]" prefix
-	if strings.HasPrefix(text.Text, "[") {
-		t.Errorf("error text should not have command prefix when command is empty, got: %s", text.Text)
+	if !strings.Contains(text.Text, "exit 1") {
+		t.Errorf("error text should contain exit code, got: %s", text.Text)
 	}
 }
 

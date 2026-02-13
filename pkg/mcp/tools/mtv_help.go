@@ -34,22 +34,7 @@ Topics:
 IMPORTANT: Call mtv_help("tsl") before writing inventory queries to learn available fields and syntax.
 
 Output: Returns command flags, usage, and examples as structured data.`,
-		OutputSchema: map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "Executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
-				"data": map[string]any{
-					"description": "Help output (object or array)",
-					"oneOf": []map[string]any{
-						{"type": "object"},
-						{"type": "array"},
-					},
-				},
-				"output": map[string]any{"type": "string", "description": "Text output"},
-				"stderr": map[string]any{"type": "string", "description": "Error output"},
-			},
-		},
+		OutputSchema: mtvOutputSchema,
 	}
 }
 

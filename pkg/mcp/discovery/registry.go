@@ -337,6 +337,96 @@ func (r *Registry) GenerateMinimalReadWriteDescription() string {
 	return sb.String()
 }
 
+// ultraMinimalReadCommands lists the most commonly used read commands for the
+// ultra-minimal description. Only these are shown to very small models.
+var ultraMinimalReadCommands = map[string]bool{
+	"get/plan":                true,
+	"get/provider":            true,
+	"describe/plan":           true,
+	"get/inventory/vm":        true,
+	"get/mapping":             true,
+	"health":                  true,
+	"settings/get":            true,
+	"get/inventory/network":   true,
+	"get/inventory/datastore": true,
+}
+
+// ultraMinimalWriteCommands lists the most commonly used write commands.
+var ultraMinimalWriteCommands = map[string]bool{
+	"create/provider":        true,
+	"create/plan":            true,
+	"start/plan":             true,
+	"delete/plan":            true,
+	"delete/provider":        true,
+	"patch/plan":             true,
+	"create/mapping/network": true,
+	"create/mapping/storage": true,
+}
+
+// GenerateUltraMinimalReadOnlyDescription generates the shortest possible description
+// for the read-only tool, optimized for very small models (< 8B parameters).
+// It lists only the most common commands, 2 examples, and omits flags/workflow/notes.
+func (r *Registry) GenerateUltraMinimalReadOnlyDescription() string {
+	var sb strings.Builder
+
+	sb.WriteString("Query MTV migration resources (read-only).\n")
+	sb.WriteString("\nCommands:\n")
+
+	// List only ultra-minimal commands that exist in the registry
+	commands := r.ListReadOnlyCommands()
+	for _, key := range commands {
+		if !ultraMinimalReadCommands[key] {
+			continue
+		}
+		cmd := r.ReadOnly[key]
+		sb.WriteString(fmt.Sprintf("  %s - %s\n", cmd.CommandPath(), cmd.Description))
+	}
+
+	// If we have inventory commands not in the explicit list, mention them as a group
+	hasInventory := false
+	for key := range r.ReadOnly {
+		if strings.HasPrefix(key, "get/inventory/") && !ultraMinimalReadCommands[key] {
+			hasInventory = true
+			break
+		}
+	}
+	if hasInventory {
+		sb.WriteString("  get inventory RESOURCE - Get other inventory resources (disk, host, cluster, ...)\n")
+	}
+
+	sb.WriteString("\nExamples:\n")
+	sb.WriteString("  {command: \"get plan\", flags: {namespace: \"demo\"}}\n")
+	sb.WriteString("  {command: \"get inventory vm\", flags: {provider: \"vsphere-prod\", namespace: \"demo\"}}\n")
+	sb.WriteString("\nUse mtv_help for flags and query syntax.\n")
+
+	return sb.String()
+}
+
+// GenerateUltraMinimalReadWriteDescription generates the shortest possible description
+// for the read-write tool, optimized for very small models (< 8B parameters).
+func (r *Registry) GenerateUltraMinimalReadWriteDescription() string {
+	var sb strings.Builder
+
+	sb.WriteString("Create, modify, or delete MTV migration resources.\n")
+	sb.WriteString("\nCommands:\n")
+
+	commands := r.ListReadWriteCommands()
+	for _, key := range commands {
+		if !ultraMinimalWriteCommands[key] {
+			continue
+		}
+		cmd := r.ReadWrite[key]
+		sb.WriteString(fmt.Sprintf("  %s - %s\n", cmd.CommandPath(), cmd.Description))
+	}
+
+	sb.WriteString("\nExamples:\n")
+	sb.WriteString("  {command: \"create plan\", flags: {name: \"my-plan\", source: \"vsphere-prod\", target: \"host\", vms: \"web-server\", namespace: \"demo\"}}\n")
+	sb.WriteString("  {command: \"start plan\", flags: {name: \"my-plan\", namespace: \"demo\"}}\n")
+	sb.WriteString("\nCall mtv_help before create/patch to learn required flags.\n")
+
+	return sb.String()
+}
+
 // generateFlagReference builds a concise per-command flag reference for write commands.
 // It includes all flags for commands that have required flags or many flags (complex commands),
 // so the LLM can construct valid calls without guessing flag names.

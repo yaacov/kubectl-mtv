@@ -17,7 +17,7 @@ import (
 type KubectlLogsInput struct {
 	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters as key-value pairs (e.g. name: \"deployments/forklift-controller\", namespace: \"openshift-mtv\", filter_plan: \"my-plan\")"`
 
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, returns the command that would be executed without running it"`
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, does not execute. Returns the equivalent CLI command in the output field instead"`
 }
 
 // KubectlInput represents the input for the kubectl tool (get, describe, events).
@@ -27,7 +27,7 @@ type KubectlInput struct {
 
 	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters as key-value pairs (e.g. resource_type: \"pods\", namespace: \"openshift-mtv\", labels: \"plan=my-plan\")"`
 
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, returns the command that would be executed without running it"`
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, does not execute. Returns the equivalent CLI command in the output field instead"`
 }
 
 // kubectlDebugParams holds the resolved parameters for kubectl debug operations.
@@ -145,16 +145,7 @@ Examples:
   {flags: {name: "deployments/forklift-controller", namespace: "openshift-mtv"}}
   {flags: {name: "deployments/forklift-controller", namespace: "openshift-mtv", filter_plan: "my-plan", filter_level: "error"}}
   {flags: {name: "pod/virt-v2v-cold-xyz", namespace: "target-ns", tail_lines: 100}}`,
-		OutputSchema: map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "Executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
-				"data":         map[string]any{"type": "object", "description": "Response data (logs array, output string, warning string)"},
-				"output":       map[string]any{"type": "string", "description": "Text output"},
-				"stderr":       map[string]any{"type": "string", "description": "Error output"},
-			},
-		},
+		OutputSchema: mtvOutputSchema,
 	}
 }
 
@@ -179,16 +170,7 @@ Examples:
   {action: "get", flags: {resource_type: "pods", namespace: "openshift-mtv", labels: "plan=my-plan"}}
   {action: "describe", flags: {resource_type: "pvc", name: "my-pvc", namespace: "target-ns"}}
   {action: "events", flags: {for_resource: "pod/virt-v2v-xxx", namespace: "target-ns"}}`,
-		OutputSchema: map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "Executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
-				"data":         map[string]any{"type": "object", "description": "Response data"},
-				"output":       map[string]any{"type": "string", "description": "Text output"},
-				"stderr":       map[string]any{"type": "string", "description": "Error output"},
-			},
-		},
+		OutputSchema: mtvOutputSchema,
 	}
 }
 
