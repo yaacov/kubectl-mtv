@@ -1,0 +1,31 @@
+[project]
+name = "mcp-e2e-tests"
+version = "0.1.0"
+description = "End-to-end tests for kubectl-mtv MCP server"
+requires-python = ">=3.10"
+dependencies = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.26",
+    "pytest-order>=1.2",
+    "python-dotenv>=1.0",
+    "mcp>=1.0",
+    "pyyaml>=6.0",
+]
+
+[tool.setuptools]
+# This is a test-only project; there are no packages to distribute.
+packages = []
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = [
+    "setup",
+    "providers",
+    "hosts",
+    "plans",
+    "mappings",
+    "inventory",
+    "health",
+]

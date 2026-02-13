@@ -78,7 +78,7 @@ Credentials can be provided directly via flags or through an existing Kubernetes
   kubectl-mtv create provider --name host \
     --type openshift \
     --url https://api.cluster.example.com:6443 \
-    --token 'eyJhbGciOiJSUzI1NiIsInR5...'
+    --provider-token 'eyJhbGciOiJSUzI1NiIsInR5...'
 
   # Create an OpenStack provider
   kubectl-mtv create provider --name openstack-prod \
@@ -171,7 +171,7 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 	cmd.Flags().BoolVar(&insecureSkipTLS, "provider-insecure-skip-tls", false, "Skip TLS verification when connecting to the provider")
 
 	// OpenShift specific flags
-	cmd.Flags().StringVarP(&token, "token", "T", "", "Provider authentication token")
+	cmd.Flags().StringVarP(&token, "provider-token", "T", "", "Provider authentication token")
 
 	// vSphere specific flags
 	cmd.Flags().StringVar(&vddkInitImage, "vddk-init-image", vddkInitImage, "Virtual Disk Development Kit (VDDK) container init image path")

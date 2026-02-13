@@ -240,7 +240,7 @@
             ],
             "path_string": "create host",
             "description": "Create migration hosts",
-            "long_description": "Create migration hosts for vSphere providers. Hosts enable direct data transfer from ESXi hosts, bypassing vCenter for improved performance.\n\nBy creating host resources, Forklift can utilize ESXi host interfaces directly for network transfer to OpenShift, provided the OpenShift worker nodes and ESXi host interfaces have network connectivity. This is particularly beneficial when users want to control which specific ESXi interface is used for migration, even without direct access to ESXi host credentials.\n\nOnly vSphere providers support host creation. Host names must match existing hosts in the provider's inventory.\n\nExamples:\n  # ESXi endpoint provider with direct IP (no credentials needed - uses provider secret automatically)\n  kubectl-mtv create host --name my-host --provider my-esxi-provider --ip-address 192.168.1.10\n\n  # ESXi endpoint provider with network adapter lookup\n  kubectl-mtv create host --name my-host --provider my-esxi-provider --network-adapter \"Management Network\"\n\n  # Create a host using existing secret and direct IP\n  kubectl-mtv create host --name my-host --provider my-vsphere-provider --existing-secret my-secret --ip-address 192.168.1.10\n\n  # Create a host with new credentials and direct IP\n  kubectl-mtv create host --name my-host --provider my-vsphere-provider --username user --password pass --ip-address 192.168.1.10\n\n  # Create a host using IP from inventory network adapter\n  kubectl-mtv create host --name my-host --provider my-vsphere-provider --username user --password pass --network-adapter \"Management Network\"\n\n  # Create multiple hosts (all use same IP resolution method)\n  kubectl-mtv create host --name host1,host2,host3 --provider my-vsphere-provider --existing-secret my-secret --network-adapter \"Management Network\"",
+            "long_description": "Create migration hosts for vSphere providers. Hosts enable direct data transfer from ESXi hosts, bypassing vCenter for improved performance.\n\nBy creating host resources, Forklift can utilize ESXi host interfaces directly for network transfer to OpenShift, provided the OpenShift worker nodes and ESXi host interfaces have network connectivity. This is particularly beneficial when users want to control which specific ESXi interface is used for migration, even without direct access to ESXi host credentials.\n\nOnly vSphere providers support host creation. The --host-id flag requires inventory host IDs (e.g. \"host-8\"), NOT display names or IP addresses. Use 'kubectl-mtv get inventory host --provider <name>' to list available host IDs.\n\nExamples:\n  # First, discover available host IDs from the provider inventory\n  kubectl-mtv get inventory host --provider my-vsphere-provider\n\n  # ESXi endpoint provider with direct IP (no credentials needed - uses provider secret automatically)\n  kubectl-mtv create host --host-id host-8 --provider my-esxi-provider --ip-address 192.168.1.10\n\n  # ESXi endpoint provider with network adapter lookup\n  kubectl-mtv create host --host-id host-8 --provider my-esxi-provider --network-adapter \"Management Network\"\n\n  # Create a host using existing secret and direct IP\n  kubectl-mtv create host --host-id host-8 --provider my-vsphere-provider --existing-secret my-secret --ip-address 192.168.1.10\n\n  # Create a host with new credentials and direct IP\n  kubectl-mtv create host --host-id host-8 --provider my-vsphere-provider --username user --password pass --ip-address 192.168.1.10\n\n  # Create a host using IP from inventory network adapter\n  kubectl-mtv create host --host-id host-8 --provider my-vsphere-provider --username user --password pass --network-adapter \"Management Network\"\n\n  # Create multiple hosts (all use same IP resolution method)\n  kubectl-mtv create host --host-id host-8,host-12,host-15 --provider my-vsphere-provider --existing-secret my-secret --network-adapter \"Management Network\"",
             "usage": "kubectl-mtv create host [flags]",
             "aliases": [
                 "hosts"
@@ -273,11 +273,10 @@
                     "required": false
                 },
                 {
-                    "name": "name",
-                    "shorthand": "M",
+                    "name": "host-id",
                     "type": "stringSlice",
                     "default": [],
-                    "description": "Host name(s) to create (comma-separated, e.g. \"host1,host2\")",
+                    "description": "Inventory host ID(s) to create (comma-separated, e.g. \"host-8,host-12\"); use 'get inventory host' to list IDs",
                     "required": true
                 },
                 {
@@ -1014,7 +1013,7 @@
                     "required": false
                 },
                 {
-                    "name": "token",
+                    "name": "provider-token",
                     "shorthand": "T",
                     "type": "string",
                     "description": "Provider authentication token",
@@ -4678,7 +4677,7 @@
                     "required": false
                 },
                 {
-                    "name": "token",
+                    "name": "provider-token",
                     "shorthand": "T",
                     "type": "string",
                     "description": "Provider authentication token",

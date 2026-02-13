@@ -224,18 +224,18 @@ kubectl mtv create provider --name local-openshift --type openshift
 # Remote OpenShift cluster with token
 kubectl mtv create provider --name remote-openshift --type openshift \
   --url https://api.remote-cluster.example.com:6443 \
-  --token your-service-account-token
+  --provider-token your-service-account-token
 
 # Remote OpenShift cluster with CA certificate
 kubectl mtv create provider --name remote-openshift --type openshift \
   --url https://api.remote-cluster.example.com:6443 \
-  --token your-service-account-token \
+  --provider-token your-service-account-token \
   --cacert @/path/to/cluster-ca.pem
 
 # Skip TLS verification for testing
 kubectl mtv create provider --name test-openshift --type openshift \
   --url https://api.test-cluster.example.com:6443 \
-  --token your-service-account-token \
+  --provider-token your-service-account-token \
   --provider-insecure-skip-tls
 ```
 
@@ -396,7 +396,7 @@ kubectl mtv patch provider --name vsphere-test \
 
 # Update token for OpenShift provider
 kubectl mtv patch provider --name remote-openshift \
-  --token new-service-account-token
+  --provider-token new-service-account-token
 ```
 
 #### Update Credentials (Owned Secrets Only)

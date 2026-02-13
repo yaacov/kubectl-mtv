@@ -69,7 +69,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	cmd.Flags().BoolVar(&opts.InsecureSkipTLS, "provider-insecure-skip-tls", false, "Skip TLS verification when connecting to the provider")
 
 	// OpenShift specific flags
-	cmd.Flags().StringVarP(&opts.Token, "token", "T", "", "Provider authentication token")
+	cmd.Flags().StringVarP(&opts.Token, "provider-token", "T", "", "Provider authentication token")
 
 	// vSphere specific flags (editable VDDK settings)
 	cmd.Flags().StringVar(&opts.VddkInitImage, "vddk-init-image", "", "Virtual Disk Development Kit (VDDK) container init image path")
