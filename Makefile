@@ -24,7 +24,7 @@ VERSION ?= ${VERSION_GIT}
 
 # Container image settings
 IMAGE_REGISTRY ?= quay.io
-IMAGE_ORG ?= kubev2v
+IMAGE_ORG ?= yaacov
 IMAGE_NAME ?= kubectl-mtv-mcp-server
 IMAGE_TAG ?= $(VERSION)
 IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_ORG)/$(IMAGE_NAME)
@@ -252,6 +252,39 @@ image-manifest:
 		$(IMAGE):$(IMAGE_TAG)-amd64 \
 		$(IMAGE):$(IMAGE_TAG)-arm64
 	$(CONTAINER_ENGINE) manifest push $(IMAGE):$(IMAGE_TAG)
+
+## deploy: Deploy the MCP server pod and service to the current OpenShift cluster
+.PHONY: deploy
+deploy:
+	@echo "Deploying kubectl-mtv MCP server..."
+	oc apply -f deploy/mcp-server.yaml
+
+## undeploy: Remove the MCP server pod and service from the current OpenShift cluster
+.PHONY: undeploy
+undeploy:
+	@echo "Removing kubectl-mtv MCP server..."
+	oc delete -f deploy/mcp-server.yaml --ignore-not-found=true
+
+## deploy-olsconfig: Register the MCP server with OpenShift Lightspeed (patches existing OLSConfig)
+.PHONY: deploy-olsconfig
+deploy-olsconfig:
+	@echo "Patching OLSConfig to register kubectl-mtv MCP server with Lightspeed..."
+	oc patch olsconfig cluster --type merge -p "$$(cat deploy/olsconfig-patch.yaml)"
+
+## undeploy-olsconfig: Unregister the MCP server from OpenShift Lightspeed
+.PHONY: undeploy-olsconfig
+undeploy-olsconfig:
+	@echo "Removing kubectl-mtv MCP server from OLSConfig..."
+	oc patch olsconfig cluster --type json \
+		-p '[{"op":"remove","path":"/spec/mcpServers"},{"op":"remove","path":"/spec/featureGates"}]'
+
+## deploy-all: Deploy the MCP server and register it with Lightspeed
+.PHONY: deploy-all
+deploy-all: deploy deploy-olsconfig
+
+## undeploy-all: Unregister from Lightspeed and remove the MCP server
+.PHONY: undeploy-all
+undeploy-all: undeploy-olsconfig undeploy
 
 ## image-build-all: Build container images for all architectures
 .PHONY: image-build-all
