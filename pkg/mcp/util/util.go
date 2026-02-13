@@ -151,6 +151,17 @@ type CommandResponse struct {
 	Stderr      string `json:"stderr"`
 }
 
+// selfExePath caches the path to the currently running executable.
+// This ensures the MCP server always calls its own binary rather than
+// whatever "kubectl-mtv" happens to be on PATH (which may be an older version).
+var selfExePath = func() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return "kubectl-mtv" // fallback to PATH lookup
+	}
+	return exe
+}()
+
 // RunKubectlMTVCommand executes a kubectl-mtv command and returns structured JSON
 // It accepts a context which may contain a Kubernetes token and/or server URL for authentication.
 // If a token is present in the context, it will be passed via the --token flag.
@@ -203,7 +214,9 @@ func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
 		return "", fmt.Errorf("failed to resolve environment variables: %w", err)
 	}
 
-	cmd := exec.Command("kubectl-mtv", resolvedArgs...)
+	// Use the path to our own executable so the MCP server always invokes the
+	// same binary it was started from, not whatever "kubectl-mtv" is on PATH.
+	cmd := exec.Command(selfExePath, resolvedArgs...)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

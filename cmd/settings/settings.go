@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -164,10 +165,27 @@ Examples:
 		_ = err
 	}
 
+	// Add --setting flag for getting a specific setting
+	cmd.Flags().StringVar(&settingName, "setting", "", "Setting name to get (if not provided, shows all settings)")
+
 	// Add --all flag
 	cmd.Flags().BoolVar(&allSettings, "all", false, "Show all ForkliftController settings (not just common ones)")
 
+	_ = cmd.RegisterFlagCompletionFunc("setting", getSettingCompletion)
+
 	return cmd
+}
+
+// getSettingCompletion provides completion for the --setting flag in 'settings get'.
+func getSettingCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	var completions []string
+	for name := range settings.SupportedSettings {
+		if strings.HasPrefix(name, toComplete) {
+			completions = append(completions, name)
+		}
+	}
+	sort.Strings(completions)
+	return completions, cobra.ShellCompDirectiveNoFileComp
 }
 
 // formatOutput formats the settings output.
