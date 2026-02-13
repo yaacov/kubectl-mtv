@@ -237,6 +237,18 @@ func TestUnmarshalJSONResponse(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
+			// "command" field should always be stripped (prevents CLI mimicry)
+			if _, hasCommand := result["command"]; hasCommand {
+				t.Error("'command' field should be stripped from response")
+			}
+
+			// Empty "stderr" should be stripped
+			if stderr, hasSterr := result["stderr"]; hasSterr {
+				if s, ok := stderr.(string); ok && strings.TrimSpace(s) == "" {
+					t.Error("empty 'stderr' should be stripped from response")
+				}
+			}
+
 			if tt.wantData {
 				data, exists := result["data"]
 				if !exists {
@@ -263,6 +275,43 @@ func TestUnmarshalJSONResponse(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestUnmarshalJSONResponse_ResponseTruncation verifies that long output is truncated
+// when maxResponseChars is configured.
+func TestUnmarshalJSONResponse_ResponseTruncation(t *testing.T) {
+	// Save and restore
+	orig := GetMaxResponseChars()
+	defer SetMaxResponseChars(orig)
+
+	longOutput := strings.Repeat("A", 5000)
+	input := `{"command":"test","return_value":0,"stdout":"` + longOutput + `","stderr":""}`
+
+	// Without truncation
+	SetMaxResponseChars(0)
+	result, err := UnmarshalJSONResponse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	output := result["output"].(string)
+	if len(output) != 5000 {
+		t.Errorf("without truncation, output should be 5000 chars, got %d", len(output))
+	}
+
+	// With truncation at 100 chars
+	SetMaxResponseChars(100)
+	result, err = UnmarshalJSONResponse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	output = result["output"].(string)
+	if !strings.Contains(output, "[truncated at 100 chars") {
+		t.Errorf("truncated output should contain truncation hint, got: %s", output[:min(200, len(output))])
+	}
+	// The output should start with the original content
+	if !strings.HasPrefix(output, strings.Repeat("A", 100)) {
+		t.Error("truncated output should start with original content")
 	}
 }
 

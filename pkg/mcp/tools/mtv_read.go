@@ -16,9 +16,29 @@ type MTVReadInput struct {
 
 	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters including positional args and options (e.g. name: \"my-plan\", provider: \"my-vsphere\", output: \"json\", namespace: \"ns\", query: \"where cpuCount > 4\")"`
 
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, returns the command that would be executed without running it"`
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, does not execute. Returns the equivalent CLI command in the output field instead"`
 
 	Fields []string `json:"fields,omitempty" jsonschema:"Limit JSON to these top-level keys only (e.g. [name, id, concerns])"`
+}
+
+// mtvOutputSchema is the shared output schema for mtv_read and mtv_write tools.
+// The "command" field is intentionally omitted to prevent small LLMs from
+// mimicking CLI command syntax (e.g., generating "kubectl-mtv get plan ...")
+// instead of structured {command, flags} tool calls.
+var mtvOutputSchema = map[string]any{
+	"type": "object",
+	"properties": map[string]any{
+		"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
+		"data": map[string]any{
+			"description": "Response data (object or array)",
+			"oneOf": []map[string]any{
+				{"type": "object"},
+				{"type": "array"},
+			},
+		},
+		"output": map[string]any{"type": "string", "description": "Text output"},
+		"stderr": map[string]any{"type": "string", "description": "Error output"},
+	},
 }
 
 // GetMTVReadTool returns the tool definition for read-only MTV commands.
@@ -26,24 +46,9 @@ func GetMTVReadTool(registry *discovery.Registry) *mcp.Tool {
 	description := registry.GenerateReadOnlyDescription()
 
 	return &mcp.Tool{
-		Name:        "mtv_read",
-		Description: description,
-		OutputSchema: map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "Executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
-				"data": map[string]any{
-					"description": "Response data (object or array)",
-					"oneOf": []map[string]any{
-						{"type": "object"},
-						{"type": "array"},
-					},
-				},
-				"output": map[string]any{"type": "string", "description": "Text output"},
-				"stderr": map[string]any{"type": "string", "description": "Error output"},
-			},
-		},
+		Name:         "mtv_read",
+		Description:  description,
+		OutputSchema: mtvOutputSchema,
 	}
 }
 
@@ -54,25 +59,59 @@ func GetMinimalMTVReadTool(registry *discovery.Registry) *mcp.Tool {
 	description := registry.GenerateMinimalReadOnlyDescription()
 
 	return &mcp.Tool{
-		Name:        "mtv_read",
-		Description: description,
-		OutputSchema: map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "Executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
-				"data": map[string]any{
-					"description": "Response data (object or array)",
-					"oneOf": []map[string]any{
-						{"type": "object"},
-						{"type": "array"},
-					},
-				},
-				"output": map[string]any{"type": "string", "description": "Text output"},
-				"stderr": map[string]any{"type": "string", "description": "Error output"},
-			},
-		},
+		Name:         "mtv_read",
+		Description:  description,
+		OutputSchema: mtvOutputSchema,
 	}
+}
+
+// GetUltraMinimalMTVReadTool returns the smallest possible tool definition for read-only
+// MTV commands, optimized for very small models (< 8B parameters).
+// Lists only the most common commands, 2 examples, and omits flags/workflow/notes.
+func GetUltraMinimalMTVReadTool(registry *discovery.Registry) *mcp.Tool {
+	description := registry.GenerateUltraMinimalReadOnlyDescription()
+
+	return &mcp.Tool{
+		Name:         "mtv_read",
+		Description:  description,
+		OutputSchema: mtvOutputSchema,
+	}
+}
+
+// validateCommandInput checks for common malformed input patterns from small LLMs.
+// When a model sends garbled input (CLI commands, embedded tool results, etc.),
+// this returns a corrective error message that teaches the model the right format,
+// rather than letting it spiral into a degenerate loop.
+func validateCommandInput(command string) error {
+	command = strings.TrimSpace(command)
+
+	// Detect full CLI commands pasted as the command field
+	lower := strings.ToLower(command)
+	if strings.HasPrefix(lower, "kubectl-mtv ") || strings.HasPrefix(lower, "kubectl ") {
+		return fmt.Errorf(
+			"the 'command' field should be a subcommand path like 'get plan' or 'get inventory vm', " +
+				"not a full CLI command. Remove the 'kubectl-mtv' or 'kubectl' prefix")
+	}
+
+	// Detect embedded JSON/output (hallucinated tool responses mixed into input)
+	if strings.Contains(command, "\"output\"") ||
+		strings.Contains(command, "\"return_value\"") ||
+		strings.Contains(command, "\"stdout\"") ||
+		strings.Contains(command, "[TOOL_CALLS]") {
+		return fmt.Errorf(
+			"the 'command' field contains what looks like a previous tool response. " +
+				"It should only contain a command path like 'get inventory datastore'")
+	}
+
+	// Detect overly long command strings (almost certainly malformed)
+	if len(command) > 200 {
+		return fmt.Errorf(
+			"the 'command' field is too long (%d chars). "+
+				"It should be a short command path like 'get plan' or 'get inventory vm'",
+			len(command))
+	}
+
+	return nil
 }
 
 // HandleMTVRead returns a handler function for the mtv_read tool.
@@ -81,6 +120,11 @@ func HandleMTVRead(registry *discovery.Registry) func(context.Context, *mcp.Call
 		// Extract K8s credentials from HTTP headers (for SSE mode)
 		if req.Extra != nil && req.Extra.Header != nil {
 			ctx = util.WithKubeCredsFromHeaders(ctx, req.Extra.Header)
+		}
+
+		// Validate input to catch common small-LLM mistakes early
+		if err := validateCommandInput(input.Command); err != nil {
+			return nil, nil, err
 		}
 
 		// Normalize command path
@@ -135,7 +179,7 @@ func HandleMTVRead(registry *discovery.Registry) func(context.Context, *mcp.Call
 
 // filterResponseFields filters the "data" field of a response to include only the specified fields.
 // It handles both array responses ([]interface{}) and single object responses (map[string]interface{}).
-// Envelope fields (command, return_value, stderr, output) are always preserved.
+// Envelope fields (return_value, stderr, output) are always preserved.
 func filterResponseFields(data map[string]interface{}, fields []string) map[string]interface{} {
 	if len(fields) == 0 {
 		return data
@@ -355,9 +399,6 @@ func buildCLIErrorResult(data map[string]interface{}) *mcp.CallToolResult {
 	errMsg := fmt.Sprintf("Command failed (exit %d)", int(rv))
 	if stderr, ok := data["stderr"].(string); ok && stderr != "" {
 		errMsg += ": " + strings.TrimSpace(stderr)
-	}
-	if cmd, ok := data["command"].(string); ok && cmd != "" {
-		errMsg = fmt.Sprintf("[%s] %s", cmd, errMsg)
 	}
 
 	return &mcp.CallToolResult{

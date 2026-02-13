@@ -37,10 +37,14 @@ func TestGetMTVHelpTool(t *testing.T) {
 	if !ok {
 		t.Fatal("OutputSchema should have properties")
 	}
-	for _, key := range []string{"command", "return_value", "data", "output", "stderr"} {
+	for _, key := range []string{"return_value", "data", "output", "stderr"} {
 		if _, exists := props[key]; !exists {
 			t.Errorf("OutputSchema.properties should contain %q", key)
 		}
+	}
+	// "command" should NOT be in the output schema (stripped to prevent CLI mimicry)
+	if _, exists := props["command"]; exists {
+		t.Error("OutputSchema.properties should NOT contain 'command' (stripped to help small LLMs)")
 	}
 }
 

@@ -100,6 +100,24 @@ func GetDryRun(ctx context.Context) bool {
 // outputFormat stores the configured output format for MCP responses
 var outputFormat = "text"
 
+// maxResponseChars limits the size of text output returned to the LLM.
+// Long responses fill the context window and increase the chance of small LLMs
+// losing track of the tool protocol. When > 0, the "output" field is truncated
+// to this many characters with a hint to use structured queries.
+// 0 means no truncation (default).
+var maxResponseChars int
+
+// SetMaxResponseChars sets the maximum number of characters for text output.
+// 0 disables truncation.
+func SetMaxResponseChars(n int) {
+	maxResponseChars = n
+}
+
+// GetMaxResponseChars returns the configured max response chars limit.
+func GetMaxResponseChars() int {
+	return maxResponseChars
+}
+
 // SetOutputFormat sets the output format for MCP responses.
 // Valid values are "text" (default, table output) or "json".
 func SetOutputFormat(format string) {
@@ -214,8 +232,6 @@ func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
 		return "", fmt.Errorf("failed to resolve environment variables: %w", err)
 	}
 
-	// Use the path to our own executable so the MCP server always invokes the
-	// same binary it was started from, not whatever "kubectl-mtv" is on PATH.
 	cmd := exec.Command(selfExePath, resolvedArgs...)
 
 	var stdout, stderr bytes.Buffer
@@ -454,6 +470,13 @@ func formatShellCommand(cmd string, args []string) string {
 //   - If stdout is a JSON object or array, it's parsed and moved to a "data" field
 //   - If stdout is plain text, it's renamed to "output" for clarity
 //
+// Post-processing to help small LLMs:
+//   - The "command" field (full CLI command string) is stripped to prevent models
+//     from mimicking CLI syntax instead of using structured MCP tool calls.
+//   - Empty "stderr" is removed to reduce noise.
+//   - The "output" field is truncated to maxResponseChars (if configured) to keep
+//     responses within manageable context window sizes.
+//
 // This makes responses clearer for LLMs by avoiding double-encoded strings.
 func UnmarshalJSONResponse(responseJSON string) (map[string]interface{}, error) {
 	var cmdResponse map[string]interface{}
@@ -470,6 +493,7 @@ func UnmarshalJSONResponse(responseJSON string) (map[string]interface{}, error) 
 		if err := json.Unmarshal([]byte(stdout), &jsonObj); err == nil {
 			delete(cmdResponse, "stdout")
 			cmdResponse["data"] = jsonObj
+			cleanupResponse(cmdResponse)
 			return cmdResponse, nil
 		}
 
@@ -478,6 +502,7 @@ func UnmarshalJSONResponse(responseJSON string) (map[string]interface{}, error) 
 		if err := json.Unmarshal([]byte(stdout), &jsonArr); err == nil {
 			delete(cmdResponse, "stdout")
 			cmdResponse["data"] = jsonArr
+			cleanupResponse(cmdResponse)
 			return cmdResponse, nil
 		}
 
@@ -486,5 +511,31 @@ func UnmarshalJSONResponse(responseJSON string) (map[string]interface{}, error) 
 		cmdResponse["output"] = stdout
 	}
 
+	cleanupResponse(cmdResponse)
 	return cmdResponse, nil
+}
+
+// cleanupResponse removes noise from tool responses to help small LLMs stay on track.
+//   - Strips the "command" field (full CLI echo like "kubectl-mtv get plan --namespace demo")
+//     which causes small models to mimic CLI syntax instead of using structured tool calls.
+//   - Removes empty "stderr" to reduce noise.
+//   - Truncates the "output" field if maxResponseChars is configured.
+func cleanupResponse(data map[string]interface{}) {
+	// Strip CLI command echo — this is the #1 cause of small LLMs generating
+	// raw CLI strings instead of structured {command, flags} tool calls.
+	delete(data, "command")
+
+	// Remove empty stderr to reduce noise
+	if stderr, ok := data["stderr"].(string); ok && strings.TrimSpace(stderr) == "" {
+		delete(data, "stderr")
+	}
+
+	// Truncate long text output if configured
+	if maxResponseChars > 0 {
+		if output, ok := data["output"].(string); ok && len(output) > maxResponseChars {
+			truncated := output[:maxResponseChars]
+			truncated += fmt.Sprintf("\n\n[truncated at %d chars. Use flags: {output: \"json\"} with fields: [\"name\", \"id\"] to get specific data]", maxResponseChars)
+			data["output"] = truncated
+		}
+	}
 }

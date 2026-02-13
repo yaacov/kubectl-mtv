@@ -20,14 +20,15 @@ import (
 )
 
 var (
-	sse          bool
-	port         string
-	host         string
-	certFile     string
-	keyFile      string
-	outputFormat string
-	kubeServer   string
-	kubeToken    string
+	sse              bool
+	port             string
+	host             string
+	certFile         string
+	keyFile          string
+	outputFormat     string
+	kubeServer       string
+	kubeToken        string
+	maxResponseChars int
 )
 
 // NewMCPServerCmd creates the mcp-server command
@@ -81,6 +82,9 @@ Manual Claude config: Add to claude_desktop_config.json:
 
 			// Set the output format for MCP responses
 			util.SetOutputFormat(outputFormat)
+
+			// Set max response size (helps small LLMs stay within context window)
+			util.SetMaxResponseChars(maxResponseChars)
 
 			// Set default Kubernetes credentials from CLI flags
 			// These serve as fallback when HTTP headers don't provide credentials
@@ -188,6 +192,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 	mcpCmd.Flags().StringVar(&outputFormat, "output-format", "text", "Default output format for commands: text (table) or json")
 	mcpCmd.Flags().StringVar(&kubeServer, "server", "", "Kubernetes API server URL (passed to kubectl via --server flag)")
 	mcpCmd.Flags().StringVar(&kubeToken, "token", "", "Kubernetes authentication token (passed to kubectl via --token flag)")
+	mcpCmd.Flags().IntVar(&maxResponseChars, "max-response-chars", 0, "Max characters for text output (0=unlimited). Helps small LLMs by truncating long responses")
 
 	return mcpCmd
 }
