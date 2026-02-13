@@ -74,6 +74,17 @@ test-inventory: install
 test-health: install
 	$(PYTEST) $(PYTEST_ARGS) health/
 
+# ── Container image mode ──────────────────────────────────────────────
+# Set MCP_IMAGE to run the tests against a container instead of the local binary.
+# Example: make test-image MCP_IMAGE=quay.io/kubev2v/kubectl-mtv-mcp-server:latest
+
+MCP_IMAGE ?=
+
+## test-image: Run the full ordered test suite against a container image
+.PHONY: test-image
+test-image: install
+	MCP_IMAGE=$(MCP_IMAGE) $(PYTEST) $(PYTEST_ARGS)
+
 # ── Cross-cutting ──────────────────────────────────────────────────────────
 
 ## test-create: Run all write (create) tests across every concern
