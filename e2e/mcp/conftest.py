@@ -10,6 +10,7 @@ import asyncio as _asyncio
 import contextlib
 import json
 import os
+import shutil
 import signal
 import socket
 import subprocess
@@ -72,6 +73,14 @@ MTV_BINARY: str = os.environ.get(
 )
 MCP_SSE_PORT: str = os.environ.get("MCP_SSE_PORT", "18443")
 MCP_SSE_URL: str = f"http://127.0.0.1:{MCP_SSE_PORT}/sse"
+
+# Container image mode -- when MCP_IMAGE is set the tests start the MCP
+# server inside a container instead of running the local binary directly.
+MCP_IMAGE: str = os.environ.get("MCP_IMAGE", "")
+CONTAINER_ENGINE: str = os.environ.get(
+    "CONTAINER_ENGINE",
+    "",
+)
 
 # ---------------------------------------------------------------------------
 # Test resources — environment-specific, REQUIRED (no defaults)
@@ -333,18 +342,62 @@ def _delete_namespace(name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Helper: detect container engine
+# ---------------------------------------------------------------------------
+def _detect_container_engine() -> str:
+    """Return the path to docker or podman, preferring CONTAINER_ENGINE env."""
+    if CONTAINER_ENGINE:
+        return CONTAINER_ENGINE
+    for candidate in ("docker", "podman"):
+        path = shutil.which(candidate)
+        if path:
+            return path
+    raise RuntimeError(
+        "MCP_IMAGE is set but no container engine found. "
+        "Install docker or podman, or set CONTAINER_ENGINE."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Fixture: start the MCP server subprocess in SSE mode
 # ---------------------------------------------------------------------------
 @pytest.fixture(scope="session")
 def mcp_server_process():
-    """Start kubectl-mtv mcp-server --sse and yield the subprocess."""
-    cmd = [
-        MTV_BINARY, "mcp-server",
-        "--sse",
-        "--port", MCP_SSE_PORT,
-        "--server", KUBE_API_URL,
-        "--token", KUBE_TOKEN,
-    ]
+    """Start kubectl-mtv mcp-server --sse and yield the subprocess.
+
+    When ``MCP_IMAGE`` is set the server is started inside a container
+    (using docker/podman) with the appropriate port mapping and
+    environment variables.  Otherwise the local binary is executed
+    directly.
+    """
+    if MCP_IMAGE:
+        engine = _detect_container_engine()
+        container_name = f"mcp-e2e-{MCP_SSE_PORT}"
+
+        # The container image listens on port 8080 internally.
+        cmd = [
+            engine, "run", "--rm",
+            "--name", container_name,
+            "-p", f"127.0.0.1:{MCP_SSE_PORT}:8080",
+            "-e", f"MCP_KUBE_SERVER={KUBE_API_URL}",
+            "-e", f"MCP_KUBE_TOKEN={KUBE_TOKEN}",
+            "-e", "MCP_KUBE_INSECURE=true",
+            "-e", "MCP_PORT=8080",
+            "-e", "MCP_HOST=0.0.0.0",
+            MCP_IMAGE,
+        ]
+    else:
+        container_name = ""
+        engine = ""
+        cmd = [
+            MTV_BINARY, "mcp-server",
+            "--sse",
+            "--port", MCP_SSE_PORT,
+            "--server", KUBE_API_URL,
+            "--token", KUBE_TOKEN,
+            "--insecure-skip-tls-verify",
+        ]
+
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -352,7 +405,7 @@ def mcp_server_process():
     )
 
     # Give the server a moment to start listening
-    deadline = time.monotonic() + 15
+    deadline = time.monotonic() + 30 if MCP_IMAGE else time.monotonic() + 15
     started = False
     while time.monotonic() < deadline:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -371,9 +424,16 @@ def mcp_server_process():
     yield proc
 
     # Teardown: graceful shutdown
-    proc.send_signal(signal.SIGTERM)
+    if container_name and engine:
+        # Stop the container (sends SIGTERM, then SIGKILL after grace period)
+        subprocess.run(
+            [engine, "stop", "-t", "10", container_name],
+            capture_output=True, timeout=30,
+        )
+    else:
+        proc.send_signal(signal.SIGTERM)
     try:
-        proc.wait(timeout=10)
+        proc.wait(timeout=15)
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait(timeout=5)

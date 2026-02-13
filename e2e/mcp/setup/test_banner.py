@@ -15,9 +15,11 @@ from conftest import (
     GOVC_URL,
     GOVC_USERNAME,
     KUBE_API_URL,
+    MCP_IMAGE,
     MCP_SSE_PORT,
     MCP_SSE_URL,
     MCP_VERBOSE,
+    MTV_BINARY,
     TEST_NAMESPACE,
     COLD_PLAN_NAME,
     WARM_PLAN_NAME,
@@ -69,6 +71,8 @@ async def test_print_banner(mcp_session):
     """
     cli_ver, cli_ok = _cli_version()
 
+    server_mode = f"container ({MCP_IMAGE})" if MCP_IMAGE else f"local binary ({MTV_BINARY})"
+
     banner = "\n".join([
         "",
         "=" * 60,
@@ -80,6 +84,7 @@ async def test_print_banner(mcp_session):
         f"  kubectl-mtv:      {cli_ver}",
         _section("Cluster"),
         f"  API URL:          {KUBE_API_URL}",
+        f"  MCP server mode:  {server_mode}",
         f"  MCP SSE port:     {MCP_SSE_PORT}",
         f"  MCP SSE URL:      {MCP_SSE_URL}",
         _section("vSphere source"),

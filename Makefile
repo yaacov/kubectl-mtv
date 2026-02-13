@@ -22,6 +22,14 @@
 VERSION_GIT := $(shell git describe --tags 2>/dev/null || echo "0.0.0-dev")
 VERSION ?= ${VERSION_GIT}
 
+# Container image settings
+IMAGE_REGISTRY ?= quay.io
+IMAGE_ORG ?= kubev2v
+IMAGE_NAME ?= kubectl-mtv-mcp-server
+IMAGE_TAG ?= $(VERSION)
+IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_ORG)/$(IMAGE_NAME)
+CONTAINER_ENGINE ?= $(shell command -v docker 2>/dev/null || command -v podman 2>/dev/null)
+
 # Path to forklift repository for verify-defaults target
 # Override with: make verify-defaults FORKLIFT_PATH=/path/to/forklift
 FORKLIFT_PATH ?= ../../kubev2v/forklift
@@ -175,17 +183,20 @@ verify-defaults:
 	@echo "Verifying settings defaults against forklift..."
 	@./scripts/verify-defaults.sh $(FORKLIFT_PATH)
 
-## test-e2e: Run full e2e test suite
-.PHONY: test-e2e
-test-e2e: kubectl-mtv
-	@echo "Running e2e tests..."
-	cd tests/e2e && python -m pytest -v
+## test-e2e-mcp: Run MCP e2e tests against the latest local build
+.PHONY: test-e2e-mcp
+test-e2e-mcp: kubectl-mtv
+	@echo "Running MCP e2e tests against local build..."
+	cd e2e/mcp && $(MAKE) test
 
-## test-e2e-provider: Run provider e2e tests only
-.PHONY: test-e2e-provider
-test-e2e-provider: kubectl-mtv
-	@echo "Running provider e2e tests..."
-	cd tests/e2e && python -m pytest -v -m provider
+## test-e2e-mcp-image: Run MCP e2e tests against a container image (MCP_IMAGE required)
+.PHONY: test-e2e-mcp-image
+test-e2e-mcp-image:
+ifndef MCP_IMAGE
+	$(error MCP_IMAGE is required. Example: make test-e2e-mcp-image MCP_IMAGE=$(IMAGE):$(IMAGE_TAG)-amd64)
+endif
+	@echo "Running MCP e2e tests against container image $(MCP_IMAGE)..."
+	cd e2e/mcp && MCP_IMAGE=$(MCP_IMAGE) $(MAKE) test
 
 ## test-cleanup: Clean up test namespaces
 .PHONY: test-cleanup
@@ -199,3 +210,53 @@ test-cleanup:
 test-list-namespaces:
 	@echo "Current test namespaces:"
 	@kubectl get namespaces -o name | grep "kubectl-mtv-shared-" | sed 's/namespace\///' || echo "No test namespaces found."
+
+# ---- Container image targets ----
+
+## image-build-amd64: Build container image for linux/amd64
+.PHONY: image-build-amd64
+image-build-amd64:
+	$(CONTAINER_ENGINE) build \
+		--platform linux/amd64 \
+		--build-arg TARGETARCH=amd64 \
+		--build-arg VERSION=$(VERSION) \
+		-f Containerfile \
+		-t $(IMAGE):$(IMAGE_TAG)-amd64 \
+		.
+
+## image-build-arm64: Build container image for linux/arm64
+.PHONY: image-build-arm64
+image-build-arm64:
+	$(CONTAINER_ENGINE) build \
+		--platform linux/arm64 \
+		--build-arg TARGETARCH=arm64 \
+		--build-arg VERSION=$(VERSION) \
+		-f Containerfile \
+		-t $(IMAGE):$(IMAGE_TAG)-arm64 \
+		.
+
+## image-push-amd64: Push amd64 container image
+.PHONY: image-push-amd64
+image-push-amd64:
+	$(CONTAINER_ENGINE) push $(IMAGE):$(IMAGE_TAG)-amd64
+
+## image-push-arm64: Push arm64 container image
+.PHONY: image-push-arm64
+image-push-arm64:
+	$(CONTAINER_ENGINE) push $(IMAGE):$(IMAGE_TAG)-arm64
+
+## image-manifest: Create and push multi-arch manifest list
+.PHONY: image-manifest
+image-manifest:
+	$(CONTAINER_ENGINE) manifest create --amend $(IMAGE):$(IMAGE_TAG) \
+		$(IMAGE):$(IMAGE_TAG)-amd64 \
+		$(IMAGE):$(IMAGE_TAG)-arm64
+	$(CONTAINER_ENGINE) manifest push $(IMAGE):$(IMAGE_TAG)
+
+## image-build-all: Build container images for all architectures
+.PHONY: image-build-all
+image-build-all: image-build-amd64 image-build-arm64
+
+## image-push-all: Push all arch images and create multi-arch manifest
+.PHONY: image-push-all
+image-push-all: image-push-amd64 image-push-arm64 image-manifest

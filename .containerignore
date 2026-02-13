@@ -1,0 +1,47 @@
+# Build artifacts
+kubectl-mtv
+kubectl-mtv-*
+*.tar.gz
+*.zip
+*.sha256sum
+*.exe
+
+# IDE / editor
+.idea/
+.vscode/
+.cursor/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Tests & docs
+tests/
+e2e/
+guide/
+docs/
+scripts/
+_config.yml
+_includes/
+_layouts/
+Gemfile
+README.md
+LICENSE
+
+# Python artifacts
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Coverage
+coverage.out
+coverage.txt
+htmlcov/

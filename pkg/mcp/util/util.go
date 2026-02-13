@@ -161,6 +161,20 @@ func GetDefaultKubeToken() string {
 	return defaultKubeToken
 }
 
+// defaultInsecureSkipTLS stores whether to skip TLS verification for Kubernetes API connections.
+// When true, --insecure-skip-tls-verify is prepended to every subprocess invocation.
+var defaultInsecureSkipTLS bool
+
+// SetDefaultInsecureSkipTLS sets the default TLS skip verification flag.
+func SetDefaultInsecureSkipTLS(skip bool) {
+	defaultInsecureSkipTLS = skip
+}
+
+// GetDefaultInsecureSkipTLS returns whether TLS verification should be skipped.
+func GetDefaultInsecureSkipTLS() bool {
+	return defaultInsecureSkipTLS
+}
+
 // CommandResponse represents the structured response from command execution
 type CommandResponse struct {
 	Command     string `json:"command"`
@@ -188,6 +202,11 @@ var selfExePath = func() string {
 // Precedence: context (HTTP headers) > CLI defaults > kubeconfig (implicit).
 // If dry run mode is enabled in the context, it returns a teaching response instead of executing.
 func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
+	// Prepend --insecure-skip-tls-verify when configured (before server/token)
+	if defaultInsecureSkipTLS {
+		args = append([]string{"--insecure-skip-tls-verify"}, args...)
+	}
+
 	// Check context first (HTTP headers), then fall back to CLI defaults for --server flag
 	// Server flag is prepended first so it appears before --token in the final command
 	if server, ok := GetKubeServer(ctx); ok && server != "" {
@@ -281,6 +300,11 @@ func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
 // Precedence: context (HTTP headers) > CLI defaults > kubeconfig (implicit).
 // If dry run mode is enabled in the context, it returns a teaching response instead of executing.
 func RunKubectlCommand(ctx context.Context, args []string) (string, error) {
+	// Prepend --insecure-skip-tls-verify when configured (before server/token)
+	if defaultInsecureSkipTLS {
+		args = append([]string{"--insecure-skip-tls-verify"}, args...)
+	}
+
 	// Check context first (HTTP headers), then fall back to CLI defaults for --server flag
 	// Server flag is prepended first so it appears before --token in the final command
 	if server, ok := GetKubeServer(ctx); ok && server != "" {

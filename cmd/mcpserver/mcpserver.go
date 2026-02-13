@@ -28,6 +28,7 @@ var (
 	outputFormat     string
 	kubeServer       string
 	kubeToken        string
+	insecureSkipTLS  bool
 	maxResponseChars int
 )
 
@@ -90,6 +91,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 			// These serve as fallback when HTTP headers don't provide credentials
 			util.SetDefaultKubeServer(kubeServer)
 			util.SetDefaultKubeToken(kubeToken)
+			util.SetDefaultInsecureSkipTLS(insecureSkipTLS)
 
 			// Create a context that listens for interrupt signals
 			ctx, cancel := context.WithCancel(context.Background())
@@ -192,6 +194,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 	mcpCmd.Flags().StringVar(&outputFormat, "output-format", "text", "Default output format for commands: text (table) or json")
 	mcpCmd.Flags().StringVar(&kubeServer, "server", "", "Kubernetes API server URL (passed to kubectl via --server flag)")
 	mcpCmd.Flags().StringVar(&kubeToken, "token", "", "Kubernetes authentication token (passed to kubectl via --token flag)")
+	mcpCmd.Flags().BoolVar(&insecureSkipTLS, "insecure-skip-tls-verify", false, "Skip TLS certificate verification for Kubernetes API connections")
 	mcpCmd.Flags().IntVar(&maxResponseChars, "max-response-chars", 0, "Max characters for text output (0=unlimited). Helps small LLMs by truncating long responses")
 
 	return mcpCmd

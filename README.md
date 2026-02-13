@@ -182,6 +182,47 @@ See [Command Reference](guide/26-command-reference.md) for the full help command
 - [MCP Server Integration](guide/22-model-context-protocol-mcp-server-integration.md)
 - [Command Reference](guide/26-command-reference.md)
 
+## Running from a Container Image
+
+Start the MCP server using docker or podman:
+
+```bash
+# Run the MCP server on port 8080
+docker run --rm -p 8080:8080 \
+  -e MCP_KUBE_SERVER=https://api.cluster.example.com:6443 \
+  -e MCP_KUBE_TOKEN=sha256~xxxx \
+  quay.io/kubev2v/kubectl-mtv-mcp-server:latest
+```
+
+The server accepts the following environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `MCP_HOST` | `0.0.0.0` | Listen address |
+| `MCP_PORT` | `8080` | Listen port |
+| `MCP_KUBE_SERVER` | | Kubernetes API server URL |
+| `MCP_KUBE_TOKEN` | | Bearer token for Kubernetes auth |
+| `MCP_KUBE_INSECURE` | | Set to `true` to skip TLS verification |
+| `MCP_CERT_FILE` | | Path to TLS certificate (enables HTTPS) |
+| `MCP_KEY_FILE` | | Path to TLS private key |
+| `MCP_OUTPUT_FORMAT` | `text` | Default output format |
+| `MCP_MAX_RESPONSE_CHARS` | `0` | Max response size (0 = unlimited) |
+
+## Building & Testing with a Container Image
+
+Build the container image and run the MCP end-to-end test suite against it:
+
+```bash
+# Build the image (linux/amd64)
+make image-build-amd64
+
+# Run the e2e tests against the container image
+make test-e2e-mcp-image MCP_IMAGE=quay.io/kubev2v/kubectl-mtv-mcp-server:0.0.0-dev-amd64
+```
+
+You can also set `MCP_IMAGE` in `e2e/mcp/.env` (see `e2e/mcp/env.example`) and
+use `CONTAINER_ENGINE` to choose between docker and podman.
+
 ## Environment Variables
 
 - `MTV_VDDK_INIT_IMAGE`: Default VDDK init image for VMware providers
