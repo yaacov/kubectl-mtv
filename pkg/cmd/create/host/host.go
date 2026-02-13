@@ -207,7 +207,7 @@ func validateHostIDs(hostIDs []string, availableHosts []map[string]interface{}) 
 	}
 
 	if len(missingHosts) > 0 {
-		return fmt.Errorf("the following host IDs were not found in provider inventory: %s", strings.Join(missingHosts, ", "))
+		return fmt.Errorf("the following host IDs were not found in provider inventory: %s\nHint: use 'kubectl-mtv get inventory host --provider <name>' to list available host IDs", strings.Join(missingHosts, ", "))
 	}
 
 	return nil

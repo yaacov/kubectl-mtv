@@ -567,7 +567,7 @@ func (r *Registry) collectOrderedExamples(commands map[string]*Command, orderedK
 // sensitiveFlags lists flag names whose values should not appear in MCP examples.
 // These are replaced with a placeholder to avoid leaking credentials.
 var sensitiveFlags = map[string]bool{
-	"password": true, "token": true, "secret": true, "secret-name": true,
+	"password": true, "token": true, "provider-token": true, "secret": true, "secret-name": true,
 }
 
 // convertCLIToMCPExamples converts up to n CLI examples of a command into

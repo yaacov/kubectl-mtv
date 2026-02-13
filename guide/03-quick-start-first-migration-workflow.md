@@ -133,7 +133,7 @@ kubectl mtv create provider --name openstack-source --type openstack \
 # Another KubeVirt cluster as source
 kubectl mtv create provider --name kubevirt-source --type openshift \
   --url https://api.source-cluster.example.com:6443 \
-  --token your-service-account-token
+  --provider-token your-service-account-token
 ```
 
 ### Verify Provider Registration

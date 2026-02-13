@@ -197,6 +197,7 @@ func TestGetSettingDefinition_Found(t *testing.T) {
 	def := GetSettingDefinition("vddk_image")
 	if def == nil {
 		t.Fatal("GetSettingDefinition(vddk_image) = nil, want non-nil")
+		return
 	}
 	if def.Name != "vddk_image" {
 		t.Errorf("def.Name = %q, want %q", def.Name, "vddk_image")

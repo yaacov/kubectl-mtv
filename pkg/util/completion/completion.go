@@ -194,8 +194,9 @@ func MappingNameCompletion(configFlags *genericclioptions.ConfigFlags, mappingTy
 	}
 }
 
-// HostNameCompletion provides completion for host names from provider inventory
-func HostNameCompletion(configFlags *genericclioptions.ConfigFlags, providerName, toComplete string) ([]string, cobra.ShellCompDirective) {
+// HostIDCompletion provides completion for host inventory IDs from provider inventory.
+// These are vSphere managed object IDs (e.g. "host-8"), not display names or IP addresses.
+func HostIDCompletion(configFlags *genericclioptions.ConfigFlags, providerName, toComplete string) ([]string, cobra.ShellCompDirective) {
 	if providerName == "" {
 		return []string{"Provider not specified"}, cobra.ShellCompDirectiveError
 	}

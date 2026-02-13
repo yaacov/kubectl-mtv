@@ -258,7 +258,7 @@ kubectl mtv create provider --name <name> [flags]
 - `--provider-insecure-skip-tls`: Skip TLS verification when connecting to the provider
 
 **OpenShift Provider Flags:**
-- `--token, -T`: Provider authentication token
+- `--provider-token, -T`: Provider authentication token
 
 **vSphere Provider Flags:**
 - `--vddk-init-image`: Virtual Disk Development Kit (VDDK) container init image path
@@ -278,7 +278,7 @@ kubectl mtv create provider --name my-vsphere --type vsphere \
 # OpenShift provider
 kubectl mtv create provider --name my-openshift --type openshift \
   --url https://api.openshift.example.com:6443 \
-  --token sha256~abc123...
+  --provider-token sha256~abc123...
 
 # oVirt provider
 kubectl mtv create provider --name my-ovirt --type ovirt \
@@ -420,35 +420,42 @@ kubectl mtv create mapping storage --name enterprise-storage \
   --offload-vsphere-username admin@vsphere.local
 ```
 
-#### create host --name HOST_NAME
+#### create host --host-id HOST_ID
 
 Create migration hosts for vSphere environments.
 
+> **Important:** The `--host-id` flag expects **inventory host IDs** (e.g. `host-8`), not display
+> names or IP addresses. Use `kubectl-mtv get inventory host --provider <name>` to list available IDs.
+
 ```bash
-kubectl mtv create host --name <name> [flags]
+kubectl mtv create host --host-id <id> [flags]
 ```
 
 **Flags:**
+- `--host-id`: Inventory host ID(s) to create, comma-separated (required); use `get inventory host` to list IDs
 - `--provider, -p`: vSphere provider name (required)
 - `--ip-address`: IP address for disk transfer (mutually exclusive with --network-adapter)
 - `--network-adapter`: Network adapter name to get IP from inventory (mutually exclusive with --ip-address)
-- `--secret`: Existing secret with host credentials
-- `--username`: Host username (creates new secret if no --secret provided)
-- `--password`: Host password (creates new secret if no --secret provided)
+- `--existing-secret`: Existing secret with host credentials
+- `--username`: Host username (creates new secret if no --existing-secret provided)
+- `--password`: Host password (creates new secret if no --existing-secret provided)
 - `--host-insecure-skip-tls`: Skip TLS verification for host connections
 - `--cacert`: CA certificate for host authentication
 
 **Examples:**
 ```bash
+# List available host IDs first
+kubectl mtv get inventory host --provider my-vsphere-provider
+
 # Host with direct IP
-kubectl mtv create host --name esxi-host-01 \
+kubectl mtv create host --host-id host-8 \
   --provider my-vsphere-provider \
   --ip-address 192.168.1.10
 
 # Host with network adapter lookup
-kubectl mtv create host --name esxi-host-02 \
+kubectl mtv create host --host-id host-12 \
   --provider my-vsphere-provider \
-  --network-adapter vmk1 \
+  --network-adapter "Management Network" \
   --username root --password ESXiPassword123
 ```
 
@@ -682,7 +689,7 @@ kubectl mtv patch provider --name <provider-name> [flags]
 - `--url`: Update provider URL
 - `--username`: Update username
 - `--password`: Update password
-- `--token`: Update authentication token
+- `--provider-token`: Update authentication token
 - `--cacert`: Update CA certificate
 - `--insecure-skip-tls`: Update TLS verification setting
 
@@ -1042,7 +1049,7 @@ kubectl mtv get inventory vms --provider vsphere-prod --query "where name ~= 'pr
 ```bash
 # 1. Create providers
 kubectl mtv create provider --name vsphere-source --type vsphere --url https://vcenter.company.com --username admin --password pass123
-kubectl mtv create provider --name openshift-target --type openshift --url https://api.openshift.company.com:6443 --token sha256~token
+kubectl mtv create provider --name openshift-target --type openshift --url https://api.openshift.company.com:6443 --provider-token sha256~token
 
 # 2. Create mappings (optional)
 kubectl mtv create mapping network --name net-mapping --source vsphere-source --target openshift-target --network-pairs "VLAN100:prod-network"

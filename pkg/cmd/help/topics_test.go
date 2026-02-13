@@ -6,6 +6,7 @@ func TestGetTopic_TSL(t *testing.T) {
 	topic := GetTopic("tsl")
 	if topic == nil {
 		t.Fatal("expected TSL topic, got nil")
+		return
 	}
 	if topic.Name != "tsl" {
 		t.Errorf("expected name 'tsl', got %q", topic.Name)
@@ -22,6 +23,7 @@ func TestGetTopic_KARL(t *testing.T) {
 	topic := GetTopic("karl")
 	if topic == nil {
 		t.Fatal("expected KARL topic, got nil")
+		return
 	}
 	if topic.Name != "karl" {
 		t.Errorf("expected name 'karl', got %q", topic.Name)
