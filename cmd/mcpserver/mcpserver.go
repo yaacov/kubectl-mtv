@@ -212,7 +212,8 @@ func createMCPServer() (*mcp.Server, error) {
 	// booleans ("True"/"true") from AI models that don't send proper JSON booleans.
 	tools.AddToolWithCoercion(server, tools.GetMinimalMTVReadTool(registry), tools.HandleMTVRead(registry))
 	tools.AddToolWithCoercion(server, tools.GetMinimalMTVWriteTool(registry), tools.HandleMTVWrite(registry))
-	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlDebugTool(), tools.HandleKubectlDebug)
+	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlLogsTool(), tools.HandleKubectlLogs)
+	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlTool(), tools.HandleKubectl)
 	mcp.AddTool(server, tools.GetMTVHelpTool(), tools.HandleMTVHelp)
 
 	return server, nil

@@ -200,15 +200,12 @@ func TestCoerceBooleans_UnmarshalAfterCoerce(t *testing.T) {
 // --- CoerceBooleans with real tool input types ---
 
 func TestCoerceBooleans_MTVReadInput(t *testing.T) {
-	data := json.RawMessage(`{"command":"get plan","all_namespaces":"True","dry_run":"FALSE"}`)
+	data := json.RawMessage(`{"command":"get plan","dry_run":"FALSE"}`)
 	result := CoerceBooleans[MTVReadInput](data)
 
 	var input MTVReadInput
 	if err := json.Unmarshal(result, &input); err != nil {
 		t.Fatalf("Failed to unmarshal: %v", err)
-	}
-	if !input.AllNamespaces {
-		t.Error("AllNamespaces should be true")
 	}
 	if input.DryRun {
 		t.Error("DryRun should be false")
@@ -228,28 +225,32 @@ func TestCoerceBooleans_MTVWriteInput(t *testing.T) {
 	}
 }
 
-func TestCoerceBooleans_KubectlDebugInput(t *testing.T) {
-	data := json.RawMessage(`{"action":"logs","all_namespaces":"True","previous":"true","dry_run":"False","ignore_case":"TRUE","no_timestamps":"false"}`)
-	result := CoerceBooleans[KubectlDebugInput](data)
+func TestCoerceBooleans_KubectlLogsInput(t *testing.T) {
+	// KubectlLogsInput has flags and dry_run at top level.
+	// Boolean params like previous etc. are inside the flags map.
+	data := json.RawMessage(`{"dry_run":"True"}`)
+	result := CoerceBooleans[KubectlLogsInput](data)
 
-	var input KubectlDebugInput
+	var input KubectlLogsInput
 	if err := json.Unmarshal(result, &input); err != nil {
 		t.Fatalf("Failed to unmarshal: %v", err)
 	}
-	if !input.AllNamespaces {
-		t.Error("AllNamespaces should be true")
+	if !input.DryRun {
+		t.Error("DryRun should be true")
 	}
-	if !input.Previous {
-		t.Error("Previous should be true")
+}
+
+func TestCoerceBooleans_KubectlInput(t *testing.T) {
+	// KubectlInput has action, flags, and dry_run at top level.
+	data := json.RawMessage(`{"action":"get","dry_run":"True"}`)
+	result := CoerceBooleans[KubectlInput](data)
+
+	var input KubectlInput
+	if err := json.Unmarshal(result, &input); err != nil {
+		t.Fatalf("Failed to unmarshal: %v", err)
 	}
-	if input.DryRun {
-		t.Error("DryRun should be false")
-	}
-	if !input.IgnoreCase {
-		t.Error("IgnoreCase should be true")
-	}
-	if input.NoTimestamps {
-		t.Error("NoTimestamps should be false")
+	if !input.DryRun {
+		t.Error("DryRun should be true")
 	}
 }
 
@@ -367,74 +368,53 @@ func TestAddToolWithCoercion_EndToEnd(t *testing.T) {
 	}
 }
 
-// --- buildArgs flags fallback tests ---
+// --- buildArgs flags extraction tests ---
 
 func TestBuildArgs_FlagsAllNamespaces(t *testing.T) {
 	tests := []struct {
-		name          string
-		flags         map[string]any
-		allNamespaces bool
-		wantA         bool // whether -A should be in the result
+		name  string
+		flags map[string]any
+		wantA bool // whether -A should be in the result
 	}{
 		{
-			name:          "top-level true takes priority",
-			flags:         nil,
-			allNamespaces: true,
-			wantA:         true,
+			name:  "flags all_namespaces bool true",
+			flags: map[string]any{"all_namespaces": true},
+			wantA: true,
 		},
 		{
-			name:          "flags all_namespaces bool true",
-			flags:         map[string]any{"all_namespaces": true},
-			allNamespaces: false,
-			wantA:         true,
+			name:  "flags all_namespaces string True",
+			flags: map[string]any{"all_namespaces": "True"},
+			wantA: true,
 		},
 		{
-			name:          "flags all_namespaces string True",
-			flags:         map[string]any{"all_namespaces": "True"},
-			allNamespaces: false,
-			wantA:         true,
+			name:  "flags all_namespaces string true",
+			flags: map[string]any{"all_namespaces": "true"},
+			wantA: true,
 		},
 		{
-			name:          "flags all_namespaces string true",
-			flags:         map[string]any{"all_namespaces": "true"},
-			allNamespaces: false,
-			wantA:         true,
+			name:  "flags A bool true",
+			flags: map[string]any{"A": true},
+			wantA: true,
 		},
 		{
-			name:          "flags A bool true",
-			flags:         map[string]any{"A": true},
-			allNamespaces: false,
-			wantA:         true,
+			name:  "flags A string true",
+			flags: map[string]any{"A": "true"},
+			wantA: true,
 		},
 		{
-			name:          "flags A string true",
-			flags:         map[string]any{"A": "true"},
-			allNamespaces: false,
-			wantA:         true,
+			name:  "flags all_namespaces false",
+			flags: map[string]any{"all_namespaces": false},
+			wantA: false,
 		},
 		{
-			name:          "flags all_namespaces false",
-			flags:         map[string]any{"all_namespaces": false},
-			allNamespaces: false,
-			wantA:         false,
+			name:  "flags all_namespaces string false",
+			flags: map[string]any{"all_namespaces": "false"},
+			wantA: false,
 		},
 		{
-			name:          "flags all_namespaces string false",
-			flags:         map[string]any{"all_namespaces": "false"},
-			allNamespaces: false,
-			wantA:         false,
-		},
-		{
-			name:          "no flags no all_namespaces",
-			flags:         nil,
-			allNamespaces: false,
-			wantA:         false,
-		},
-		{
-			name:          "top-level true overrides flags false",
-			flags:         map[string]any{"all_namespaces": false},
-			allNamespaces: true,
-			wantA:         true,
+			name:  "no flags",
+			flags: nil,
+			wantA: false,
 		},
 	}
 
@@ -445,7 +425,7 @@ func TestBuildArgs_FlagsAllNamespaces(t *testing.T) {
 			util.SetOutputFormat("text")
 			defer util.SetOutputFormat(origFormat)
 
-			result := buildArgs("get/plan", nil, tt.flags, "", tt.allNamespaces, "")
+			result := buildArgs("get/plan", nil, tt.flags)
 
 			// Use exact element match to avoid false positives from substrings
 			hasA := false

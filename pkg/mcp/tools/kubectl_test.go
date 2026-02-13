@@ -11,31 +11,24 @@ import (
 
 // --- Tool definition tests ---
 
-func TestGetKubectlDebugTool(t *testing.T) {
-	tool := GetKubectlDebugTool()
+func TestGetMinimalKubectlLogsTool(t *testing.T) {
+	tool := GetMinimalKubectlLogsTool()
 
-	if tool.Name != "kubectl_debug" {
-		t.Errorf("Name = %q, want %q", tool.Name, "kubectl_debug")
+	if tool.Name != "kubectl_logs" {
+		t.Errorf("Name = %q, want %q", tool.Name, "kubectl_logs")
 	}
 
 	if tool.Description == "" {
 		t.Error("Description should not be empty")
 	}
 
-	// Should mention all four actions
-	for _, action := range []string{"logs", "get", "describe", "events"} {
-		if !strings.Contains(tool.Description, action) {
-			t.Errorf("Description should contain action %q", action)
-		}
-	}
-
-	// Should contain key usage patterns
+	// Should contain key log-specific keywords
 	for _, keyword := range []string{
-		"deployments/forklift-controller",
+		"forklift-controller",
 		"filter_plan",
 		"log_format",
 		"filter_level",
-		"JSON log",
+		"deployments/forklift-controller",
 		"tail_lines",
 	} {
 		if !strings.Contains(tool.Description, keyword) {
@@ -57,19 +50,49 @@ func TestGetKubectlDebugTool(t *testing.T) {
 			t.Errorf("OutputSchema.properties should contain %q", key)
 		}
 	}
+}
 
-	// data should have nested properties with logs, output, warning
-	dataSchema, ok := props["data"].(map[string]any)
-	if !ok {
-		t.Fatal("data property should be a map")
+func TestGetMinimalKubectlTool(t *testing.T) {
+	tool := GetMinimalKubectlTool()
+
+	if tool.Name != "kubectl" {
+		t.Errorf("Name = %q, want %q", tool.Name, "kubectl")
 	}
-	dataProps, ok := dataSchema["properties"].(map[string]any)
-	if !ok {
-		t.Fatal("data should have nested properties")
+
+	if tool.Description == "" {
+		t.Error("Description should not be empty")
 	}
-	for _, key := range []string{"logs", "output", "warning"} {
-		if _, exists := dataProps[key]; !exists {
-			t.Errorf("data.properties should contain %q", key)
+
+	// Should mention the three actions
+	for _, action := range []string{"get", "describe", "events"} {
+		if !strings.Contains(tool.Description, action) {
+			t.Errorf("Description should contain action %q", action)
+		}
+	}
+
+	// Should contain key resource-inspection keywords
+	for _, keyword := range []string{
+		"resource_type",
+		"namespace",
+		"mtv_read",
+	} {
+		if !strings.Contains(tool.Description, keyword) {
+			t.Errorf("Description should contain %q", keyword)
+		}
+	}
+
+	// OutputSchema should have expected properties
+	schema, ok := tool.OutputSchema.(map[string]any)
+	if !ok {
+		t.Fatal("OutputSchema should be a map")
+	}
+	props, ok := schema["properties"].(map[string]any)
+	if !ok {
+		t.Fatal("OutputSchema should have properties")
+	}
+	for _, key := range []string{"command", "return_value", "data", "output", "stderr"} {
+		if _, exists := props[key]; !exists {
+			t.Errorf("OutputSchema.properties should contain %q", key)
 		}
 	}
 }
@@ -79,79 +102,51 @@ func TestGetKubectlDebugTool(t *testing.T) {
 func TestBuildLogsArgs(t *testing.T) {
 	tests := []struct {
 		name         string
-		input        KubectlDebugInput
+		params       kubectlDebugParams
 		wantContains []string
 		wantMissing  []string
 	}{
 		{
-			name: "basic logs with default tail",
-			input: KubectlDebugInput{
-				Action:    "logs",
-				Name:      "deployments/forklift-controller",
-				Namespace: "openshift-mtv",
-			},
+			name:         "basic logs with default tail",
+			params:       kubectlDebugParams{Name: "deployments/forklift-controller", Namespace: "openshift-mtv"},
 			wantContains: []string{"logs", "deployments/forklift-controller", "-n", "openshift-mtv", "--tail", "500", "--timestamps"},
 		},
 		{
-			name: "custom tail lines",
-			input: KubectlDebugInput{
-				Action:    "logs",
-				Name:      "my-pod",
-				TailLines: 100,
-			},
+			name:         "custom tail lines",
+			params:       kubectlDebugParams{Name: "my-pod", TailLines: 100},
 			wantContains: []string{"--tail", "100"},
 			wantMissing:  []string{"--tail 500"},
 		},
 		{
-			name: "tail -1 gets all logs",
-			input: KubectlDebugInput{
-				Action:    "logs",
-				Name:      "my-pod",
-				TailLines: -1,
-			},
+			name:        "tail -1 gets all logs",
+			params:      kubectlDebugParams{Name: "my-pod", TailLines: -1},
 			wantMissing: []string{"--tail"},
 		},
 		{
-			name: "with previous",
-			input: KubectlDebugInput{
-				Action:   "logs",
-				Name:     "crashed-pod",
-				Previous: true,
-			},
+			name:         "with previous",
+			params:       kubectlDebugParams{Name: "crashed-pod", Previous: true},
 			wantContains: []string{"--previous"},
 		},
 		{
-			name: "with container",
-			input: KubectlDebugInput{
-				Action:    "logs",
-				Name:      "multi-container-pod",
-				Container: "main",
-			},
+			name:         "with container",
+			params:       kubectlDebugParams{Name: "multi-container-pod", Container: "main"},
 			wantContains: []string{"-c", "main"},
 		},
 		{
-			name: "with since",
-			input: KubectlDebugInput{
-				Action: "logs",
-				Name:   "my-pod",
-				Since:  "1h",
-			},
+			name:         "with since",
+			params:       kubectlDebugParams{Name: "my-pod", Since: "1h"},
 			wantContains: []string{"--since", "1h"},
 		},
 		{
-			name: "no timestamps when disabled",
-			input: KubectlDebugInput{
-				Action:       "logs",
-				Name:         "my-pod",
-				NoTimestamps: true,
-			},
+			name:        "no timestamps when disabled",
+			params:      kubectlDebugParams{Name: "my-pod", NoTimestamps: true},
 			wantMissing: []string{"--timestamps"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildLogsArgs(tt.input)
+			result := buildLogsArgs(tt.params)
 			joined := strings.Join(result, " ")
 
 			for _, want := range tt.wantContains {
@@ -171,68 +166,47 @@ func TestBuildLogsArgs(t *testing.T) {
 // --- buildGetArgs tests ---
 
 func TestBuildGetArgs(t *testing.T) {
-	// Save and restore the output format
 	origFormat := util.GetOutputFormat()
 	defer util.SetOutputFormat(origFormat)
 	util.SetOutputFormat("json")
 
 	tests := []struct {
 		name         string
-		input        KubectlDebugInput
+		params       kubectlDebugParams
 		wantContains []string
 		wantMissing  []string
 	}{
 		{
-			name: "basic get pods",
-			input: KubectlDebugInput{
-				Action:       "get",
-				ResourceType: "pods",
-				Namespace:    "openshift-mtv",
-			},
+			name:         "basic get pods",
+			params:       kubectlDebugParams{ResourceType: "pods", Namespace: "openshift-mtv"},
 			wantContains: []string{"get", "pods", "-n", "openshift-mtv", "-o", "json"},
 		},
 		{
-			name: "get with labels",
-			input: KubectlDebugInput{
-				Action:       "get",
-				ResourceType: "pods",
-				Labels:       "plan=my-plan",
-			},
+			name:         "get with labels",
+			params:       kubectlDebugParams{ResourceType: "pods", Labels: "plan=my-plan"},
 			wantContains: []string{"get", "pods", "-l", "plan=my-plan"},
 		},
 		{
-			name: "get with name",
-			input: KubectlDebugInput{
-				Action:       "get",
-				ResourceType: "pvc",
-				Name:         "my-pvc",
-			},
+			name:         "get with name",
+			params:       kubectlDebugParams{ResourceType: "pvc", Name: "my-pvc"},
 			wantContains: []string{"get", "pvc", "my-pvc"},
 		},
 		{
-			name: "get all namespaces",
-			input: KubectlDebugInput{
-				Action:        "get",
-				ResourceType:  "pods",
-				AllNamespaces: true,
-			},
+			name:         "get all namespaces",
+			params:       kubectlDebugParams{ResourceType: "pods", AllNamespaces: true},
 			wantContains: []string{"get", "pods", "-A"},
 			wantMissing:  []string{"-n"},
 		},
 		{
-			name: "get with custom output",
-			input: KubectlDebugInput{
-				Action:       "get",
-				ResourceType: "pods",
-				Output:       "wide",
-			},
+			name:         "get with custom output",
+			params:       kubectlDebugParams{ResourceType: "pods", Output: "wide"},
 			wantContains: []string{"-o", "wide"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildGetArgs(tt.input)
+			result := buildGetArgs(tt.params)
 			joined := strings.Join(result, " ")
 
 			for _, want := range tt.wantContains {
@@ -254,33 +228,24 @@ func TestBuildGetArgs(t *testing.T) {
 func TestBuildDescribeArgs(t *testing.T) {
 	tests := []struct {
 		name         string
-		input        KubectlDebugInput
+		params       kubectlDebugParams
 		wantContains []string
 	}{
 		{
-			name: "describe pod",
-			input: KubectlDebugInput{
-				Action:       "describe",
-				ResourceType: "pods",
-				Name:         "my-pod",
-				Namespace:    "demo",
-			},
+			name:         "describe pod",
+			params:       kubectlDebugParams{ResourceType: "pods", Name: "my-pod", Namespace: "demo"},
 			wantContains: []string{"describe", "pods", "my-pod", "-n", "demo"},
 		},
 		{
-			name: "describe with labels",
-			input: KubectlDebugInput{
-				Action:       "describe",
-				ResourceType: "pods",
-				Labels:       "app=test",
-			},
+			name:         "describe with labels",
+			params:       kubectlDebugParams{ResourceType: "pods", Labels: "app=test"},
 			wantContains: []string{"describe", "pods", "-l", "app=test"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildDescribeArgs(tt.input)
+			result := buildDescribeArgs(tt.params)
 			joined := strings.Join(result, " ")
 
 			for _, want := range tt.wantContains {
@@ -295,56 +260,40 @@ func TestBuildDescribeArgs(t *testing.T) {
 // --- buildEventsArgs tests ---
 
 func TestBuildEventsArgs(t *testing.T) {
-	// Save and restore the output format
 	origFormat := util.GetOutputFormat()
 	defer util.SetOutputFormat(origFormat)
 	util.SetOutputFormat("json")
 
 	tests := []struct {
 		name         string
-		input        KubectlDebugInput
+		params       kubectlDebugParams
 		wantContains []string
 	}{
 		{
-			name: "events with namespace",
-			input: KubectlDebugInput{
-				Action:    "events",
-				Namespace: "demo",
-			},
+			name:         "events with namespace",
+			params:       kubectlDebugParams{Namespace: "demo"},
 			wantContains: []string{"get", "events", "-n", "demo"},
 		},
 		{
-			name: "events with for_resource",
-			input: KubectlDebugInput{
-				Action:      "events",
-				ForResource: "pod/my-pod",
-				Namespace:   "demo",
-			},
+			name:         "events with for_resource",
+			params:       kubectlDebugParams{ForResource: "pod/my-pod", Namespace: "demo"},
 			wantContains: []string{"--for", "pod/my-pod"},
 		},
 		{
-			name: "events with field selector",
-			input: KubectlDebugInput{
-				Action:        "events",
-				FieldSelector: "type=Warning",
-				Namespace:     "demo",
-			},
+			name:         "events with field selector",
+			params:       kubectlDebugParams{FieldSelector: "type=Warning", Namespace: "demo"},
 			wantContains: []string{"--field-selector", "type=Warning"},
 		},
 		{
-			name: "events with sort by",
-			input: KubectlDebugInput{
-				Action:    "events",
-				SortBy:    ".lastTimestamp",
-				Namespace: "demo",
-			},
+			name:         "events with sort by",
+			params:       kubectlDebugParams{SortBy: ".lastTimestamp", Namespace: "demo"},
 			wantContains: []string{"--sort-by", ".lastTimestamp"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := buildEventsArgs(tt.input)
+			result := buildEventsArgs(tt.params)
 			joined := strings.Join(result, " ")
 
 			for _, want := range tt.wantContains {
@@ -358,40 +307,84 @@ func TestBuildEventsArgs(t *testing.T) {
 
 // --- Handler validation error tests ---
 
-func TestHandleKubectlDebug_ValidationErrors(t *testing.T) {
+func TestHandleKubectlLogs_ValidationErrors(t *testing.T) {
 	ctx := context.Background()
 	req := &mcp.CallToolRequest{}
 
 	tests := []struct {
 		name      string
-		input     KubectlDebugInput
+		input     KubectlLogsInput
+		wantError string
+	}{
+		{
+			name:      "logs without name",
+			input:     KubectlLogsInput{},
+			wantError: "'name' is required",
+		},
+		{
+			name: "logs with name in flags works",
+			input: KubectlLogsInput{
+				Flags:  map[string]any{"name": "my-pod"},
+				DryRun: true,
+			},
+			wantError: "", // no error expected
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _, err := HandleKubectlLogs(ctx, req, tt.input)
+			if tt.wantError == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), tt.wantError) {
+				t.Errorf("error = %q, should contain %q", err.Error(), tt.wantError)
+			}
+		})
+	}
+}
+
+func TestHandleKubectl_ValidationErrors(t *testing.T) {
+	ctx := context.Background()
+	req := &mcp.CallToolRequest{}
+
+	tests := []struct {
+		name      string
+		input     KubectlInput
 		wantError string
 	}{
 		{
 			name:      "unknown action",
-			input:     KubectlDebugInput{Action: "invalid"},
+			input:     KubectlInput{Action: "invalid"},
 			wantError: "unknown action",
 		},
 		{
-			name:      "logs without name",
-			input:     KubectlDebugInput{Action: "logs"},
-			wantError: "requires 'name'",
-		},
-		{
 			name:      "get without resource_type",
-			input:     KubectlDebugInput{Action: "get"},
+			input:     KubectlInput{Action: "get"},
 			wantError: "requires 'resource_type'",
 		},
 		{
 			name:      "describe without resource_type",
-			input:     KubectlDebugInput{Action: "describe"},
+			input:     KubectlInput{Action: "describe"},
 			wantError: "requires 'resource_type'",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := HandleKubectlDebug(ctx, req, tt.input)
+			_, _, err := HandleKubectl(ctx, req, tt.input)
+			if tt.wantError == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -404,80 +397,35 @@ func TestHandleKubectlDebug_ValidationErrors(t *testing.T) {
 
 // --- Handler DryRun tests ---
 
-func TestHandleKubectlDebug_DryRun(t *testing.T) {
+func TestHandleKubectlLogs_DryRun(t *testing.T) {
 	ctx := context.Background()
 	req := &mcp.CallToolRequest{}
 
-	// Save and restore the output format
-	origFormat := util.GetOutputFormat()
-	defer util.SetOutputFormat(origFormat)
-	util.SetOutputFormat("json")
-
 	tests := []struct {
 		name         string
-		input        KubectlDebugInput
+		input        KubectlLogsInput
 		wantContains []string
 	}{
 		{
-			name: "logs action",
-			input: KubectlDebugInput{
-				Action:    "logs",
-				Name:      "deployments/forklift-controller",
-				Namespace: "openshift-mtv",
-				DryRun:    true,
+			name: "basic logs",
+			input: KubectlLogsInput{
+				Flags:  map[string]any{"name": "deployments/forklift-controller", "namespace": "openshift-mtv"},
+				DryRun: true,
 			},
 			wantContains: []string{"kubectl", "logs", "deployments/forklift-controller", "-n", "openshift-mtv", "--tail", "500", "--timestamps"},
 		},
 		{
-			name: "get action",
-			input: KubectlDebugInput{
-				Action:       "get",
-				ResourceType: "pods",
-				Labels:       "plan=my-plan",
-				Namespace:    "demo",
-				DryRun:       true,
-			},
-			wantContains: []string{"kubectl", "get", "pods", "-n", "demo", "-l", "plan=my-plan", "-o", "json"},
-		},
-		{
-			name: "describe action",
-			input: KubectlDebugInput{
-				Action:       "describe",
-				ResourceType: "pods",
-				Name:         "virt-v2v-cold-123",
-				Namespace:    "demo",
-				DryRun:       true,
-			},
-			wantContains: []string{"kubectl", "describe", "pods", "virt-v2v-cold-123", "-n", "demo"},
-		},
-		{
-			name: "events action",
-			input: KubectlDebugInput{
-				Action:        "events",
-				FieldSelector: "type=Warning",
-				Namespace:     "demo",
-				DryRun:        true,
-			},
-			wantContains: []string{"kubectl", "get", "events", "-n", "demo", "--field-selector", "type=Warning"},
-		},
-		{
 			name: "logs with previous and container",
-			input: KubectlDebugInput{
-				Action:    "logs",
-				Name:      "crashed-pod",
-				Container: "main",
-				Previous:  true,
-				TailLines: 200,
-				DryRun:    true,
+			input: KubectlLogsInput{
+				Flags:  map[string]any{"name": "crashed-pod", "container": "main", "previous": true, "tail_lines": 200},
+				DryRun: true,
 			},
 			wantContains: []string{"kubectl", "logs", "crashed-pod", "-c", "main", "--previous", "--tail", "200"},
 		},
 		{
 			name: "logs with since",
-			input: KubectlDebugInput{
-				Action: "logs",
-				Name:   "my-pod",
-				Since:  "30m",
+			input: KubectlLogsInput{
+				Flags:  map[string]any{"name": "my-pod", "since": "30m"},
 				DryRun: true,
 			},
 			wantContains: []string{"--since", "30m"},
@@ -486,7 +434,75 @@ func TestHandleKubectlDebug_DryRun(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, data, err := HandleKubectlDebug(ctx, req, tt.input)
+			_, data, err := HandleKubectlLogs(ctx, req, tt.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			dataMap, ok := data.(map[string]interface{})
+			if !ok {
+				t.Fatalf("expected map[string]interface{}, got %T", data)
+			}
+
+			command, ok := dataMap["command"].(string)
+			if !ok {
+				t.Fatal("response should have 'command' string field")
+			}
+
+			for _, want := range tt.wantContains {
+				if !strings.Contains(command, want) {
+					t.Errorf("command = %q, should contain %q", command, want)
+				}
+			}
+		})
+	}
+}
+
+func TestHandleKubectl_DryRun(t *testing.T) {
+	ctx := context.Background()
+	req := &mcp.CallToolRequest{}
+
+	origFormat := util.GetOutputFormat()
+	defer util.SetOutputFormat(origFormat)
+	util.SetOutputFormat("json")
+
+	tests := []struct {
+		name         string
+		input        KubectlInput
+		wantContains []string
+	}{
+		{
+			name: "get action",
+			input: KubectlInput{
+				Action: "get",
+				Flags:  map[string]any{"resource_type": "pods", "labels": "plan=my-plan", "namespace": "demo"},
+				DryRun: true,
+			},
+			wantContains: []string{"kubectl", "get", "pods", "-n", "demo", "-l", "plan=my-plan", "-o", "json"},
+		},
+		{
+			name: "describe action",
+			input: KubectlInput{
+				Action: "describe",
+				Flags:  map[string]any{"resource_type": "pods", "name": "virt-v2v-cold-123", "namespace": "demo"},
+				DryRun: true,
+			},
+			wantContains: []string{"kubectl", "describe", "pods", "virt-v2v-cold-123", "-n", "demo"},
+		},
+		{
+			name: "events action",
+			input: KubectlInput{
+				Action: "events",
+				Flags:  map[string]any{"field_selector": "type=Warning", "namespace": "demo"},
+				DryRun: true,
+			},
+			wantContains: []string{"kubectl", "get", "events", "-n", "demo", "--field-selector", "type=Warning"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, data, err := HandleKubectl(ctx, req, tt.input)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -645,9 +661,9 @@ func TestLooksLikeJSONLogs(t *testing.T) {
 	}
 }
 
-// --- matchesJSONFilters tests ---
+// --- matchesParamFilters tests ---
 
-func TestMatchesJSONFilters(t *testing.T) {
+func TestMatchesParamFilters(t *testing.T) {
 	entry := JSONLogEntry{
 		Level:     "info",
 		Logger:    "plan|abc123",
@@ -662,87 +678,87 @@ func TestMatchesJSONFilters(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		input  KubectlDebugInput
+		params kubectlDebugParams
 		expect bool
 	}{
 		{
 			name:   "no filters matches all",
-			input:  KubectlDebugInput{},
+			params: kubectlDebugParams{},
 			expect: true,
 		},
 		{
 			name:   "filter level matches",
-			input:  KubectlDebugInput{FilterLevel: "info"},
+			params: kubectlDebugParams{FilterLevel: "info"},
 			expect: true,
 		},
 		{
 			name:   "filter level mismatch",
-			input:  KubectlDebugInput{FilterLevel: "error"},
+			params: kubectlDebugParams{FilterLevel: "error"},
 			expect: false,
 		},
 		{
 			name:   "filter logger matches prefix",
-			input:  KubectlDebugInput{FilterLogger: "plan"},
+			params: kubectlDebugParams{FilterLogger: "plan"},
 			expect: true,
 		},
 		{
 			name:   "filter logger mismatch",
-			input:  KubectlDebugInput{FilterLogger: "provider"},
+			params: kubectlDebugParams{FilterLogger: "provider"},
 			expect: false,
 		},
 		{
 			name:   "filter plan matches",
-			input:  KubectlDebugInput{FilterPlan: "my-plan"},
+			params: kubectlDebugParams{FilterPlan: "my-plan"},
 			expect: true,
 		},
 		{
 			name:   "filter plan mismatch",
-			input:  KubectlDebugInput{FilterPlan: "other-plan"},
+			params: kubectlDebugParams{FilterPlan: "other-plan"},
 			expect: false,
 		},
 		{
 			name:   "filter provider matches",
-			input:  KubectlDebugInput{FilterProvider: "my-provider"},
+			params: kubectlDebugParams{FilterProvider: "my-provider"},
 			expect: true,
 		},
 		{
 			name:   "filter provider mismatch",
-			input:  KubectlDebugInput{FilterProvider: "other"},
+			params: kubectlDebugParams{FilterProvider: "other"},
 			expect: false,
 		},
 		{
 			name:   "filter VM by VM field",
-			input:  KubectlDebugInput{FilterVM: "vm-001"},
+			params: kubectlDebugParams{FilterVM: "vm-001"},
 			expect: true,
 		},
 		{
 			name:   "filter VM by VMName field",
-			input:  KubectlDebugInput{FilterVM: "web-server"},
+			params: kubectlDebugParams{FilterVM: "web-server"},
 			expect: true,
 		},
 		{
 			name:   "filter VM by VMID field",
-			input:  KubectlDebugInput{FilterVM: "id-123"},
+			params: kubectlDebugParams{FilterVM: "id-123"},
 			expect: true,
 		},
 		{
 			name:   "filter VM mismatch",
-			input:  KubectlDebugInput{FilterVM: "nonexistent"},
+			params: kubectlDebugParams{FilterVM: "nonexistent"},
 			expect: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := matchesJSONFilters(entry, tt.input)
+			result := matchesParamFilters(entry, tt.params)
 			if result != tt.expect {
-				t.Errorf("matchesJSONFilters() = %v, want %v", result, tt.expect)
+				t.Errorf("matchesParamFilters() = %v, want %v", result, tt.expect)
 			}
 		})
 	}
 }
 
-func TestMatchesJSONFilters_Migration(t *testing.T) {
+func TestMatchesParamFilters_Migration(t *testing.T) {
 	entry := JSONLogEntry{
 		Level:     "info",
 		Logger:    "migration|migration-xyz",
@@ -752,31 +768,31 @@ func TestMatchesJSONFilters_Migration(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		input  KubectlDebugInput
+		params kubectlDebugParams
 		expect bool
 	}{
 		{
 			name:   "migration filter matches from field",
-			input:  KubectlDebugInput{FilterMigration: "migration-xyz"},
+			params: kubectlDebugParams{FilterMigration: "migration-xyz"},
 			expect: true,
 		},
 		{
 			name:   "migration filter mismatch",
-			input:  KubectlDebugInput{FilterMigration: "other-migration"},
+			params: kubectlDebugParams{FilterMigration: "other-migration"},
 			expect: false,
 		},
 		{
 			name:   "migration filter requires migration logger",
-			input:  KubectlDebugInput{FilterMigration: "migration-xyz"},
+			params: kubectlDebugParams{FilterMigration: "migration-xyz"},
 			expect: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := matchesJSONFilters(entry, tt.input)
+			result := matchesParamFilters(entry, tt.params)
 			if result != tt.expect {
-				t.Errorf("matchesJSONFilters() = %v, want %v", result, tt.expect)
+				t.Errorf("matchesParamFilters() = %v, want %v", result, tt.expect)
 			}
 		})
 	}
@@ -787,7 +803,7 @@ func TestMatchesJSONFilters_Migration(t *testing.T) {
 		Logger: "plan|abc",
 		Msg:    "test",
 	}
-	if matchesJSONFilters(nonMigrationEntry, KubectlDebugInput{FilterMigration: "any"}) {
+	if matchesParamFilters(nonMigrationEntry, kubectlDebugParams{FilterMigration: "any"}) {
 		t.Error("non-migration logger should not match migration filter")
 	}
 }
@@ -800,7 +816,7 @@ func TestFilterAndFormatJSONLogs(t *testing.T) {
 {"level":"info","ts":"2026-02-05 10:02:00","logger":"provider|xyz","msg":"Refreshed","provider":{"name":"my-provider","namespace":"demo"}}`
 
 	t.Run("json format returns array", func(t *testing.T) {
-		result, err := filterAndFormatJSONLogs(jsonLogs, KubectlDebugInput{LogFormat: "json"})
+		result, err := filterAndFormatJSONLogs(jsonLogs, kubectlDebugParams{LogFormat: "json"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -814,7 +830,7 @@ func TestFilterAndFormatJSONLogs(t *testing.T) {
 	})
 
 	t.Run("text format returns string", func(t *testing.T) {
-		result, err := filterAndFormatJSONLogs(jsonLogs, KubectlDebugInput{LogFormat: "text"})
+		result, err := filterAndFormatJSONLogs(jsonLogs, kubectlDebugParams{LogFormat: "text"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -828,7 +844,7 @@ func TestFilterAndFormatJSONLogs(t *testing.T) {
 	})
 
 	t.Run("pretty format returns formatted string", func(t *testing.T) {
-		result, err := filterAndFormatJSONLogs(jsonLogs, KubectlDebugInput{LogFormat: "pretty"})
+		result, err := filterAndFormatJSONLogs(jsonLogs, kubectlDebugParams{LogFormat: "pretty"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -845,7 +861,7 @@ func TestFilterAndFormatJSONLogs(t *testing.T) {
 	})
 
 	t.Run("filter by level", func(t *testing.T) {
-		result, err := filterAndFormatJSONLogs(jsonLogs, KubectlDebugInput{
+		result, err := filterAndFormatJSONLogs(jsonLogs, kubectlDebugParams{
 			LogFormat:   "json",
 			FilterLevel: "error",
 		})
@@ -862,7 +878,7 @@ func TestFilterAndFormatJSONLogs(t *testing.T) {
 	})
 
 	t.Run("filter by plan name", func(t *testing.T) {
-		result, err := filterAndFormatJSONLogs(jsonLogs, KubectlDebugInput{
+		result, err := filterAndFormatJSONLogs(jsonLogs, kubectlDebugParams{
 			LogFormat:  "json",
 			FilterPlan: "my-plan",
 		})
@@ -873,7 +889,6 @@ func TestFilterAndFormatJSONLogs(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected []interface{}, got %T", result)
 		}
-		// Two entries have plan=my-plan, one has provider
 		if len(entries) != 2 {
 			t.Errorf("got %d entries, want 2 (plan entries only)", len(entries))
 		}
@@ -884,7 +899,7 @@ func TestFilterAndFormatJSONLogs(t *testing.T) {
 not a json line
 {"level":"error","ts":"2026-02-05","logger":"plan","msg":"fail"}`
 
-		result, err := filterAndFormatJSONLogs(mixedLogs, KubectlDebugInput{LogFormat: "json"})
+		result, err := filterAndFormatJSONLogs(mixedLogs, kubectlDebugParams{LogFormat: "json"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -895,7 +910,6 @@ not a json line
 		if len(entries) != 3 {
 			t.Errorf("got %d entries, want 3 (2 JSON + 1 raw)", len(entries))
 		}
-		// The middle entry should be a RawLogLine
 		if raw, ok := entries[1].(RawLogLine); ok {
 			if !strings.Contains(raw.Raw, "not a json line") {
 				t.Error("raw line should preserve original text")
@@ -906,7 +920,7 @@ not a json line
 	})
 
 	t.Run("empty logs returns empty array", func(t *testing.T) {
-		result, err := filterAndFormatJSONLogs("", KubectlDebugInput{LogFormat: "json"})
+		result, err := filterAndFormatJSONLogs("", kubectlDebugParams{LogFormat: "json"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -920,11 +934,10 @@ not a json line
 	})
 
 	t.Run("default format is json", func(t *testing.T) {
-		result, err := filterAndFormatJSONLogs(jsonLogs, KubectlDebugInput{})
+		result, err := filterAndFormatJSONLogs(jsonLogs, kubectlDebugParams{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		// Default should return array (json format)
 		if _, ok := result.([]interface{}); !ok {
 			t.Fatalf("default format should return []interface{}, got %T", result)
 		}

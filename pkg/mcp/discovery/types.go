@@ -5,12 +5,13 @@ import "strings"
 
 // HelpSchema matches kubectl-mtv help --machine output
 type HelpSchema struct {
-	Version     string    `json:"version"`
-	CLIVersion  string    `json:"cli_version"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Commands    []Command `json:"commands"`
-	GlobalFlags []Flag    `json:"global_flags"`
+	Version         string    `json:"version"`
+	CLIVersion      string    `json:"cli_version"`
+	Name            string    `json:"name"`
+	Description     string    `json:"description"`
+	LongDescription string    `json:"long_description,omitempty"`
+	Commands        []Command `json:"commands"`
+	GlobalFlags     []Flag    `json:"global_flags"`
 }
 
 // Command represents a kubectl-mtv command discovered from help --machine output.
@@ -39,11 +40,30 @@ type Command struct {
 	// Category is one of: "read", "write", "admin"
 	Category string `json:"category"`
 
+	// Providers lists which providers this command applies to (empty = all)
+	Providers []string `json:"providers,omitempty"`
+
 	// Flags are the command-specific flags
 	Flags []Flag `json:"flags"`
 
 	// PositionalArgs are required/optional positional arguments
 	PositionalArgs []Arg `json:"positional_args,omitempty"`
+
+	// Examples are usage examples from the CLI help
+	Examples []Example `json:"examples,omitempty"`
+
+	// Runnable indicates whether the command can be executed directly.
+	// Non-runnable commands are structural parents (e.g., "get inventory")
+	// included for their description metadata.
+	Runnable bool `json:"runnable"`
+}
+
+// Example represents a usage example from CLI help.
+type Example struct {
+	// Description explains what the example does
+	Description string `json:"description"`
+	// Command is the example command
+	Command string `json:"command"`
 }
 
 // Flag represents a command-line flag discovered from help --machine output.
@@ -71,6 +91,9 @@ type Flag struct {
 
 	// Hidden indicates if the flag is hidden from normal help
 	Hidden bool `json:"hidden,omitempty"`
+
+	// LLMRelevant indicates if the flag should be included in AI/MCP tool descriptions
+	LLMRelevant bool `json:"llm_relevant,omitempty"`
 }
 
 // Arg represents a positional argument.

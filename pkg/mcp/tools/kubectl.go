@@ -12,181 +12,174 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/mcp/util"
 )
 
-// KubectlDebugInput represents the input for the kubectl_debug tool.
-type KubectlDebugInput struct {
-	Action string `json:"action" jsonschema:"logs | get | describe | events"`
-
-	ResourceType string `json:"resource_type,omitempty" jsonschema:"Resource type (pods, pvc, datavolume, virtualmachine, events, jobs, configmaps, deployments, services, or any k8s resource)"`
-
-	Name string `json:"name,omitempty" jsonschema:"Resource name. Logs: prefer deployments/name for stable names (e.g. deployments/forklift-controller) since pod names have random suffixes. get/describe: optional."`
-
-	Namespace string `json:"namespace,omitempty" jsonschema:"Kubernetes namespace"`
-
-	AllNamespaces bool `json:"all_namespaces,omitempty" jsonschema:"Query all namespaces"`
-
-	Labels string `json:"labels,omitempty" jsonschema:"Label selector (e.g. plan=my-plan,vmID=vm-123)"`
-
-	Container string `json:"container,omitempty" jsonschema:"Container (multi-container pods)"`
-
-	Previous bool `json:"previous,omitempty" jsonschema:"Logs from crashed container"`
-
-	TailLines int `json:"tail_lines,omitempty" jsonschema:"Log lines from end (default 500, -1 for all)"`
-
-	Since string `json:"since,omitempty" jsonschema:"Logs newer than (e.g. 1h, 30m)"`
-
-	Output string `json:"output,omitempty" jsonschema:"Output: json, yaml, wide, name"`
+// KubectlLogsInput represents the input for the kubectl_logs tool.
+// All parameters are passed via flags, consistent with mtv_read/mtv_write tools.
+type KubectlLogsInput struct {
+	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters as key-value pairs (e.g. name: \"deployments/forklift-controller\", namespace: \"openshift-mtv\", filter_plan: \"my-plan\")"`
 
 	DryRun bool `json:"dry_run,omitempty" jsonschema:"Preview without executing"`
-
-	FieldSelector string `json:"field_selector,omitempty" jsonschema:"Events field filter (e.g. type=Warning, reason=FailedScheduling)"`
-
-	SortBy string `json:"sort_by,omitempty" jsonschema:"Sort events by JSONPath (e.g. .lastTimestamp)"`
-
-	ForResource string `json:"for_resource,omitempty" jsonschema:"Events for resource (e.g. pod/my-pod, pvc/my-pvc)"`
-
-	Grep string `json:"grep,omitempty" jsonschema:"Filter logs by regex (e.g. error|warning)"`
-
-	IgnoreCase bool `json:"ignore_case,omitempty" jsonschema:"Case-insensitive grep"`
-
-	NoTimestamps bool `json:"no_timestamps,omitempty" jsonschema:"Disable timestamps"`
-
-	LogFormat string `json:"log_format,omitempty" jsonschema:"Log format: json, text, pretty"`
-
-	// filter_*: structured log filtering for forklift-controller JSON logs
-	FilterPlan      string `json:"filter_plan,omitempty" jsonschema:"Filter by plan name"`
-	FilterProvider  string `json:"filter_provider,omitempty" jsonschema:"Filter by provider name"`
-	FilterVM        string `json:"filter_vm,omitempty" jsonschema:"Filter by VM name/ID"`
-	FilterMigration string `json:"filter_migration,omitempty" jsonschema:"Filter by migration name"`
-	FilterLevel     string `json:"filter_level,omitempty" jsonschema:"Filter by level: info, debug, error, warn"`
-	FilterLogger    string `json:"filter_logger,omitempty" jsonschema:"Filter by logger: plan, provider, migration, networkMap, storageMap"`
 }
 
-// GetKubectlDebugTool returns the tool definition for kubectl debugging.
-func GetKubectlDebugTool() *mcp.Tool {
+// KubectlInput represents the input for the kubectl tool (get, describe, events).
+// All parameters (except action and dry_run) are passed via flags.
+type KubectlInput struct {
+	Action string `json:"action" jsonschema:"get | describe | events"`
+
+	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters as key-value pairs (e.g. resource_type: \"pods\", namespace: \"openshift-mtv\", labels: \"plan=my-plan\")"`
+
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"Preview without executing"`
+}
+
+// kubectlDebugParams holds the resolved parameters for kubectl debug operations.
+// This internal struct is populated from the Flags map.
+type kubectlDebugParams struct {
+	Name            string
+	ResourceType    string
+	Namespace       string
+	AllNamespaces   bool
+	Labels          string
+	Container       string
+	Previous        bool
+	TailLines       int
+	Since           string
+	Output          string
+	FieldSelector   string
+	SortBy          string
+	ForResource     string
+	Grep            string
+	IgnoreCase      bool
+	NoTimestamps    bool
+	LogFormat       string
+	FilterPlan      string
+	FilterProvider  string
+	FilterVM        string
+	FilterMigration string
+	FilterLevel     string
+	FilterLogger    string
+}
+
+// resolveDebugParams extracts all parameters from the flags map into a typed struct.
+func resolveDebugParams(flags map[string]any) kubectlDebugParams {
+	p := kubectlDebugParams{}
+	if flags == nil {
+		return p
+	}
+	p.Name = flagStr(flags, "name")
+	p.ResourceType = flagStr(flags, "resource_type")
+	p.Namespace = flagStr(flags, "namespace")
+	p.AllNamespaces = flagBool(flags, "all_namespaces")
+	p.Labels = flagStr(flags, "labels")
+	p.Container = flagStr(flags, "container")
+	p.Previous = flagBool(flags, "previous")
+	p.TailLines = flagInt(flags, "tail_lines")
+	p.Since = flagStr(flags, "since")
+	p.Output = flagStr(flags, "output")
+	p.FieldSelector = flagStr(flags, "field_selector")
+	p.SortBy = flagStr(flags, "sort_by")
+	p.ForResource = flagStr(flags, "for_resource")
+	p.Grep = flagStr(flags, "grep")
+	p.IgnoreCase = flagBool(flags, "ignore_case")
+	p.NoTimestamps = flagBool(flags, "no_timestamps")
+	p.LogFormat = flagStr(flags, "log_format")
+	p.FilterPlan = flagStr(flags, "filter_plan")
+	p.FilterProvider = flagStr(flags, "filter_provider")
+	p.FilterVM = flagStr(flags, "filter_vm")
+	p.FilterMigration = flagStr(flags, "filter_migration")
+	p.FilterLevel = flagStr(flags, "filter_level")
+	p.FilterLogger = flagStr(flags, "filter_logger")
+	return p
+}
+
+// flagStr extracts a string from the flags map.
+func flagStr(flags map[string]any, key string) string {
+	if v, ok := flags[key]; ok {
+		return fmt.Sprintf("%v", v)
+	}
+	return ""
+}
+
+// flagBool extracts a boolean from the flags map.
+func flagBool(flags map[string]any, key string) bool {
+	if v, ok := flags[key]; ok {
+		return parseBoolValue(v)
+	}
+	return false
+}
+
+// flagInt extracts an integer from the flags map.
+func flagInt(flags map[string]any, key string) int {
+	if v, ok := flags[key]; ok {
+		switch n := v.(type) {
+		case float64:
+			return int(n)
+		case int:
+			return n
+		case string:
+			if i, err := strconv.Atoi(n); err == nil {
+				return i
+			}
+		}
+	}
+	return 0
+}
+
+// GetMinimalKubectlLogsTool returns the minimal tool definition for kubectl log retrieval.
+// This tool is focused on forklift-controller logs with JSON parsing and filtering.
+func GetMinimalKubectlLogsTool() *mcp.Tool {
 	return &mcp.Tool{
-		Name: "kubectl_debug",
-		Description: `Debug MTV migrations using standard kubectl commands.
+		Name: "kubectl_logs",
+		Description: `Get forklift-controller logs with filtering.
 
-This tool provides access to kubectl for debugging migration issues:
+Retrieves logs from Kubernetes pods/deployments with built-in support for
+forklift-controller JSON log parsing, filtering, and formatting.
 
-Actions:
-- logs: Get pod logs (useful for forklift-controller, virt-v2v pods)
-- get: List Kubernetes resources (pods, pvc, datavolume, virtualmachine)
-- describe: Get detailed resource information
-- events: Get Kubernetes events with specialized filtering for debugging
+All parameters go in flags.
+Required: name (resource-type/name format, e.g. "deployments/forklift-controller" or "pod/my-pod")
+Default: last 500 lines. Set tail_lines: -1 for all logs.
 
-Common use cases:
-- Get forklift controller logs: action="logs", name="deployments/forklift-controller", namespace="openshift-mtv"
-- List migration pods: action="get", resource_type="pods", labels="plan=my-plan"
-- Check PVC status: action="get", resource_type="pvc", labels="migration=xxx"
-- Debug failed pod: action="logs", name="virt-v2v-xxx", previous=true
+Common flags: namespace, container, previous, tail_lines, since, grep, ignore_case.
+Log format: log_format (json|text|pretty), no_timestamps.
+JSON filters (forklift-controller only): filter_plan, filter_provider, filter_vm,
+  filter_migration, filter_level (info|debug|error|warn),
+  filter_logger (plan|provider|migration|networkMap|storageMap).
 
-Log name formats:
-- Use deployments/name for stable names (e.g. name="deployments/forklift-controller")
-- Use pod names directly when targeting specific pods (e.g. name="virt-v2v-cold-xyz")
-
-Events examples:
-- Get events for a pod: action="events", for_resource="pod/virt-v2v-xxx", namespace="target-ns"
-- Get warning events: action="events", field_selector="type=Warning", namespace="target-ns"
-- Get events sorted by time: action="events", sort_by=".lastTimestamp", namespace="target-ns"
-- Get events for failed scheduling: action="events", field_selector="reason=FailedScheduling"
-
-Log filtering (for scanning large logs):
-- Get error logs: action="logs", name="deployments/forklift-controller", grep="error|ERROR", tail_lines=1000
-- Case-insensitive search: action="logs", name="deployments/forklift-controller", grep="warning", ignore_case=true
-- Find migration issues: action="logs", name="virt-v2v-xxx", grep="disk|transfer|failed"
-
-JSON log filtering (for forklift controller structured logs):
-- Filter by plan: filter_plan="my-plan" to get logs for a specific plan
-- Filter by provider: filter_provider="vsphere-provider" for provider logs
-- Filter by VM: filter_vm="vm-123" for VM-specific logs
-- Filter by migration: filter_migration="migration-abc" for migration logs
-- Filter by level: filter_level="error" for only error logs
-- Filter by logger: filter_logger="plan" for plan reconciliation logs
-
-Example use cases:
-- Debug plan execution: filter_plan="my-plan", filter_level="error"
-- Track VM migration: filter_vm="web-server-01"
-- Monitor provider: filter_provider="vmware-prod", tail_lines=100
-
-JSON log response format:
-The response shape changes depending on whether logs are JSON and which log_format is used:
-- log_format="json" (default for JSON logs): response has "logs" array in data (data.logs) instead of "output". Each entry is a parsed object with fields: level, ts, logger, msg, and optional context: plan (object with name, namespace), provider (object with name, namespace), map (object with name, namespace), migration (object with name, namespace), vm, vmName, vmID, reQ.
-- log_format="text": response has "output" string in data containing filtered raw JSONL lines.
-- log_format="pretty": response has "output" string in data with human-readable formatted lines like "[LEVEL] timestamp logger: message context".
-- Non-JSON logs (e.g., virt-v2v pods): response always has "output" string in data with raw text. JSON filters are ignored.
-- If JSON filters are specified but logs are not JSON, a "warning" field is added to data.
-
-Example raw forklift controller JSON log line:
-{"level":"info","ts":"2026-02-05 10:45:52","logger":"plan|zw4bt","msg":"Reconcile started.","plan":{"name":"my-plan","namespace":"demo"}}
-
-When log_format="json", this is parsed into data.logs as:
-{"level":"info","ts":"2026-02-05 10:45:52","logger":"plan|zw4bt","msg":"Reconcile started.","plan":{"name":"my-plan","namespace":"demo"}}
-
-JSON log auto-detection:
-- The tool automatically detects if logs are in JSON format by examining the first log line
-- JSON parsing is only applied when logs contain structured JSON entries (with "level" and "msg" fields)
-- Non-JSON logs (e.g., virt-v2v output) are returned as raw text without parsing
-- If JSON filters are specified but logs are not JSON, a warning is returned and filters are ignored
-
-Default behavior:
-- log_format=json by default for JSON logs (use log_format="text" for raw JSONL, log_format="pretty" for human-readable)
-- Non-JSON logs are always returned as raw text in the "output" field
-- timestamps=true by default (use no_timestamps=true to disable)
-- tail_lines=500 by default (use tail_lines=-1 for all logs)
-
-Tips:
-- Use labels to filter resources related to specific migrations
-- Use tail_lines to limit log output (default 500, use -1 for all)
-- Use previous=true to get logs from crashed containers
-- Use since to get recent logs (e.g., "1h" for last hour)
-- Use for_resource to get events related to a specific pod or PVC
-- Use grep with tail_lines to efficiently scan large log files
-- Combine JSON filters with grep for complex queries`,
+Examples:
+  {flags: {name: "deployments/forklift-controller", namespace: "openshift-mtv"}}
+  {flags: {name: "deployments/forklift-controller", namespace: "openshift-mtv", filter_plan: "my-plan", filter_level: "error"}}`,
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"command":      map[string]any{"type": "string", "description": "The executed command"},
-				"return_value": map[string]any{"type": "integer", "description": "Exit code (0 = success)"},
-				"data": map[string]any{
-					"type":        "object",
-					"description": "Structured response data. Contains different fields depending on log format.",
-					"properties": map[string]any{
-						"logs": map[string]any{
-							"type":        "array",
-							"description": "Array of parsed JSON log entries (present when log_format=json and logs are JSON). Each entry has: level, ts, logger, msg, and optional plan, provider, map, migration (objects with name/namespace), vm, vmName, vmID, reQ fields. Malformed lines appear as {raw: string}.",
-						},
-						"output": map[string]any{
-							"type":        "string",
-							"description": "Raw text output (present for non-JSON logs, or when log_format=text or log_format=pretty)",
-						},
-						"warning": map[string]any{
-							"type":        "string",
-							"description": "Warning message, e.g. when JSON filters are specified but logs are not in JSON format",
-						},
-					},
-				},
-				"output": map[string]any{"type": "string", "description": "Plain text output (when not JSON)"},
-				"stderr": map[string]any{"type": "string", "description": "Error output if any"},
+				"command":      map[string]any{"type": "string", "description": "Executed command"},
+				"return_value": map[string]any{"type": "integer", "description": "Exit code (0=success)"},
+				"data":         map[string]any{"type": "object", "description": "Response data (logs array, output string, warning string)"},
+				"output":       map[string]any{"type": "string", "description": "Text output"},
+				"stderr":       map[string]any{"type": "string", "description": "Error output"},
 			},
 		},
 	}
 }
 
-// GetMinimalKubectlDebugTool returns a minimal tool definition for kubectl debugging.
-// The input schema (jsonschema tags on KubectlDebugInput) already describes each parameter.
-// The description only needs to list valid action values since action is a free-form string.
-func GetMinimalKubectlDebugTool() *mcp.Tool {
+// GetMinimalKubectlTool returns the minimal tool definition for kubectl resource inspection.
+// This tool handles get, describe, and events actions for Kubernetes resources.
+func GetMinimalKubectlTool() *mcp.Tool {
 	return &mcp.Tool{
-		Name: "kubectl_debug",
-		Description: `Debug MTV migrations via kubectl.
-Actions: logs, get, describe, events.
-Logs: name (required), container, previous, tail_lines, since, grep, ignore_case, no_timestamps, log_format, filter_*.
-Get/describe: resource_type (required), name, labels, output.
-Events: for_resource, field_selector, sort_by.
-filter_* params apply to forklift-controller JSON logs only.
-Logs tip: use deployments/name (e.g. deployments/forklift-controller) for stable names; pod names have random suffixes.
-Get/describe tip: resource_type accepts any k8s resource (pods, pvc, datavolume, virtualmachine, jobs, configmaps, deployments, services, etc).`,
+		Name: "kubectl",
+		Description: `Inspect any Kubernetes resource type (e.g. pods, PVCs, datavolumes, virtualmachines, services, deployments).
+For MTV-specific resources (plans, providers, mappings, inventory), use mtv_read instead.
+For MTV-specific write operations (create, delete, patch, start), use mtv_write instead.
+
+Actions: get, describe, events.
+All parameters (except action) go in flags.
+Flag names use underscores (e.g. resource_type, all_namespaces, for_resource).
+
+get/describe: resource_type (required), name, labels, output.
+events: for_resource, field_selector, sort_by.
+Common: namespace, all_namespaces.
+
+Examples:
+  {action: "get", flags: {resource_type: "pods", namespace: "openshift-mtv", labels: "plan=my-plan"}}
+  {action: "describe", flags: {resource_type: "pvc", name: "my-pvc", namespace: "target-ns"}}
+  {action: "events", flags: {for_resource: "pod/virt-v2v-xxx", namespace: "target-ns"}}`,
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -200,8 +193,8 @@ Get/describe tip: resource_type accepts any k8s resource (pods, pvc, datavolume,
 	}
 }
 
-// HandleKubectlDebug handles the kubectl_debug tool invocation.
-func HandleKubectlDebug(ctx context.Context, req *mcp.CallToolRequest, input KubectlDebugInput) (*mcp.CallToolResult, any, error) {
+// HandleKubectlLogs handles the kubectl_logs tool invocation.
+func HandleKubectlLogs(ctx context.Context, req *mcp.CallToolRequest, input KubectlLogsInput) (*mcp.CallToolResult, any, error) {
 	// Extract K8s credentials from HTTP headers (for SSE mode)
 	if req.Extra != nil && req.Extra.Header != nil {
 		ctx = util.WithKubeCredsFromHeaders(ctx, req.Extra.Header)
@@ -212,32 +205,72 @@ func HandleKubectlDebug(ctx context.Context, req *mcp.CallToolRequest, input Kub
 		ctx = util.WithDryRun(ctx, true)
 	}
 
+	// Resolve all parameters from the flags map
+	p := resolveDebugParams(input.Flags)
+
+	if p.Name == "" {
+		return nil, nil, fmt.Errorf("'name' is required in flags (e.g. flags: {name: \"deployments/forklift-controller\"})")
+	}
+
+	args := buildLogsArgs(p)
+
+	// Execute kubectl command
+	result, err := util.RunKubectlCommand(ctx, args)
+	if err != nil {
+		return nil, nil, fmt.Errorf("kubectl command failed: %w", err)
+	}
+
+	// Parse and return result
+	data, err := util.UnmarshalJSONResponse(result)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Check for CLI errors and surface as MCP IsError response
+	if errResult := buildCLIErrorResult(data); errResult != nil {
+		return errResult, nil, nil
+	}
+
+	// Process logs with filtering and formatting
+	if output, ok := data["output"].(string); ok {
+		processLogsOutput(data, output, p)
+	}
+
+	return nil, data, nil
+}
+
+// HandleKubectl handles the kubectl tool invocation (get, describe, events).
+func HandleKubectl(ctx context.Context, req *mcp.CallToolRequest, input KubectlInput) (*mcp.CallToolResult, any, error) {
+	// Extract K8s credentials from HTTP headers (for SSE mode)
+	if req.Extra != nil && req.Extra.Header != nil {
+		ctx = util.WithKubeCredsFromHeaders(ctx, req.Extra.Header)
+	}
+
+	// Enable dry run mode if requested
+	if input.DryRun {
+		ctx = util.WithDryRun(ctx, true)
+	}
+
+	// Resolve all parameters from the flags map
+	p := resolveDebugParams(input.Flags)
+
 	var args []string
 
 	switch input.Action {
-	case "logs":
-		// Logs action requires a resource name (pod name or resource/name like deployments/forklift-controller)
-		if input.Name == "" {
-			return nil, nil, fmt.Errorf("logs action requires 'name' field (e.g. 'deployments/forklift-controller' or a pod name)")
-		}
-		args = buildLogsArgs(input)
 	case "get":
-		// Get action requires a resource type
-		if input.ResourceType == "" {
-			return nil, nil, fmt.Errorf("get action requires 'resource_type' field (e.g., pods, pvc, events)")
+		if p.ResourceType == "" {
+			return nil, nil, fmt.Errorf("get action requires 'resource_type' in flags (e.g. flags: {resource_type: \"pods\"})")
 		}
-		args = buildGetArgs(input)
+		args = buildGetArgs(p)
 	case "describe":
-		// Describe action requires a resource type
-		if input.ResourceType == "" {
-			return nil, nil, fmt.Errorf("describe action requires 'resource_type' field (e.g., pods, pvc, events)")
+		if p.ResourceType == "" {
+			return nil, nil, fmt.Errorf("describe action requires 'resource_type' in flags (e.g. flags: {resource_type: \"pods\"})")
 		}
-		args = buildDescribeArgs(input)
+		args = buildDescribeArgs(p)
 	case "events":
-		// Events action - specialized event querying
-		args = buildEventsArgs(input)
+		args = buildEventsArgs(p)
 	default:
-		return nil, nil, fmt.Errorf("unknown action '%s'. Valid actions: logs, get, describe, events", input.Action)
+		return nil, nil, fmt.Errorf("unknown action '%s'. Valid actions: get, describe, events", input.Action)
 	}
 
 	// Execute kubectl command
@@ -252,119 +285,112 @@ func HandleKubectlDebug(ctx context.Context, req *mcp.CallToolRequest, input Kub
 		return nil, nil, err
 	}
 
-	// Process logs action with filtering and formatting
-	if input.Action == "logs" {
-		if output, ok := data["output"].(string); ok {
-			// Apply grep filter first (regex pattern matching)
-			if input.Grep != "" {
-				filtered, err := filterLogsByPattern(output, input.Grep, input.IgnoreCase)
-				if err != nil {
-					return nil, nil, err
-				}
-				output = filtered
-			}
-
-			// Check if logs appear to be JSON formatted by inspecting the first line
-			isJSONLogs := looksLikeJSONLogs(output)
-			hasFilters := hasJSONFilters(input)
-
-			// Warn if JSON filters are requested but logs don't appear to be JSON
-			if hasFilters && !isJSONLogs {
-				data["warning"] = "JSON filters were specified but logs do not appear to be in JSON format. Filters will be ignored."
-			}
-
-			if isJSONLogs {
-				// Normalize LogFormat to a valid value before processing
-				// Valid formats: "json", "text", "pretty"
-				format := input.LogFormat
-				switch format {
-				case "json", "text", "pretty":
-					// Valid format, use as-is
-				case "":
-					format = "json"
-				default:
-					// Invalid format specified, default to "json" and warn
-					data["warning"] = fmt.Sprintf("Invalid log_format '%s' specified, defaulting to 'json'. Valid formats: json, text, pretty", format)
-					format = "json"
-				}
-
-				// Update input with normalized format for filterAndFormatJSONLogs
-				normalizedInput := input
-				normalizedInput.LogFormat = format
-
-				// Apply JSON filtering and formatting for JSON-formatted logs
-				formatted, err := filterAndFormatJSONLogs(output, normalizedInput)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				// Set the appropriate output field based on format
-				if format == "json" {
-					// For JSON format, put parsed entries in "logs" field
-					delete(data, "output")
-					data["logs"] = formatted
-				} else {
-					// For text/pretty formats, keep as "output" string
-					// Both text and pretty formats return strings from filterAndFormatJSONLogs
-					if str, ok := formatted.(string); ok {
-						data["output"] = str
-					} else {
-						// Fallback: convert to JSON string if somehow not a string
-						jsonBytes, _ := json.Marshal(formatted)
-						data["output"] = string(jsonBytes)
-					}
-				}
-			} else {
-				// Non-JSON logs: return as raw text, skip JSON parsing entirely
-				data["output"] = output
-			}
-		}
+	// Check for CLI errors and surface as MCP IsError response
+	if errResult := buildCLIErrorResult(data); errResult != nil {
+		return errResult, nil, nil
 	}
 
 	return nil, data, nil
 }
 
+// processLogsOutput applies grep, JSON detection, filtering, and formatting to log output.
+// It modifies the data map in place with the processed results.
+func processLogsOutput(data map[string]interface{}, output string, p kubectlDebugParams) {
+	// Apply grep filter first (regex pattern matching)
+	if p.Grep != "" {
+		filtered, err := filterLogsByPattern(output, p.Grep, p.IgnoreCase)
+		if err != nil {
+			data["warning"] = fmt.Sprintf("grep filter error: %v", err)
+			data["output"] = output
+			return
+		}
+		output = filtered
+	}
+
+	// Check if logs appear to be JSON formatted by inspecting the first line
+	isJSONLogs := looksLikeJSONLogs(output)
+	hasFilters := hasJSONParamFilters(p)
+
+	// Warn if JSON filters are requested but logs don't appear to be JSON
+	if hasFilters && !isJSONLogs {
+		data["warning"] = "JSON filters were specified but logs do not appear to be in JSON format. Filters will be ignored."
+	}
+
+	if isJSONLogs {
+		// Normalize LogFormat to a valid value before processing
+		// Valid formats: "json", "text", "pretty"
+		format := p.LogFormat
+		switch format {
+		case "json", "text", "pretty":
+			// Valid format, use as-is
+		case "":
+			format = "json"
+		default:
+			// Invalid format specified, default to "json" and warn
+			data["warning"] = fmt.Sprintf("Invalid log_format '%s' specified, defaulting to 'json'. Valid formats: json, text, pretty", format)
+			format = "json"
+		}
+
+		// Apply JSON filtering and formatting for JSON-formatted logs
+		normalizedParams := p
+		normalizedParams.LogFormat = format
+		formatted, err := filterAndFormatJSONLogs(output, normalizedParams)
+		if err != nil {
+			data["warning"] = fmt.Sprintf("JSON log processing error: %v", err)
+			data["output"] = output
+			return
+		}
+
+		// Set the appropriate output field based on format
+		if format == "json" {
+			// For JSON format, put parsed entries in "logs" field
+			delete(data, "output")
+			data["logs"] = formatted
+		} else {
+			// For text/pretty formats, keep as "output" string
+			if str, ok := formatted.(string); ok {
+				data["output"] = str
+			} else {
+				jsonBytes, _ := json.Marshal(formatted)
+				data["output"] = string(jsonBytes)
+			}
+		}
+	} else {
+		// Non-JSON logs: return as raw text, skip JSON parsing entirely
+		data["output"] = output
+	}
+}
+
 // buildLogsArgs builds arguments for kubectl logs command.
-func buildLogsArgs(input KubectlDebugInput) []string {
+func buildLogsArgs(p kubectlDebugParams) []string {
 	args := []string{"logs"}
 
-	// Resource name is required for logs (supports pod names or resource/name like deployments/forklift-controller)
-	if input.Name != "" {
-		args = append(args, input.Name)
+	if p.Name != "" {
+		args = append(args, p.Name)
 	}
-
-	// Namespace
-	if input.Namespace != "" {
-		args = append(args, "-n", input.Namespace)
+	if p.Namespace != "" {
+		args = append(args, "-n", p.Namespace)
 	}
-
-	// Container
-	if input.Container != "" {
-		args = append(args, "-c", input.Container)
+	if p.Container != "" {
+		args = append(args, "-c", p.Container)
 	}
-
-	// Previous container logs
-	if input.Previous {
+	if p.Previous {
 		args = append(args, "--previous")
 	}
 
-	// Tail lines - default to 500 if not specified
-	// Use -1 to get all logs (no limit)
-	if input.TailLines == 0 {
-		// Default to 500 lines to prevent overwhelming output
+	// Tail lines - default to 500 if not specified; -1 gets all logs
+	if p.TailLines == 0 {
 		args = append(args, "--tail", "500")
-	} else if input.TailLines > 0 {
-		args = append(args, "--tail", strconv.Itoa(input.TailLines))
+	} else if p.TailLines > 0 {
+		args = append(args, "--tail", strconv.Itoa(p.TailLines))
 	}
-	// If TailLines < 0 (e.g., -1), don't add --tail flag to get all logs
 
-	// Since duration
-	if input.Since != "" {
-		args = append(args, "--since", input.Since)
+	if p.Since != "" {
+		args = append(args, "--since", p.Since)
 	}
 
 	// Timestamps enabled by default; use no_timestamps=true to disable
-	if !input.NoTimestamps {
+	if !p.NoTimestamps {
 		args = append(args, "--timestamps")
 	}
 
@@ -372,37 +398,28 @@ func buildLogsArgs(input KubectlDebugInput) []string {
 }
 
 // buildGetArgs builds arguments for kubectl get command.
-func buildGetArgs(input KubectlDebugInput) []string {
+func buildGetArgs(p kubectlDebugParams) []string {
 	args := []string{"get"}
 
-	// Resource type
-	if input.ResourceType != "" {
-		args = append(args, input.ResourceType)
+	if p.ResourceType != "" {
+		args = append(args, p.ResourceType)
 	}
-
-	// Resource name (optional)
-	if input.Name != "" {
-		args = append(args, input.Name)
+	if p.Name != "" {
+		args = append(args, p.Name)
 	}
-
-	// Namespace
-	if input.AllNamespaces {
+	if p.AllNamespaces {
 		args = append(args, "-A")
-	} else if input.Namespace != "" {
-		args = append(args, "-n", input.Namespace)
+	} else if p.Namespace != "" {
+		args = append(args, "-n", p.Namespace)
+	}
+	if p.Labels != "" {
+		args = append(args, "-l", p.Labels)
 	}
 
-	// Label selector
-	if input.Labels != "" {
-		args = append(args, "-l", input.Labels)
-	}
-
-	// Output format - use configured default from MCP server
-	output := input.Output
+	output := p.Output
 	if output == "" {
 		output = util.GetOutputFormat()
 	}
-	// For "text" format, don't add -o flag to use default output
 	if output != "text" {
 		args = append(args, "-o", output)
 	}
@@ -411,66 +428,50 @@ func buildGetArgs(input KubectlDebugInput) []string {
 }
 
 // buildDescribeArgs builds arguments for kubectl describe command.
-func buildDescribeArgs(input KubectlDebugInput) []string {
+func buildDescribeArgs(p kubectlDebugParams) []string {
 	args := []string{"describe"}
 
-	// Resource type
-	if input.ResourceType != "" {
-		args = append(args, input.ResourceType)
+	if p.ResourceType != "" {
+		args = append(args, p.ResourceType)
 	}
-
-	// Resource name (optional)
-	if input.Name != "" {
-		args = append(args, input.Name)
+	if p.Name != "" {
+		args = append(args, p.Name)
 	}
-
-	// Namespace
-	if input.AllNamespaces {
+	if p.AllNamespaces {
 		args = append(args, "-A")
-	} else if input.Namespace != "" {
-		args = append(args, "-n", input.Namespace)
+	} else if p.Namespace != "" {
+		args = append(args, "-n", p.Namespace)
 	}
-
-	// Label selector
-	if input.Labels != "" {
-		args = append(args, "-l", input.Labels)
+	if p.Labels != "" {
+		args = append(args, "-l", p.Labels)
 	}
 
 	return args
 }
 
 // buildEventsArgs builds arguments for kubectl get events command with specialized filtering.
-func buildEventsArgs(input KubectlDebugInput) []string {
+func buildEventsArgs(p kubectlDebugParams) []string {
 	args := []string{"get", "events"}
 
-	// Namespace
-	if input.AllNamespaces {
+	if p.AllNamespaces {
 		args = append(args, "-A")
-	} else if input.Namespace != "" {
-		args = append(args, "-n", input.Namespace)
+	} else if p.Namespace != "" {
+		args = append(args, "-n", p.Namespace)
+	}
+	if p.ForResource != "" {
+		args = append(args, "--for", p.ForResource)
+	}
+	if p.FieldSelector != "" {
+		args = append(args, "--field-selector", p.FieldSelector)
+	}
+	if p.SortBy != "" {
+		args = append(args, "--sort-by", p.SortBy)
 	}
 
-	// For a specific resource (e.g., --for pod/my-pod)
-	if input.ForResource != "" {
-		args = append(args, "--for", input.ForResource)
-	}
-
-	// Field selector (e.g., involvedObject.name=my-pod, type=Warning)
-	if input.FieldSelector != "" {
-		args = append(args, "--field-selector", input.FieldSelector)
-	}
-
-	// Sort by (e.g., .lastTimestamp)
-	if input.SortBy != "" {
-		args = append(args, "--sort-by", input.SortBy)
-	}
-
-	// Output format - use configured default from MCP server
-	output := input.Output
+	output := p.Output
 	if output == "" {
 		output = util.GetOutputFormat()
 	}
-	// For "text" format, don't add -o flag to use default output
 	if output != "text" {
 		args = append(args, "-o", output)
 	}
@@ -531,14 +532,14 @@ type RawLogLine struct {
 	Raw string `json:"raw"`
 }
 
-// hasJSONFilters returns true if any JSON-specific filters are set.
-func hasJSONFilters(input KubectlDebugInput) bool {
-	return input.FilterPlan != "" ||
-		input.FilterProvider != "" ||
-		input.FilterVM != "" ||
-		input.FilterMigration != "" ||
-		input.FilterLevel != "" ||
-		input.FilterLogger != ""
+// hasJSONParamFilters returns true if any JSON-specific filters are set.
+func hasJSONParamFilters(p kubectlDebugParams) bool {
+	return p.FilterPlan != "" ||
+		p.FilterProvider != "" ||
+		p.FilterVM != "" ||
+		p.FilterMigration != "" ||
+		p.FilterLevel != "" ||
+		p.FilterLogger != ""
 }
 
 // looksLikeJSONLogs checks if the logs appear to be in JSON format by examining up to 5 non-empty lines.
@@ -591,80 +592,60 @@ func looksLikeJSONLogs(logs string) bool {
 	return false
 }
 
-// matchesJSONFilters checks if a log entry matches all specified filters.
-func matchesJSONFilters(entry JSONLogEntry, input KubectlDebugInput) bool {
-	// Filter by level
-	if input.FilterLevel != "" && !strings.EqualFold(entry.Level, input.FilterLevel) {
+// matchesParamFilters checks if a log entry matches all specified filters.
+func matchesParamFilters(entry JSONLogEntry, p kubectlDebugParams) bool {
+	if p.FilterLevel != "" && !strings.EqualFold(entry.Level, p.FilterLevel) {
 		return false
 	}
-
-	// Filter by logger type (e.g., "plan" matches "plan|zw4bt")
-	if input.FilterLogger != "" {
+	if p.FilterLogger != "" {
 		loggerType := strings.Split(entry.Logger, "|")[0]
-		if !strings.EqualFold(loggerType, input.FilterLogger) {
+		if !strings.EqualFold(loggerType, p.FilterLogger) {
 			return false
 		}
 	}
-
-	// Filter by plan name
-	if input.FilterPlan != "" {
+	if p.FilterPlan != "" {
 		planName := ""
 		if entry.Plan != nil {
 			planName = entry.Plan["name"]
 		}
-		if !strings.EqualFold(planName, input.FilterPlan) {
+		if !strings.EqualFold(planName, p.FilterPlan) {
 			return false
 		}
 	}
-
-	// Filter by provider name
-	if input.FilterProvider != "" {
+	if p.FilterProvider != "" {
 		providerName := ""
 		if entry.Provider != nil {
 			providerName = entry.Provider["name"]
 		}
-		if !strings.EqualFold(providerName, input.FilterProvider) {
+		if !strings.EqualFold(providerName, p.FilterProvider) {
 			return false
 		}
 	}
-
-	// Filter by VM name/ID
-	if input.FilterVM != "" {
-		vmMatch := strings.EqualFold(entry.VM, input.FilterVM) ||
-			strings.EqualFold(entry.VMName, input.FilterVM) ||
-			strings.EqualFold(entry.VMID, input.FilterVM)
+	if p.FilterVM != "" {
+		vmMatch := strings.EqualFold(entry.VM, p.FilterVM) ||
+			strings.EqualFold(entry.VMName, p.FilterVM) ||
+			strings.EqualFold(entry.VMID, p.FilterVM)
 		if !vmMatch {
 			return false
 		}
 	}
-
-	// Filter by migration name
-	// First checks logger type is "migration", then compares migration name
-	if input.FilterMigration != "" {
+	if p.FilterMigration != "" {
 		loggerParts := strings.Split(entry.Logger, "|")
 		loggerType := loggerParts[0]
-
-		// Must be a migration logger
 		if loggerType != "migration" {
 			return false
 		}
-
-		// Try to match migration name from entry.Migration["name"] field first
 		migrationName := ""
 		if entry.Migration != nil {
 			migrationName = entry.Migration["name"]
 		}
-
-		// If no Migration field, try extracting from logger ID (e.g., "migration|my-migration-name")
 		if migrationName == "" && len(loggerParts) > 1 {
 			migrationName = loggerParts[1]
 		}
-
-		if !strings.EqualFold(migrationName, input.FilterMigration) {
+		if !strings.EqualFold(migrationName, p.FilterMigration) {
 			return false
 		}
 	}
-
 	return true
 }
 
@@ -673,7 +654,7 @@ func matchesJSONFilters(entry JSONLogEntry, input KubectlDebugInput) bool {
 // - "json": Array of mixed JSONLogEntry and RawLogLine (for malformed lines)
 // - "text": Original raw JSONL lines (filtered)
 // - "pretty": Human-readable formatted output
-func filterAndFormatJSONLogs(logs string, input KubectlDebugInput) (interface{}, error) {
+func filterAndFormatJSONLogs(logs string, p kubectlDebugParams) (interface{}, error) {
 	lines := strings.Split(strings.TrimSpace(logs), "\n")
 	if len(lines) == 0 || (len(lines) == 1 && lines[0] == "") {
 		return []interface{}{}, nil
@@ -681,7 +662,7 @@ func filterAndFormatJSONLogs(logs string, input KubectlDebugInput) (interface{},
 
 	var logLines []interface{}
 	var filteredLines []string
-	hasFilters := hasJSONFilters(input)
+	hasFilters := hasJSONParamFilters(p)
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -691,7 +672,6 @@ func filterAndFormatJSONLogs(logs string, input KubectlDebugInput) (interface{},
 
 		// Handle timestamp prefix from kubectl --timestamps flag
 		// Format: "2026-02-05T10:45:52.123456789Z {"level":"info",...}"
-		// Split on the first '{' to avoid mis-parsing JSON that contains " {" inside message text
 		jsonPart := line
 		timestampPrefix := ""
 		if idx := strings.Index(line, "{"); idx > 0 {
@@ -701,7 +681,6 @@ func filterAndFormatJSONLogs(logs string, input KubectlDebugInput) (interface{},
 
 		var entry JSONLogEntry
 		if err := json.Unmarshal([]byte(jsonPart), &entry); err != nil {
-			// Malformed line - preserve as RawLogLine
 			if !hasFilters {
 				logLines = append(logLines, RawLogLine{Raw: line})
 				filteredLines = append(filteredLines, line)
@@ -709,8 +688,7 @@ func filterAndFormatJSONLogs(logs string, input KubectlDebugInput) (interface{},
 			continue
 		}
 
-		// Apply filters
-		if hasFilters && !matchesJSONFilters(entry, input) {
+		if hasFilters && !matchesParamFilters(entry, p) {
 			continue
 		}
 
@@ -718,8 +696,7 @@ func filterAndFormatJSONLogs(logs string, input KubectlDebugInput) (interface{},
 		filteredLines = append(filteredLines, timestampPrefix+jsonPart)
 	}
 
-	// Determine output format (default to "json" for LLM consumption)
-	format := input.LogFormat
+	format := p.LogFormat
 	if format == "" {
 		format = "json"
 	}

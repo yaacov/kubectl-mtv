@@ -26,11 +26,11 @@ func NewInventoryHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalC
 
 Lists ESXi hosts (vSphere) or hypervisor hosts (oVirt) from the source provider.
 Host information is useful for planning migrations and understanding the source environment.`,
-		Example: `  # List all hosts from a vSphere provider
-  kubectl-mtv get inventory host vsphere-prod
-
-  # Filter hosts by cluster
+		Example: `  # Filter hosts by cluster
   kubectl-mtv get inventory host vsphere-prod -q "where cluster = 'production'"
+
+  # List all hosts from a provider
+  kubectl-mtv get inventory host vsphere-prod
 
   # Output as JSON
   kubectl-mtv get inventory host vsphere-prod -o json`,
@@ -60,7 +60,7 @@ Host information is useful for planning migrations and understanding the source 
 		},
 	}
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
-	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount > 4\")")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
 	// Add completion for output format flag
@@ -86,11 +86,11 @@ func NewInventoryDataCenterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 
 Lists datacenters from vSphere or oVirt providers. Datacenters are the top-level
 organizational units that contain clusters, hosts, and VMs.`,
-		Example: `  # List all datacenters from a vSphere provider
-  kubectl-mtv get inventory datacenter vsphere-prod
-
-  # Filter datacenters by name
+		Example: `  # Filter datacenters by name
   kubectl-mtv get inventory datacenter vsphere-prod -q "where name ~= 'DC.*'"
+
+  # List all datacenters from a provider
+  kubectl-mtv get inventory datacenter vsphere-prod
 
   # Output as YAML
   kubectl-mtv get inventory datacenter vsphere-prod -o yaml`,
@@ -120,7 +120,7 @@ organizational units that contain clusters, hosts, and VMs.`,
 		},
 	}
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
-	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount > 4\")")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
 	// Add completion for output format flag
@@ -146,11 +146,11 @@ func NewInventoryClusterCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 
 Lists compute clusters from vSphere or oVirt providers. Clusters group hosts
 together and define resource pools for VMs.`,
-		Example: `  # List all clusters from a vSphere provider
-  kubectl-mtv get inventory cluster vsphere-prod
-
-  # Filter clusters by datacenter
+		Example: `  # Filter clusters by datacenter
   kubectl-mtv get inventory cluster vsphere-prod -q "where datacenter = 'DC1'"
+
+  # List all clusters from a provider
+  kubectl-mtv get inventory cluster vsphere-prod
 
   # Output as JSON
   kubectl-mtv get inventory cluster vsphere-prod -o json`,
@@ -180,7 +180,7 @@ together and define resource pools for VMs.`,
 		},
 	}
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
-	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount > 4\")")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
 	// Add completion for output format flag
@@ -206,11 +206,11 @@ func NewInventoryDiskCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalC
 
 Lists virtual disks from vSphere or oVirt providers. Disk information includes
 size, storage location, and attachment to VMs.`,
-		Example: `  # List all disks from an oVirt provider
-  kubectl-mtv get inventory disk ovirt-prod
+		Example: `  # Filter disks by size using SI units (greater than 100GB)
+  kubectl-mtv get inventory disk vsphere-prod -q "where capacity > 100Gi"
 
-  # Filter disks by size (greater than 100GB)
-  kubectl-mtv get inventory disk vsphere-prod -q "where capacity > 107374182400"
+  # List all disks from a provider
+  kubectl-mtv get inventory disk ovirt-prod
 
   # Output as JSON
   kubectl-mtv get inventory disk vsphere-prod -o json`,
@@ -240,7 +240,7 @@ size, storage location, and attachment to VMs.`,
 		},
 	}
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
-	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount > 4\")")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
 	// Add completion for output format flag
