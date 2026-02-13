@@ -279,8 +279,8 @@ func TestFormatShellCommand(t *testing.T) {
 		{
 			name:        "simple command",
 			cmd:         "kubectl-mtv",
-			args:        []string{"get", "plan", "-n", "demo"},
-			wantContain: "kubectl-mtv get plan -n demo",
+			args:        []string{"get", "plan", "--namespace", "demo"},
+			wantContain: "kubectl-mtv get plan --namespace demo",
 		},
 		{
 			name:        "password is sanitized",

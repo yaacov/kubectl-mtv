@@ -18,25 +18,25 @@ func NewInventoryNetworkCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:   "network PROVIDER",
+		Use:   "network",
 		Short: "Get networks from a provider",
 		Long: `Get networks from a provider's inventory.
 
 Queries the MTV inventory service to list networks available in the source provider.
-Use --query (-q) to filter results using TSL query syntax.`,
+Use --query to filter results using TSL query syntax.`,
 		Example: `  # Filter networks by name
-  kubectl-mtv get inventory network vsphere-prod -q "where name ~= 'VM Network.*'"
+  kubectl-mtv get inventory networks --provider vsphere-prod --query "where name ~= 'VM Network.*'"
 
   # List all networks from a provider
-  kubectl-mtv get inventory network vsphere-prod
+  kubectl-mtv get inventory networks --provider vsphere-prod
 
   # Output as JSON
-  kubectl-mtv get inventory network vsphere-prod -o json`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+  kubectl-mtv get inventory networks --provider vsphere-prod --output json`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -44,8 +44,6 @@ Use --query (-q) to filter results using TSL query syntax.`,
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -60,11 +58,16 @@ Use --query (-q) to filter results using TSL query syntax.`,
 		},
 	}
 
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'VM Network.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -79,25 +82,25 @@ func NewInventoryStorageCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:   "storage PROVIDER",
+		Use:   "storage",
 		Short: "Get storage from a provider",
 		Long: `Get storage resources from a provider's inventory.
 
 Queries the MTV inventory service to list storage domains (oVirt), datastores (vSphere),
 or storage classes (OpenShift) available in the source provider.`,
 		Example: `  # Filter storage by name pattern
-  kubectl-mtv get inventory storage ovirt-prod -q "where name ~= 'data.*'"
+  kubectl-mtv get inventory storages --provider ovirt-prod --query "where name ~= 'data.*'"
 
   # List all storage from a provider
-  kubectl-mtv get inventory storage vsphere-prod
+  kubectl-mtv get inventory storages --provider vsphere-prod
 
   # Output as YAML
-  kubectl-mtv get inventory storage vsphere-prod -o yaml`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+  kubectl-mtv get inventory storages --provider vsphere-prod --output yaml`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -105,8 +108,6 @@ or storage classes (OpenShift) available in the source provider.`,
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -121,11 +122,16 @@ or storage classes (OpenShift) available in the source provider.`,
 		},
 	}
 
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'data.*' and type = 'VMFS'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -141,57 +147,57 @@ func NewInventoryVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalCon
 	var extendedOutput bool
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:   "vm PROVIDER",
+		Use:   "vm",
 		Short: "Get VMs from a provider",
 		Long: `Get virtual machines from a provider's inventory.
 
 Queries the MTV inventory service to list VMs available for migration.
-Use --query (-q) to filter results using TSL query syntax. The --extended
+Use --query to filter results using TSL query syntax. The --extended
 flag shows additional VM details.
 
 Output format 'planvms' generates YAML suitable for use with 'create plan --vms @file'.
 
 Query Language (TSL):
-  Use -q "where ..." to filter inventory results with TSL query syntax:
-    -q "where name ~= 'prod-.*'"
-    -q "where powerState = 'poweredOn' and memoryMB > 4096"
-    -q "where len(disks) > 1 and cpuCount <= 8"
-    -q "where any(concerns[*].category = 'Critical')"
-    -q "where name like '%web%' order by memoryMB desc limit 10"
+  Use --query "where ..." to filter inventory results with TSL query syntax:
+    --query "where name ~= 'prod-.*'"
+    --query "where powerState = 'poweredOn' and memoryMB > 4096"
+    --query "where len(disks) > 1 and cpuCount <= 8"
+    --query "where any(concerns[*].category = 'Critical')"
+    --query "where name like '%web%' order by memoryMB desc limit 10"
 
   Supports comparison, regex, logical operators, array functions (len(), any(), all()),
   SI units (Ki, Mi, Gi), sorting (ORDER BY), and limiting (LIMIT).
 
   To discover available fields for your provider, run:
-    kubectl-mtv get inventory vm <provider> -o json
+    kubectl-mtv get inventory vm --provider <provider> --output json
 
   Run 'kubectl-mtv help tsl' for the full syntax reference and field list.`,
 		Example: `  # Find VMs with multiple NICs (array length)
-  kubectl-mtv get inventory vm vsphere-prod -q "where len(nics) >= 2 and cpuCount > 1"
+  kubectl-mtv get inventory vms --provider vsphere-prod --query "where len(nics) >= 2 and cpuCount > 1"
 
   # Find VMs with shared disks (any element match)
-  kubectl-mtv get inventory vm vsphere-prod -q "where any(disks[*].shared = true)"
+  kubectl-mtv get inventory vms --provider vsphere-prod --query "where any(disks[*].shared = true)"
 
   # Find VMs with critical migration concerns
-  kubectl-mtv get inventory vm vsphere-prod -q "where any(concerns[*].category = 'Critical')"
+  kubectl-mtv get inventory vms --provider vsphere-prod --query "where any(concerns[*].category = 'Critical')"
 
   # Filter VMs by name, CPU, and memory
-  kubectl-mtv get inventory vm vsphere-prod -q "where name ~= 'web-.*' and memoryMB > 4096"
+  kubectl-mtv get inventory vms --provider vsphere-prod --query "where name ~= 'web-.*' and memoryMB > 4096"
 
   # List all VMs from a provider
-  kubectl-mtv get inventory vm vsphere-prod
+  kubectl-mtv get inventory vms --provider vsphere-prod
 
   # Show extended VM details
-  kubectl-mtv get inventory vm vsphere-prod --extended
+  kubectl-mtv get inventory vms --provider vsphere-prod --extended
 
   # Export VMs for plan creation
-  kubectl-mtv get inventory vm vsphere-prod -q "where name ~= 'prod-.*'" -o planvms > vms.yaml
-  kubectl-mtv create plan my-migration --vms @vms.yaml`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+  kubectl-mtv get inventory vms --provider vsphere-prod --query "where name ~= 'prod-.*'" --output planvms > vms.yaml
+  kubectl-mtv create plan --name my-migration --vms @vms.yaml`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -199,8 +205,6 @@ Query Language (TSL):
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -215,11 +219,17 @@ Query Language (TSL):
 		},
 	}
 
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml, planvms)")
 	cmd.Flags().BoolVar(&extendedOutput, "extended", false, "Show extended output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount > 4\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	// Custom completion for inventory VM output format that includes planvms
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp

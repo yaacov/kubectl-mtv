@@ -49,15 +49,15 @@ Change migration strategies dynamically based on requirements:
 
 ```bash
 # Switch from cold to warm migration
-kubectl mtv patch plan production-migration \
+kubectl mtv patch plan --plan-name production-migration \
   --migration-type warm
 
 # Enable live migration (KubeVirt sources only)
-kubectl mtv patch plan k8s-to-k8s-migration \
+kubectl mtv patch plan --plan-name k8s-to-k8s-migration \
   --migration-type live
 
 # Switch to cold migration for maximum reliability
-kubectl mtv patch plan critical-systems \
+kubectl mtv patch plan --plan-name critical-systems \
   --migration-type cold
 ```
 
@@ -67,15 +67,15 @@ Update network settings and target configurations:
 
 ```bash
 # Change transfer network for better performance
-kubectl mtv patch plan large-vm-migration \
+kubectl mtv patch plan --plan-name large-vm-migration \
   --transfer-network migration-network/high-bandwidth-net
 
 # Update target namespace
-kubectl mtv patch plan dev-environment \
+kubectl mtv patch plan --plan-name dev-environment \
   --target-namespace development-new
 
 # Modify description for better documentation
-kubectl mtv patch plan quarterly-migration \
+kubectl mtv patch plan --plan-name quarterly-migration \
   --description "Q4 2024 production workload migration to OpenShift 4.16"
 ```
 
@@ -87,19 +87,19 @@ Modify where target VMs will be scheduled using various placement strategies:
 
 ```bash
 # Add labels to all target VMs
-kubectl mtv patch plan production-apps \
+kubectl mtv patch plan --plan-name production-apps \
   --target-labels "environment=production,migration-batch=2024-q4"
 
 # Update node selector for hardware requirements
-kubectl mtv patch plan gpu-workloads \
+kubectl mtv patch plan --plan-name gpu-workloads \
   --target-node-selector "accelerator=nvidia-tesla-v100,node-type=compute"
 
 # Apply advanced affinity rules using KARL (see Chapter 28 for syntax reference)
-kubectl mtv patch plan database-cluster \
+kubectl mtv patch plan --plan-name database-cluster \
   --target-affinity "REQUIRE nodes(node-role.kubernetes.io/database=true) on node"
 
 # Set power state for all VMs after migration  
-kubectl mtv patch plan maintenance-migration \
+kubectl mtv patch plan --plan-name maintenance-migration \
   --target-power-state off
 ```
 
@@ -109,15 +109,15 @@ Update convertor pod scheduling for optimal migration performance:
 
 ```bash
 # Move convertors to high-performance nodes
-kubectl mtv patch plan data-intensive-migration \
+kubectl mtv patch plan --plan-name data-intensive-migration \
   --convertor-node-selector "node-type=high-io,storage-class=nvme"
 
 # Apply convertor affinity for storage proximity
-kubectl mtv patch plan storage-migration \
+kubectl mtv patch plan --plan-name storage-migration \
   --convertor-affinity "REQUIRE pods(app=ceph-osd) on node"
 
 # Add labels to convertor pods for monitoring
-kubectl mtv patch plan monitored-migration \
+kubectl mtv patch plan --plan-name monitored-migration \
   --convertor-labels "monitoring=enabled,migration-type=production"
 ```
 
@@ -127,15 +127,15 @@ Update naming templates for better resource organization:
 
 ```bash
 # Update PVC naming template
-kubectl mtv patch plan organized-migration \
+kubectl mtv patch plan --plan-name organized-migration \
   --pvc-name-template "{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.TargetVmName}}{% endraw %}-disk-{% raw %}{{.DiskIndex}}{% endraw %}"
 
 # Set volume naming template
-kubectl mtv patch plan structured-storage \
+kubectl mtv patch plan --plan-name structured-storage \
   --volume-name-template "vol-{% raw %}{{.PVCName}}{% endraw %}-{% raw %}{{.VolumeIndex}}{% endraw %}"
 
 # Configure network interface naming
-kubectl mtv patch plan network-organized \
+kubectl mtv patch plan --plan-name network-organized \
   --network-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.NetworkType}}{% endraw %}-{% raw %}{{.NetworkIndex}}{% endraw %}"
 ```
 
@@ -145,28 +145,28 @@ Control various aspects of the migration process:
 
 ```bash
 # Enable static IP preservation for vSphere VMs
-kubectl mtv patch plan vsphere-production \
+kubectl mtv patch plan --plan-name vsphere-production \
   --preserve-static-ips=true
 
 # Configure shared disk migration
-kubectl mtv patch plan cluster-workloads \
+kubectl mtv patch plan --plan-name cluster-workloads \
   --migrate-shared-disks=true
 
 # Enable compatibility mode for older systems
-kubectl mtv patch plan legacy-systems \
+kubectl mtv patch plan --plan-name legacy-systems \
   --use-compatibility-mode=true
 
 # Configure cleanup behavior
-kubectl mtv patch plan test-migration \
+kubectl mtv patch plan --plan-name test-migration \
   --delete-guest-conversion-pod=true \
   --delete-vm-on-fail-migration=true
 
 # Skip guest conversion for specific use cases
-kubectl mtv patch plan raw-disk-migration \
+kubectl mtv patch plan --plan-name raw-disk-migration \
   --skip-guest-conversion=true
 
 # Disable preflight inspection for faster warm migrations
-kubectl mtv patch plan urgent-migration \
+kubectl mtv patch plan --plan-name urgent-migration \
   --run-preflight-inspection=false
 ```
 
@@ -174,7 +174,7 @@ kubectl mtv patch plan urgent-migration \
 
 ```bash
 # Complete plan reconfiguration for production migration
-kubectl mtv patch plan enterprise-migration \
+kubectl mtv patch plan --plan-name enterprise-migration \
   --description "Enterprise production migration - Phase 2" \
   --migration-type warm \
   --target-namespace production-v2 \
@@ -201,19 +201,19 @@ Modify individual VM settings within a plan:
 
 ```bash
 # Change target VM name
-kubectl mtv patch planvm production-migration web-server-01 \
+kubectl mtv patch planvm --plan-name production-migration --vm-name web-server-01 \
   --target-name web-prod-primary
 
 # Set specific instance type for a VM
-kubectl mtv patch planvm enterprise-migration database-main \
+kubectl mtv patch planvm --plan-name enterprise-migration --vm-name database-main \
   --instance-type large-memory
 
 # Specify root disk for VMs with multiple disks
-kubectl mtv patch planvm complex-migration multi-disk-vm \
+kubectl mtv patch planvm --plan-name complex-migration --vm-name multi-disk-vm \
   --root-disk "Hard disk 1"
 
 # Set power state for specific VM
-kubectl mtv patch planvm maintenance-migration critical-db \
+kubectl mtv patch planvm --plan-name maintenance-migration --vm-name critical-db \
   --target-power-state on
 ```
 
@@ -223,15 +223,15 @@ Apply custom naming templates to individual VMs:
 
 ```bash
 # Custom PVC naming for high-storage VM
-kubectl mtv patch planvm data-migration large-database \
+kubectl mtv patch planvm --plan-name data-migration --vm-name large-database \
   --pvc-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-data-{% raw %}{{.WinDriveLetter}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
 
 # Custom volume naming for multi-tier application
-kubectl mtv patch planvm app-migration web-tier \
+kubectl mtv patch planvm --plan-name app-migration --vm-name web-tier \
   --volume-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-vol-{% raw %}{{.VolumeIndex}}{% endraw %}"
 
 # Custom network naming for multi-homed VMs
-kubectl mtv patch planvm network-migration firewall-vm \
+kubectl mtv patch planvm --plan-name network-migration --vm-name firewall-vm \
   --network-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.NetworkType}}{% endraw %}-{% raw %}{{.NetworkIndex}}{% endraw %}"
 ```
 
@@ -241,11 +241,11 @@ Configure VM-specific security settings:
 
 ```bash
 # Add LUKS decryption secret for encrypted VM
-kubectl mtv patch planvm secure-migration encrypted-database \
+kubectl mtv patch planvm --plan-name secure-migration --vm-name encrypted-database \
   --luks-secret db-encryption-keys
 
 # Override plan-level deletion policy for specific VM
-kubectl mtv patch planvm test-migration experimental-vm \
+kubectl mtv patch planvm --plan-name test-migration --vm-name experimental-vm \
   --delete-vm-on-fail-migration=true
 ```
 
@@ -257,15 +257,15 @@ Attach custom automation to specific VMs:
 
 ```bash
 # Add pre-migration hook to database VM
-kubectl mtv patch planvm production-migration database-primary \
+kubectl mtv patch planvm --plan-name production-migration --vm-name database-primary \
   --add-pre-hook database-backup-hook
 
 # Add post-migration hook to web server
-kubectl mtv patch planvm production-migration web-server-01 \
+kubectl mtv patch planvm --plan-name production-migration --vm-name web-server-01 \
   --add-post-hook health-check-hook
 
 # Add both pre and post hooks to critical application
-kubectl mtv patch planvm critical-migration app-server-main \
+kubectl mtv patch planvm --plan-name critical-migration --vm-name app-server-main \
   --add-pre-hook app-quiesce-hook \
   --add-post-hook app-validation-hook
 ```
@@ -274,17 +274,17 @@ kubectl mtv patch planvm critical-migration app-server-main \
 
 ```bash
 # Remove specific hook from VM
-kubectl mtv patch planvm production-migration web-server-01 \
+kubectl mtv patch planvm --plan-name production-migration --vm-name web-server-01 \
   --remove-hook old-health-check
 
 # Clear all hooks from VM
-kubectl mtv patch planvm production-migration test-vm \
+kubectl mtv patch planvm --plan-name production-migration --vm-name test-vm \
   --clear-hooks
 
 # Replace hook by removing old and adding new
-kubectl mtv patch planvm production-migration database-secondary \
+kubectl mtv patch planvm --plan-name production-migration --vm-name database-secondary \
   --remove-hook old-backup-hook
-kubectl mtv patch planvm production-migration database-secondary \
+kubectl mtv patch planvm --plan-name production-migration --vm-name database-secondary \
   --add-pre-hook new-enhanced-backup-hook
 ```
 
@@ -292,7 +292,7 @@ kubectl mtv patch planvm production-migration database-secondary \
 
 ```bash
 # Complete VM customization within plan
-kubectl mtv patch planvm enterprise-migration critical-database \
+kubectl mtv patch planvm --plan-name enterprise-migration --vm-name critical-database \
   --target-name db-prod-primary \
   --instance-type extra-large \
   --root-disk "SCSI disk 1" \
@@ -312,22 +312,22 @@ kubectl mtv patch planvm enterprise-migration critical-database \
 
 ```bash
 # Initial plan with basic cold migration
-kubectl mtv create plan evolving-migration \
+kubectl mtv create plan --name evolving-migration \
   --source vsphere-prod --target openshift-prod \
   --vms "app-server-01,app-server-02,database-01"
 
 # Evolve to warm migration after testing
-kubectl mtv patch plan evolving-migration \
+kubectl mtv patch plan --plan-name evolving-migration \
   --migration-type warm \
   --run-preflight-inspection=true
 
 # Add convertor optimization for warm migration
-kubectl mtv patch plan evolving-migration \
+kubectl mtv patch plan --plan-name evolving-migration \
   --convertor-node-selector "node-type=high-io" \
   --convertor-affinity "REQUIRE nodes(network-speed=10gbe) on node"
 
 # Configure individual database VM for special handling
-kubectl mtv patch planvm evolving-migration database-01 \
+kubectl mtv patch planvm --plan-name evolving-migration --vm-name database-01 \
   --target-name database-primary \
   --instance-type large-memory \
   --add-pre-hook database-backup-hook \
@@ -338,19 +338,19 @@ kubectl mtv patch planvm evolving-migration database-01 \
 
 ```bash
 # Start with basic plan
-kubectl mtv create plan performance-migration \
+kubectl mtv create plan --name performance-migration \
   --source vsphere-datacenter --target openshift-cluster \
   --vms "where tags.category='performance-critical'"
 
 # Add performance optimizations
-kubectl mtv patch plan performance-migration \
+kubectl mtv patch plan --plan-name performance-migration \
   --transfer-network performance/dedicated-migration-net \
   --convertor-node-selector "node-type=high-performance,storage=nvme" \
   --convertor-labels "priority=high,performance=optimized" \
   --convertor-affinity "REQUIRE nodes(cpu-type=intel-skylake) on node"
 
 # Optimize target placement
-kubectl mtv patch plan performance-migration \
+kubectl mtv patch plan --plan-name performance-migration \
   --target-node-selector "node-role.kubernetes.io/compute=true,performance-tier=premium" \
   --target-affinity "PREFER nodes(topology.kubernetes.io/zone=performance-zone) on zone" \
   --target-labels "performance=critical,monitoring=enhanced"
@@ -360,28 +360,28 @@ kubectl mtv patch plan performance-migration \
 
 ```bash
 # Basic plan without hooks
-kubectl mtv create plan progressive-automation \
+kubectl mtv create plan --name progressive-automation \
   --source vmware-test --target k8s-test \
   --vms database-test,web-test,cache-test
 
 # Add database-specific automation
-kubectl mtv patch planvm progressive-automation database-test \
+kubectl mtv patch planvm --plan-name progressive-automation --vm-name database-test \
   --add-pre-hook database-quiesce \
   --add-post-hook database-health-check
 
 # Add web server automation
-kubectl mtv patch planvm progressive-automation web-test \
+kubectl mtv patch planvm --plan-name progressive-automation --vm-name web-test \
   --add-pre-hook lb-drain-connections \
   --add-post-hook web-health-validation
 
 # Add cache server automation
-kubectl mtv patch planvm progressive-automation cache-test \
+kubectl mtv patch planvm --plan-name progressive-automation --vm-name cache-test \
   --add-post-hook cache-warmup-hook
 
 # Add plan-level notification
 # Note: Plan-level hooks require adding to all VMs individually
 for vm in database-test web-test cache-test; do
-  kubectl mtv patch planvm progressive-automation $vm \
+  kubectl mtv patch planvm --plan-name progressive-automation --vm-name $vm \
     --add-post-hook migration-notification
 done
 ```
@@ -390,7 +390,7 @@ done
 
 ```bash
 # Development environment configuration
-kubectl mtv patch plan dev-migration \
+kubectl mtv patch plan --plan-name dev-migration \
   --target-namespace development \
   --target-labels "environment=dev,auto-shutdown=true" \
   --target-power-state off \
@@ -398,7 +398,7 @@ kubectl mtv patch plan dev-migration \
   --delete-guest-conversion-pod=true
 
 # Production environment configuration  
-kubectl mtv patch plan prod-migration \
+kubectl mtv patch plan --plan-name prod-migration \
   --target-namespace production \
   --target-labels "environment=prod,backup=required,monitoring=critical" \
   --target-node-selector "node-role.kubernetes.io/production=true" \
@@ -414,16 +414,16 @@ While less common, provider configurations can also be updated:
 
 ```bash
 # Update provider URL (maintenance window)
-kubectl mtv patch provider my-vsphere-provider \
+kubectl mtv patch provider --name my-vsphere-provider \
   --url https://new-vcenter.example.com/sdk
 
 # Update provider credentials
-kubectl mtv patch provider my-openstack-provider \
+kubectl mtv patch provider --name my-openstack-provider \
   --username new_service_account \
   --password new_secure_password
 
 # Add VDDK image to existing provider
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --vddk-init-image registry.company.com/vddk:8.0.2
 ```
 
@@ -451,13 +451,13 @@ kubectl mtv patch provider vsphere-prod \
 
 ```bash
 # Start with plan-wide optimizations
-kubectl mtv patch plan enterprise-migration \
+kubectl mtv patch plan --plan-name enterprise-migration \
   --migration-type warm \
   --target-namespace production \
   --convertor-node-selector "node-type=high-io"
 
 # Then customize specific VMs
-kubectl mtv patch planvm enterprise-migration database-cluster \
+kubectl mtv patch planvm --plan-name enterprise-migration --vm-name database-cluster \
   --instance-type extra-large \
   --add-pre-hook cluster-backup
 ```
@@ -467,13 +467,13 @@ kubectl mtv patch planvm enterprise-migration database-cluster \
 ```bash
 # Apply similar configurations to VM groups
 for vm in web-01 web-02 web-03; do
-  kubectl mtv patch planvm web-migration $vm \
+  kubectl mtv patch planvm --plan-name web-migration --vm-name $vm \
     --target-labels "tier=web,load-balancer=true" \
     --add-post-hook web-health-check
 done
 
 for vm in db-primary db-secondary; do
-  kubectl mtv patch planvm db-migration $vm \
+  kubectl mtv patch planvm --plan-name db-migration --vm-name $vm \
     --instance-type large-memory \
     --add-pre-hook database-backup \
     --add-post-hook database-validation
@@ -484,17 +484,17 @@ done
 
 ```bash
 # Initial basic configuration
-kubectl mtv patch plan iterative-migration \
+kubectl mtv patch plan --plan-name iterative-migration \
   --migration-type cold \
   --target-namespace staging
 
 # Test and refine
-kubectl mtv patch plan iterative-migration \
+kubectl mtv patch plan --plan-name iterative-migration \
   --migration-type warm \
   --convertor-node-selector "storage=ssd"
 
 # Final production configuration
-kubectl mtv patch plan iterative-migration \
+kubectl mtv patch plan --plan-name iterative-migration \
   --target-namespace production \
   --target-affinity "REQUIRE nodes(reliability=high) on node"
 ```
@@ -535,12 +535,12 @@ kubectl get plan production-migration -o jsonpath='{.spec.vms[?(@.name=="databas
 
 ```bash
 # Add high-performance convertor scheduling
-kubectl mtv patch plan slow-migration \
+kubectl mtv patch plan --plan-name slow-migration \
   --convertor-node-selector "node-type=high-io,network=10gbe" \
   --convertor-affinity "REQUIRE nodes(storage-tier=premium) on node"
 
 # Switch to warm migration for reduced downtime
-kubectl mtv patch plan slow-migration \
+kubectl mtv patch plan --plan-name slow-migration \
   --migration-type warm
 ```
 
@@ -550,11 +550,11 @@ kubectl mtv patch plan slow-migration \
 
 ```bash
 # Fix naming conflicts with better templates
-kubectl mtv patch plan naming-conflict \
+kubectl mtv patch plan --plan-name naming-conflict \
   --pvc-name-template "{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}"
 
 # Individual VM name fixes
-kubectl mtv patch planvm naming-conflict conflicting-vm \
+kubectl mtv patch planvm --plan-name naming-conflict --vm-name conflicting-vm \
   --target-name unique-vm-name-prod
 ```
 
@@ -564,7 +564,7 @@ kubectl mtv patch planvm naming-conflict conflicting-vm \
 
 ```bash
 # Add hooks to specific VMs needing automation
-kubectl mtv patch planvm manual-migration database-server \
+kubectl mtv patch planvm --plan-name manual-migration --vm-name database-server \
   --add-pre-hook backup-automation \
   --add-post-hook validation-automation
 ```
@@ -575,11 +575,11 @@ kubectl mtv patch planvm manual-migration database-server \
 
 ```bash
 # Add LUKS support for encrypted VMs
-kubectl mtv patch planvm secure-migration encrypted-vm \
+kubectl mtv patch planvm --plan-name secure-migration --vm-name encrypted-vm \
   --luks-secret encryption-keys-secret
 
 # Configure secure target placement
-kubectl mtv patch plan secure-migration \
+kubectl mtv patch plan --plan-name secure-migration \
   --target-node-selector "security-level=high,compliance=pci-dss"
 ```
 

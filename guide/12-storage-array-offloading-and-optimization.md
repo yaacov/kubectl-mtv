@@ -211,7 +211,7 @@ Before configuring offloading, ensure your environment meets the requirements:
 
 ```bash
 # Check vSphere datastore details
-kubectl mtv get inventory storage my-vsphere-provider -o json | jq '.[] | select(.name == "production-datastore") | {name, type, freeSpace, totalSpace}'
+kubectl mtv get inventory storages --provider my-vsphere-provider --output json | jq '.[] | select(.name == "production-datastore") | {name, type, freeSpace, totalSpace}'
 
 # Verify storage array API connectivity (example for FlashSystem)
 curl -k -u admin:password https://flashsystem.company.com:7443/rest/auth
@@ -222,7 +222,7 @@ curl -k -u admin:password https://flashsystem.company.com:7443/rest/auth
 The most straightforward approach is to specify offload parameters directly in storage mapping pairs:
 
 ```bash
-kubectl mtv create mapping storage offload-flashsystem \
+kubectl mtv create mapping storage --name offload-flashsystem \
   --source my-vsphere-provider \
   --target my-openshift-provider \
   --storage-pairs "production-ssd:flashsystem-gold;offloadPlugin=vsphere;offloadVendor=flashsystem" \
@@ -239,7 +239,7 @@ kubectl mtv create mapping storage offload-flashsystem \
 For environments with multiple storage array vendors:
 
 ```bash
-kubectl mtv create mapping storage multi-vendor-offload \
+kubectl mtv create mapping storage --name multi-vendor-offload \
   --source vsphere-datacenter \
   --target openshift-production \
   --storage-pairs "flashsystem-tier1:premium-flash;offloadPlugin=vsphere;offloadVendor=flashsystem,ontap-tier2:standard-ssd;offloadPlugin=vsphere;offloadVendor=ontap,pure-tier0:ultra-performance;offloadPlugin=vsphere;offloadVendor=pureFlashArray" \
@@ -257,7 +257,7 @@ kubectl mtv create mapping storage multi-vendor-offload \
 When creating migration plans, leverage offloading configurations:
 
 ```bash
-kubectl mtv create plan high-performance-migration \
+kubectl mtv create plan --name high-performance-migration \
   --source vsphere-datacenter \
   --target openshift-production \
   --storage-mapping multi-vendor-offload \
@@ -343,7 +343,7 @@ kubectl create secret generic powerflex-offload-creds \
 IBM FlashSystem arrays provide excellent offloading performance with their Spectrum Virtualize technology:
 
 ```bash
-kubectl mtv create mapping storage ibm-flashsystem \
+kubectl mtv create mapping storage --name ibm-flashsystem \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "flashsystem-gold:flashsystem-tier1;offloadPlugin=vsphere;offloadVendor=flashsystem;volumeMode=Block;accessMode=ReadWriteOnce" \
@@ -366,7 +366,7 @@ kubectl mtv create mapping storage ibm-flashsystem \
 NetApp ONTAP provides robust offloading through FlexClone and SnapMirror technologies:
 
 ```bash
-kubectl mtv create mapping storage netapp-ontap \
+kubectl mtv create mapping storage --name netapp-ontap \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "netapp-nfs:ontap-nas;offloadPlugin=vsphere;offloadVendor=ontap;volumeMode=Filesystem,netapp-san:ontap-san;offloadPlugin=vsphere;offloadVendor=ontap;volumeMode=Block" \
@@ -389,7 +389,7 @@ kubectl mtv create mapping storage netapp-ontap \
 Pure Storage FlashArray provides native integration with advanced data reduction:
 
 ```bash
-kubectl mtv create mapping storage pure-flasharray \
+kubectl mtv create mapping storage --name pure-flasharray \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "pure-vvol:pure-block-premium;offloadPlugin=vsphere;offloadVendor=pureFlashArray;volumeMode=Block;accessMode=ReadWriteOnce" \
@@ -413,7 +413,7 @@ kubectl mtv create mapping storage pure-flasharray \
 Dell PowerMax provides enterprise-grade offloading for mission-critical workloads:
 
 ```bash
-kubectl mtv create mapping storage dell-powermax \
+kubectl mtv create mapping storage --name dell-powermax \
   --source vsphere-enterprise \
   --target openshift-target \
   --storage-pairs "powermax-diamond:powermax-tier0;offloadPlugin=vsphere;offloadVendor=powermax;volumeMode=Block;accessMode=ReadWriteOnce" \
@@ -451,7 +451,7 @@ kubectl create secret generic flashsystem-offload-creds \
   -n konveyor-forklift
 
 # Reference the secret in storage mapping
-kubectl mtv create mapping storage secure-flashsystem \
+kubectl mtv create mapping storage --name secure-flashsystem \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "production-ssd:flashsystem-gold;offloadPlugin=vsphere;offloadVendor=flashsystem;offloadSecret=flashsystem-offload-creds"
@@ -469,7 +469,7 @@ kubectl create configmap storage-ca-certs \
   -n konveyor-forklift
 
 # Reference in mapping creation
-kubectl mtv create mapping storage secure-multi-vendor \
+kubectl mtv create mapping storage --name secure-multi-vendor \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "tier1:flashsystem-gold;offloadPlugin=vsphere;offloadVendor=flashsystem" \
@@ -500,7 +500,7 @@ While offloading reduces network usage, control plane communication still requir
 
 ```bash
 # Configure migration with bandwidth considerations
-kubectl mtv create plan bandwidth-optimized \
+kubectl mtv create plan --name bandwidth-optimized \
   --source vsphere-datacenter \
   --target openshift-production \
   --storage-mapping offload-enabled \
@@ -551,13 +551,13 @@ kubectl patch forkliftcontroller forklift-controller \
 
 ```bash
 # Verify offload plugin configuration in storage mapping
-kubectl mtv describe mapping storage offload-enabled
+kubectl mtv describe mapping storage --name offload-enabled
 
 # Check migration plan for offload utilization
-kubectl mtv describe plan offload-migration
+kubectl mtv describe plan --name offload-migration
 
 # Monitor migration progress with offload details
-kubectl mtv get plan offload-migration --watch -o yaml
+kubectl mtv get plan --name offload-migration --watch --output yaml
 ```
 
 #### 2. Storage Array Integration Status
@@ -742,7 +742,7 @@ Storage array offloading provides significant performance improvements over trad
 For cold migrations, storage offloading provides the most dramatic performance improvements:
 
 ```bash
-kubectl mtv create plan cold-offload-optimized \
+kubectl mtv create plan --name cold-offload-optimized \
   --source vsphere-datacenter \
   --target openshift-production \
   --storage-mapping enterprise-offload \
@@ -756,7 +756,7 @@ kubectl mtv create plan cold-offload-optimized \
 Warm migrations benefit from reduced precopy times and faster cutover operations:
 
 ```bash
-kubectl mtv create plan warm-offload-optimized \
+kubectl mtv create plan --name warm-offload-optimized \
   --source vsphere-datacenter \
   --target openshift-production \
   --storage-mapping enterprise-offload \

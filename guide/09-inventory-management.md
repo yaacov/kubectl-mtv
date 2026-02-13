@@ -79,7 +79,7 @@ kubectl-mtv provides access to a comprehensive inventory of resources across dif
 The general syntax for inventory commands follows this pattern:
 
 ```bash
-kubectl mtv get inventory <resource> <provider> [flags]
+kubectl mtv get inventory <resource> --provider <provider> [flags]
 ```
 
 ### Basic Command Structure
@@ -104,18 +104,18 @@ VMs are the most commonly queried inventory resource for migration planning:
 
 ```bash
 # List all VMs from a vSphere provider
-kubectl mtv get inventory vms vsphere-prod
+kubectl mtv get inventory vms --provider vsphere-prod
 
 # List VMs from different provider types
-kubectl mtv get inventory vms ovirt-prod
-kubectl mtv get inventory instances openstack-prod
-kubectl mtv get inventory vms openshift-source
+kubectl mtv get inventory vms --provider ovirt-prod
+kubectl mtv get inventory instances --provider openstack-prod
+kubectl mtv get inventory vms --provider openshift-source
 
 # List VMs with extended information
-kubectl mtv get inventory vms vsphere-prod --extended
+kubectl mtv get inventory vms --provider vsphere-prod --extended
 
 # Watch for VM changes in real-time
-kubectl mtv get inventory vms vsphere-prod --watch
+kubectl mtv get inventory vms --provider vsphere-prod --watch
 ```
 
 ### Networks
@@ -124,16 +124,16 @@ Network inventory helps plan network mappings:
 
 ```bash
 # List all networks from vSphere
-kubectl mtv get inventory networks vsphere-prod
+kubectl mtv get inventory networks --provider vsphere-prod
 
 # List networks from oVirt
-kubectl mtv get inventory networks ovirt-prod
+kubectl mtv get inventory networks --provider ovirt-prod
 
 # List subnets from OpenStack
-kubectl mtv get inventory subnets openstack-prod
+kubectl mtv get inventory subnets --provider openstack-prod
 
 # View network details in YAML format
-kubectl mtv get inventory networks vsphere-prod -o yaml
+kubectl mtv get inventory networks --provider vsphere-prod --output yaml
 ```
 
 ### Storage
@@ -142,16 +142,16 @@ Storage inventory assists with storage mapping configuration:
 
 ```bash
 # List storage from vSphere (datastores)
-kubectl mtv get inventory datastores vsphere-prod
+kubectl mtv get inventory datastores --provider vsphere-prod
 
 # List storage from oVirt
-kubectl mtv get inventory storages ovirt-prod
+kubectl mtv get inventory storages --provider ovirt-prod
 
 # List volume types from OpenStack
-kubectl mtv get inventory volumetypes openstack-prod
+kubectl mtv get inventory volumetypes --provider openstack-prod
 
 # View storage details in JSON format
-kubectl mtv get inventory datastores vsphere-prod -o json
+kubectl mtv get inventory datastores --provider vsphere-prod --output json
 ```
 
 ### Hosts and Infrastructure
@@ -160,19 +160,19 @@ Discover infrastructure layout for planning:
 
 ```bash
 # List ESXi hosts in vSphere
-kubectl mtv get inventory hosts vsphere-prod
+kubectl mtv get inventory hosts --provider vsphere-prod
 
 # List oVirt hosts
-kubectl mtv get inventory hosts ovirt-prod
+kubectl mtv get inventory hosts --provider ovirt-prod
 
 # List datacenters
-kubectl mtv get inventory datacenters vsphere-prod
+kubectl mtv get inventory datacenters --provider vsphere-prod
 
 # List resource pools (vSphere)
-kubectl mtv get inventory resourcepools vsphere-prod
+kubectl mtv get inventory resource-pools --provider vsphere-prod
 
 # List clusters
-kubectl mtv get inventory clusters vsphere-prod
+kubectl mtv get inventory clusters --provider vsphere-prod
 ```
 
 ### Provider Status
@@ -184,10 +184,10 @@ Check provider health and connectivity:
 kubectl mtv get inventory providers
 
 # Get detailed inventory from specific provider
-kubectl mtv get inventory provider vsphere-prod
+kubectl mtv get inventory providers --provider vsphere-prod
 
 # Monitor provider status
-kubectl mtv get inventory provider vsphere-prod --watch
+kubectl mtv get inventory providers --provider vsphere-prod --watch
 ```
 
 ## Output Formats
@@ -198,7 +198,7 @@ The default table format provides a concise overview:
 
 ```bash
 # Default table output
-kubectl mtv get inventory vms vsphere-prod
+kubectl mtv get inventory vms --provider vsphere-prod
 
 # Example output:
 # NAME          POWER STATE    MEMORY(MB)    CPU    DISKS
@@ -213,13 +213,13 @@ JSON output provides complete data for automation:
 
 ```bash
 # JSON output for scripting
-kubectl mtv get inventory vms vsphere-prod -o json
+kubectl mtv get inventory vms --provider vsphere-prod --output json
 
 # Extract specific fields using jq
-kubectl mtv get inventory vms vsphere-prod -o json | jq '.items[].name'
+kubectl mtv get inventory vms --provider vsphere-prod --output json | jq '.items[].name'
 
 # Complex data extraction
-kubectl mtv get inventory vms vsphere-prod -o json | \
+kubectl mtv get inventory vms --provider vsphere-prod --output json | \
   jq '.items[] | select(.powerState == "poweredOn") | .name'
 ```
 
@@ -229,10 +229,10 @@ YAML format for human-readable structured data:
 
 ```bash
 # YAML output
-kubectl mtv get inventory vms vsphere-prod -o yaml
+kubectl mtv get inventory vms --provider vsphere-prod --output yaml
 
 # Save to file for analysis
-kubectl mtv get inventory vms vsphere-prod -o yaml > vms-inventory.yaml
+kubectl mtv get inventory vms --provider vsphere-prod --output yaml > vms-inventory.yaml
 ```
 
 ### Extended Output
@@ -241,7 +241,7 @@ Extended output provides additional details where supported:
 
 ```bash
 # Extended information for VMs
-kubectl mtv get inventory vms vsphere-prod --extended
+kubectl mtv get inventory vms --provider vsphere-prod --extended
 
 # Extended output shows additional fields like:
 # - Guest OS information
@@ -258,26 +258,26 @@ The special `planvms` output format is designed specifically for migration plann
 
 ```bash
 # Export VMs in planvms format
-kubectl mtv get inventory vms vsphere-prod -o planvms
+kubectl mtv get inventory vms --provider vsphere-prod --output planvms
 
 # Save to file for migration plan creation
-kubectl mtv get inventory vms vsphere-prod -o planvms > migration-vms.yaml
+kubectl mtv get inventory vms --provider vsphere-prod --output planvms > migration-vms.yaml
 ```
 
 ### Using PlanVMs with Migration Plans
 
 ```bash
 # Create migration plan using exported VMs
-kubectl mtv create plan production-migration \
+kubectl mtv create plan --name production-migration \
   --source vsphere-prod \
   --vms @migration-vms.yaml
 
 # Or use the planvms format directly in plan creation
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where name ~= 'prod-.*' and powerState = 'poweredOn'" \
-  -o planvms > prod-vms.yaml
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where name ~= 'prod-.*' and powerState = 'poweredOn'" \
+  --output planvms > prod-vms.yaml
 
-kubectl mtv create plan prod-migration \
+kubectl mtv create plan --name prod-migration \
   --source vsphere-prod \
   --vms @prod-vms.yaml
 ```
@@ -308,20 +308,20 @@ Use the [Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-re
 
 ```bash
 # Find powered-on VMs with high memory
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where powerState = 'poweredOn' and memoryMB > 8192"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where powerState = 'poweredOn' and memoryMB > 8192"
 
 # Find VMs matching name patterns
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where name ~= 'web-.*' or name ~= 'app-.*'"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where name ~= 'web-.*' or name ~= 'app-.*'"
 
 # Find VMs with multiple disks
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where len(disks) > 1"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where len(disks) > 1"
 
 # Complex queries with multiple conditions
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where powerState = 'poweredOn' and memoryMB >= 4096 and name ~= 'prod-.*'"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where powerState = 'poweredOn' and memoryMB >= 4096 and name ~= 'prod-.*'"
 ```
 
 ### Sorting and Limiting Results
@@ -330,20 +330,20 @@ Use `order by` and `limit` to control how many results are returned and in what 
 
 ```bash
 # Top 10 largest VMs by memory (sorted descending, limited to 10)
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where powerState = 'poweredOn' order by memoryMB desc limit 10"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where powerState = 'poweredOn' order by memoryMB desc limit 10"
 
 # First 50 powered-on VMs alphabetically
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where powerState = 'poweredOn' order by name limit 50"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where powerState = 'poweredOn' order by name limit 50"
 
 # Smallest VMs first (candidates for quick migration)
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where powerState = 'poweredOn' order by memoryMB asc limit 20"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where powerState = 'poweredOn' order by memoryMB asc limit 20"
 
 # Datastores with >100 GB free (use free in bytes with SI units)
-kubectl mtv get inventory datastores vsphere-prod \
-  -q "where free > 100Gi order by free asc limit 5"
+kubectl mtv get inventory datastores --provider vsphere-prod \
+  --query "where free > 100Gi order by free asc limit 5"
 ```
 
 ### Selecting Specific Fields
@@ -352,16 +352,16 @@ Use the `select` clause to return only the fields you need, reducing output size
 
 ```bash
 # Return only name, memory, and CPU (compact output)
-kubectl mtv get inventory vms vsphere-prod \
-  -q "select name, memoryMB, cpuCount where powerState = 'poweredOn' limit 10"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "select name, memoryMB, cpuCount where powerState = 'poweredOn' limit 10"
 
 # Select with aliases and combined with order/limit
-kubectl mtv get inventory vms vsphere-prod \
-  -q "select name, memoryMB as mem, cpuCount where memoryMB > 4096 order by memoryMB desc limit 5"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "select name, memoryMB as mem, cpuCount where memoryMB > 4096 order by memoryMB desc limit 5"
 
 # Sum of disk capacity with select
-kubectl mtv get inventory vms vsphere-prod \
-  -q "select name, sum(disks[*].capacityGB) as totalDisk where powerState = 'poweredOn' order by totalDisk desc limit 10"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "select name, sum(disks[*].capacityGB) as totalDisk where powerState = 'poweredOn' order by totalDisk desc limit 10"
 ```
 
 ### Provider-Specific Resource Queries
@@ -370,46 +370,46 @@ kubectl mtv get inventory vms vsphere-prod \
 
 ```bash
 # Find datastores with available space
-kubectl mtv get inventory datastores vsphere-prod \
-  -q "where freeSpaceGB > 100"
+kubectl mtv get inventory datastores --provider vsphere-prod \
+  --query "where freeSpaceGB > 100"
 
 # List resource pools by availability
-kubectl mtv get inventory resourcepools vsphere-prod
+kubectl mtv get inventory resource-pools --provider vsphere-prod
 
 # Find hosts in specific clusters
-kubectl mtv get inventory hosts vsphere-prod \
-  -q "where cluster.name = 'Production-Cluster'"
+kubectl mtv get inventory hosts --provider vsphere-prod \
+  --query "where cluster.name = 'Production-Cluster'"
 ```
 
 #### oVirt Resource Discovery
 
 ```bash
 # Find VMs with specific OS types
-kubectl mtv get inventory vms ovirt-prod \
-  -q "where guestOS ~= 'rhel.*'"
+kubectl mtv get inventory vms --provider ovirt-prod \
+  --query "where guestOS ~= 'rhel.*'"
 
 # List disk profiles
-kubectl mtv get inventory diskprofiles ovirt-prod
+kubectl mtv get inventory disk-profiles --provider ovirt-prod
 
 # Find storage domains
-kubectl mtv get inventory storages ovirt-prod \
-  -q "where type = 'data'"
+kubectl mtv get inventory storages --provider ovirt-prod \
+  --query "where type = 'data'"
 ```
 
 #### OpenStack Resource Discovery
 
 ```bash
 # Find instances by flavor
-kubectl mtv get inventory instances openstack-prod \
-  -q "where flavor.name = 'm1.large'"
+kubectl mtv get inventory instances --provider openstack-prod \
+  --query "where flavor.name = 'm1.large'"
 
 # List available images
-kubectl mtv get inventory images openstack-prod \
-  -q "where status = 'active'"
+kubectl mtv get inventory images --provider openstack-prod \
+  --query "where status = 'active'"
 
 # Find volumes by size
-kubectl mtv get inventory volumes openstack-prod \
-  -q "where size >= 100"
+kubectl mtv get inventory volumes --provider openstack-prod \
+  --query "where size >= 100"
 ```
 
 ### Inventory Automation and Scripting
@@ -426,23 +426,23 @@ OUTPUT_DIR="inventory-$(date +%Y%m%d)"
 mkdir -p "$OUTPUT_DIR"
 
 # Export all VMs
-kubectl mtv get inventory vms "$PROVIDER" -o json > "$OUTPUT_DIR/all-vms.json"
+kubectl mtv get inventory vms --provider "$PROVIDER" --output json > "$OUTPUT_DIR/all-vms.json"
 
 # Export powered-on VMs only
-kubectl mtv get inventory vms "$PROVIDER" \
-  -q "where powerState = 'poweredOn'" \
-  -o planvms > "$OUTPUT_DIR/active-vms.yaml"
+kubectl mtv get inventory vms --provider "$PROVIDER" \
+  --query "where powerState = 'poweredOn'" \
+  --output planvms > "$OUTPUT_DIR/active-vms.yaml"
 
 # Export large VMs (>50GB total disk)
-kubectl mtv get inventory vms "$PROVIDER" \
-  -q "where sum(disks[*].capacityGB) > 50" \
-  -o json > "$OUTPUT_DIR/large-vms.json"
+kubectl mtv get inventory vms --provider "$PROVIDER" \
+  --query "where sum(disks[*].capacityGB) > 50" \
+  --output json > "$OUTPUT_DIR/large-vms.json"
 
 # Export network information
-kubectl mtv get inventory networks "$PROVIDER" -o yaml > "$OUTPUT_DIR/networks.yaml"
+kubectl mtv get inventory networks --provider "$PROVIDER" --output yaml > "$OUTPUT_DIR/networks.yaml"
 
 # Export storage information
-kubectl mtv get inventory datastores "$PROVIDER" -o yaml > "$OUTPUT_DIR/datastores.yaml"
+kubectl mtv get inventory datastores --provider "$PROVIDER" --output yaml > "$OUTPUT_DIR/datastores.yaml"
 
 echo "Inventory exported to $OUTPUT_DIR/"
 ```
@@ -457,12 +457,12 @@ PROVIDER="vsphere-prod"
 PLAN_NAME="auto-migration-$(date +%Y%m%d)"
 
 # Discover migration candidates
-kubectl mtv get inventory vms "$PROVIDER" \
-  -q "where powerState = 'poweredOn' and memoryMB <= 8192 and len(disks) <= 2" \
-  -o planvms > "small-vms.yaml"
+kubectl mtv get inventory vms --provider "$PROVIDER" \
+  --query "where powerState = 'poweredOn' and memoryMB <= 8192 and len(disks) <= 2" \
+  --output planvms > "small-vms.yaml"
 
 # Create migration plan
-kubectl mtv create plan "$PLAN_NAME" \
+kubectl mtv create plan --name "$PLAN_NAME" \
   --source "$PROVIDER" \
   --vms @small-vms.yaml \
   --migration-type cold
@@ -478,14 +478,14 @@ vSphere provides the richest inventory with hierarchical structure:
 
 ```bash
 # Complete vSphere infrastructure discovery
-kubectl mtv get inventory datacenters vsphere-prod
-kubectl mtv get inventory clusters vsphere-prod
-kubectl mtv get inventory hosts vsphere-prod
-kubectl mtv get inventory resourcepools vsphere-prod
-kubectl mtv get inventory folders vsphere-prod
-kubectl mtv get inventory datastores vsphere-prod
-kubectl mtv get inventory networks vsphere-prod
-kubectl mtv get inventory vms vsphere-prod
+kubectl mtv get inventory datacenters --provider vsphere-prod
+kubectl mtv get inventory clusters --provider vsphere-prod
+kubectl mtv get inventory hosts --provider vsphere-prod
+kubectl mtv get inventory resource-pools --provider vsphere-prod
+kubectl mtv get inventory folders --provider vsphere-prod
+kubectl mtv get inventory datastores --provider vsphere-prod
+kubectl mtv get inventory networks --provider vsphere-prod
+kubectl mtv get inventory vms --provider vsphere-prod
 ```
 
 ### oVirt Provider Inventory
@@ -494,12 +494,12 @@ oVirt provides enterprise virtualization resources:
 
 ```bash
 # oVirt-specific resources
-kubectl mtv get inventory vms ovirt-prod
-kubectl mtv get inventory hosts ovirt-prod
-kubectl mtv get inventory storages ovirt-prod
-kubectl mtv get inventory networks ovirt-prod
-kubectl mtv get inventory diskprofiles ovirt-prod
-kubectl mtv get inventory nicprofiles ovirt-prod
+kubectl mtv get inventory vms --provider ovirt-prod
+kubectl mtv get inventory hosts --provider ovirt-prod
+kubectl mtv get inventory storages --provider ovirt-prod
+kubectl mtv get inventory networks --provider ovirt-prod
+kubectl mtv get inventory disk-profiles --provider ovirt-prod
+kubectl mtv get inventory nic-profiles --provider ovirt-prod
 ```
 
 ### OpenStack Provider Inventory
@@ -508,14 +508,14 @@ OpenStack provides cloud-native resource discovery:
 
 ```bash
 # OpenStack-specific resources
-kubectl mtv get inventory instances openstack-prod
-kubectl mtv get inventory images openstack-prod
-kubectl mtv get inventory flavors openstack-prod
-kubectl mtv get inventory projects openstack-prod
-kubectl mtv get inventory volumes openstack-prod
-kubectl mtv get inventory volumetypes openstack-prod
-kubectl mtv get inventory snapshots openstack-prod
-kubectl mtv get inventory subnets openstack-prod
+kubectl mtv get inventory instances --provider openstack-prod
+kubectl mtv get inventory images --provider openstack-prod
+kubectl mtv get inventory flavors --provider openstack-prod
+kubectl mtv get inventory projects --provider openstack-prod
+kubectl mtv get inventory volumes --provider openstack-prod
+kubectl mtv get inventory volumetypes --provider openstack-prod
+kubectl mtv get inventory snapshots --provider openstack-prod
+kubectl mtv get inventory subnets --provider openstack-prod
 ```
 
 ### OpenShift/KubeVirt Provider Inventory
@@ -524,10 +524,10 @@ For KubeVirt-to-KubeVirt migrations:
 
 ```bash
 # KubeVirt-specific resources
-kubectl mtv get inventory vms openshift-source
-kubectl mtv get inventory pvcs openshift-source
-kubectl mtv get inventory datavolumes openshift-source
-kubectl mtv get inventory namespaces openshift-source
+kubectl mtv get inventory vms --provider openshift-source
+kubectl mtv get inventory pvcs --provider openshift-source
+kubectl mtv get inventory data-volumes --provider openshift-source
+kubectl mtv get inventory namespaces --provider openshift-source
 ```
 
 ## Real-Time Monitoring and Watching
@@ -538,13 +538,13 @@ Monitor inventory changes in real-time:
 
 ```bash
 # Watch VM state changes
-kubectl mtv get inventory vms vsphere-prod --watch
+kubectl mtv get inventory vms --provider vsphere-prod --watch
 
 # Watch provider status
-kubectl mtv get inventory provider vsphere-prod --watch
+kubectl mtv get inventory providers --provider vsphere-prod --watch
 
 # Monitor network changes
-kubectl mtv get inventory networks vsphere-prod --watch
+kubectl mtv get inventory networks --provider vsphere-prod --watch
 ```
 
 ### Automated Monitoring
@@ -557,8 +557,8 @@ PROVIDER="vsphere-prod"
 
 echo "Monitoring VMs for migration readiness..."
 
-kubectl mtv get inventory vms "$PROVIDER" \
-  -q "where powerState = 'poweredOn'" \
+kubectl mtv get inventory vms --provider "$PROVIDER" \
+  --query "where powerState = 'poweredOn'" \
   --watch | while read -r line; do
     echo "$(date): $line"
     # Add notification logic here
@@ -573,17 +573,17 @@ For large virtualization environments:
 
 ```bash
 # Use specific queries to reduce data transfer
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where datacenter.name = 'DC-East'" \
-  -o json
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where datacenter.name = 'DC-East'" \
+  --output json
 
 # Focus on specific clusters
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where cluster.name = 'Production-Cluster'"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where cluster.name = 'Production-Cluster'"
 
 # Limit results with targeted queries (order by + limit)
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where memoryMB >= 4096 and powerState = 'poweredOn' order by memoryMB desc limit 25" \
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where memoryMB >= 4096 and powerState = 'poweredOn' order by memoryMB desc limit 25" \
   --extended
 ```
 
@@ -591,9 +591,9 @@ kubectl mtv get inventory vms vsphere-prod \
 
 ```bash
 # Cache frequently accessed inventory
-kubectl mtv get inventory vms vsphere-prod -o json > vms-cache.json
-kubectl mtv get inventory networks vsphere-prod -o yaml > networks-cache.yaml
-kubectl mtv get inventory datastores vsphere-prod -o yaml > storage-cache.yaml
+kubectl mtv get inventory vms --provider vsphere-prod --output json > vms-cache.json
+kubectl mtv get inventory networks --provider vsphere-prod --output yaml > networks-cache.yaml
+kubectl mtv get inventory datastores --provider vsphere-prod --output yaml > storage-cache.yaml
 
 # Use cached data for planning
 jq '.items[] | select(.powerState == "poweredOn")' vms-cache.json
@@ -607,10 +607,10 @@ jq '.items[] | select(.powerState == "poweredOn")' vms-cache.json
 
 ```bash
 # Check provider status
-kubectl mtv describe provider vsphere-prod
+kubectl mtv describe provider --name vsphere-prod
 
 # Test inventory service connectivity
-kubectl mtv get inventory provider vsphere-prod
+kubectl mtv get inventory providers --provider vsphere-prod
 
 # Check inventory service URL
 echo $MTV_INVENTORY_URL
@@ -620,24 +620,24 @@ echo $MTV_INVENTORY_URL
 
 ```bash
 # Test queries with simple examples first
-kubectl mtv get inventory vms vsphere-prod -q "where name = 'test-vm'"
+kubectl mtv get inventory vms --provider vsphere-prod --query "where name = 'test-vm'"
 
 # Use JSON output to understand available fields
-kubectl mtv get inventory vms vsphere-prod -o json | jq '.items[0]' | head -20
+kubectl mtv get inventory vms --provider vsphere-prod --output json | jq '.items[0]' | head -20
 
 # Check query syntax documentation
-kubectl mtv get inventory vms vsphere-prod --help
+kubectl mtv get inventory vms --provider vsphere-prod --help
 ```
 
 #### Performance Issues
 
 ```bash
 # Use specific queries instead of listing all resources
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where cluster.name = 'specific-cluster'"
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where cluster.name = 'specific-cluster'"
 
 # Enable debug logging
-kubectl mtv get inventory vms vsphere-prod -v=2
+kubectl mtv get inventory vms --provider vsphere-prod -v=2
 
 # Check inventory service performance
 kubectl get pods -n konveyor-forklift -l app=forklift-inventory
@@ -647,7 +647,7 @@ kubectl get pods -n konveyor-forklift -l app=forklift-inventory
 
 ```bash
 # Enable verbose logging
-kubectl mtv get inventory vms vsphere-prod -v=2
+kubectl mtv get inventory vms --provider vsphere-prod -v=2
 
 # Check inventory service logs
 kubectl logs -n konveyor-forklift deployment/forklift-inventory -f
@@ -662,22 +662,22 @@ kubectl exec -it forklift-inventory-pod -- netstat -an
 
 ```bash
 # 1. Discover migration candidates
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where powerState = 'poweredOn' and memoryMB <= 16384" \
-  -o planvms > candidates.yaml
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where powerState = 'poweredOn' and memoryMB <= 16384" \
+  --output planvms > candidates.yaml
 
 # 2. Analyze resource requirements
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where name in ['vm1', 'vm2', 'vm3']" \
-  -o json | jq '.items[] | {name, memory: .memoryMB, disks: [.disks[].capacityGB]}'
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where name in ['vm1', 'vm2', 'vm3']" \
+  --output json | jq '.items[] | {name, memory: .memoryMB, disks: [.disks[].capacityGB]}'
 
 # 3. Check network and storage availability
-kubectl mtv get inventory networks vsphere-prod -o yaml
-kubectl mtv get inventory datastores vsphere-prod \
-  -q "where freeSpaceGB > 100" -o yaml
+kubectl mtv get inventory networks --provider vsphere-prod --output yaml
+kubectl mtv get inventory datastores --provider vsphere-prod \
+  --query "where freeSpaceGB > 100" --output yaml
 
 # 4. Create migration plan
-kubectl mtv create plan inventory-driven-migration \
+kubectl mtv create plan --name inventory-driven-migration \
   --source vsphere-prod \
   --vms @candidates.yaml
 ```
@@ -688,13 +688,13 @@ kubectl mtv create plan inventory-driven-migration \
 # Verify VMs exist before migration
 VM_NAMES=$(kubectl get plan migration-plan -o json | jq -r '.spec.vms[].name')
 for vm in $VM_NAMES; do
-  kubectl mtv get inventory vms vsphere-prod -q "where name = '$vm'" -o json | \
+  kubectl mtv get inventory vms --provider vsphere-prod --query "where name = '$vm'" --output json | \
     jq -r '.items[0].name // "NOT FOUND: '$vm'"'
 done
 
 # Check resource availability
-kubectl mtv get inventory datastores vsphere-prod \
-  -q "where freeSpaceGB > 500" -o table
+kubectl mtv get inventory datastores --provider vsphere-prod \
+  --query "where freeSpaceGB > 500" --output table
 ```
 
 ## Next Steps

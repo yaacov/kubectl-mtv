@@ -16,7 +16,7 @@ type MTVWriteInput struct {
 
 	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters including positional args and options (e.g. name: \"my-provider\", type: \"vsphere\", url: \"https://vcenter/sdk\", namespace: \"ns\")"`
 
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"Preview without executing"`
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, returns the command that would be executed without running it"`
 }
 
 // GetMTVWriteTool returns the tool definition for read-write MTV commands.
@@ -90,11 +90,8 @@ func HandleMTVWrite(registry *discovery.Registry) func(context.Context, *mcp.Cal
 			ctx = util.WithDryRun(ctx, true)
 		}
 
-		// Extract positional args from named entries in flags
-		positionalArgs := extractPositionalArgs(registry.GetCommand(cmdPath), input.Flags)
-
-		// Build command arguments
-		args := buildWriteArgs(cmdPath, positionalArgs, input.Flags)
+		// Build command arguments (all params passed via flags)
+		args := buildWriteArgs(cmdPath, input.Flags)
 
 		// Execute command
 		result, err := util.RunKubectlMTVCommand(ctx, args)
@@ -118,16 +115,13 @@ func HandleMTVWrite(registry *discovery.Registry) func(context.Context, *mcp.Cal
 }
 
 // buildWriteArgs builds the command-line arguments for kubectl-mtv write commands.
-// All parameters (namespace, etc.) are extracted from the flags map.
-func buildWriteArgs(cmdPath string, positionalArgs []string, flags map[string]any) []string {
+// All parameters (namespace, name, etc.) are extracted from the flags map.
+func buildWriteArgs(cmdPath string, flags map[string]any) []string {
 	var args []string
 
 	// Add command path parts
 	parts := strings.Split(cmdPath, "/")
 	args = append(args, parts...)
-
-	// Add positional arguments
-	args = append(args, positionalArgs...)
 
 	// Extract namespace from flags
 	var namespace string
@@ -141,10 +135,10 @@ func buildWriteArgs(cmdPath string, positionalArgs []string, flags map[string]an
 
 	// Add namespace flag
 	if namespace != "" {
-		args = append(args, "-n", namespace)
+		args = append(args, "--namespace", namespace)
 	}
 
-	// Note: Write commands typically don't support -o json output format
+	// Note: Write commands typically don't support --output json output format
 	// so we don't add it automatically like we do for read commands
 
 	// Skip set for already handled flags

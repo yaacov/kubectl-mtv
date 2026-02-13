@@ -298,7 +298,7 @@ Available in `networkNameTemplate` field:
 #### Use Custom VM List in Plan
 
 ```bash
-kubectl mtv create plan custom-vm-migration \
+kubectl mtv create plan --name custom-vm-migration \
   --source vsphere-prod \
   --vms @vm-customizations.yaml \
   --network-mapping prod-network-map \
@@ -311,12 +311,12 @@ kubectl mtv create plan custom-vm-migration \
 
 ```bash
 # Export all VMs from provider
-kubectl mtv get inventory vms vsphere-prod -o planvms > all-vms.yaml
+kubectl mtv get inventory vms --provider vsphere-prod --output planvms > all-vms.yaml
 
 # Export filtered VMs
-kubectl mtv get inventory vms vsphere-prod \
-  -q "where powerState = 'poweredOn' and memoryMB >= 4096" \
-  -o planvms > production-vms.yaml
+kubectl mtv get inventory vms --provider vsphere-prod \
+  --query "where powerState = 'poweredOn' and memoryMB >= 4096" \
+  --output planvms > production-vms.yaml
 ```
 
 #### Modify Exported VMs
@@ -552,7 +552,7 @@ kubectl-mtv supports Go template functions for advanced string manipulation:
 yamllint vm-customizations.yaml
 
 # Test with kubectl dry-run
-kubectl mtv create plan test-validation \
+kubectl mtv create plan --name test-validation \
   --source vsphere-prod \
   --vms @vm-customizations.yaml \
   --dry-run=client
@@ -562,10 +562,10 @@ kubectl mtv create plan test-validation \
 
 ```bash
 # Test template rendering (requires actual plan creation)
-kubectl mtv create plan template-test \
+kubectl mtv create plan --name template-test \
   --source vsphere-prod \
   --vms @template-test.yaml \
-  -n test-namespace
+  --namespace test-namespace
 
 # Check generated resource names
 kubectl get pvc -n test-namespace
@@ -602,7 +602,7 @@ kubectl describe vm template-test-vm -n test-namespace
 
 ```bash
 # Create plan with custom VM configurations
-kubectl mtv create plan customized-migration \
+kubectl mtv create plan --name customized-migration \
   --source vsphere-prod \
   --target openshift-prod \
   --network-mapping prod-network-map \
@@ -611,7 +611,7 @@ kubectl mtv create plan customized-migration \
   --vms @customized-vms.yaml
 
 # Combine with plan-level settings
-kubectl mtv create plan comprehensive-migration \
+kubectl mtv create plan --name comprehensive-migration \
   --source vsphere-prod \
   --target-namespace production \
   --migration-type warm \
@@ -625,7 +625,7 @@ Plan-level templates are overridden by VM-level templates:
 
 ```bash
 # Plan-level template
-kubectl mtv create plan plan-template \
+kubectl mtv create plan --name plan-template \
   --pvc-name-template "{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.VmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}" \
   --vms @vms-with-templates.yaml
 
@@ -672,7 +672,7 @@ kubectl get vm -n target-namespace -o name
 
 ```bash
 # Monitor plan creation with verbosity
-kubectl mtv create plan debug-planvms \
+kubectl mtv create plan --name debug-planvms \
   --vms @debug-vms.yaml \
   -v=2
 

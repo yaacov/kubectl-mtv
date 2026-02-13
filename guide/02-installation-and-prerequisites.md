@@ -285,16 +285,16 @@ Control command behavior and scope:
 kubectl mtv --kubeconfig=/path/to/kubeconfig get providers
 
 # Operate in a specific namespace
-kubectl mtv -n migration-ns get plans
+kubectl mtv --namespace migration-ns get plans
 
 # Enable debug logging
-kubectl mtv -v=2 get inventory vms vsphere-01
+kubectl mtv -v=2 get inventory vms --provider vsphere-01
 
 # List resources across all namespaces
 kubectl mtv get plans --all-namespaces
 
 # Output in JSON format with UTC timestamps
-kubectl mtv get plan migration-1 -o json --use-utc
+kubectl mtv get plan --name migration-1 --output json --use-utc
 ```
 
 ## Environment Variables

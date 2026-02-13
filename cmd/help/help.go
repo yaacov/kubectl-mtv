@@ -58,7 +58,7 @@ Help topics are also available for domain-specific languages:
   kubectl-mtv help --machine --short
 
   # Output schema in YAML format
-  kubectl-mtv help --machine -o yaml
+  kubectl-mtv help --machine --output yaml
 
   # Output only read-only commands
   kubectl-mtv help --machine --read-only

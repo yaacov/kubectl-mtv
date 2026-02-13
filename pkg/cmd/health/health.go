@@ -37,7 +37,7 @@ func RunHealthCheck(ctx context.Context, configFlags *genericclioptions.ConfigFl
 				"Operator",
 				"",
 				fmt.Sprintf("Could not auto-detect operator namespace (%s), using default 'openshift-mtv'", report.Operator.Error),
-				"Ensure you have permissions to read CRDs or specify namespace with -n",
+				"Ensure you have permissions to read CRDs or specify namespace with --namespace",
 			)
 		}
 	}
@@ -77,7 +77,7 @@ func RunHealthCheck(ctx context.Context, configFlags *genericclioptions.ConfigFl
 	// NOTE: hasVSphereProvider and hasRemoteOpenShiftProvider are derived from the
 	// providers in the checked namespace(s). Warnings about VDDK or live migration
 	// configuration will only appear if such providers exist in the scoped namespace(s).
-	// Use -A to check all namespaces if you want cluster-wide provider detection.
+	// Use --all-namespaces to check all namespaces if you want cluster-wide provider detection.
 	var hasVSphereProvider, hasRemoteOpenShiftProvider bool
 	providerNS := userNamespace
 	if providerNS == "" {

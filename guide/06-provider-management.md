@@ -36,17 +36,17 @@ kubectl-mtv supports the following provider types:
 kubectl mtv get providers
 
 # List providers in specific namespace
-kubectl mtv get providers -n forklift-namespace
+kubectl mtv get providers --namespace forklift-namespace
 
 # List providers across all namespaces
 kubectl mtv get providers --all-namespaces
 
 # List with detailed output
-kubectl mtv get providers -o yaml
-kubectl mtv get providers -o json
+kubectl mtv get providers --output yaml
+kubectl mtv get providers --output json
 
 # List specific provider
-kubectl mtv get provider my-vsphere-provider
+kubectl mtv get provider --name my-vsphere-provider
 ```
 
 ### Describe Providers
@@ -55,26 +55,26 @@ Get detailed information about a specific provider:
 
 ```bash
 # Describe a provider
-kubectl mtv describe provider my-vsphere-provider
+kubectl mtv describe provider --name my-vsphere-provider
 
 # Describe with additional inventory information
-kubectl mtv get inventory provider my-vsphere-provider
+kubectl mtv get inventory providers --provider my-vsphere-provider
 ```
 
 ### Delete Providers
 
 ```bash
 # Delete a specific provider
-kubectl mtv delete provider my-vsphere-provider
+kubectl mtv delete provider --name my-vsphere-provider
 
 # Delete multiple providers
-kubectl mtv delete provider provider1 provider2 provider3
+kubectl mtv delete providers --name provider1,provider2,provider3
 
 # Delete all providers in namespace (use with caution)
 kubectl mtv delete provider --all
 
-# Alternative plural form
-kubectl mtv delete providers my-vsphere-provider
+# Plural form for single or multiple
+kubectl mtv delete providers --name my-vsphere-provider
 ```
 
 ## How-To: Creating Providers
@@ -87,13 +87,13 @@ Create providers for VMware vCenter or ESXi environments.
 
 ```bash
 # Basic vSphere provider with vCenter
-kubectl mtv create provider vsphere-prod --type vsphere \
+kubectl mtv create provider --name vsphere-prod --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourSecurePassword
 
 # vSphere provider with ESXi endpoint
-kubectl mtv create provider esxi-host --type vsphere \
+kubectl mtv create provider --name esxi-host --type vsphere \
   --url https://esxi-host.example.com/sdk \
   --username root \
   --password YourSecurePassword \
@@ -104,14 +104,14 @@ kubectl mtv create provider esxi-host --type vsphere \
 
 ```bash
 # vSphere provider with VDDK image (recommended for performance)
-kubectl mtv create provider vsphere-prod --type vsphere \
+kubectl mtv create provider --name vsphere-prod --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourSecurePassword \
   --vddk-init-image quay.io/your-registry/vddk:8.0.1
 
 # With advanced VDDK optimization
-kubectl mtv create provider vsphere-prod --type vsphere \
+kubectl mtv create provider --name vsphere-prod --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourSecurePassword \
@@ -125,14 +125,14 @@ kubectl mtv create provider vsphere-prod --type vsphere \
 
 ```bash
 # With CA certificate from file
-kubectl mtv create provider vsphere-prod --type vsphere \
+kubectl mtv create provider --name vsphere-prod --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourSecurePassword \
   --cacert @/path/to/ca-certificate.pem
 
 # With inline CA certificate
-kubectl mtv create provider vsphere-prod --type vsphere \
+kubectl mtv create provider --name vsphere-prod --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourSecurePassword \
@@ -140,7 +140,7 @@ kubectl mtv create provider vsphere-prod --type vsphere \
 MIIGBzCCA++gAwIBAgIJAKt..."
 
 # Skip TLS verification (not recommended for production)
-kubectl mtv create provider vsphere-test --type vsphere \
+kubectl mtv create provider --name vsphere-test --type vsphere \
   --url https://vcenter.test.com/sdk \
   --username administrator@vsphere.local \
   --password YourSecurePassword \
@@ -151,7 +151,7 @@ kubectl mtv create provider vsphere-test --type vsphere \
 
 ```bash
 # Use existing secret for credentials
-kubectl mtv create provider vsphere-prod --type vsphere \
+kubectl mtv create provider --name vsphere-prod --type vsphere \
   --url https://vcenter.example.com/sdk \
   --secret existing-vcenter-secret \
   --vddk-init-image quay.io/your-registry/vddk:8.0.1
@@ -163,20 +163,20 @@ Create providers for oVirt and Red Hat Virtualization environments.
 
 ```bash
 # Basic oVirt provider
-kubectl mtv create provider ovirt-prod --type ovirt \
+kubectl mtv create provider --name ovirt-prod --type ovirt \
   --url https://ovirt-engine.example.com/ovirt-engine/api \
   --username admin@internal \
   --password YourSecurePassword
 
 # oVirt provider with CA certificate
-kubectl mtv create provider ovirt-prod --type ovirt \
+kubectl mtv create provider --name ovirt-prod --type ovirt \
   --url https://ovirt-engine.example.com/ovirt-engine/api \
   --username admin@internal \
   --password YourSecurePassword \
   --cacert @/path/to/ovirt-ca.pem
 
 # oVirt provider with existing secret
-kubectl mtv create provider ovirt-prod --type ovirt \
+kubectl mtv create provider --name ovirt-prod --type ovirt \
   --url https://ovirt-engine.example.com/ovirt-engine/api \
   --secret ovirt-credentials-secret
 ```
@@ -187,7 +187,7 @@ Create providers for OpenStack environments with required project and domain inf
 
 ```bash
 # Basic OpenStack provider
-kubectl mtv create provider openstack-prod --type openstack \
+kubectl mtv create provider --name openstack-prod --type openstack \
   --url https://openstack.example.com:5000/v3 \
   --username admin \
   --password YourSecurePassword \
@@ -195,7 +195,7 @@ kubectl mtv create provider openstack-prod --type openstack \
   --provider-project-name admin
 
 # OpenStack provider with region
-kubectl mtv create provider openstack-west --type openstack \
+kubectl mtv create provider --name openstack-west --type openstack \
   --url https://openstack-west.example.com:5000/v3 \
   --username myuser \
   --password YourSecurePassword \
@@ -204,7 +204,7 @@ kubectl mtv create provider openstack-west --type openstack \
   --provider-region-name us-west-1
 
 # OpenStack provider with CA certificate
-kubectl mtv create provider openstack-prod --type openstack \
+kubectl mtv create provider --name openstack-prod --type openstack \
   --url https://openstack.example.com:5000/v3 \
   --username admin \
   --password YourSecurePassword \
@@ -219,21 +219,21 @@ Create target providers for OpenShift or Kubernetes clusters.
 
 ```bash
 # Local OpenShift cluster (current context)
-kubectl mtv create provider local-openshift --type openshift
+kubectl mtv create provider --name local-openshift --type openshift
 
 # Remote OpenShift cluster with token
-kubectl mtv create provider remote-openshift --type openshift \
+kubectl mtv create provider --name remote-openshift --type openshift \
   --url https://api.remote-cluster.example.com:6443 \
   --token your-service-account-token
 
 # Remote OpenShift cluster with CA certificate
-kubectl mtv create provider remote-openshift --type openshift \
+kubectl mtv create provider --name remote-openshift --type openshift \
   --url https://api.remote-cluster.example.com:6443 \
   --token your-service-account-token \
   --cacert @/path/to/cluster-ca.pem
 
 # Skip TLS verification for testing
-kubectl mtv create provider test-openshift --type openshift \
+kubectl mtv create provider --name test-openshift --type openshift \
   --url https://api.test-cluster.example.com:6443 \
   --token your-service-account-token \
   --provider-insecure-skip-tls
@@ -245,13 +245,13 @@ Create providers for Amazon EC2 environments. The `--url` flag is optional; if o
 
 ```bash
 # Basic EC2 provider (URL auto-generated from region)
-kubectl mtv create provider ec2-prod --type ec2 \
+kubectl mtv create provider --name ec2-prod --type ec2 \
   --region us-east-1 \
   --access-key-id AKIAIOSFODNN7EXAMPLE \
   --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 # EC2 provider with target region/AZ for migrations
-kubectl mtv create provider ec2-prod --type ec2 \
+kubectl mtv create provider --name ec2-prod --type ec2 \
   --region us-east-1 \
   --target-region us-west-2 \
   --target-az us-west-2b \
@@ -273,11 +273,11 @@ Create providers for OVA/OVF file imports from NFS shares.
 
 ```bash
 # OVA provider from NFS share
-kubectl mtv create provider my-ova --type ova \
+kubectl mtv create provider --name my-ova --type ova \
   --url nfs.example.com:/path/to/ova-files
 
 # OVA provider with IP address
-kubectl mtv create provider datacenter-ova --type ova \
+kubectl mtv create provider --name datacenter-ova --type ova \
   --url 192.168.1.100:/exports/vm-images
 ```
 
@@ -288,14 +288,14 @@ Create providers for Microsoft Hyper-V environments. HyperV providers require an
 
 ```bash
 # Basic HyperV provider
-kubectl mtv create provider my-hyperv --type hyperv \
+kubectl mtv create provider --name my-hyperv --type hyperv \
   --url https://192.168.1.100 \
   --username Administrator \
   --password YourSecurePassword \
   --smb-url '//192.168.1.100/VMShare'
 
 # HyperV provider with separate SMB credentials
-kubectl mtv create provider my-hyperv --type hyperv \
+kubectl mtv create provider --name my-hyperv --type hyperv \
   --url https://192.168.1.100 \
   --username Administrator \
   --password YourSecurePassword \
@@ -304,7 +304,7 @@ kubectl mtv create provider my-hyperv --type hyperv \
   --smb-password SmbPassword123
 
 # HyperV provider with TLS verification disabled
-kubectl mtv create provider my-hyperv --type hyperv \
+kubectl mtv create provider --name my-hyperv --type hyperv \
   --url https://192.168.1.100 \
   --username Administrator \
   --password YourSecurePassword \
@@ -312,7 +312,7 @@ kubectl mtv create provider my-hyperv --type hyperv \
   --provider-insecure-skip-tls
 
 # HyperV provider with CA certificate
-kubectl mtv create provider my-hyperv --type hyperv \
+kubectl mtv create provider --name my-hyperv --type hyperv \
   --url https://192.168.1.100 \
   --username Administrator \
   --password YourSecurePassword \
@@ -320,7 +320,7 @@ kubectl mtv create provider my-hyperv --type hyperv \
   --cacert @/path/to/ca-certificate.pem
 
 # HyperV provider with inline CA certificate
-kubectl mtv create provider my-hyperv --type hyperv \
+kubectl mtv create provider --name my-hyperv --type hyperv \
   --url https://192.168.1.100 \
   --username Administrator \
   --password YourSecurePassword \
@@ -345,7 +345,7 @@ You can use the `MTV_VDDK_INIT_IMAGE` environment variable to set a default VDDK
 export MTV_VDDK_INIT_IMAGE=quay.io/your-registry/vddk:8.0.1
 
 # Create vSphere provider (will use the environment variable)
-kubectl mtv create provider vsphere-prod --type vsphere \
+kubectl mtv create provider --name vsphere-prod --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourSecurePassword
@@ -366,7 +366,7 @@ kubectl-mtv implements secret ownership protection to prevent accidental modific
 
 ```bash
 # When you create a provider with credentials, kubectl-mtv creates an owned secret
-kubectl mtv create provider vsphere-prod --type vsphere \
+kubectl mtv create provider --name vsphere-prod --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username admin \
   --password secret123
@@ -374,7 +374,7 @@ kubectl mtv create provider vsphere-prod --type vsphere \
 
 # When you create a provider with existing secret, it becomes shared
 kubectl create secret generic shared-creds --from-literal=user=admin --from-literal=password=secret123
-kubectl mtv create provider vsphere-prod --type vsphere \
+kubectl mtv create provider --name vsphere-prod --type vsphere \
   --url https://vcenter.example.com/sdk \
   --secret shared-creds
 # Uses: shared secret that cannot be patched through provider commands
@@ -386,16 +386,16 @@ kubectl mtv create provider vsphere-prod --type vsphere \
 
 ```bash
 # Update provider URL
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --url https://new-vcenter.example.com/sdk
 
 # Update URL and disable TLS verification
-kubectl mtv patch provider vsphere-test \
+kubectl mtv patch provider --name vsphere-test \
   --url https://test-vcenter.internal/sdk \
   --provider-insecure-skip-tls
 
 # Update token for OpenShift provider
-kubectl mtv patch provider remote-openshift \
+kubectl mtv patch provider --name remote-openshift \
   --token new-service-account-token
 ```
 
@@ -403,41 +403,41 @@ kubectl mtv patch provider remote-openshift \
 
 ```bash
 # Update username and password
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --username new-admin@vsphere.local \
   --password NewSecurePassword
 
 # Update only password
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --password UpdatedPassword
 
 # Update OpenStack domain and project
-kubectl mtv patch provider openstack-prod \
+kubectl mtv patch provider --name openstack-prod \
   --provider-domain-name NewDomain \
   --provider-project-name NewProject
 
 # Update EC2 region
-kubectl mtv patch provider ec2-prod \
+kubectl mtv patch provider --name ec2-prod \
   --region us-west-2
 
 # Update EC2 target region and AZ
-kubectl mtv patch provider ec2-prod \
+kubectl mtv patch provider --name ec2-prod \
   --target-region us-west-2 \
   --target-az us-west-2c
 
 # Update EC2 credentials and region
-kubectl mtv patch provider ec2-prod \
+kubectl mtv patch provider --name ec2-prod \
   --username NEW_ACCESS_KEY_ID \
   --password NEW_SECRET_ACCESS_KEY \
   --region eu-west-1
 
 # Update HyperV credentials
-kubectl mtv patch provider my-hyperv \
+kubectl mtv patch provider --name my-hyperv \
   --username NewAdmin \
   --password NewPassword
 
 # Update HyperV SMB share URL and credentials
-kubectl mtv patch provider my-hyperv \
+kubectl mtv patch provider --name my-hyperv \
   --smb-url '//new-server/share' \
   --smb-user new-smb-user \
   --smb-password NewSmbPassword
@@ -449,15 +449,15 @@ kubectl mtv patch provider my-hyperv \
 
 ```bash
 # Update CA certificate from file
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --cacert @/path/to/new-ca-certificate.pem
 
 # Remove CA certificate (empty string)
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --cacert ""
 
 # Add CA certificate where none existed
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --cacert @/path/to/ca-certificate.pem
 ```
 
@@ -465,20 +465,20 @@ kubectl mtv patch provider vsphere-prod \
 
 ```bash
 # Update VDDK init image
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --vddk-init-image quay.io/your-registry/vddk:8.0.2
 
 # Enable VDDK AIO optimization
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --use-vddk-aio-optimization
 
 # Update VDDK buffer settings
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --vddk-buf-size-in-64k 128 \
   --vddk-buf-count 16
 
 # Disable VDDK AIO optimization
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --use-vddk-aio-optimization=false
 ```
 
@@ -526,13 +526,13 @@ kubectl apply -f provider-backup.yaml
 
 ```bash
 # Verify provider status after patching
-kubectl mtv get provider vsphere-prod
+kubectl mtv get provider --name vsphere-prod
 
 # Check provider details
-kubectl mtv describe provider vsphere-prod
+kubectl mtv describe provider --name vsphere-prod
 
 # Test provider connectivity (through inventory)
-kubectl mtv get inventory provider vsphere-prod
+kubectl mtv get inventory providers --provider vsphere-prod
 ```
 
 ## Provider Configuration Examples
@@ -541,7 +541,7 @@ kubectl mtv get inventory provider vsphere-prod
 
 ```bash
 # 1. Create optimized vSphere provider
-kubectl mtv create provider vsphere-production --type vsphere \
+kubectl mtv create provider --name vsphere-production --type vsphere \
   --url https://vcenter.prod.company.com/sdk \
   --username svc-migration@vsphere.local \
   --password $(cat /secure/vsphere-password) \
@@ -552,18 +552,18 @@ kubectl mtv create provider vsphere-production --type vsphere \
   --vddk-buf-count 8
 
 # 2. Create target OpenShift provider
-kubectl mtv create provider openshift-target --type openshift
+kubectl mtv create provider --name openshift-target --type openshift
 
 # 3. Verify providers
 kubectl mtv get providers
-kubectl mtv describe provider vsphere-production
+kubectl mtv describe provider --name vsphere-production
 ```
 
 ### Multi-Region OpenStack Setup
 
 ```bash
 # West region provider
-kubectl mtv create provider openstack-west --type openstack \
+kubectl mtv create provider --name openstack-west --type openstack \
   --url https://west.openstack.company.com:5000/v3 \
   --username migration-user \
   --password SecurePassword123 \
@@ -572,7 +572,7 @@ kubectl mtv create provider openstack-west --type openstack \
   --provider-region-name us-west-2
 
 # East region provider  
-kubectl mtv create provider openstack-east --type openstack \
+kubectl mtv create provider --name openstack-east --type openstack \
   --url https://east.openstack.company.com:5000/v3 \
   --username migration-user \
   --password SecurePassword123 \
@@ -585,14 +585,14 @@ kubectl mtv create provider openstack-east --type openstack \
 
 ```bash
 # Test vSphere provider with TLS disabled
-kubectl mtv create provider vsphere-dev --type vsphere \
+kubectl mtv create provider --name vsphere-dev --type vsphere \
   --url https://vcenter-dev.internal/sdk \
   --username administrator@vsphere.local \
   --password DevPassword123 \
   --provider-insecure-skip-tls
 
 # Local test OpenShift
-kubectl mtv create provider openshift-dev --type openshift
+kubectl mtv create provider --name openshift-dev --type openshift
 ```
 
 ## Best Practices for Provider Management
@@ -605,18 +605,18 @@ kubectl mtv create provider openshift-dev --type openshift
    openssl rand -base64 32
    
    # Use service accounts with minimal required permissions
-   kubectl mtv create provider vsphere-prod --type vsphere \
+   kubectl mtv create provider --name vsphere-prod --type vsphere \
      --username svc-migration@vsphere.local
    ```
 
 2. **Certificate Validation**:
    ```bash
    # Always use CA certificates in production
-   kubectl mtv create provider vsphere-prod --type vsphere \
+   kubectl mtv create provider --name vsphere-prod --type vsphere \
      --cacert @/path/to/ca-cert.pem
    
    # Only skip TLS for development
-   kubectl mtv create provider vsphere-dev --type vsphere \
+   kubectl mtv create provider --name vsphere-dev --type vsphere \
      --provider-insecure-skip-tls
    ```
 
@@ -633,7 +633,7 @@ kubectl mtv create provider openshift-dev --type openshift
 1. **VDDK Configuration**:
    ```bash
    # Use VDDK for VMware (significant performance improvement)
-   kubectl mtv create provider vsphere-prod --type vsphere \
+   kubectl mtv create provider --name vsphere-prod --type vsphere \
      --vddk-init-image quay.io/your-registry/vddk:latest \
      --use-vddk-aio-optimization \
      --vddk-buf-size-in-64k 64 \
@@ -643,7 +643,7 @@ kubectl mtv create provider openshift-dev --type openshift
 2. **Endpoint Selection**:
    ```bash
    # Use ESXi direct connection for better performance
-   kubectl mtv create provider esxi-direct --type vsphere \
+   kubectl mtv create provider --name esxi-direct --type vsphere \
      --sdk-endpoint esxi \
      --url https://esxi-host.example.com/sdk
    ```
@@ -653,13 +653,13 @@ kubectl mtv create provider openshift-dev --type openshift
 1. **Consistent Naming**:
    ```bash
    # Environment-specific naming
-   kubectl mtv create provider vsphere-prod --type vsphere
-   kubectl mtv create provider vsphere-dev --type vsphere
-   kubectl mtv create provider vsphere-test --type vsphere
+   kubectl mtv create provider --name vsphere-prod --type vsphere
+   kubectl mtv create provider --name vsphere-dev --type vsphere
+   kubectl mtv create provider --name vsphere-test --type vsphere
    
    # Location-specific naming  
-   kubectl mtv create provider openstack-west --type openstack
-   kubectl mtv create provider openstack-east --type openstack
+   kubectl mtv create provider --name openstack-west --type openstack
+   kubectl mtv create provider --name openstack-east --type openstack
    ```
 
 2. **Namespace Organization**:
@@ -669,8 +669,8 @@ kubectl mtv create provider openshift-dev --type openshift
    kubectl create namespace migration-dev
    
    # Create providers in appropriate namespaces
-   kubectl mtv create provider vsphere-prod --type vsphere -n migration-prod
-   kubectl mtv create provider vsphere-dev --type vsphere -n migration-dev
+   kubectl mtv create provider --name vsphere-prod --type vsphere --namespace migration-prod
+   kubectl mtv create provider --name vsphere-dev --type vsphere --namespace migration-dev
    ```
 
 ## Troubleshooting Provider Issues
@@ -681,13 +681,13 @@ kubectl mtv create provider openshift-dev --type openshift
 
 ```bash
 # Test provider connectivity
-kubectl mtv get inventory provider vsphere-prod
+kubectl mtv get inventory providers --provider vsphere-prod
 
 # Check provider status
-kubectl mtv describe provider vsphere-prod
+kubectl mtv describe provider --name vsphere-prod
 
 # Enable debug logging
-kubectl mtv get inventory provider vsphere-prod -v=2
+kubectl mtv get inventory providers --provider vsphere-prod -v=2
 ```
 
 #### Authentication Problems
@@ -697,10 +697,10 @@ kubectl mtv get inventory provider vsphere-prod -v=2
 kubectl get secret -o yaml provider-secret-name
 
 # Check provider credentials
-kubectl mtv describe provider vsphere-prod | grep -i secret
+kubectl mtv describe provider --name vsphere-prod | grep -i secret
 
 # Test with updated credentials
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --username updated-user \
   --password updated-password
 ```
@@ -712,11 +712,11 @@ kubectl mtv patch provider vsphere-prod \
 openssl x509 -in ca-cert.pem -text -noout
 
 # Update certificate
-kubectl mtv patch provider vsphere-prod \
+kubectl mtv patch provider --name vsphere-prod \
   --cacert @/path/to/correct-ca.pem
 
 # Temporarily disable TLS for testing
-kubectl mtv patch provider vsphere-test \
+kubectl mtv patch provider --name vsphere-test \
   --provider-insecure-skip-tls
 ```
 
@@ -724,10 +724,10 @@ kubectl mtv patch provider vsphere-test \
 
 ```bash
 # Check all provider statuses
-kubectl mtv get providers -o yaml | grep -A5 -B5 "conditions:"
+kubectl mtv get providers --output yaml | grep -A5 -B5 "conditions:"
 
 # Monitor provider health
-kubectl mtv get inventory provider vsphere-prod --watch
+kubectl mtv get inventory providers --provider vsphere-prod --watch
 
 # Get detailed provider information
 kubectl get provider vsphere-prod -o yaml

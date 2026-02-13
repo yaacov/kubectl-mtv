@@ -10,63 +10,8 @@ import (
 )
 
 // SchemaVersion is the current version of the help schema format.
-// Version 1.1 adds providers and migration_types fields to flags and commands.
-const SchemaVersion = "1.1"
-
-// Regular expressions for parsing provider and migration type hints from descriptions.
-var (
-	// Matches [providers: vsphere, ovirt] or [providers: vsphere]
-	providerHintRegex = regexp.MustCompile(`\[providers:\s*([^\]]+)\]`)
-	// Matches [migration: warm, cold] or [migration: warm]
-	migrationHintRegex = regexp.MustCompile(`\[migration:\s*([^\]]+)\]`)
-)
-
-// parseProviderHints extracts provider names from a description string.
-// Returns the providers found and the description with the hint removed.
-func parseProviderHints(description string) ([]string, string) {
-	match := providerHintRegex.FindStringSubmatch(description)
-	if match == nil {
-		return nil, description
-	}
-
-	// Parse comma-separated provider list
-	providers := parseCommaSeparated(match[1])
-
-	// Remove the hint from the description
-	cleanDesc := strings.TrimSpace(providerHintRegex.ReplaceAllString(description, ""))
-
-	return providers, cleanDesc
-}
-
-// parseMigrationHints extracts migration types from a description string.
-// Returns the migration types found and the description with the hint removed.
-func parseMigrationHints(description string) ([]string, string) {
-	match := migrationHintRegex.FindStringSubmatch(description)
-	if match == nil {
-		return nil, description
-	}
-
-	// Parse comma-separated migration type list
-	types := parseCommaSeparated(match[1])
-
-	// Remove the hint from the description
-	cleanDesc := strings.TrimSpace(migrationHintRegex.ReplaceAllString(description, ""))
-
-	return types, cleanDesc
-}
-
-// parseCommaSeparated splits a comma-separated string into trimmed parts.
-func parseCommaSeparated(s string) []string {
-	parts := strings.Split(s, ",")
-	result := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			result = append(result, p)
-		}
-	}
-	return result
-}
+// Version 1.2 removes positional args, provider hints, migration hints, and LLM annotations.
+const SchemaVersion = "1.2"
 
 // EnumValuer is an interface for flags that provide valid values.
 // Custom flag types can implement this to expose their allowed values.
@@ -180,19 +125,14 @@ func walkCommands(cmd *cobra.Command, path []string, visitor func(*cobra.Command
 
 // commandToSchema converts a Cobra command to our schema format.
 func commandToSchema(cmd *cobra.Command, path []string, opts Options) Command {
-	// Parse provider hints from command short description
-	providers, cleanShort := parseProviderHints(cmd.Short)
-
 	c := Command{
-		Name:           cmd.Name(),
-		Path:           path,
-		PathString:     strings.Join(path, " "),
-		Description:    cleanShort,
-		Usage:          cmd.UseLine(),
-		Category:       getCategory(path),
-		Providers:      providers,
-		Flags:          []Flag{},
-		PositionalArgs: parsePositionalArgs(cmd.Use),
+		Name:        cmd.Name(),
+		Path:        path,
+		PathString:  strings.Join(path, " "),
+		Description: cmd.Short,
+		Usage:       cmd.UseLine(),
+		Category:    getCategory(path),
+		Flags:       []Flag{},
 	}
 
 	// Include verbose fields only when not in short mode
@@ -233,28 +173,12 @@ func commandToSchema(cmd *cobra.Command, path []string, opts Options) Command {
 
 // flagToSchema converts a pflag.Flag to our schema format.
 func flagToSchema(f *pflag.Flag) Flag {
-	// Parse provider and migration hints from flag description
-	description := f.Usage
-	providers, description := parseProviderHints(description)
-	migrationTypes, description := parseMigrationHints(description)
-
-	// Check for the "llm-relevant" pflag annotation
-	llmRelevant := false
-	if ann := f.Annotations; ann != nil {
-		if _, ok := ann["llm-relevant"]; ok {
-			llmRelevant = true
-		}
-	}
-
 	flag := Flag{
-		Name:           f.Name,
-		Shorthand:      f.Shorthand,
-		Type:           f.Value.Type(),
-		Description:    description,
-		Hidden:         f.Hidden,
-		LLMRelevant:    llmRelevant,
-		Providers:      providers,
-		MigrationTypes: migrationTypes,
+		Name:        f.Name,
+		Shorthand:   f.Shorthand,
+		Type:        f.Value.Type(),
+		Description: f.Usage,
+		Hidden:      f.Hidden,
 	}
 
 	// Set default value with proper typing based on flag type
@@ -334,51 +258,6 @@ func getCategory(path []string) string {
 	}
 }
 
-// parsePositionalArgs extracts positional arguments from the usage string.
-// Example: "plan [NAME]" -> [{Name: "NAME", Required: false}]
-// Example: "provider NAME" -> [{Name: "NAME", Required: true}]
-func parsePositionalArgs(usage string) []PositionalArg {
-	var args []PositionalArg
-
-	// Remove the command name (first word)
-	parts := strings.Fields(usage)
-	if len(parts) <= 1 {
-		return args
-	}
-
-	for _, part := range parts[1:] {
-		// Skip [flags] marker
-		if part == "[flags]" {
-			continue
-		}
-
-		// Check for variadic args (NAME...)
-		variadic := strings.HasSuffix(part, "...")
-		if variadic {
-			part = strings.TrimSuffix(part, "...")
-		}
-
-		// Check for optional args [NAME]
-		optional := strings.HasPrefix(part, "[") && strings.HasSuffix(part, "]")
-		if optional {
-			part = strings.TrimPrefix(strings.TrimSuffix(part, "]"), "[")
-		}
-
-		// Skip if not an argument pattern (UPPERCASE or contains uppercase)
-		if part != strings.ToUpper(part) {
-			continue
-		}
-
-		args = append(args, PositionalArg{
-			Name:     part,
-			Required: !optional,
-			Variadic: variadic,
-		})
-	}
-
-	return args
-}
-
 // parseExamples parses Cobra-style examples into our format.
 // Cobra examples are typically formatted as:
 //
@@ -389,11 +268,11 @@ func parsePositionalArgs(usage string) []PositionalArg {
 // command string so that downstream consumers (e.g. MCP example conversion)
 // see the full command with all flags:
 //
-//	kubectl-mtv create provider vsphere-prod \
+//	kubectl-mtv create provider --name vsphere-prod \
 //	  --type vsphere \
 //	  --url https://vcenter/sdk
 //
-// becomes: "kubectl-mtv create provider vsphere-prod --type vsphere --url https://vcenter/sdk"
+// becomes: "kubectl-mtv create provider --name vsphere-prod --type vsphere --url https://vcenter/sdk"
 func parseExamples(exampleText string) []Example {
 	if exampleText == "" {
 		return nil

@@ -115,13 +115,13 @@ spec:
 
 ```bash
 # Basic conversion migration plan
-kubectl mtv create plan conversion-migration \
+kubectl mtv create plan --name conversion-migration \
   --source vsphere-prod \
   --migration-type conversion \
   --vms "vm-with-vendor-storage"
 
 # Conversion migration with simplified storage mapping
-kubectl mtv create plan vendor-conversion \
+kubectl mtv create plan --name vendor-conversion \
   --source vsphere-prod \
   --migration-type conversion \
   --vms "where name ~= 'vendor-ready-.*'" \
@@ -144,7 +144,7 @@ map:
 **Alternative Approach:**
 ```bash
 # Create plan without explicit storage mapping
-kubectl mtv create plan conversion-simple \
+kubectl mtv create plan --name conversion-simple \
   --source vsphere-prod \
   --migration-type conversion \
   --network-mapping network-only-mapping \
@@ -178,16 +178,16 @@ kubectl mtv create plan conversion-simple \
    kubectl get pvc -l vmID=vm-178 -o yaml
    
    # Check VM accessibility in source provider
-   kubectl mtv get inventory vms vsphere-prod -q "where id = 'vm-178'"
+   kubectl mtv get inventory vm --provider vsphere-prod --query "where id = 'vm-178'"
    ```
 
 2. **Migration Plan Execution**
    ```bash
    # Start conversion migration
-   kubectl mtv start plan conversion-migration
+   kubectl mtv start plan --name conversion-migration
    
    # Monitor conversion progress
-   kubectl mtv get plan conversion-migration --watch
+   kubectl mtv get plan --name conversion-migration --watch
    ```
 
 3. **Post-Migration Validation**
@@ -196,7 +196,7 @@ kubectl mtv create plan conversion-simple \
    kubectl get vm -n target-namespace
    
    # Check VM functionality
-   kubectl mtv describe plan conversion-migration
+   kubectl mtv describe plan --name conversion-migration
    ```
 
 ## Use Cases and Scenarios
@@ -275,7 +275,7 @@ kubectl mtv create plan conversion-simple \
 kubectl get pvc -o yaml | grep -A10 -B10 "vmID\|vmUUID"
 
 # Verify label values match source VM
-kubectl mtv get inventory vms vsphere-prod -q "where id = 'vm-178'" -o yaml
+kubectl mtv get inventory vms --provider vsphere-prod --query "where id = 'vm-178'" --output yaml
 ```
 
 **Annotation Issues:**
@@ -318,13 +318,13 @@ kubectl get pvc -o yaml | grep -A5 -B5 "forklift.konveyor.io/disk-source"
 **Forklift Monitoring:**
 ```bash
 # Monitor conversion plan progress
-kubectl mtv get plan conversion-migration --watch
+kubectl mtv get plan --name conversion-migration --watch
 
 # Check conversion pod logs
 kubectl logs -l migration=conversion-migration -f
 
 # Review plan events and conditions
-kubectl describe plan conversion-migration
+kubectl mtv describe plan --name conversion-migration
 ```
 
 ## Integration Examples
@@ -339,7 +339,7 @@ kubectl get pvc -l vmID=vm-178
 kubectl get pvc conversion-vm-disk-0 -o yaml
 
 # Step 3: Create conversion migration plan
-kubectl mtv create plan vendor-conversion-example \
+kubectl mtv create plan --name vendor-conversion-example \
   --source vsphere-production \
   --migration-type conversion \
   --target-namespace production-workloads \
@@ -347,10 +347,10 @@ kubectl mtv create plan vendor-conversion-example \
   --vms "vendor-migrated-vm-01,vendor-migrated-vm-02"
 
 # Step 4: Execute migration
-kubectl mtv start plan vendor-conversion-example
+kubectl mtv start plan --name vendor-conversion-example
 
 # Step 5: Monitor and validate
-kubectl mtv get plan vendor-conversion-example --watch
+kubectl mtv get plan --name vendor-conversion-example --watch
 ```
 
 ### Advanced Configuration Example

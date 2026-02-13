@@ -17,7 +17,7 @@ import (
 type KubectlLogsInput struct {
 	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters as key-value pairs (e.g. name: \"deployments/forklift-controller\", namespace: \"openshift-mtv\", filter_plan: \"my-plan\")"`
 
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"Preview without executing"`
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, returns the command that would be executed without running it"`
 }
 
 // KubectlInput represents the input for the kubectl tool (get, describe, events).
@@ -27,7 +27,7 @@ type KubectlInput struct {
 
 	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters as key-value pairs (e.g. resource_type: \"pods\", namespace: \"openshift-mtv\", labels: \"plan=my-plan\")"`
 
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"Preview without executing"`
+	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, returns the command that would be executed without running it"`
 }
 
 // kubectlDebugParams holds the resolved parameters for kubectl debug operations.
@@ -128,10 +128,8 @@ func flagInt(flags map[string]any, key string) int {
 func GetMinimalKubectlLogsTool() *mcp.Tool {
 	return &mcp.Tool{
 		Name: "kubectl_logs",
-		Description: `Get forklift-controller logs with filtering.
-
-Retrieves logs from Kubernetes pods/deployments with built-in support for
-forklift-controller JSON log parsing, filtering, and formatting.
+		Description: `Get logs from any Kubernetes pod or deployment, with extra structured JSON filters for forklift-controller logs.
+Use this for debugging migration execution: filter by plan, VM, or error level.
 
 All parameters go in flags.
 Required: name (resource-type/name format, e.g. "deployments/forklift-controller" or "pod/my-pod")
@@ -145,7 +143,8 @@ JSON filters (forklift-controller only): filter_plan, filter_provider, filter_vm
 
 Examples:
   {flags: {name: "deployments/forklift-controller", namespace: "openshift-mtv"}}
-  {flags: {name: "deployments/forklift-controller", namespace: "openshift-mtv", filter_plan: "my-plan", filter_level: "error"}}`,
+  {flags: {name: "deployments/forklift-controller", namespace: "openshift-mtv", filter_plan: "my-plan", filter_level: "error"}}
+  {flags: {name: "pod/virt-v2v-cold-xyz", namespace: "target-ns", tail_lines: 100}}`,
 		OutputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -164,9 +163,9 @@ Examples:
 func GetMinimalKubectlTool() *mcp.Tool {
 	return &mcp.Tool{
 		Name: "kubectl",
-		Description: `Inspect any Kubernetes resource type (e.g. pods, PVCs, datavolumes, virtualmachines, services, deployments).
-For MTV-specific resources (plans, providers, mappings, inventory), use mtv_read instead.
-For MTV-specific write operations (create, delete, patch, start), use mtv_write instead.
+		Description: `Inspect standard Kubernetes resources (pods, PVCs, services, deployments, events).
+Use ONLY for standard K8s objects. All MTV/Forklift custom resources (plans, providers, mappings, hooks, hosts) go through mtv_read and mtv_write.
+For MTV source-provider inventory (VMs, datastores, networks from vSphere/oVirt/OpenStack), use mtv_read "get inventory" commands.
 
 Actions: get, describe, events.
 All parameters (except action) go in flags.

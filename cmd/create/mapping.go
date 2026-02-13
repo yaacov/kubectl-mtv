@@ -30,11 +30,11 @@ create specific mapping types.`,
 
 // newNetworkMappingCmd creates the network mapping subcommand
 func newNetworkMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
-	var sourceProvider, targetProvider string
+	var name, sourceProvider, targetProvider string
 	var networkPairs string
 
 	cmd := &cobra.Command{
-		Use:   "network NAME",
+		Use:   "network",
 		Short: "Create a new network mapping",
 		Long: `Create a new network mapping between source and target providers.
 
@@ -47,22 +47,19 @@ Pair formats:
   - source:default - Map to pod networking
   - source:ignored - Skip this network`,
 		Example: `  # Create a network mapping to pod networking
-  kubectl-mtv create mapping network my-net-map \
+  kubectl-mtv create mapping network --name my-net-map \
     --source vsphere-prod \
     --target host \
     --network-pairs "VM Network:default"
 
   # Create a network mapping to a specific NAD
-  kubectl-mtv create mapping network my-net-map \
+  kubectl-mtv create mapping network --name my-net-map \
     --source vsphere-prod \
     --target host \
     --network-pairs "VM Network:openshift-cnv/br-external,Management:default"`,
-		Args:         cobra.ExactArgs(1),
+		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get name from positional argument
-			name := args[0]
-
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -74,16 +71,21 @@ Pair formats:
 		},
 	}
 
+	cmd.Flags().StringVarP(&name, "name", "M", "", "Network mapping name")
 	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
 	cmd.Flags().StringVarP(&targetProvider, "target", "T", "", "Target provider name")
 	cmd.Flags().StringVar(&networkPairs, "network-pairs", "", "Network mapping pairs in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated)")
+
+	if err := cmd.MarkFlagRequired("name"); err != nil {
+		panic(err)
+	}
 
 	return cmd
 }
 
 // newStorageMappingCmd creates the storage mapping subcommand
 func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
-	var sourceProvider, targetProvider string
+	var name, sourceProvider, targetProvider string
 	var storagePairs string
 	var defaultVolumeMode string
 	var defaultAccessMode string
@@ -98,7 +100,7 @@ func newStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, global
 	var offloadInsecureSkipTLS bool
 
 	cmd := &cobra.Command{
-		Use:   "storage NAME",
+		Use:   "storage",
 		Short: "Create a new storage mapping",
 		Long: `Create a new storage mapping between source and target providers.
 
@@ -106,29 +108,26 @@ Storage mappings translate source datastores/storage domains to target Kubernete
 storage classes. Advanced options include volume mode, access mode, and offload
 plugin configuration for optimized data transfer.`,
 		Example: `  # Create a simple storage mapping
-  kubectl-mtv create mapping storage my-storage-map \
+  kubectl-mtv create mapping storage --name my-storage-map \
     --source vsphere-prod \
     --target host \
     --storage-pairs "datastore1:standard,datastore2:fast"
 
   # Create a storage mapping with volume mode
-  kubectl-mtv create mapping storage my-storage-map \
+  kubectl-mtv create mapping storage --name my-storage-map \
     --source vsphere-prod \
     --target host \
     --storage-pairs "datastore1:ocs-storagecluster-ceph-rbd" \
     --default-volume-mode Block
 
   # Create a storage mapping with offload plugin
-  kubectl-mtv create mapping storage my-storage-map \
+  kubectl-mtv create mapping storage --name my-storage-map \
     --source vsphere-prod \
     --target host \
     --storage-pairs "datastore1:ocs-storagecluster-ceph-rbd;offloadPlugin=vsphere;offloadVendor=ontap"`,
-		Args:         cobra.ExactArgs(1),
+		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Get name from positional argument
-			name := args[0]
-
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -163,6 +162,7 @@ plugin configuration for optimized data transfer.`,
 		},
 	}
 
+	cmd.Flags().StringVarP(&name, "name", "M", "", "Storage mapping name")
 	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
 	cmd.Flags().StringVarP(&targetProvider, "target", "T", "", "Target provider name")
 	cmd.Flags().StringVar(&storagePairs, "storage-pairs", "", "Storage mapping pairs in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)")
@@ -207,6 +207,10 @@ plugin configuration for optimized data transfer.`,
 	if err := cmd.RegisterFlagCompletionFunc("default-offload-vendor", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"flashsystem", "vantara", "ontap", "primera3par", "pureFlashArray", "powerflex", "powermax", "powerstore", "infinibox"}, cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
+		panic(err)
+	}
+
+	if err := cmd.MarkFlagRequired("name"); err != nil {
 		panic(err)
 	}
 

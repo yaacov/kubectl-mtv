@@ -18,8 +18,9 @@ func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
 
+	var hookName string
 	cmd := &cobra.Command{
-		Use:   "hook [NAME]",
+		Use:   "hook",
 		Short: "Get hooks",
 		Long: `Get MTV hook resources from the cluster.
 
@@ -27,16 +28,15 @@ Hooks are custom scripts or Ansible playbooks that run at specific points during
 VM migration (pre-migration or post-migration). They can be used to customize
 the migration process, such as installing drivers or configuring the target VM.`,
 		Example: `  # List all hooks
-  kubectl-mtv get hook
+  kubectl-mtv get hooks
 
   # Get a specific hook in JSON format
-  kubectl-mtv get hook my-post-hook -o json
+  kubectl-mtv get hook --name my-post-hook --output json
 
   # Watch hook status changes
-  kubectl-mtv get hook -w`,
-		Args:              cobra.MaximumNArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.HookResourceNameCompletion(kubeConfigFlags),
+  kubectl-mtv get hooks --watch`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -50,12 +50,6 @@ the migration process, such as installing drivers or configuring the target VM.`
 			allNamespaces := globalConfig.GetAllNamespaces()
 			namespace := client.ResolveNamespaceWithAllFlag(kubeConfigFlags, allNamespaces)
 
-			// Get optional hook name from arguments
-			var hookName string
-			if len(args) > 0 {
-				hookName = args[0]
-			}
-
 			// Log the operation being performed
 			if hookName != "" {
 				logNamespaceOperation("Getting hook", namespace, allNamespaces)
@@ -68,9 +62,14 @@ the migration process, such as installing drivers or configuring the target VM.`
 		},
 	}
 
+	cmd.Flags().StringVarP(&hookName, "name", "M", "", "Hook name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
+	// Add completion for name and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("name", completion.HookResourceNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	// Add completion for output format flag
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp

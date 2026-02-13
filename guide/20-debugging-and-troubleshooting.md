@@ -53,16 +53,16 @@ Start with basic levels and increase detail as needed:
 
 ```bash
 # Initial investigation
-kubectl mtv get plan problematic-migration -v=1
+kubectl mtv get plan --name problematic-migration -v=1
 
 # Deeper analysis
-kubectl mtv create plan debug-migration \
+kubectl mtv create plan --name debug-migration \
   --source problematic-provider \
   --vms test-vm \
   -v=2
 
 # Maximum detail for complex issues
-kubectl mtv start plan complex-migration -v=3
+kubectl mtv start plan --name complex-migration -v=3
 ```
 
 #### Targeted Debugging
@@ -71,23 +71,23 @@ Focus debugging on specific operations:
 
 ```bash
 # Debug provider connectivity
-kubectl mtv get inventory vm problematic-provider -v=2
+kubectl mtv get inventory vms --provider problematic-provider -v=2
 
 # Debug mapping resolution
-kubectl mtv create plan mapping-test \
+kubectl mtv create plan --name mapping-test \
   --network-mapping test-map \
   --storage-mapping test-storage \
   -v=2
 
 # Debug plan execution
-kubectl mtv start plan execution-debug -v=3
+kubectl mtv start plan --name execution-debug -v=3
 ```
 
 #### Debug Output Analysis
 
 ```bash
 # Redirect debug output for analysis
-kubectl mtv create plan analysis-target \
+kubectl mtv create plan --name analysis-target \
   --source provider-test \
   --vms debug-vm \
   -v=2 2>&1 | tee debug-output.log
@@ -96,7 +96,7 @@ kubectl mtv create plan analysis-target \
 kubectl mtv get providers -v=2 2>&1 | grep -i "error\|warn\|fail"
 
 # Monitor real-time debug output
-kubectl mtv get plan active-migration -w -v=2
+kubectl mtv get plan --name active-migration --watch -v=2
 ```
 
 ### Environment Variable Debugging
@@ -240,8 +240,8 @@ kubectl config view --minify -o jsonpath='{..namespace}'
 kubectl get namespaces
 
 # Test namespace-specific operations
-kubectl mtv get providers -n openshift-mtv
-kubectl mtv get providers -A  # All namespaces
+kubectl mtv get providers --namespace openshift-mtv
+kubectl mtv get providers --all-namespaces
 
 # Debug namespace resolution
 kubectl mtv get providers -v=2  # Check namespace selection logic
@@ -292,7 +292,7 @@ kubectl describe pvc convertor-pvc-name
 kubectl describe pod convertor-pod | grep -A20 "Node-Selectors\|Affinity"
 
 # Check KARL rule validation (see Chapter 28 for KARL syntax reference)
-kubectl mtv create plan test-affinity \
+kubectl mtv create plan --name test-affinity \
   --convertor-affinity "REQUIRE nodes(invalid-selector=true) on node" \
   -v=2
 
@@ -326,13 +326,13 @@ kubectl get pods --sort-by='.spec.containers[0].resources.requests.memory'
 
 ```bash
 # List available source networks
-kubectl mtv get inventory networks source-provider
+kubectl mtv get inventory networks --provider source-provider
 
 # Verify network mapping configuration
-kubectl mtv describe mapping network network-map-name
+kubectl mtv describe mapping network --name network-map-name
 
 # Test network mapping resolution
-kubectl mtv create plan network-test \
+kubectl mtv create plan --name network-test \
   --source source-provider \
   --network-mapping problematic-network-map \
   --vms test-vm \
@@ -347,17 +347,17 @@ kubectl get networks.k8s.cni.cncf.io --all-namespaces
 
 ```bash
 # List available source storage
-kubectl mtv get inventory storage source-provider
+kubectl mtv get inventory storages --provider source-provider
 
 # Verify storage mapping configuration
-kubectl mtv describe mapping storage storage-map-name
+kubectl mtv describe mapping storage --name storage-map-name
 
 # Check storage class availability
 kubectl get storageclass
 kubectl describe storageclass target-storage-class
 
 # Test storage mapping resolution
-kubectl mtv create plan storage-test \
+kubectl mtv create plan --name storage-test \
   --source source-provider \
   --storage-mapping problematic-storage-map \
   --vms test-vm \
@@ -368,10 +368,10 @@ kubectl mtv create plan storage-test \
 
 ```bash
 # Debug provider connectivity
-kubectl mtv describe provider source-provider
+kubectl mtv describe provider --name source-provider
 
 # Test inventory access
-kubectl mtv get inventory vm source-provider -v=2
+kubectl mtv get inventory vms --provider source-provider -v=2
 
 # Check provider authentication
 kubectl get secrets | grep provider
@@ -382,7 +382,7 @@ kubectl run debug-pod --rm -it --image=curlimages/curl -- \
   curl -k https://provider-url/sdk
 
 # Test inventory service availability
-kubectl mtv get inventory hosts source-provider
+kubectl mtv get inventory hosts --provider source-provider
 ```
 
 ### Provider-Specific Issues
@@ -391,13 +391,13 @@ kubectl mtv get inventory hosts source-provider
 
 ```bash
 # Test vSphere connectivity
-kubectl mtv describe provider vsphere-provider
+kubectl mtv describe provider --name vsphere-provider
 
 # Debug VDDK configuration
 kubectl mtv create vddk-image --tar /path/to/vddk.tar.gz --tag test:latest -v=2
 
 # Check ESXi host connectivity
-kubectl mtv describe host esxi-host-01
+kubectl mtv describe host --name esxi-host-01
 
 # Validate migration host configuration
 kubectl get migrationhosts --all-namespaces
@@ -412,7 +412,7 @@ kubectl run vsphere-debug --rm -it --image=vmware/govc -- \
 
 ```bash
 # Debug OpenStack authentication
-kubectl mtv describe provider openstack-provider
+kubectl mtv describe provider --name openstack-provider
 
 # Test OpenStack API connectivity
 kubectl run openstack-debug --rm -it --image=openstacktools/python-openstackclient -- \
@@ -426,7 +426,7 @@ kubectl get secrets openstack-provider-secret -o yaml | base64 -d
 
 ```bash
 # Test oVirt Engine connectivity
-kubectl mtv describe provider ovirt-provider
+kubectl mtv describe provider --name ovirt-provider
 
 # Debug oVirt API access
 kubectl run ovirt-debug --rm -it --image=ovirt/python-sdk -- \
@@ -444,30 +444,30 @@ kubectl get secret ovirt-provider-secret -o yaml | grep ca.crt | base64 -d
 
 ```bash
 # Detailed plan analysis
-kubectl mtv describe plan problem-plan --with-vms
+kubectl mtv describe plan --name problem-plan --with-vms
 
 # Provider status investigation
-kubectl mtv describe provider failing-provider
+kubectl mtv describe provider --name failing-provider
 
 # VM-specific migration status
-kubectl mtv describe plan migration-plan --vm stuck-vm
+kubectl mtv describe plan --name migration-plan --vm stuck-vm
 
 # Mapping configuration verification
-kubectl mtv describe mapping network network-mapping
-kubectl mtv describe mapping storage storage-mapping
+kubectl mtv describe mapping network --name network-mapping
+kubectl mtv describe mapping storage --name storage-mapping
 ```
 
 #### Resource Status Monitoring
 
 ```bash
 # Monitor plan execution progress
-kubectl mtv get plan active-migration -w
+kubectl mtv get plan --name active-migration --watch
 
 # Check VM migration status
-kubectl mtv get plan active-migration --vms
+kubectl mtv get plan --name active-migration --vms
 
 # Monitor provider health
-kubectl mtv get providers -o yaml | grep -A5 -B5 status
+kubectl mtv get providers --output yaml | grep -A5 -B5 status
 
 # Resource dependency tracking
 kubectl get providers,plans,mappings,hosts --all-namespaces
@@ -563,12 +563,12 @@ echo
 
 # 1. Check plan status
 echo "1. Plan Status:"
-kubectl mtv get plan "$PLAN_NAME" -n "$NAMESPACE"
+kubectl mtv get plan --name "$PLAN_NAME" --namespace "$NAMESPACE"
 echo
 
 # 2. Describe plan for detailed information
 echo "2. Plan Details:"
-kubectl mtv describe plan "$PLAN_NAME" -n "$NAMESPACE" | head -50
+kubectl mtv describe plan --name "$PLAN_NAME" --namespace "$NAMESPACE" | head -50
 echo
 
 # 3. Check provider status
@@ -578,12 +578,12 @@ IFS=',' read -r SOURCE_PROVIDER DEST_PROVIDER <<< "$PROVIDERS"
 
 if [ -n "$SOURCE_PROVIDER" ]; then
   echo "Source Provider: $SOURCE_PROVIDER"
-  kubectl mtv get provider "$SOURCE_PROVIDER" -n "$NAMESPACE"
+  kubectl mtv get provider --name "$SOURCE_PROVIDER" --namespace "$NAMESPACE"
 fi
 
 if [ -n "$DEST_PROVIDER" ]; then
   echo "Destination Provider: $DEST_PROVIDER"
-  kubectl mtv get provider "$DEST_PROVIDER" -n "$NAMESPACE"
+  kubectl mtv get provider --name "$DEST_PROVIDER" --namespace "$NAMESPACE"
 fi
 echo
 
@@ -666,23 +666,23 @@ kubectl describe nodes | grep -A5 -B5 "Pressure\|OutOf"
 
 ```bash
 # Create minimal test plan
-kubectl mtv create plan debug-minimal \
+kubectl mtv create plan --name debug-minimal \
   --source test-provider \
   --vms simple-vm \
   -v=3 \
   --dry-run  # If supported
 
 # Validate individual components
-kubectl mtv get inventory vm test-provider simple-vm -v=2
-kubectl mtv describe provider test-provider
-kubectl mtv get mappings --all-namespaces
+kubectl mtv get inventory vms --provider test-provider --query "where name = 'simple-vm'" -v=2
+kubectl mtv describe provider --name test-provider
+kubectl mtv get mappings network --all-namespaces
 ```
 
 ### Debug Migration Execution
 
 ```bash
 # Monitor migration start
-kubectl mtv start plan debug-migration -v=2
+kubectl mtv start plan --name debug-migration -v=2
 
 # Watch resource creation
 kubectl get pods,jobs,pvcs -l forklift.app/plan=debug-migration -w
@@ -753,7 +753,7 @@ kubectl describe pod failing-pod | grep -A5 "Failed to pull image"
 ```bash
 # Diagnosis:
 kubectl get storageclass
-kubectl mtv describe mapping storage mapping-name
+kubectl mtv describe mapping storage --name mapping-name
 
 # Solution:
 # 1. Create missing storage class

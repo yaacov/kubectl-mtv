@@ -42,7 +42,7 @@ If you prefer to use an existing namespace:
 kubectl get namespaces
 
 # Use an existing namespace for all kubectl-mtv commands
-kubectl mtv get providers -n your-existing-namespace
+kubectl mtv get providers --namespace your-existing-namespace
 
 # Or set it as your default context
 kubectl config set-context --current --namespace=your-existing-namespace
@@ -71,10 +71,10 @@ First, create the target provider representing your Kubernetes cluster:
 
 ```bash
 # Create OpenShift/Kubernetes target provider
-kubectl mtv create provider k8s-target --type openshift
+kubectl mtv create provider --name k8s-target --type openshift
 
 # Verify the target provider was created
-kubectl mtv get provider k8s-target
+kubectl mtv get provider --name k8s-target
 ```
 
 ### Create Source Provider
@@ -85,20 +85,20 @@ Choose the appropriate command for your source platform:
 
 ```bash
 # Basic vSphere provider
-kubectl mtv create provider vsphere-source --type vsphere \
+kubectl mtv create provider --name vsphere-source --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourPassword
 
 # vSphere provider with VDDK optimization (recommended)
-kubectl mtv create provider vsphere-source --type vsphere \
+kubectl mtv create provider --name vsphere-source --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourPassword \
   --vddk-init-image quay.io/your-registry/vddk:8.0.1
 
 # vSphere provider with TLS verification disabled (for testing)
-kubectl mtv create provider vsphere-source --type vsphere \
+kubectl mtv create provider --name vsphere-source --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourPassword \
@@ -109,7 +109,7 @@ kubectl mtv create provider vsphere-source --type vsphere \
 
 ```bash
 # oVirt/RHV provider
-kubectl mtv create provider ovirt-source --type ovirt \
+kubectl mtv create provider --name ovirt-source --type ovirt \
   --url https://ovirt-engine.example.com/ovirt-engine/api \
   --username admin@internal \
   --password YourPassword
@@ -119,7 +119,7 @@ kubectl mtv create provider ovirt-source --type ovirt \
 
 ```bash
 # OpenStack provider
-kubectl mtv create provider openstack-source --type openstack \
+kubectl mtv create provider --name openstack-source --type openstack \
   --url https://openstack.example.com:5000/v3 \
   --username admin \
   --password YourPassword \
@@ -131,7 +131,7 @@ kubectl mtv create provider openstack-source --type openstack \
 
 ```bash
 # Another KubeVirt cluster as source
-kubectl mtv create provider kubevirt-source --type openshift \
+kubectl mtv create provider --name kubevirt-source --type openshift \
   --url https://api.source-cluster.example.com:6443 \
   --token your-service-account-token
 ```
@@ -143,77 +143,20 @@ kubectl mtv create provider kubevirt-source --type openshift \
 kubectl mtv get providers
 
 # Get detailed provider information
-kubectl mtv get providers -o yaml
+kubectl mtv get providers --output yaml
 
 # Check provider status
-kubectl mtv describe provider vsphere-source
-kubectl mtv describe provider k8s-target
+kubectl mtv describe provider --name vsphere-source
+kubectl mtv describe provider --name k8s-target
 ```
 
 Wait for providers to show "Ready" status before proceeding.
 
-## Step 3: Creating Mappings (Optional Step)
-
-Mappings define how source networks and storage should be mapped to target resources. While optional (kubectl-mtv can use automatic defaults), explicit mappings provide better control.
-
-### Option A: Use Automatic Default Mappings (Simplest)
-
-Skip this step to let kubectl-mtv automatically select appropriate target networks and storage:
-
-```bash
-# kubectl-mtv will automatically:
-# - Map to default network (pod network)
-# - Use default storage class
-# - This works well for simple scenarios
-```
-
-### Option B: Create Explicit Mappings
-
-For production scenarios, create explicit network and storage mappings:
-
-#### Create Network Mapping
-
-```bash
-# Create network mapping
-kubectl mtv create mapping network prod-network \
-  --source vsphere-source \
-  --target k8s-target \
-  --network-pairs "VM Network:default,Management Network:multus-network/mgmt-net"
-
-# Verify network mapping
-kubectl mtv get mapping network prod-network
-```
-
-#### Create Storage Mapping
-
-```bash
-# Basic storage mapping
-kubectl mtv create mapping storage prod-storage \
-  --source vsphere-source \
-  --target k8s-target \
-  --storage-pairs "datastore1:fast-ssd,datastore2:standard"
-
-# Advanced storage mapping with volume options
-kubectl mtv create mapping storage prod-storage-advanced \
-  --source vsphere-source \
-  --target k8s-target \
-  --storage-pairs "datastore1:fast-ssd;volumeMode=Block;accessMode=ReadWriteOnce,datastore2:standard;volumeMode=Filesystem"
-```
-
-#### Verify Mappings
-
-```bash
-# List all mappings
-kubectl mtv get mappings
-
-# Describe specific mappings
-kubectl mtv describe mapping network prod-network
-kubectl mtv describe mapping storage prod-storage
-```
-
-## Step 4: Creating the Migration Plan
+## Step 3: Creating the Migration Plan
 
 The migration plan defines which VMs to migrate and how to migrate them.
+Network and storage mappings are created automatically with sensible defaults.
+Use `--network-pairs` / `--storage-pairs` to override inline, or reference reusable named mappings (see [Advanced: Reusable Mappings](#advanced-reusable-mappings) below).
 
 ### Discover Available VMs
 
@@ -221,15 +164,15 @@ First, explore the available VMs on your source provider:
 
 ```bash
 # List all VMs
-kubectl mtv get inventory vms vsphere-source
+kubectl mtv get inventory vms --provider vsphere-source
 
 # Filter VMs with queries
-kubectl mtv get inventory vms vsphere-source -q "where powerState = 'poweredOn'"
-kubectl mtv get inventory vms vsphere-source -q "where memoryMB > 4096"
-kubectl mtv get inventory vms vsphere-source -q "where name ~= 'web-.*'"
+kubectl mtv get inventory vms --provider vsphere-source --query "where powerState = 'poweredOn'"
+kubectl mtv get inventory vms --provider vsphere-source --query "where memoryMB > 4096"
+kubectl mtv get inventory vms --provider vsphere-source --query "where name ~= 'web-.*'"
 
 # Get detailed VM information
-kubectl mtv get inventory vms vsphere-source -o yaml
+kubectl mtv get inventory vms --provider vsphere-source --output yaml
 ```
 
 ### Create Migration Plan
@@ -240,12 +183,12 @@ Choose one of these approaches to create your migration plan:
 
 ```bash
 # Create a simple migration plan (uses automatic mappings)
-kubectl mtv create plan demo-migration \
+kubectl mtv create plan --name demo-migration \
   --source vsphere-source \
   --vms "web-server-01,database-01,app-server-01"
 
 # Cold migration (default)
-kubectl mtv create plan demo-migration \
+kubectl mtv create plan --name demo-migration \
   --source vsphere-source \
   --vms "web-server-01,database-01" \
   --migration-type cold
@@ -255,7 +198,7 @@ kubectl mtv create plan demo-migration \
 
 ```bash
 # Create plan using explicit mappings
-kubectl mtv create plan prod-migration \
+kubectl mtv create plan --name prod-migration \
   --source vsphere-source \
   --network-mapping prod-network \
   --storage-mapping prod-storage \
@@ -266,7 +209,7 @@ kubectl mtv create plan prod-migration \
 
 ```bash
 # Create warm migration plan (minimizes downtime)
-kubectl mtv create plan warm-migration \
+kubectl mtv create plan --name warm-migration \
   --source vsphere-source \
   --vms "critical-app-01,critical-db-01" \
   --migration-type warm
@@ -276,7 +219,7 @@ kubectl mtv create plan warm-migration \
 
 ```bash
 # Select VMs using a query
-kubectl mtv create plan query-migration \
+kubectl mtv create plan --name query-migration \
   --source vsphere-source \
   --vms "where name ~= 'prod-.*' and powerState = 'poweredOn'"
 ```
@@ -288,18 +231,18 @@ kubectl mtv create plan query-migration \
 kubectl mtv get plans
 
 # Get detailed plan information
-kubectl mtv describe plan demo-migration
+kubectl mtv describe plan --name demo-migration
 
 # View plan with VM details
-kubectl mtv describe plan demo-migration --with-vms
+kubectl mtv describe plan --name demo-migration --with-vms
 
 # Check plan status
-kubectl mtv get plan demo-migration -o yaml
+kubectl mtv get plan --name demo-migration --output yaml
 ```
 
 Wait for the plan to show "Ready" status before starting the migration.
 
-## Step 5: Executing and Monitoring the Migration
+## Step 4: Executing and Monitoring the Migration
 
 Now execute the migration and monitor its progress.
 
@@ -307,13 +250,13 @@ Now execute the migration and monitor its progress.
 
 ```bash
 # Start the migration plan
-kubectl mtv start plan demo-migration
+kubectl mtv start plan --name demo-migration
 
 # For warm migrations, you can schedule a cutover time
-kubectl mtv start plan warm-migration --cutover "2024-01-15T10:00:00Z"
+kubectl mtv start plan --name warm-migration --cutover "2024-01-15T10:00:00Z"
 
 # Start multiple plans
-kubectl mtv start plan demo-migration prod-migration
+kubectl mtv start plans --name demo-migration,prod-migration
 ```
 
 ### Monitor Migration Progress
@@ -325,26 +268,26 @@ kubectl mtv start plan demo-migration prod-migration
 kubectl mtv get plans --watch
 
 # Watch specific plan
-kubectl mtv get plan demo-migration --watch
+kubectl mtv get plan --name demo-migration --watch
 
 # Watch VM-level progress
-kubectl mtv get plan demo-migration --vms --watch
+kubectl mtv get plan --name demo-migration --vms --watch
 ```
 
 #### Check Migration Status
 
 ```bash
 # Get current plan status
-kubectl mtv get plan demo-migration
+kubectl mtv get plan --name demo-migration
 
 # Detailed plan status
-kubectl mtv describe plan demo-migration
+kubectl mtv describe plan --name demo-migration
 
 # View VM migration details
-kubectl mtv describe plan demo-migration --vm web-server-01
+kubectl mtv describe plan --name demo-migration --vm web-server-01
 
 # JSON output for scripting
-kubectl mtv get plan demo-migration -o json
+kubectl mtv get plan --name demo-migration --output json
 ```
 
 #### Monitor with Different Output Formats
@@ -354,10 +297,10 @@ kubectl mtv get plan demo-migration -o json
 kubectl mtv get plans
 
 # YAML format for detailed information
-kubectl mtv get plan demo-migration -o yaml
+kubectl mtv get plan --name demo-migration --output yaml
 
 # JSON format for automation
-kubectl mtv get plan demo-migration -o json | jq '.status'
+kubectl mtv get plan --name demo-migration --output json | jq '.status'
 ```
 
 ### Migration Lifecycle Commands
@@ -366,33 +309,33 @@ kubectl mtv get plan demo-migration -o json | jq '.status'
 
 ```bash
 # After warm migration completes initial sync, perform cutover
-kubectl mtv cutover plan warm-migration
+kubectl mtv cutover plan --name warm-migration
 
 # Or schedule cutover for later
-kubectl mtv cutover plan warm-migration --cutover "2024-01-15T02:00:00Z"
+kubectl mtv cutover plan --name warm-migration --cutover "2024-01-15T02:00:00Z"
 ```
 
 #### Emergency Operations
 
 ```bash
 # Cancel a running migration if needed
-kubectl mtv cancel plan demo-migration
+kubectl mtv cancel plan --name demo-migration
 
 # Cancel specific VMs within a plan
-kubectl mtv cancel plan demo-migration --vm web-server-01
+kubectl mtv cancel plan --name demo-migration --vms web-server-01
 ```
 
 #### Post-Migration Operations
 
 ```bash
 # Archive completed migration
-kubectl mtv archive plan demo-migration
+kubectl mtv archive plan --name demo-migration
 
 # List archived plans
 kubectl mtv get plans --all
 
 # Unarchive if needed
-kubectl mtv unarchive plan demo-migration
+kubectl mtv unarchive plan --name demo-migration
 ```
 
 ### Understanding Migration Phases
@@ -415,10 +358,10 @@ If issues occur during migration:
 
 ```bash
 # Check detailed VM status
-kubectl mtv describe plan demo-migration --vm problematic-vm
+kubectl mtv describe plan --name demo-migration --vm problematic-vm
 
 # Enable debug logging
-kubectl mtv get plan demo-migration --watch -v=2
+kubectl mtv get plan --name demo-migration --watch -v=2
 
 # Check Kubernetes events
 kubectl get events --sort-by='.lastTimestamp' | grep demo-migration
@@ -434,7 +377,7 @@ After migration completes, verify your VMs:
 
 ```bash
 # Check final plan status
-kubectl mtv get plan demo-migration
+kubectl mtv get plan --name demo-migration
 
 # List created VMs
 kubectl get vms
@@ -453,13 +396,13 @@ After successful migration:
 
 ```bash
 # Archive the completed plan
-kubectl mtv archive plan demo-migration
+kubectl mtv archive plan --name demo-migration
 
 # Optionally delete the plan if no longer needed
-kubectl mtv delete plan demo-migration
+kubectl mtv delete plan --name demo-migration
 
 # Clean up providers if no longer needed
-kubectl mtv delete provider vsphere-source
+kubectl mtv delete provider --name vsphere-source
 
 # Keep the namespace for future migrations or delete it
 kubectl delete namespace migration-demo
@@ -471,26 +414,26 @@ kubectl delete namespace migration-demo
 
 ```bash
 # Create a small test plan first
-kubectl mtv create plan test-migration \
+kubectl mtv create plan --name test-migration \
   --source vsphere-source \
   --vms "test-vm-01" \
   --migration-type cold
 
-kubectl mtv start plan test-migration
-kubectl mtv get plan test-migration --watch
+kubectl mtv start plan --name test-migration
+kubectl mtv get plan --name test-migration --watch
 ```
 
 ### Pattern 2: Phased Production Migration
 
 ```bash
 # Phase 1: Non-critical systems
-kubectl mtv create plan phase1-migration \
+kubectl mtv create plan --name phase1-migration \
   --source vsphere-source \
   --vms "dev-server-01,test-server-01" \
   --migration-type cold
 
 # Phase 2: Critical systems with warm migration
-kubectl mtv create plan phase2-migration \
+kubectl mtv create plan --name phase2-migration \
   --source vsphere-source \
   --vms "prod-app-01,prod-db-01" \
   --migration-type warm
@@ -500,15 +443,72 @@ kubectl mtv create plan phase2-migration \
 
 ```bash
 # Migrate all development VMs
-kubectl mtv create plan dev-migration \
+kubectl mtv create plan --name dev-migration \
   --source vsphere-source \
   --vms "where name ~= 'dev-.*' and powerState = 'poweredOn'"
 
 # Migrate VMs with specific characteristics
-kubectl mtv create plan memory-migration \
+kubectl mtv create plan --name memory-migration \
   --source vsphere-source \
   --vms "where memoryMB > 8192 and len(disks) <= 2"
 ```
+
+## Advanced: Reusable Mappings
+
+If you need to reuse the same network/storage configuration across multiple plans,
+create named mappings and reference them. This is optional -- mappings are auto-generated
+when you create a plan.
+
+### Create Network Mapping
+
+```bash
+kubectl mtv create mapping network --name prod-network \
+  --source vsphere-source \
+  --target k8s-target \
+  --network-pairs "VM Network:default,Management Network:multus-network/mgmt-net"
+
+# Verify network mapping
+kubectl mtv get mapping network --name prod-network
+```
+
+### Create Storage Mapping
+
+```bash
+# Basic storage mapping
+kubectl mtv create mapping storage --name prod-storage \
+  --source vsphere-source \
+  --target k8s-target \
+  --storage-pairs "datastore1:fast-ssd,datastore2:standard"
+
+# Advanced storage mapping with volume options
+kubectl mtv create mapping storage --name prod-storage-advanced \
+  --source vsphere-source \
+  --target k8s-target \
+  --storage-pairs "datastore1:fast-ssd;volumeMode=Block;accessMode=ReadWriteOnce,datastore2:standard;volumeMode=Filesystem"
+```
+
+### Reference Mappings in a Plan
+
+```bash
+kubectl mtv create plan --name prod-migration \
+  --source vsphere-source \
+  --network-mapping prod-network \
+  --storage-mapping prod-storage \
+  --vms "web-server-01,database-01,app-server-01"
+```
+
+### Verify Mappings
+
+```bash
+# List all mappings
+kubectl mtv get mappings
+
+# Describe specific mappings
+kubectl mtv describe mapping network --name prod-network
+kubectl mtv describe mapping storage --name prod-storage
+```
+
+For full details, see [Mapping Management](11-mapping-management.md).
 
 ## Next Steps
 
@@ -526,10 +526,10 @@ After completing your first migration:
 
 | Issue | Command | Solution |
 |-------|---------|----------|
-| Provider not ready | `kubectl mtv describe provider NAME` | Check credentials and network connectivity |
-| Plan stuck in "Not Ready" | `kubectl mtv describe plan NAME` | Verify provider status and VM names |
-| Migration stuck | `kubectl mtv describe plan NAME --vm VM` | Check VM-specific errors and resource constraints |
-| Disk copy slow | `kubectl mtv get plan NAME -v=2` | Consider VDDK optimization for VMware |
+| Provider not ready | `kubectl mtv describe provider --name NAME` | Check credentials and network connectivity |
+| Plan stuck in "Not Ready" | `kubectl mtv describe plan --name NAME` | Verify provider status and VM names |
+| Migration stuck | `kubectl mtv describe plan --name NAME --vm VM` | Check VM-specific errors and resource constraints |
+| Disk copy slow | `kubectl mtv get plan --name NAME -v=2` | Consider VDDK optimization for VMware |
 | Target VM won't start | `kubectl get vm NAME -o yaml` | Check resource requirements and node capacity |
 
 ### Useful Debug Commands

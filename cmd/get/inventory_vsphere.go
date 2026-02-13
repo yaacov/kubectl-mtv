@@ -18,14 +18,14 @@ func NewInventoryDatastoreCmd(kubeConfigFlags *genericclioptions.ConfigFlags, gl
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:               "datastore PROVIDER",
-		Short:             "Get datastores from a provider " + flags.ProvidersVSphere,
-		Long:              `Get datastores from a vSphere provider's inventory.`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+		Use:          "datastore",
+		Short:        "Get datastores from a provider",
+		Long:         `Get datastores from a vSphere provider's inventory.`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -33,8 +33,6 @@ func NewInventoryDatastoreCmd(kubeConfigFlags *genericclioptions.ConfigFlags, gl
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -48,11 +46,16 @@ func NewInventoryDatastoreCmd(kubeConfigFlags *genericclioptions.ConfigFlags, gl
 			return inventory.ListDatastoresWithInsecure(ctx, globalConfig.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -67,14 +70,14 @@ func NewInventoryResourcePoolCmd(kubeConfigFlags *genericclioptions.ConfigFlags,
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:               "resource-pool PROVIDER",
-		Short:             "Get resource pools from a provider " + flags.ProvidersVSphere,
-		Long:              `Get resource pools from a vSphere provider's inventory.`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+		Use:          "resource-pool",
+		Short:        "Get resource pools from a provider",
+		Long:         `Get resource pools from a vSphere provider's inventory.`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -82,8 +85,6 @@ func NewInventoryResourcePoolCmd(kubeConfigFlags *genericclioptions.ConfigFlags,
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -116,14 +117,14 @@ func NewInventoryFolderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var query string
 	var watch bool
+	var provider string
 
 	cmd := &cobra.Command{
-		Use:               "folder PROVIDER",
-		Short:             "Get folders from a provider " + flags.ProvidersVSphere,
-		Long:              `Get folders from a vSphere provider's inventory.`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.ProviderNameCompletion(kubeConfigFlags),
+		Use:          "folder",
+		Short:        "Get folders from a provider",
+		Long:         `Get folders from a vSphere provider's inventory.`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -131,8 +132,6 @@ func NewInventoryFolderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 				ctx, cancel = context.WithTimeout(ctx, 280*time.Second)
 				defer cancel()
 			}
-
-			provider := args[0]
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
 
@@ -146,11 +145,16 @@ func NewInventoryFolderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 			return inventory.ListFoldersWithInsecure(ctx, globalConfig.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
+	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
+	_ = cmd.MarkFlagRequired("provider")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for provider and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {

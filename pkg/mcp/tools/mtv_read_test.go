@@ -19,38 +19,30 @@ func testRegistry() *discovery.Registry {
 		ReadOnly: map[string]*discovery.Command{
 			"get/plan": {
 				Path: []string{"get", "plan"}, PathString: "get plan", Description: "Get migration plans",
-				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: false}},
 			},
 			"get/provider": {
 				Path: []string{"get", "provider"}, PathString: "get provider", Description: "Get providers",
-				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: false}},
 			},
 			"get/inventory/vm": {
 				Path: []string{"get", "inventory", "vm"}, PathString: "get inventory vm", Description: "Get VMs",
-				PositionalArgs: []discovery.Arg{{Name: "PROVIDER", Required: true}},
 			},
 			"describe/plan": {
 				Path: []string{"describe", "plan"}, PathString: "describe plan", Description: "Describe plan",
-				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: true}},
 			},
 			"health": {Path: []string{"health"}, PathString: "health", Description: "Health check"},
 		},
 		ReadWrite: map[string]*discovery.Command{
 			"create/provider": {
 				Path: []string{"create", "provider"}, PathString: "create provider", Description: "Create provider",
-				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: true}},
 			},
 			"create/plan": {
 				Path: []string{"create", "plan"}, PathString: "create plan", Description: "Create plan",
-				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: true}},
 			},
 			"delete/plan": {
 				Path: []string{"delete", "plan"}, PathString: "delete plan", Description: "Delete plan",
-				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: false, Variadic: true}},
 			},
 			"start/plan": {
 				Path: []string{"start", "plan"}, PathString: "start plan", Description: "Start plan",
-				PositionalArgs: []discovery.Arg{{Name: "NAME", Required: false, Variadic: true}},
 			},
 		},
 	}
@@ -118,218 +110,6 @@ func TestNormalizeCommandPath(t *testing.T) {
 	}
 }
 
-// --- extractPositionalArgs tests ---
-
-func TestExtractPositionalArgs_FromFlags(t *testing.T) {
-	cmd := &discovery.Command{
-		PositionalArgs: []discovery.Arg{
-			{Name: "PROVIDER", Required: true},
-		},
-	}
-
-	flags := map[string]any{"provider": "my-vsphere", "output": "json"}
-	result := extractPositionalArgs(cmd, flags)
-
-	if len(result) != 1 || result[0] != "my-vsphere" {
-		t.Errorf("Expected [my-vsphere], got %v", result)
-	}
-	// "provider" should be removed from flags to avoid double-passing
-	if _, ok := flags["provider"]; ok {
-		t.Error("Expected 'provider' to be removed from flags after extraction")
-	}
-	// "output" should remain
-	if _, ok := flags["output"]; !ok {
-		t.Error("Expected 'output' to remain in flags")
-	}
-}
-
-func TestExtractPositionalArgs_NilCmd(t *testing.T) {
-	result := extractPositionalArgs(nil, map[string]any{"name": "test"})
-	if result != nil {
-		t.Errorf("Expected nil for nil command, got %v", result)
-	}
-}
-
-func TestExtractPositionalArgs_NoPositionalArgs(t *testing.T) {
-	cmd := &discovery.Command{}
-	result := extractPositionalArgs(cmd, map[string]any{"name": "test"})
-	if result != nil {
-		t.Errorf("Expected nil for command with no positional args, got %v", result)
-	}
-}
-
-func TestExtractPositionalArgs_MultipleArgs(t *testing.T) {
-	cmd := &discovery.Command{
-		PositionalArgs: []discovery.Arg{
-			{Name: "PLAN_NAME", Required: true},
-			{Name: "VM_NAME", Required: true},
-		},
-	}
-
-	flags := map[string]any{"plan_name": "my-plan", "vm_name": "my-vm", "output": "json"}
-	result := extractPositionalArgs(cmd, flags)
-
-	if len(result) != 2 {
-		t.Fatalf("Expected 2 args, got %v", result)
-	}
-	if result[0] != "my-plan" || result[1] != "my-vm" {
-		t.Errorf("Expected [my-plan, my-vm], got %v", result)
-	}
-	if _, ok := flags["plan_name"]; ok {
-		t.Error("plan_name should be removed from flags")
-	}
-	if _, ok := flags["vm_name"]; ok {
-		t.Error("vm_name should be removed from flags")
-	}
-}
-
-func TestExtractPositionalArgs_HyphenVariant(t *testing.T) {
-	cmd := &discovery.Command{
-		PositionalArgs: []discovery.Arg{
-			{Name: "PLAN_NAME", Required: true},
-		},
-	}
-
-	// LLM might use "plan-name" instead of "plan_name"
-	flags := map[string]any{"plan-name": "my-plan"}
-	result := extractPositionalArgs(cmd, flags)
-
-	if len(result) != 1 || result[0] != "my-plan" {
-		t.Errorf("Expected [my-plan] from hyphen variant, got %v", result)
-	}
-}
-
-func TestExtractPositionalArgs_OptionalArg(t *testing.T) {
-	cmd := &discovery.Command{
-		PositionalArgs: []discovery.Arg{
-			{Name: "NAME", Required: false},
-		},
-	}
-
-	// When the optional arg is provided, extract it
-	flags := map[string]any{"name": "my-plan"}
-	result := extractPositionalArgs(cmd, flags)
-
-	if len(result) != 1 || result[0] != "my-plan" {
-		t.Errorf("Expected [my-plan], got %v", result)
-	}
-
-	// When not provided, result should be empty
-	flags2 := map[string]any{"output": "json"}
-	result2 := extractPositionalArgs(cmd, flags2)
-	if len(result2) != 0 {
-		t.Errorf("Expected empty for missing optional arg, got %v", result2)
-	}
-}
-
-func TestExtractPositionalArgs_VariadicArray(t *testing.T) {
-	cmd := &discovery.Command{
-		PositionalArgs: []discovery.Arg{
-			{Name: "NAME", Required: false, Variadic: true},
-		},
-	}
-
-	// JSON array should expand to multiple args
-	flags := map[string]any{"name": []interface{}{"plan-a", "plan-b", "plan-c"}}
-	result := extractPositionalArgs(cmd, flags)
-
-	if len(result) != 3 {
-		t.Fatalf("Expected 3 args, got %d: %v", len(result), result)
-	}
-	if result[0] != "plan-a" || result[1] != "plan-b" || result[2] != "plan-c" {
-		t.Errorf("Expected [plan-a, plan-b, plan-c], got %v", result)
-	}
-	// Flag should be removed
-	if _, ok := flags["name"]; ok {
-		t.Error("Expected 'name' to be removed from flags after extraction")
-	}
-}
-
-func TestExtractPositionalArgs_VariadicSpaceSeparated(t *testing.T) {
-	cmd := &discovery.Command{
-		PositionalArgs: []discovery.Arg{
-			{Name: "NAME", Required: false, Variadic: true},
-		},
-	}
-
-	// Space-separated string should be split into multiple args
-	// (variadic args are K8s resource names, never contain spaces)
-	flags := map[string]any{"name": "plan-a plan-b plan-c"}
-	result := extractPositionalArgs(cmd, flags)
-
-	if len(result) != 3 {
-		t.Fatalf("Expected 3 args, got %d: %v", len(result), result)
-	}
-	if result[0] != "plan-a" || result[1] != "plan-b" || result[2] != "plan-c" {
-		t.Errorf("Expected [plan-a, plan-b, plan-c], got %v", result)
-	}
-}
-
-func TestExtractPositionalArgs_NameWithEllipsisSuffix(t *testing.T) {
-	// The help JSON encodes variadic args as "NAME..." (with trailing dots)
-	// and may not emit a separate "variadic" boolean field.
-	// extractPositionalArgs must strip the "..." suffix to match the LLM's
-	// flag key "name" and detect variadic from the suffix.
-	cmd := &discovery.Command{
-		PositionalArgs: []discovery.Arg{
-			{Name: "NAME...", Required: false}, // Variadic: false (not emitted in JSON)
-		},
-	}
-
-	// Single value — should be extracted as positional arg, not passed as --name
-	flags := map[string]any{"name": "vcenter-migration", "namespace": "demo"}
-	result := extractPositionalArgs(cmd, flags)
-
-	if len(result) != 1 || result[0] != "vcenter-migration" {
-		t.Errorf("Expected [vcenter-migration], got %v", result)
-	}
-	// "name" should be removed from flags; "namespace" should remain
-	if _, ok := flags["name"]; ok {
-		t.Error("Expected 'name' to be removed from flags after extraction")
-	}
-	if _, ok := flags["namespace"]; !ok {
-		t.Error("Expected 'namespace' to remain in flags")
-	}
-}
-
-func TestExtractPositionalArgs_EllipsisSuffixVariadicArray(t *testing.T) {
-	// Variadic detection from "..." suffix should handle JSON arrays
-	cmd := &discovery.Command{
-		PositionalArgs: []discovery.Arg{
-			{Name: "NAME...", Required: false}, // Variadic detected from suffix
-		},
-	}
-
-	flags := map[string]any{"name": []interface{}{"plan-a", "plan-b"}}
-	result := extractPositionalArgs(cmd, flags)
-
-	if len(result) != 2 {
-		t.Fatalf("Expected 2 args, got %d: %v", len(result), result)
-	}
-	if result[0] != "plan-a" || result[1] != "plan-b" {
-		t.Errorf("Expected [plan-a, plan-b], got %v", result)
-	}
-}
-
-func TestExtractPositionalArgs_EllipsisSuffixVariadicSpaceSeparated(t *testing.T) {
-	// Variadic detection from "..." suffix should handle space-separated strings
-	cmd := &discovery.Command{
-		PositionalArgs: []discovery.Arg{
-			{Name: "NAME...", Required: false}, // Variadic detected from suffix
-		},
-	}
-
-	flags := map[string]any{"name": "plan-a plan-b plan-c"}
-	result := extractPositionalArgs(cmd, flags)
-
-	if len(result) != 3 {
-		t.Fatalf("Expected 3 args, got %d: %v", len(result), result)
-	}
-	if result[0] != "plan-a" || result[1] != "plan-b" || result[2] != "plan-c" {
-		t.Errorf("Expected [plan-a, plan-b, plan-c], got %v", result)
-	}
-}
-
 // --- buildArgs tests ---
 
 func TestBuildArgs(t *testing.T) {
@@ -340,7 +120,6 @@ func TestBuildArgs(t *testing.T) {
 	tests := []struct {
 		name         string
 		cmdPath      string
-		args         []string
 		flags        map[string]any
 		outputFormat string // configured default output format
 		wantContains []string
@@ -350,34 +129,33 @@ func TestBuildArgs(t *testing.T) {
 			name:         "simple command with default json output",
 			cmdPath:      "get/plan",
 			outputFormat: "json",
-			wantContains: []string{"get", "plan", "-o", "json"},
+			wantContains: []string{"get", "plan", "--output", "json"},
 		},
 		{
 			name:         "with namespace in flags",
 			cmdPath:      "get/plan",
 			flags:        map[string]any{"namespace": "demo"},
 			outputFormat: "json",
-			wantContains: []string{"get", "plan", "-n", "demo"},
+			wantContains: []string{"get", "plan", "--namespace", "demo"},
 		},
 		{
 			name:         "with all_namespaces in flags",
 			cmdPath:      "get/plan",
 			flags:        map[string]any{"all_namespaces": true},
 			outputFormat: "json",
-			wantContains: []string{"get", "plan", "-A"},
+			wantContains: []string{"get", "plan", "--all-namespaces"},
 		},
 		{
-			name:         "with positional args",
+			name:         "with provider in flags",
 			cmdPath:      "get/inventory/vm",
-			args:         []string{"my-provider"},
+			flags:        map[string]any{"provider": "my-provider"},
 			outputFormat: "json",
-			wantContains: []string{"get", "inventory", "vm", "my-provider"},
+			wantContains: []string{"get", "inventory", "vm", "--provider", "my-provider"},
 		},
 		{
 			name:         "with inventory_url in flags",
 			cmdPath:      "get/inventory/vm",
-			args:         []string{"my-provider"},
-			flags:        map[string]any{"inventory_url": "http://localhost:9090"},
+			flags:        map[string]any{"provider": "my-provider", "inventory_url": "http://localhost:9090"},
 			outputFormat: "json",
 			wantContains: []string{"--inventory-url", "http://localhost:9090"},
 		},
@@ -386,21 +164,20 @@ func TestBuildArgs(t *testing.T) {
 			cmdPath:      "get/plan",
 			flags:        map[string]any{"output": "yaml"},
 			outputFormat: "json",
-			wantContains: []string{"-o", "yaml"},
-			wantMissing:  []string{"-o json"},
+			wantContains: []string{"--output", "yaml"},
+			wantMissing:  []string{"--output json"},
 		},
 		{
-			name:         "text output format omits -o flag",
+			name:         "text output format omits --output flag",
 			cmdPath:      "get/plan",
 			outputFormat: "text",
 			wantContains: []string{"get", "plan"},
-			wantMissing:  []string{"-o"},
+			wantMissing:  []string{"--output"},
 		},
 		{
 			name:         "custom flags are passed through",
 			cmdPath:      "get/inventory/vm",
-			args:         []string{"my-provider"},
-			flags:        map[string]any{"query": "where name ~= 'prod-.*'", "extended": true},
+			flags:        map[string]any{"provider": "my-provider", "query": "where name ~= 'prod-.*'", "extended": true},
 			outputFormat: "json",
 			wantContains: []string{"--query", "--extended"},
 		},
@@ -409,15 +186,14 @@ func TestBuildArgs(t *testing.T) {
 			cmdPath:      "get/plan",
 			flags:        map[string]any{"namespace": "real-ns"},
 			outputFormat: "json",
-			wantContains: []string{"-n", "real-ns"},
-			wantMissing:  []string{"--namespace"},
+			wantContains: []string{"--namespace", "real-ns"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			util.SetOutputFormat(tt.outputFormat)
-			result := buildArgs(tt.cmdPath, tt.args, tt.flags)
+			result := buildArgs(tt.cmdPath, tt.flags)
 			joined := strings.Join(result, " ")
 
 			for _, want := range tt.wantContains {
@@ -587,7 +363,7 @@ func TestHandleMTVRead_DryRun(t *testing.T) {
 				Flags:   map[string]any{"namespace": "demo"},
 				DryRun:  true,
 			},
-			wantContains: []string{"kubectl-mtv", "get", "plan", "-n", "demo", "-o", "json"},
+			wantContains: []string{"kubectl-mtv", "get", "plan", "--namespace", "demo", "--output", "json"},
 		},
 		{
 			name: "get plan all namespaces",
@@ -596,25 +372,25 @@ func TestHandleMTVRead_DryRun(t *testing.T) {
 				Flags:   map[string]any{"all_namespaces": true},
 				DryRun:  true,
 			},
-			wantContains: []string{"kubectl-mtv", "get", "plan", "-A"},
+			wantContains: []string{"kubectl-mtv", "get", "plan", "--all-namespaces"},
 		},
 		{
-			name: "get inventory vm with provider via named flag",
+			name: "get inventory vm with provider via flag",
 			input: MTVReadInput{
 				Command: "get inventory vm",
 				Flags:   map[string]any{"provider": "my-vsphere"},
 				DryRun:  true,
 			},
-			wantContains: []string{"kubectl-mtv", "get", "inventory", "vm", "my-vsphere"},
+			wantContains: []string{"kubectl-mtv", "get", "inventory", "vm", "--provider", "my-vsphere"},
 		},
 		{
-			name: "describe plan with name via named flag",
+			name: "describe plan with name via flag",
 			input: MTVReadInput{
 				Command: "describe plan",
 				Flags:   map[string]any{"name": "my-plan", "namespace": "test-ns"},
 				DryRun:  true,
 			},
-			wantContains: []string{"kubectl-mtv", "describe", "plan", "my-plan", "-n", "test-ns"},
+			wantContains: []string{"kubectl-mtv", "describe", "plan", "--name", "my-plan", "--namespace", "test-ns"},
 		},
 		{
 			name: "health check",
@@ -833,7 +609,7 @@ func TestLiveToolContextSize(t *testing.T) {
 
 func TestFilterResponseFields_ArrayData(t *testing.T) {
 	data := map[string]interface{}{
-		"command":      "kubectl-mtv get inventory vm vsphere-provider -n demo -o json",
+		"command":      "kubectl-mtv get inventory vm --provider vsphere-provider --namespace demo --output json",
 		"return_value": float64(0),
 		"data": []interface{}{
 			map[string]interface{}{
@@ -858,7 +634,7 @@ func TestFilterResponseFields_ArrayData(t *testing.T) {
 	result := filterResponseFields(data, []string{"name", "id", "concerns"})
 
 	// Envelope fields should be preserved
-	if result["command"] != "kubectl-mtv get inventory vm vsphere-provider -n demo -o json" {
+	if result["command"] != "kubectl-mtv get inventory vm --provider vsphere-provider --namespace demo --output json" {
 		t.Error("command envelope field should be preserved")
 	}
 	if result["return_value"] != float64(0) {
@@ -899,7 +675,7 @@ func TestFilterResponseFields_ArrayData(t *testing.T) {
 
 func TestFilterResponseFields_ObjectData(t *testing.T) {
 	data := map[string]interface{}{
-		"command":      "kubectl-mtv health -o json",
+		"command":      "kubectl-mtv health --output json",
 		"return_value": float64(0),
 		"data": map[string]interface{}{
 			"overallStatus": "Healthy",
@@ -1012,7 +788,7 @@ func TestFilterResponseFields_NonObjectItems(t *testing.T) {
 func TestBuildCLIErrorResult_Success(t *testing.T) {
 	// return_value == 0 should return nil (no error)
 	data := map[string]interface{}{
-		"command":      "kubectl-mtv get plan -o json",
+		"command":      "kubectl-mtv get plan --output json",
 		"return_value": float64(0),
 		"data":         []interface{}{},
 	}
@@ -1037,7 +813,7 @@ func TestBuildCLIErrorResult_MissingReturnValue(t *testing.T) {
 
 func TestBuildCLIErrorResult_NonZeroExit(t *testing.T) {
 	data := map[string]interface{}{
-		"command":      "kubectl-mtv get inventory vm vsphere-provider -o json",
+		"command":      "kubectl-mtv get inventory vm --provider vsphere-provider --output json",
 		"return_value": float64(1),
 		"stderr":       "Error: failed to get provider 'vsphere-provider': providers.forklift.konveyor.io \"vsphere-provider\" not found\n",
 		"stdout":       "",
@@ -1073,7 +849,7 @@ func TestBuildCLIErrorResult_NonZeroExit(t *testing.T) {
 
 func TestBuildCLIErrorResult_NoStderr(t *testing.T) {
 	data := map[string]interface{}{
-		"command":      "kubectl-mtv get plan -o json",
+		"command":      "kubectl-mtv get plan --output json",
 		"return_value": float64(2),
 		"stderr":       "",
 	}

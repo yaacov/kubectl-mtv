@@ -15,8 +15,10 @@ import (
 
 // NewUnsetCmd creates the 'settings unset' subcommand.
 func NewUnsetCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
+	var settingName string
+
 	cmd := &cobra.Command{
-		Use:   "unset SETTING",
+		Use:   "unset",
 		Short: "Remove a ForkliftController setting (revert to default)",
 		Long: `Remove a ForkliftController setting, reverting it to the default value.
 
@@ -25,21 +27,18 @@ to use its default value instead.
 
 Examples:
   # Remove the VDDK image setting (revert to default)
-  kubectl mtv settings unset vddk_image
+  kubectl mtv settings unset --setting vddk_image
 
   # Remove extra virt-v2v arguments
-  kubectl mtv settings unset virt_v2v_extra_args
+  kubectl mtv settings unset --setting virt_v2v_extra_args
 
   # Revert max concurrent VMs to default (20)
-  kubectl mtv settings unset controller_max_vm_inflight`,
-		Args:              cobra.ExactArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: unsetArgsCompletion,
+  kubectl mtv settings unset --setting controller_max_vm_inflight`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 			defer cancel()
-
-			settingName := args[0]
 
 			opts := settings.UnsetSettingOptions{
 				ConfigFlags: kubeConfigFlags,
@@ -61,15 +60,18 @@ Examples:
 		},
 	}
 
+	cmd.Flags().StringVar(&settingName, "setting", "", "Setting name")
+	if err := cmd.MarkFlagRequired("setting"); err != nil {
+		_ = err
+	}
+
+	_ = cmd.RegisterFlagCompletionFunc("setting", unsetSettingCompletion)
+
 	return cmd
 }
 
-// unsetArgsCompletion provides completion for the unset command arguments.
-func unsetArgsCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if len(args) > 0 {
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	}
-
+// unsetSettingCompletion provides completion for the --setting flag.
+func unsetSettingCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	var completions []string
 	for name := range settings.SupportedSettings {
 		if strings.HasPrefix(name, toComplete) {

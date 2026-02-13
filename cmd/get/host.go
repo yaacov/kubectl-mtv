@@ -18,24 +18,24 @@ func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
 
+	var hostName string
 	cmd := &cobra.Command{
-		Use:   "host [NAME]",
+		Use:   "host",
 		Short: "Get hosts",
 		Long: `Get MTV host resources from the cluster.
 
 Host resources represent ESXi hosts for vSphere migrations or hypervisor hosts
 for oVirt migrations. They store host-specific credentials and configuration.`,
 		Example: `  # List all hosts
-  kubectl-mtv get host
+  kubectl-mtv get hosts
 
   # Get a specific host in YAML format
-  kubectl-mtv get host esxi-host-1 -o yaml
+  kubectl-mtv get host --name esxi-host-1 --output yaml
 
   # Watch host status changes
-  kubectl-mtv get host -w`,
-		Args:              cobra.MaximumNArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: completion.HostResourceNameCompletion(kubeConfigFlags),
+  kubectl-mtv get hosts --watch`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -46,12 +46,6 @@ for oVirt migrations. They store host-specific credentials and configuration.`,
 
 			// Get namespace from global configuration
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
-
-			// Get optional host name from arguments
-			var hostName string
-			if len(args) > 0 {
-				hostName = args[0]
-			}
 
 			// Log the operation being performed
 			if hostName != "" {
@@ -65,9 +59,14 @@ for oVirt migrations. They store host-specific credentials and configuration.`,
 		},
 	}
 
+	cmd.Flags().StringVarP(&hostName, "name", "M", "", "Host name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
+	// Add completion for name and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("name", completion.HostResourceNameCompletion(kubeConfigFlags)); err != nil {
+		panic(err)
+	}
 	// Add completion for output format flag
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp

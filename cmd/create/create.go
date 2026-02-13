@@ -19,11 +19,26 @@ func NewCreateCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig G
 		SilenceUsage: true,
 	}
 
-	cmd.AddCommand(NewProviderCmd(kubeConfigFlags))
-	cmd.AddCommand(NewPlanCmd(kubeConfigFlags, globalConfig))
-	cmd.AddCommand(NewMappingCmd(kubeConfigFlags, globalConfig))
-	cmd.AddCommand(NewHostCmd(kubeConfigFlags, globalConfig))
-	cmd.AddCommand(NewHookCmd(kubeConfigFlags))
+	providerCmd := NewProviderCmd(kubeConfigFlags)
+	providerCmd.Aliases = []string{"providers"}
+	cmd.AddCommand(providerCmd)
+
+	planCmd := NewPlanCmd(kubeConfigFlags, globalConfig)
+	planCmd.Aliases = []string{"plans"}
+	cmd.AddCommand(planCmd)
+
+	mappingCmd := NewMappingCmd(kubeConfigFlags, globalConfig)
+	mappingCmd.Aliases = []string{"mappings"}
+	cmd.AddCommand(mappingCmd)
+
+	hostCmd := NewHostCmd(kubeConfigFlags, globalConfig)
+	hostCmd.Aliases = []string{"hosts"}
+	cmd.AddCommand(hostCmd)
+
+	hookCmd := NewHookCmd(kubeConfigFlags)
+	hookCmd.Aliases = []string{"hooks"}
+	cmd.AddCommand(hookCmd)
+
 	cmd.AddCommand(NewVddkCmd(globalConfig, kubeConfigFlags))
 
 	return cmd

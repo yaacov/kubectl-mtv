@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -51,15 +50,15 @@ Examples:
   kubectl mtv settings --all
 
   # View settings in YAML format
-  kubectl mtv settings -o yaml
+  kubectl mtv settings --output yaml
 
   # Get a specific setting
-  kubectl mtv settings get vddk_image
+  kubectl mtv settings get --setting vddk_image
 
   # Set a value
-  kubectl mtv settings set vddk_image quay.io/myorg/vddk:8.0
-  kubectl mtv settings set controller_max_vm_inflight 30
-  kubectl mtv settings set feature_ocp_live_migration true`,
+  kubectl mtv settings set --setting vddk_image --value quay.io/myorg/vddk:8.0
+  kubectl mtv settings set --setting controller_max_vm_inflight --value 30
+  kubectl mtv settings set --setting feature_ocp_live_migration --value true`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Default action: show all settings
@@ -104,9 +103,10 @@ Examples:
 func newGetCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var allSettings bool
+	var settingName string
 
 	cmd := &cobra.Command{
-		Use:   "get [SETTING]",
+		Use:   "get",
 		Short: "Get ForkliftController setting value(s)",
 		Long: `Get the current value of one or more ForkliftController settings.
 
@@ -124,12 +124,11 @@ Examples:
   kubectl mtv settings get --all
 
   # Get a specific setting
-  kubectl mtv settings get vddk_image
-  kubectl mtv settings get controller_max_vm_inflight
-  kubectl mtv settings get controller_container_limits_cpu`,
-		Args:              cobra.MaximumNArgs(1),
-		SilenceUsage:      true,
-		ValidArgsFunction: settingNameCompletion,
+  kubectl mtv settings get --setting vddk_image
+  kubectl mtv settings get --setting controller_max_vm_inflight
+  kubectl mtv settings get --setting controller_container_limits_cpu`,
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 			defer cancel()
@@ -137,10 +136,7 @@ Examples:
 			opts := settings.GetSettingsOptions{
 				ConfigFlags: kubeConfigFlags,
 				AllSettings: allSettings,
-			}
-
-			if len(args) > 0 {
-				opts.SettingName = args[0]
+				SettingName: settingName,
 			}
 
 			settingValues, err := settings.GetSettings(ctx, opts)
@@ -172,24 +168,6 @@ Examples:
 	cmd.Flags().BoolVar(&allSettings, "all", false, "Show all ForkliftController settings (not just common ones)")
 
 	return cmd
-}
-
-// settingNameCompletion provides completion for setting names.
-// It includes all settings (supported + extended) for better discoverability.
-func settingNameCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	if len(args) > 0 {
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	}
-
-	allSettings := settings.GetAllSettings()
-	var completions []string
-	for name := range allSettings {
-		if strings.HasPrefix(name, toComplete) {
-			completions = append(completions, name)
-		}
-	}
-	sort.Strings(completions)
-	return completions, cobra.ShellCompDirectiveNoFileComp
 }
 
 // formatOutput formats the settings output.

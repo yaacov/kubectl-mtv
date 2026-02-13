@@ -416,24 +416,24 @@ Choose your migration approach based on these key factors:
 **Environment-Based Selection:**
 ```bash
 # Development and test environments - Cold migration
-kubectl mtv create plan dev-migration \
+kubectl mtv create plan --name dev-migration \
   --migration-type cold \
   --vms "dev-web-01,test-db-01"
 
 # Production applications - Warm migration  
-kubectl mtv create plan prod-migration \
+kubectl mtv create plan --name prod-migration \
   --migration-type warm \
   --vms "prod-web-01,prod-api-01" \
   --cutover "$(date -d 'Sunday 2:00 AM' --iso-8601=seconds)"
 
 # Critical KubeVirt systems - Live migration
-kubectl mtv create plan critical-k8s-migration \
+kubectl mtv create plan --name critical-k8s-migration \
   --migration-type live \
   --vms "trading-engine,payment-processor"
 
 # Storage vendor integration - Conversion migration (VMware only)
 # Note: PVCs must be pre-created by storage vendor
-kubectl mtv create plan vendor-conversion \
+kubectl mtv create plan --name vendor-conversion \
   --migration-type conversion \
   --vms "vendor-provided-vm-01,vendor-provided-vm-02"
 ```
@@ -477,7 +477,7 @@ Based on [Forklift performance testing](https://kubev2v.github.io/forklift-docum
 **Infrastructure Distribution:**
 ```bash
 # Distribute VMs across multiple ESXi hosts for better performance
-kubectl mtv create plan distributed-cold \
+kubectl mtv create plan --name distributed-cold \
   --source-query "where esxiHost in ['host1', 'host2', 'host3']" \
   --migration-type cold \
   --convertor-node-selector "performance=high"
@@ -486,7 +486,7 @@ kubectl mtv create plan distributed-cold \
 **Resource Allocation:**
 ```bash
 # Optimize convertor pod placement for performance
-kubectl mtv create plan optimized-cold \
+kubectl mtv create plan --name optimized-cold \
   --migration-type cold \
   --convertor-node-selector "storage=nvme,network=10gbe" \
   --convertor-affinity "REQUIRE nodes(storage-tier=premium) on node"
@@ -497,7 +497,7 @@ kubectl mtv create plan optimized-cold \
 **Precopy Scheduling:**
 ```bash
 # Start precopy during low-activity periods
-kubectl mtv start plan production-warm \
+kubectl mtv start plan --name production-warm \
   --cutover "$(date -d 'next Sunday 2:00 AM' --iso-8601=seconds)"
 ```
 
@@ -535,7 +535,7 @@ kubectl mtv start plan production-warm \
 **Monitoring Commands:**
 ```bash
 # Monitor migration progress
-kubectl mtv get plan migration-performance -w
+kubectl mtv get plan --name migration-performance --watch
 
 # Check convertor pod performance
 kubectl top pods -l forklift.app/plan=migration-performance

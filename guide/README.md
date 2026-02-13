@@ -37,9 +37,8 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
 3.  **[Quick Start: First Migration Workflow](/kubectl-mtv/03-quick-start-first-migration-workflow)**
     *   Step 1: Project Setup (Creating a namespace).
     *   Step 2: Registering Providers (Source and Target).
-    *   Step 3: Creating Mappings (Optional step).
-    *   Step 4: Creating the Migration Plan.
-    *   Step 5: Executing and Monitoring the Migration (`start plan`, `get plan --watch`).
+    *   Step 3: Creating the Migration Plan (mappings are auto-generated).
+    *   Step 4: Executing and Monitoring the Migration (`start plan`, `get plan --watch`).
 
 4.  **[Migration Types and Strategy Selection](/kubectl-mtv/04-migration-types-and-strategy-selection)**
     *   Cold Migration (Complete offline process, highest reliability).
@@ -88,10 +87,10 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
 
 9.  **[Inventory Management](/kubectl-mtv/09-inventory-management)**
     *   Overview of Resources Available for Querying (VMs, Networks, Storage, Hosts, Providers).
-    *   General Syntax: `kubectl mtv get inventory <resource> <provider>`.
+    *   General Syntax: `kubectl mtv get inventory <resource> --provider <provider>`.
     *   Common Inventory Examples (Listing VMs, Networks, Storage).
     *   Output Formats (Table, JSON, YAML).
-    *   **How-To: Exporting VMs for Migration Planning** (`-o planvms`).
+    *   **How-To: Exporting VMs for Migration Planning** (`--output planvms`).
 
 10. **[Query Language Reference and Advanced Filtering](/kubectl-mtv/10-query-language-reference-and-advanced-filtering)**
     *   Query Structure (SELECT, WHERE, ORDER BY, LIMIT clauses).

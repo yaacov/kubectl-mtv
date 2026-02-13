@@ -14,19 +14,64 @@ import (
 
 // NewMappingCmd creates the get mapping command with subcommands
 func NewMappingCmd(globalConfig GlobalConfigGetter) *cobra.Command {
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
+	var watchFlag bool
+	var mappingName string
+
 	cmd := &cobra.Command{
 		Use:   "mapping",
 		Short: "Get mappings",
 		Long: `Get network and storage mappings.
 
-Mappings define how source provider resources (networks, storage) are translated
-to target OpenShift resources during migration. Use 'mapping network' or
-'mapping storage' subcommands to view specific mapping types.`,
+When called without a subcommand, lists both network and storage mappings.
+Use 'mapping network' or 'mapping storage' subcommands to view a specific
+mapping type.`,
+		Example: `  # List all mappings (both network and storage)
+  kubectl-mtv get mappings
+
+  # Get a specific mapping by name (searches both types)
+  kubectl-mtv get mapping --name my-mapping --output yaml
+
+  # Watch all mapping changes
+  kubectl-mtv get mappings --watch
+
+  # List only network mappings
+  kubectl-mtv get mapping network
+
+  # List only storage mappings
+  kubectl-mtv get mapping storage`,
+		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// If no subcommand is specified, show help
-			return cmd.Help()
+			ctx := cmd.Context()
+			if !watchFlag {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+				defer cancel()
+			}
+
+			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
+
+			// Log the operation being performed
+			if mappingName != "" {
+				logNamespaceOperation("Getting mapping", namespace, globalConfig.GetAllNamespaces())
+			} else {
+				logNamespaceOperation("Getting all mappings", namespace, globalConfig.GetAllNamespaces())
+			}
+			logOutputFormat(outputFormatFlag.GetValue())
+
+			return mapping.List(ctx, globalConfig.GetKubeConfigFlags(), "all", namespace, watchFlag, outputFormatFlag.GetValue(), mappingName, globalConfig.GetUseUTC())
 		},
+	}
+
+	cmd.Flags().StringVarP(&mappingName, "name", "M", "", "Mapping name")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().BoolVarP(&watchFlag, "watch", "w", false, "Watch for changes")
+
+	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
 	}
 
 	// Add subcommands for network and storage
@@ -40,9 +85,10 @@ to target OpenShift resources during migration. Use 'mapping network' or
 func newGetNetworkMappingCmd(globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
+	var mappingName string
 
 	cmd := &cobra.Command{
-		Use:   "network [NAME]",
+		Use:   "network",
 		Short: "Get network mappings",
 		Long: `Get network mappings that define how source provider networks map to target OpenShift networks.
 
@@ -52,15 +98,12 @@ definitions (NADs) or pod networking.`,
   kubectl-mtv get mapping network
 
   # Get a specific network mapping in YAML
-  kubectl-mtv get mapping network my-network-map -o yaml
+  kubectl-mtv get mapping network --name my-network-map --output yaml
 
   # Watch network mapping changes
-  kubectl-mtv get mapping network -w`,
-		Args:         cobra.MaximumNArgs(1),
+  kubectl-mtv get mapping network --watch`,
+		Args:         cobra.NoArgs,
 		SilenceUsage: true,
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return completion.MappingNameCompletion(globalConfig.GetKubeConfigFlags(), "network")(cmd, args, toComplete)
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -70,12 +113,6 @@ definitions (NADs) or pod networking.`,
 			}
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
-
-			// Get optional mapping name from arguments
-			var mappingName string
-			if len(args) > 0 {
-				mappingName = args[0]
-			}
 
 			// Log the operation being performed
 			if mappingName != "" {
@@ -89,10 +126,16 @@ definitions (NADs) or pod networking.`,
 		},
 	}
 
+	cmd.Flags().StringVarP(&mappingName, "name", "M", "", "Mapping name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for name and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("name", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return completion.MappingNameCompletion(globalConfig.GetKubeConfigFlags(), "network")(cmd, args, toComplete)
+	}); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -106,9 +149,10 @@ definitions (NADs) or pod networking.`,
 func newGetStorageMappingCmd(globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
+	var mappingName string
 
 	cmd := &cobra.Command{
-		Use:   "storage [NAME]",
+		Use:   "storage",
 		Short: "Get storage mappings",
 		Long: `Get storage mappings that define how source provider storage maps to target OpenShift storage classes.
 
@@ -118,15 +162,12 @@ storage classes with optional volume mode and access mode settings.`,
   kubectl-mtv get mapping storage
 
   # Get a specific storage mapping in JSON
-  kubectl-mtv get mapping storage my-storage-map -o json
+  kubectl-mtv get mapping storage --name my-storage-map --output json
 
   # Watch storage mapping changes
-  kubectl-mtv get mapping storage -w`,
-		Args:         cobra.MaximumNArgs(1),
+  kubectl-mtv get mapping storage --watch`,
+		Args:         cobra.NoArgs,
 		SilenceUsage: true,
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return completion.MappingNameCompletion(globalConfig.GetKubeConfigFlags(), "storage")(cmd, args, toComplete)
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
@@ -136,12 +177,6 @@ storage classes with optional volume mode and access mode settings.`,
 			}
 
 			namespace := client.ResolveNamespaceWithAllFlag(globalConfig.GetKubeConfigFlags(), globalConfig.GetAllNamespaces())
-
-			// Get optional mapping name from arguments
-			var mappingName string
-			if len(args) > 0 {
-				mappingName = args[0]
-			}
 
 			// Log the operation being performed
 			if mappingName != "" {
@@ -155,10 +190,16 @@ storage classes with optional volume mode and access mode settings.`,
 		},
 	}
 
+	cmd.Flags().StringVarP(&mappingName, "name", "M", "", "Mapping name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 
-	// Add completion for output format flag
+	// Add completion for name and output format flags
+	if err := cmd.RegisterFlagCompletionFunc("name", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return completion.MappingNameCompletion(globalConfig.GetKubeConfigFlags(), "storage")(cmd, args, toComplete)
+	}); err != nil {
+		panic(err)
+	}
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {

@@ -180,6 +180,7 @@ func (r *Registry) GenerateReadOnlyDescription() string {
 	roots := uniqueRootVerbs(r.ReadOnly)
 
 	var sb strings.Builder
+	sb.WriteString("MTV (Migration Toolkit for Virtualization) migrates VMs from VMware vSphere, oVirt, OpenStack, and Amazon EC2 into OpenShift Virtualization (KubeVirt).\n\n")
 	sb.WriteString("Execute read-only kubectl-mtv commands to query MTV resources.\n\n")
 	sb.WriteString(fmt.Sprintf("Commands: %s\n\n", strings.Join(roots, ", ")))
 	sb.WriteString("Available commands:\n")
@@ -208,6 +209,13 @@ func (r *Registry) GenerateReadWriteDescription() string {
 	var sb strings.Builder
 	sb.WriteString("Execute kubectl-mtv commands that modify cluster state.\n\n")
 	sb.WriteString("WARNING: These commands create, modify, or delete resources.\n\n")
+	sb.WriteString("Typical migration workflow:\n")
+	sb.WriteString("1. Set namespace for the migration\n")
+	sb.WriteString("2. Check existing providers with mtv_read \"get provider\"; create via mtv_write \"create provider\" only if needed\n")
+	sb.WriteString("3. Browse VMs with mtv_read \"get inventory vm\" + TSL queries\n")
+	sb.WriteString("4. Create a migration plan (network/storage mappings are auto-generated; use --network-pairs/--storage-pairs to override)\n")
+	sb.WriteString("5. Start the plan\n")
+	sb.WriteString("6. Monitor with mtv_read \"get plan\", debug with kubectl_logs\n\n")
 	readRoots := uniqueRootVerbs(r.ReadOnly)
 	sb.WriteString(fmt.Sprintf("NOTE: For read-only operations (%s), use the mtv_read tool instead.\n\n", strings.Join(readRoots, ", ")))
 	sb.WriteString("Available commands:\n")
@@ -242,12 +250,12 @@ func (r *Registry) GenerateReadWriteDescription() string {
 func (r *Registry) GenerateMinimalReadOnlyDescription() string {
 	var sb strings.Builder
 
-	sb.WriteString("Query MTV resources (read-only).\n")
+	sb.WriteString("MTV (Migration Toolkit for Virtualization) migrates VMs from VMware vSphere, oVirt, OpenStack, and Amazon EC2 into OpenShift Virtualization (KubeVirt).\n")
+	sb.WriteString("\nQuery MTV resources (read-only).\n")
 	sb.WriteString("\nCommands:\n")
 
-	// Detect sibling groups (e.g., get/inventory/*) to compact them
-	const minGroupSize = 3
-	groups, groupedKeys := detectSiblingGroups(r.ReadOnly, r.Parents, minGroupSize)
+	// Detect deep sibling groups (depth >= 3) for compaction
+	groups, groupedKeys := detectDeepSiblingGroups(r.ReadOnly, r.Parents)
 
 	// List non-grouped commands normally
 	commands := r.ListReadOnlyCommands()
@@ -256,34 +264,18 @@ func (r *Registry) GenerateMinimalReadOnlyDescription() string {
 			continue
 		}
 		cmd := r.ReadOnly[key]
-		usage := formatUsageShort(cmd)
-		sb.WriteString(fmt.Sprintf("  %s - %s\n", usage, cmd.Description))
+		sb.WriteString(fmt.Sprintf("  %s - %s\n", cmd.CommandPath(), cmd.Description))
 	}
 
-	// Write compacted sibling groups with shared required arg shown as <flag>
+	// Write compacted sibling groups
 	for _, group := range groups {
-		parentDisplay := strings.ReplaceAll(group.ParentPath, "/", " ")
-
-		if group.SharedRequiredArg != "" {
-			argLower := strings.ToLower(group.SharedRequiredArg)
-			sb.WriteString(fmt.Sprintf("  %s RESOURCE <%s> - %s\n", parentDisplay, argLower, group.Description))
-		} else {
-			sb.WriteString(fmt.Sprintf("  %s RESOURCE - %s\n", parentDisplay, group.Description))
-		}
-
-		// Use provider-grouped rendering for inventory groups
-		if grouped := r.formatGroupedResources(group.ParentPath); grouped != "" {
-			sb.WriteString(grouped)
-		} else {
-			sb.WriteString(fmt.Sprintf("    Resources: %s\n", strings.Join(group.Children, ", ")))
-		}
+		parentDisplay := strings.ReplaceAll(group.parentPath, "/", " ")
+		sb.WriteString(fmt.Sprintf("  %s RESOURCE - %s\n", parentDisplay, group.description))
+		sb.WriteString(fmt.Sprintf("    Resources: %s\n", strings.Join(group.children, ", ")))
 	}
 
-	// Clarify how positional args map to the flags object (MCP-specific concern)
-	sb.WriteString("\nPositional args (shown as <arg> or [arg]) are passed as named entries in flags (e.g. flags: {name: \"my-plan\"}).\n")
-
-	// Representative examples derived from source command data
-	examples := r.pickRepresentativeExamples(r.ReadOnly, r.ReadOnlyOrder, 6)
+	// Examples: first example from each command in order, capped at N
+	examples := r.collectOrderedExamples(r.ReadOnly, r.ReadOnlyOrder, 6)
 	if len(examples) > 0 {
 		sb.WriteString("\nExamples:\n")
 		for _, ex := range examples {
@@ -294,8 +286,8 @@ func (r *Registry) GenerateMinimalReadOnlyDescription() string {
 	sb.WriteString(r.formatGlobalFlags())
 
 	sb.WriteString("\nDefault output is table. For structured data, use flags: {output: \"json\"} and fields: [\"name\", \"status\"] to limit response size.\n")
-	sb.WriteString("The fields parameter is a top-level array (not inside flags) that filters JSON output to only the listed keys.\n")
-	sb.WriteString("Use mtv_help for flags, TSL (Tree Search Language) query syntax for filtering inventory, and examples.\n")
+	sb.WriteString("IMPORTANT: 'fields' is a TOP-LEVEL parameter, NOT inside flags. Example: {command: \"get plan\", flags: {output: \"json\"}, fields: [\"name\", \"status\"]}\n")
+	sb.WriteString("Use mtv_help for flags, TSL query syntax, and examples.\n")
 	sb.WriteString("IMPORTANT: Before writing inventory queries, call mtv_help(\"tsl\") to learn available fields per provider and query syntax.\n")
 	return sb.String()
 }
@@ -312,6 +304,13 @@ func (r *Registry) GenerateMinimalReadWriteDescription() string {
 	var sb strings.Builder
 
 	sb.WriteString("Create, modify, or delete MTV resources (write operations).\n")
+	sb.WriteString("\nTypical migration workflow:\n")
+	sb.WriteString("1. Set namespace for the migration\n")
+	sb.WriteString("2. Check existing providers with mtv_read \"get provider\"; create via mtv_write \"create provider\" only if needed\n")
+	sb.WriteString("3. Browse VMs with mtv_read \"get inventory vm\" + TSL queries\n")
+	sb.WriteString("4. Create a migration plan (network/storage mappings are auto-generated; use --network-pairs/--storage-pairs to override)\n")
+	sb.WriteString("5. Start the plan\n")
+	sb.WriteString("6. Monitor with mtv_read \"get plan\", debug with kubectl_logs\n")
 	sb.WriteString("\nCommands:\n")
 
 	commands := r.ListReadWriteCommands()
@@ -324,14 +323,7 @@ func (r *Registry) GenerateMinimalReadWriteDescription() string {
 		sb.WriteString(fmt.Sprintf("  %s - %s\n", usage, cmd.Description))
 	}
 
-	// Clarify how positional args map to the flags object (MCP-specific concern)
-	sb.WriteString("\nPositional args (shown as <arg> or [arg]) are passed as named entries in flags (e.g. flags: {name: \"my-plan\"}).\n")
-
-	// Representative examples derived from source command data.
-	// Use 8 slots to cover the most common verb groups (archive, cancel, create,
-	// cutover, delete, patch, settings, start) — 6 was too few and omitted
-	// frequently used operations like "start plan".
-	examples := r.pickRepresentativeExamples(r.ReadWrite, r.ReadWriteOrder, 8)
+	examples := r.collectOrderedExamples(r.ReadWrite, r.ReadWriteOrder, 8)
 	if len(examples) > 0 {
 		sb.WriteString("\nExamples:\n")
 		for _, ex := range examples {
@@ -463,65 +455,21 @@ func (r *Registry) generateReadOnlyCommandNotes() string {
 	return sb.String()
 }
 
-// pickRepresentativeExamples selects up to maxExamples from the command set,
-// one per verb group. Commands are iterated in their original registration
-// order (from help --machine). Within each group, the command with the most
-// CLI examples is selected — more examples means the developer documented it
-// more thoroughly, making it the most representative command for that group.
-//
-// Commands are grouped by root verb (e.g. "get", "create"), except inventory
-// commands which form their own "get/inventory" group.
-// Inventory gets 2 examples (to show query patterns like len() and any()).
-func (r *Registry) pickRepresentativeExamples(commands map[string]*Command, orderedKeys []string, maxExamples int) []string {
-	// Collect the command with the most examples per verb group.
-	// Inventory commands (depth >= 3 with "inventory") get their own group
-	// so they aren't overshadowed by simpler same-verb commands like get/plan.
-	bestPerGroup := make(map[string]*Command)
-	var groupOrder []string // preserve encounter order of groups
-
+// collectOrderedExamples collects MCP-style examples by iterating commands in
+// their help registration order and taking the first example from each command.
+// No heuristics — the help output order is the source of truth.
+func (r *Registry) collectOrderedExamples(commands map[string]*Command, orderedKeys []string, maxExamples int) []string {
+	var examples []string
 	for _, key := range orderedKeys {
+		if len(examples) >= maxExamples {
+			break
+		}
 		cmd := commands[key]
 		if cmd == nil || len(cmd.Examples) == 0 {
 			continue
 		}
-
-		// Group key: root verb for most commands, "get/inventory" for inventory
-		parts := strings.Split(key, "/")
-		groupKey := parts[0]
-		if len(parts) >= 3 && parts[1] == "inventory" {
-			groupKey = parts[0] + "/" + parts[1]
-		}
-
-		existing := bestPerGroup[groupKey]
-		if existing == nil {
-			bestPerGroup[groupKey] = cmd
-			groupOrder = append(groupOrder, groupKey)
-		} else if len(cmd.Examples) > len(existing.Examples) {
-			// More examples = more thoroughly documented = better representative
-			bestPerGroup[groupKey] = cmd
-		}
-	}
-
-	var examples []string
-	for _, group := range groupOrder {
-		if len(examples) >= maxExamples {
-			break
-		}
-		cmd := bestPerGroup[group]
-
-		// Inventory gets 2 examples (to show query patterns); others get 1.
-		perCmd := 1
-		if strings.Contains(group, "inventory") {
-			perCmd = 2
-		}
-
-		mcpExamples := convertCLIToMCPExamples(cmd, perCmd)
-		for _, ex := range mcpExamples {
-			if len(examples) >= maxExamples {
-				break
-			}
-			examples = append(examples, ex)
-		}
+		mcpExamples := convertCLIToMCPExamples(cmd, 1)
+		examples = append(examples, mcpExamples...)
 	}
 	return examples
 }
@@ -550,7 +498,7 @@ func convertCLIToMCPExamples(cmd *Command, n int) []string {
 		if len(results) >= n {
 			break
 		}
-		mcpCall := formatCLIAsMCP(ex.Command, pathString, cmd.PositionalArgs)
+		mcpCall := formatCLIAsMCP(ex.Command, pathString)
 		if mcpCall != "" && !seen[mcpCall] {
 			results = append(results, mcpCall)
 			seen[mcpCall] = true
@@ -561,15 +509,14 @@ func convertCLIToMCPExamples(cmd *Command, n int) []string {
 
 // formatCLIAsMCP parses a single CLI command string and converts it to
 // MCP-style call format: {command: "...", flags: {...}}.
-// It strips the CLI prefix, extracts positional args (mapped to flag names),
-// and collects --flag value pairs.
+// It strips the CLI prefix and collects --flag value pairs.
 //
 // Examples:
 //
 //	"kubectl-mtv get plan" → {command: "get plan"}
-//	"kubectl-mtv get inventory vm vsphere-prod -q \"where len(nics) >= 2\"" →
+//	"kubectl-mtv get inventory vm --provider vsphere-prod --query \"where len(nics) >= 2\"" →
 //	  {command: "get inventory vm", flags: {provider: "vsphere-prod", query: "where len(nics) >= 2"}}
-func formatCLIAsMCP(cliCmd string, pathString string, posArgs []Arg) string {
+func formatCLIAsMCP(cliCmd string, pathString string) string {
 	cliCmd = strings.TrimSpace(cliCmd)
 	if cliCmd == "" {
 		return ""
@@ -577,7 +524,7 @@ func formatCLIAsMCP(cliCmd string, pathString string, posArgs []Arg) string {
 	cliCmd = strings.TrimPrefix(cliCmd, "kubectl-mtv ")
 	cliCmd = strings.TrimPrefix(cliCmd, "kubectl mtv ")
 
-	// Strip the command path from the front to get args + flags
+	// Strip the command path from the front to get flags
 	rest := cliCmd
 	pathParts := strings.Fields(pathString)
 	for _, part := range pathParts {
@@ -597,23 +544,8 @@ func formatCLIAsMCP(cliCmd string, pathString string, posArgs []Arg) string {
 	tokens := shellTokenize(rest)
 	flagMap := make(map[string]string)
 
-	// Phase 1: extract positional args (tokens before any flag)
-	posIdx := 0
-	i := 0
-	for ; i < len(tokens); i++ {
-		if strings.HasPrefix(tokens[i], "-") {
-			break // reached flags
-		}
-		if posIdx < len(posArgs) {
-			argName := strings.ToLower(strings.TrimSuffix(posArgs[posIdx].Name, "..."))
-			flagMap[argName] = tokens[i]
-			posIdx++
-		}
-		// Extra positional tokens beyond declared args are ignored
-	}
-
-	// Phase 2: extract --flag value pairs
-	for ; i < len(tokens); i++ {
+	// Extract --flag value pairs (no positional args to handle)
+	for i := 0; i < len(tokens); i++ {
 		tok := tokens[i]
 		if !strings.HasPrefix(tok, "-") {
 			continue // skip stray tokens
@@ -632,12 +564,12 @@ func formatCLIAsMCP(cliCmd string, pathString string, posArgs []Arg) string {
 			flagValue = "true"
 		}
 
-		// Skip sensitive flags to avoid credentials in descriptions
+		// Skip sensitive flags
 		if sensitiveFlags[flagName] {
 			continue
 		}
 
-		// Strip surrounding quotes from values
+		// Strip surrounding quotes
 		flagValue = strings.Trim(flagValue, "'\"")
 
 		// Use underscores for MCP JSON convention
@@ -662,8 +594,6 @@ func formatCLIAsMCP(cliCmd string, pathString string, posArgs []Arg) string {
 	return fmt.Sprintf("{command: \"%s\", flags: {%s}}", pathString, strings.Join(flagParts, ", "))
 }
 
-// uniqueRootVerbs extracts the unique first path element from a set of commands
-// and returns them sorted. For example, commands "get/plan", "get/provider",
 // shellTokenize splits a string into tokens, respecting double-quoted and
 // single-quoted substrings so that values like "VM Network:default" remain
 // a single token. Quotes are stripped from the returned tokens.
@@ -695,6 +625,8 @@ func shellTokenize(s string) []string {
 	return tokens
 }
 
+// uniqueRootVerbs extracts the unique first path element from a set of commands
+// and returns them sorted. For example, commands "get/plan", "get/provider",
 // "describe/plan", "health" produce ["describe", "get", "health"].
 func uniqueRootVerbs(commands map[string]*Command) []string {
 	seen := make(map[string]bool)
@@ -711,12 +643,12 @@ func uniqueRootVerbs(commands map[string]*Command) []string {
 	return roots
 }
 
-// formatGlobalFlags returns a formatted string of common flags derived from the
-// registry's GlobalFlags data. Only flags with LLMRelevant=true (set via the
-// "llm-relevant" pflag annotation at the CLI source) are included.
-// Extra flag names can be passed to include additional flags beyond the annotated ones.
+// importantGlobalFlags lists the global flags that are relevant for MCP tool descriptions.
+var importantGlobalFlags = map[string]bool{
+	"namespace": true, "all-namespaces": true, "inventory-url": true, "verbose": true,
+}
+
 func (r *Registry) formatGlobalFlags(extraNames ...string) string {
-	// Build a set of extra names for fast lookup
 	extras := make(map[string]bool, len(extraNames))
 	for _, name := range extraNames {
 		extras[name] = true
@@ -727,14 +659,10 @@ func (r *Registry) formatGlobalFlags(extraNames ...string) string {
 
 	found := false
 	for _, f := range r.GlobalFlags {
-		if !f.LLMRelevant && !extras[f.Name] {
+		if !importantGlobalFlags[f.Name] && !extras[f.Name] {
 			continue
 		}
 		found = true
-		// Display flag names with underscores (MCP JSON convention) instead of
-		// hyphens (CLI convention). The MCP tools accept both forms at runtime,
-		// but showing underscores matches the jsonschema tags and avoids confusion
-		// for LLMs constructing JSON flag objects.
 		displayName := strings.ReplaceAll(f.Name, "-", "_")
 		sb.WriteString(fmt.Sprintf("- %s: %s\n", displayName, f.Description))
 	}
@@ -745,142 +673,36 @@ func (r *Registry) formatGlobalFlags(extraNames ...string) string {
 	return sb.String()
 }
 
-// providerDisplayOrder defines the order in which provider categories are shown.
-// "common" is a pseudo-provider for resources available across all providers.
-var providerDisplayOrder = []string{"common", "vsphere", "ovirt", "openstack", "openshift", "ec2"}
-
-// providerDisplayNames maps provider keys to human-readable labels.
-var providerDisplayNames = map[string]string{
-	"common":    "Resources",
-	"vsphere":   "vSphere",
-	"ovirt":     "oVirt",
-	"openstack": "OpenStack",
-	"openshift": "OpenShift",
-	"ec2":       "AWS",
+// deepSiblingGroup represents a group of commands at depth >= 3 that share a common parent path.
+type deepSiblingGroup struct {
+	parentPath  string
+	children    []string
+	description string
 }
 
-// formatGroupedResources renders inventory-style sibling groups with resources
-// categorized by provider type. Returns empty string if the group's commands
-// don't have provider metadata (falls back to flat list).
-func (r *Registry) formatGroupedResources(parentPath string) string {
-	// Collect commands under this parent
-	prefix := parentPath + "/"
-	var children []*Command
-	for key, cmd := range r.ReadOnly {
-		if strings.HasPrefix(key, prefix) {
-			children = append(children, cmd)
-		}
-	}
-	if len(children) == 0 {
-		return ""
-	}
+// detectDeepSiblingGroups finds groups of commands at depth >= 3 that share a common
+// parent path with at least 3 siblings (e.g., get/inventory/*). This is used to
+// compact many inventory-style subcommands into a single summary line.
+func detectDeepSiblingGroups(commands map[string]*Command, parents map[string]*Command) ([]deepSiblingGroup, map[string]bool) {
+	const minGroupSize = 3
 
-	// Categorize resources by their exclusive provider.
-	// A resource is "common" if it has no provider restriction (empty Providers list).
-	// A resource is exclusive to a provider if it has exactly one provider.
-	// Resources shared by 2+ providers go into the first matching provider in display order.
-	categories := make(map[string][]string)
-	hasAnyProviders := false
-
-	// Sort children by name for deterministic output
-	sort.Slice(children, func(i, j int) bool {
-		return children[i].Name < children[j].Name
-	})
-
-	for _, cmd := range children {
-		if len(cmd.Providers) == 0 {
-			categories["common"] = append(categories["common"], cmd.Name)
-		} else {
-			hasAnyProviders = true
-			if len(cmd.Providers) == 1 {
-				categories[cmd.Providers[0]] = append(categories[cmd.Providers[0]], cmd.Name)
-			} else {
-				// Multi-provider: place in the first matching provider in display order
-				placed := false
-				for _, prov := range providerDisplayOrder {
-					if prov == "common" {
-						continue
-					}
-					for _, cp := range cmd.Providers {
-						if cp == prov {
-							categories[prov] = append(categories[prov], cmd.Name)
-							placed = true
-							break
-						}
-					}
-					if placed {
-						break
-					}
-				}
-				if !placed {
-					categories["common"] = append(categories["common"], cmd.Name)
-				}
-			}
-		}
-	}
-
-	// If no commands have provider metadata, fall back to flat rendering
-	if !hasAnyProviders {
-		return ""
-	}
-
-	var sb strings.Builder
-	for _, prov := range providerDisplayOrder {
-		names, ok := categories[prov]
-		if !ok || len(names) == 0 {
-			continue
-		}
-		label := providerDisplayNames[prov]
-		if label == "" {
-			label = prov
-		}
-		sb.WriteString(fmt.Sprintf("    %s: %s\n", label, strings.Join(names, ", ")))
-	}
-	return sb.String()
-}
-
-// siblingGroup represents a group of commands that share a common parent path.
-// Used to compact many sibling commands (e.g., get/inventory/*) into a single
-// summary line in tool descriptions.
-type siblingGroup struct {
-	// ParentPath is the common parent path (e.g., "get/inventory")
-	ParentPath string
-	// Children are the child command names (e.g., ["vm", "network", "cluster", ...])
-	Children []string
-	// SharedRequiredArg is the positional arg shared by all children, if any (e.g., "PROVIDER")
-	SharedRequiredArg string
-	// Description is taken from the first child command
-	Description string
-}
-
-// detectSiblingGroups finds groups of commands that share a common parent path
-// with at least minGroupSize siblings. When a non-runnable parent command exists
-// in the parents map, its description is used for the group. Otherwise, the first
-// child's description is used as a fallback.
-// Returns the groups and a set of command keys that belong to a group.
-func detectSiblingGroups(commands map[string]*Command, parents map[string]*Command, minGroupSize int) ([]siblingGroup, map[string]bool) {
-	// Count children per parent path
-	parentChildren := make(map[string][]*Command)
+	parentChildren := make(map[string][]string)
 	parentChildKeys := make(map[string][]string)
 
-	for key, cmd := range commands {
+	for key := range commands {
 		parts := strings.Split(key, "/")
 		if len(parts) < 3 {
-			// Only group commands at depth ≥ 3 (parent has ≥ 2 segments).
-			// This prevents compacting heterogeneous top-level groups like get/*
-			// or describe/*, while still compacting deeper homogeneous groups
-			// like get/inventory/* where all children are structurally similar.
 			continue
 		}
 		parentPath := strings.Join(parts[:len(parts)-1], "/")
-		parentChildren[parentPath] = append(parentChildren[parentPath], cmd)
+		childName := parts[len(parts)-1]
+		parentChildren[parentPath] = append(parentChildren[parentPath], childName)
 		parentChildKeys[parentPath] = append(parentChildKeys[parentPath], key)
 	}
 
-	var groups []siblingGroup
+	var groups []deepSiblingGroup
 	groupedKeys := make(map[string]bool)
 
-	// Sort parent paths for deterministic output
 	var parentPaths []string
 	for p := range parentChildren {
 		parentPaths = append(parentPaths, p)
@@ -893,67 +715,25 @@ func detectSiblingGroups(commands map[string]*Command, parents map[string]*Comma
 			continue
 		}
 
-		// Determine the shared required positional arg by majority vote.
-		// If ≥ 2/3 of children share the same required first positional arg,
-		// treat it as the shared arg. This handles outliers like
-		// "get inventory provider [PROVIDER_NAME]" among many PROVIDER-required siblings.
-		argCounts := make(map[string]int)
-		for _, child := range children {
-			if len(child.PositionalArgs) > 0 && child.PositionalArgs[0].Required {
-				argCounts[child.PositionalArgs[0].Name]++
-			}
-		}
-		sharedArg := ""
-		for argName, count := range argCounts {
-			if count*3 >= len(children)*2 { // ≥ 2/3 supermajority
-				sharedArg = argName
-				break
-			}
-		}
+		sort.Strings(children)
 
-		// Collect child names (last path element), excluding the shared arg
-		sort.Slice(children, func(i, j int) bool {
-			return children[i].Name < children[j].Name
-		})
-		var childNames []string
-		for _, child := range children {
-			name := child.Name
-			// Build positional args string excluding the shared arg
-			var extraArgs []string
-			for _, arg := range child.PositionalArgs {
-				if sharedArg != "" && arg.Name == sharedArg && arg.Required {
-					continue // Skip the shared arg
-				}
-				// Show arg names in lowercase to match the flag key the LLM should use
-				argLower := strings.ToLower(arg.Name)
-				if arg.Required {
-					extraArgs = append(extraArgs, argLower)
-				} else {
-					extraArgs = append(extraArgs, "["+argLower+"]")
-				}
-			}
-			if len(extraArgs) > 0 {
-				name += " " + strings.Join(extraArgs, " ")
-			}
-			childNames = append(childNames, name)
-		}
-
-		// Use the parent command's description if available (e.g., "Get inventory resources"),
-		// otherwise fall back to the first child's description.
-		desc := children[0].Description
+		// Use parent's description if available
+		desc := ""
 		if parents != nil {
 			if parent, ok := parents[parentPath]; ok && parent.Description != "" {
 				desc = parent.Description
 			}
 		}
-		groups = append(groups, siblingGroup{
-			ParentPath:        parentPath,
-			Children:          childNames,
-			SharedRequiredArg: sharedArg,
-			Description:       desc,
+		if desc == "" {
+			desc = "Get " + strings.ReplaceAll(parentPath, "/", " ") + " resources"
+		}
+
+		groups = append(groups, deepSiblingGroup{
+			parentPath:  parentPath,
+			children:    children,
+			description: desc,
 		})
 
-		// Mark all child keys as grouped
 		for _, key := range parentChildKeys[parentPath] {
 			groupedKeys[key] = true
 		}
@@ -964,14 +744,10 @@ func detectSiblingGroups(commands map[string]*Command, parents map[string]*Comma
 
 // detectBareParents finds commands that are structural grouping nodes rather than
 // real commands. A bare parent is a command whose path is a proper prefix of another
-// command's path AND that has no positional args AND no command-specific flags.
-// Examples: "patch" (parent of patch/plan, patch/mapping/*),
-//
-//	"patch/mapping" (parent of patch/mapping/network, patch/mapping/storage).
+// command's path AND that has no command-specific flags.
 func detectBareParents(commands map[string]*Command) map[string]bool {
 	bareParents := make(map[string]bool)
 
-	// Collect all path keys
 	keys := make([]string, 0, len(commands))
 	for k := range commands {
 		keys = append(keys, k)
@@ -979,8 +755,8 @@ func detectBareParents(commands map[string]*Command) map[string]bool {
 
 	for _, key := range keys {
 		cmd := commands[key]
-		// Must have no positional args and no command-specific flags
-		if len(cmd.PositionalArgs) > 0 || len(cmd.Flags) > 0 {
+		// Must have no command-specific flags
+		if len(cmd.Flags) > 0 {
 			continue
 		}
 
@@ -998,47 +774,23 @@ func detectBareParents(commands map[string]*Command) map[string]bool {
 }
 
 // formatUsageShort returns a short usage string for a command.
-// Positional args are shown in lowercase to match the flag key the LLM should use.
-// Required args use <angle brackets>, optional use [square brackets].
-// Example: "get plan [name]" or "create provider <name>"
 func formatUsageShort(cmd *Command) string {
-	path := cmd.CommandPath()
-	if len(cmd.PositionalArgs) == 0 {
-		return path
-	}
-
-	var args []string
-	for _, arg := range cmd.PositionalArgs {
-		name := strings.ToLower(arg.Name)
-		if arg.Variadic {
-			name += "..."
-		}
-		if arg.Required {
-			name = "<" + name + ">"
-		} else {
-			name = "[" + name + "]"
-		}
-		args = append(args, name)
-	}
-	return path + " " + strings.Join(args, " ")
+	return cmd.CommandPath()
 }
 
-// BuildCommandArgs builds command-line arguments from command path, args, and flags.
-func BuildCommandArgs(cmdPath string, positionalArgs []string, flags map[string]string, namespace string, allNamespaces bool) []string {
+// BuildCommandArgs builds command-line arguments from command path and flags.
+func BuildCommandArgs(cmdPath string, flags map[string]string, namespace string, allNamespaces bool) []string {
 	var args []string
 
 	// Add command path
 	parts := strings.Split(cmdPath, "/")
 	args = append(args, parts...)
 
-	// Add positional arguments
-	args = append(args, positionalArgs...)
-
 	// Add namespace flags
 	if allNamespaces {
-		args = append(args, "-A")
+		args = append(args, "--all-namespaces")
 	} else if namespace != "" {
-		args = append(args, "-n", namespace)
+		args = append(args, "--namespace", namespace)
 	}
 
 	// Add other flags

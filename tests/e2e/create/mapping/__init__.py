@@ -1,1 +1,0 @@
-# mapping test package
