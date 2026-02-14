@@ -187,7 +187,7 @@ verify-defaults:
 .PHONY: test-e2e-mcp
 test-e2e-mcp: kubectl-mtv
 	@echo "Running MCP e2e tests against local build..."
-	cd e2e/mcp && $(MAKE) test
+	cd e2e/mcp && $(MAKE) test-full
 
 ## test-e2e-mcp-image: Run MCP e2e tests against a container image (MCP_IMAGE required)
 .PHONY: test-e2e-mcp-image
@@ -196,7 +196,14 @@ ifndef MCP_IMAGE
 	$(error MCP_IMAGE is required. Example: make test-e2e-mcp-image MCP_IMAGE=$(IMAGE):$(IMAGE_TAG)-amd64)
 endif
 	@echo "Running MCP e2e tests against container image $(MCP_IMAGE)..."
-	cd e2e/mcp && MCP_IMAGE=$(MCP_IMAGE) $(MAKE) test
+	cd e2e/mcp && MCP_IMAGE=$(MCP_IMAGE) $(MAKE) test-full-image
+
+## test-e2e-mcp-external: Run MCP e2e tests against an already running MCP server
+.PHONY: test-e2e-mcp-external
+test-e2e-mcp-external:
+	@echo "Running MCP e2e tests against external server..."
+	@echo "Make sure MCP_SSE_HOST/MCP_SSE_PORT or MCP_SSE_URL are configured in e2e/mcp/.env"
+	cd e2e/mcp && $(MAKE) test
 
 ## test-cleanup: Clean up test namespaces
 .PHONY: test-cleanup
@@ -248,10 +255,17 @@ image-push-arm64:
 ## image-manifest: Create and push multi-arch manifest list
 .PHONY: image-manifest
 image-manifest:
-	$(CONTAINER_ENGINE) manifest create --amend $(IMAGE):$(IMAGE_TAG) \
+	$(CONTAINER_ENGINE) manifest rm $(IMAGE):$(IMAGE_TAG) || true
+	$(CONTAINER_ENGINE) manifest create $(IMAGE):$(IMAGE_TAG) \
 		$(IMAGE):$(IMAGE_TAG)-amd64 \
 		$(IMAGE):$(IMAGE_TAG)-arm64
 	$(CONTAINER_ENGINE) manifest push $(IMAGE):$(IMAGE_TAG)
+	@echo "Tagging and pushing as latest..."
+	$(CONTAINER_ENGINE) manifest rm $(IMAGE):latest || true
+	$(CONTAINER_ENGINE) manifest create $(IMAGE):latest \
+		$(IMAGE):$(IMAGE_TAG)-amd64 \
+		$(IMAGE):$(IMAGE_TAG)-arm64
+	$(CONTAINER_ENGINE) manifest push $(IMAGE):latest
 
 ## deploy: Deploy the MCP server pod and service to the current OpenShift cluster
 .PHONY: deploy
@@ -264,6 +278,20 @@ deploy:
 undeploy:
 	@echo "Removing kubectl-mtv MCP server..."
 	oc delete -f deploy/mcp-server.yaml --ignore-not-found=true
+
+## deploy-route: Expose the MCP server externally via an OpenShift Route
+.PHONY: deploy-route
+deploy-route:
+	@echo "Creating route to expose MCP server..."
+	oc apply -f deploy/mcp-route.yaml
+	@echo "Route created. Access URL:"
+	@oc get route kubectl-mtv-mcp-server -n openshift-mtv -o jsonpath='https://{.spec.host}/sse{"\n"}' 2>/dev/null || echo "  (route not ready yet)"
+
+## undeploy-route: Remove the external route for the MCP server
+.PHONY: undeploy-route
+undeploy-route:
+	@echo "Removing MCP server route..."
+	oc delete -f deploy/mcp-route.yaml --ignore-not-found=true
 
 ## deploy-olsconfig: Register the MCP server with OpenShift Lightspeed (patches existing OLSConfig)
 .PHONY: deploy-olsconfig

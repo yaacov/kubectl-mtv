@@ -188,6 +188,9 @@ cython_debug/
 tests/e2e/.env
 tests/e2e/venv/
 tests/e2e/reports/
+e2e/mcp/.env
+e2e/mcp/.server.pid
+e2e/mcp/.server.log
 inventory_json_dump
 cursor-mcp-config-generated.json
 claude-desktop-config-generated.json

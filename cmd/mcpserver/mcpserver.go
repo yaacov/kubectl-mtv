@@ -31,6 +31,7 @@ var (
 	kubeToken        string
 	insecureSkipTLS  bool
 	maxResponseChars int
+	readOnly         bool
 )
 
 // NewMCPServerCmd creates the mcp-server command
@@ -46,6 +47,10 @@ USE WITH CAUTION: Includes write operations that can modify resources.
 Modes:
   Default: Stdio mode for AI assistant integration
   --sse:   HTTP server mode with optional TLS
+
+Read-Only Mode:
+  --read-only: Disables all write operations (mtv_write tool not registered)
+               Only read operations will be available to AI assistants
 
 Security:
   --cert-file:   Path to TLS certificate file (enables TLS when both cert and key provided)
@@ -115,7 +120,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 				// calls within that session. The outer POST-logging wrapper below provides
 				// diagnostic logging per-request but doesn't affect header propagation.
 				innerHandler := mcp.NewSSEHandler(func(req *http.Request) *mcp.Server {
-					server, err := createMCPServerWithHeaderCapture(req)
+					server, err := createMCPServerWithHeaderCapture(req, readOnly)
 					if err != nil {
 						log.Printf("Failed to create server: %v", err)
 						return nil
@@ -221,6 +226,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 	mcpCmd.Flags().StringVar(&kubeToken, "token", "", "Kubernetes authentication token (passed to kubectl via --token flag)")
 	mcpCmd.Flags().BoolVar(&insecureSkipTLS, "insecure-skip-tls-verify", false, "Skip TLS certificate verification for Kubernetes API connections")
 	mcpCmd.Flags().IntVar(&maxResponseChars, "max-response-chars", 0, "Max characters for text output (0=unlimited). Helps small LLMs by truncating long responses")
+	mcpCmd.Flags().BoolVar(&readOnly, "read-only", false, "Run in read-only mode (disables write operations)")
 
 	return mcpCmd
 }
@@ -228,13 +234,14 @@ Manual Claude config: Add to claude_desktop_config.json:
 // createMCPServer creates the MCP server with dynamically discovered tools.
 // Discovery happens at startup using kubectl-mtv help --machine.
 func createMCPServer() (*mcp.Server, error) {
-	return createMCPServerWithHeaderCapture(nil)
+	return createMCPServerWithHeaderCapture(nil, readOnly)
 }
 
 // createMCPServerWithHeaderCapture creates the MCP server with HTTP header capture
 // The req parameter contains the HTTP request that triggered server creation,
 // which may include authentication headers that we want to pass to tool handlers
-func createMCPServerWithHeaderCapture(req *http.Request) (*mcp.Server, error) {
+// The readOnlyMode parameter controls whether write operations are enabled
+func createMCPServerWithHeaderCapture(req *http.Request, readOnlyMode bool) (*mcp.Server, error) {
 	ctx := context.Background()
 	registry, err := discovery.NewRegistry(ctx)
 	if err != nil {
@@ -258,11 +265,18 @@ func createMCPServerWithHeaderCapture(req *http.Request) (*mcp.Server, error) {
 		capturedHeaders = req.Header
 	}
 
+	// Always register read-only tools
 	tools.AddToolWithCoercion(server, tools.GetMinimalMTVReadTool(registry), wrapWithHeaders(tools.HandleMTVRead(registry), capturedHeaders))
-	tools.AddToolWithCoercion(server, tools.GetMinimalMTVWriteTool(registry), wrapWithHeaders(tools.HandleMTVWrite(registry), capturedHeaders))
 	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlLogsTool(), wrapWithHeaders(tools.HandleKubectlLogs, capturedHeaders))
 	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlTool(), wrapWithHeaders(tools.HandleKubectl, capturedHeaders))
 	mcp.AddTool(server, tools.GetMTVHelpTool(), wrapWithHeaders(tools.HandleMTVHelp, capturedHeaders))
+
+	// Only register write tool if not in read-only mode
+	if !readOnlyMode {
+		tools.AddToolWithCoercion(server, tools.GetMinimalMTVWriteTool(registry), wrapWithHeaders(tools.HandleMTVWrite(registry), capturedHeaders))
+	} else {
+		log.Println("Running in read-only mode - write operations disabled")
+	}
 
 	return server, nil
 }

@@ -78,6 +78,9 @@ spec:
           value: "/etc/tls/private/tls.crt"
         - name: MCP_KEY_FILE
           value: "/etc/tls/private/tls.key"
+        # Set to "true" to disable write operations (read-only mode)
+        - name: MCP_READ_ONLY
+          value: "false"
 
       securityContext:
         allowPrivilegeEscalation: false
