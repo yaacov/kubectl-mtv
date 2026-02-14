@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -221,7 +222,10 @@ func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
 		// This ensures it's processed before any other flags
 		args = append([]string{"--token", token}, args...)
 	} else if defaultKubeToken != "" {
+		log.Println("[auth] RunKubectlMTVCommand: using token from CLI defaults")
 		args = append([]string{"--token", defaultKubeToken}, args...)
+	} else {
+		log.Println("[auth] RunKubectlMTVCommand: NO token available (context or defaults)")
 	}
 
 	// Check if we're in dry run mode
@@ -319,7 +323,10 @@ func RunKubectlCommand(ctx context.Context, args []string) (string, error) {
 		// This ensures it's processed before any other flags
 		args = append([]string{"--token", token}, args...)
 	} else if defaultKubeToken != "" {
+		log.Println("[auth] RunKubectlCommand: using token from CLI defaults")
 		args = append([]string{"--token", defaultKubeToken}, args...)
+	} else {
+		log.Println("[auth] RunKubectlCommand: NO token available (context or defaults)")
 	}
 
 	// Check if we're in dry run mode

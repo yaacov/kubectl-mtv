@@ -40,10 +40,8 @@ Output: Returns command flags, usage, and examples as structured data.`,
 
 // HandleMTVHelp handles the mtv_help tool invocation.
 func HandleMTVHelp(ctx context.Context, req *mcp.CallToolRequest, input MTVHelpInput) (*mcp.CallToolResult, any, error) {
-	// Extract K8s credentials from HTTP headers (for SSE mode)
-	if req.Extra != nil && req.Extra.Header != nil {
-		ctx = util.WithKubeCredsFromHeaders(ctx, req.Extra.Header)
-	}
+	// Extract K8s credentials from HTTP headers (populated by wrapper in SSE mode)
+	ctx = extractKubeCredsFromRequest(ctx, req)
 
 	command := strings.TrimSpace(input.Command)
 	if command == "" {

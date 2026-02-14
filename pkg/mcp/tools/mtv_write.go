@@ -58,10 +58,8 @@ func GetMinimalMTVWriteTool(registry *discovery.Registry) *mcp.Tool {
 // HandleMTVWrite returns a handler function for the mtv_write tool.
 func HandleMTVWrite(registry *discovery.Registry) func(context.Context, *mcp.CallToolRequest, MTVWriteInput) (*mcp.CallToolResult, any, error) {
 	return func(ctx context.Context, req *mcp.CallToolRequest, input MTVWriteInput) (*mcp.CallToolResult, any, error) {
-		// Extract K8s credentials from HTTP headers (for SSE mode)
-		if req.Extra != nil && req.Extra.Header != nil {
-			ctx = util.WithKubeCredsFromHeaders(ctx, req.Extra.Header)
-		}
+		// Extract K8s credentials from HTTP headers (populated by wrapper in SSE mode)
+		ctx = extractKubeCredsFromRequest(ctx, req)
 
 		// Validate input to catch common small-LLM mistakes early
 		if err := validateCommandInput(input.Command); err != nil {

@@ -176,10 +176,8 @@ Examples:
 
 // HandleKubectlLogs handles the kubectl_logs tool invocation.
 func HandleKubectlLogs(ctx context.Context, req *mcp.CallToolRequest, input KubectlLogsInput) (*mcp.CallToolResult, any, error) {
-	// Extract K8s credentials from HTTP headers (for SSE mode)
-	if req.Extra != nil && req.Extra.Header != nil {
-		ctx = util.WithKubeCredsFromHeaders(ctx, req.Extra.Header)
-	}
+	// Extract K8s credentials from HTTP headers (populated by wrapper in SSE mode)
+	ctx = extractKubeCredsFromRequest(ctx, req)
 
 	// Enable dry run mode if requested
 	if input.DryRun {
@@ -222,10 +220,8 @@ func HandleKubectlLogs(ctx context.Context, req *mcp.CallToolRequest, input Kube
 
 // HandleKubectl handles the kubectl tool invocation (get, describe, events).
 func HandleKubectl(ctx context.Context, req *mcp.CallToolRequest, input KubectlInput) (*mcp.CallToolResult, any, error) {
-	// Extract K8s credentials from HTTP headers (for SSE mode)
-	if req.Extra != nil && req.Extra.Header != nil {
-		ctx = util.WithKubeCredsFromHeaders(ctx, req.Extra.Header)
-	}
+	// Extract K8s credentials from HTTP headers (populated by wrapper in SSE mode)
+	ctx = extractKubeCredsFromRequest(ctx, req)
 
 	// Enable dry run mode if requested
 	if input.DryRun {

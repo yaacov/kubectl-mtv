@@ -74,6 +74,11 @@ test-inventory: install
 test-health: install
 	$(PYTEST) $(PYTEST_ARGS) health/
 
+## test-auth: Run only bearer-token authentication tests
+.PHONY: test-auth
+test-auth: install
+	$(PYTEST) $(PYTEST_ARGS) auth/
+
 # ── Container image mode ──────────────────────────────────────────────
 # Set MCP_IMAGE to run the tests against a container instead of the local binary.
 # Example: make test-image MCP_IMAGE=quay.io/kubev2v/kubectl-mtv-mcp-server:latest

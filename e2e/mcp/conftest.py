@@ -375,12 +375,12 @@ def mcp_server_process():
         container_name = f"mcp-e2e-{MCP_SSE_PORT}"
 
         # The container image listens on port 8080 internally.
+        # Token is NOT baked in -- clients must send Authorization headers.
         cmd = [
             engine, "run", "--rm",
             "--name", container_name,
             "-p", f"127.0.0.1:{MCP_SSE_PORT}:8080",
             "-e", f"MCP_KUBE_SERVER={KUBE_API_URL}",
-            "-e", f"MCP_KUBE_TOKEN={KUBE_TOKEN}",
             "-e", "MCP_KUBE_INSECURE=true",
             "-e", "MCP_PORT=8080",
             "-e", "MCP_HOST=0.0.0.0",
@@ -389,19 +389,24 @@ def mcp_server_process():
     else:
         container_name = ""
         engine = ""
+        # Token is NOT baked in -- clients must send Authorization headers.
         cmd = [
             MTV_BINARY, "mcp-server",
             "--sse",
             "--port", MCP_SSE_PORT,
             "--server", KUBE_API_URL,
-            "--token", KUBE_TOKEN,
             "--insecure-skip-tls-verify",
         ]
+
+    # Block kubeconfig fallback so the server cannot pick up ambient
+    # credentials from the host — authentication must come via headers.
+    env = {**os.environ, "KUBECONFIG": "/dev/null"}
 
     proc = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stderr=None,
+        env=env,
     )
 
     # Give the server a moment to start listening
@@ -416,9 +421,9 @@ def mcp_server_process():
 
     if not started:
         proc.kill()
-        stderr = proc.stderr.read().decode() if proc.stderr else ""
         raise RuntimeError(
-            f"MCP SSE server failed to start on port {MCP_SSE_PORT}: {stderr}"
+            f"MCP SSE server failed to start on port {MCP_SSE_PORT} "
+            "(check server stderr output above)"
         )
 
     yield proc
@@ -466,16 +471,34 @@ async def _safe_sse_client(*args, **kwargs):
         raise
 
 
-@pytest_asyncio.fixture(loop_scope="session", scope="session")
-async def mcp_session(mcp_server_process):
-    """Connect to the running MCP SSE server and yield a ClientSession."""
-    async with _safe_sse_client(MCP_SSE_URL, timeout=30, sse_read_timeout=120) as (
-        read_stream,
-        write_stream,
-    ):
+# ---------------------------------------------------------------------------
+# Helper: create an MCP session with custom headers
+# ---------------------------------------------------------------------------
+@contextlib.asynccontextmanager
+async def _make_mcp_session(headers=None):
+    """Create an MCP SSE session with arbitrary headers.
+
+    Used by the ``mcp_session`` fixture (with the real token) and by
+    auth tests (with a bad or missing token).
+    """
+    async with _safe_sse_client(
+        MCP_SSE_URL, headers=headers, timeout=30, sse_read_timeout=120,
+    ) as (read_stream, write_stream):
         async with ClientSession(read_stream, write_stream) as session:
             await session.initialize()
             yield session
+
+
+@pytest_asyncio.fixture(loop_scope="session", scope="session")
+async def mcp_session(mcp_server_process):
+    """Connect to the running MCP SSE server and yield a ClientSession.
+
+    Authentication is sent via the ``Authorization: Bearer`` header on
+    every HTTP request — the server itself holds no token.
+    """
+    headers = {"Authorization": f"Bearer {KUBE_TOKEN}"}
+    async with _make_mcp_session(headers=headers) as session:
+        yield session
 
 
 # ---------------------------------------------------------------------------
