@@ -166,6 +166,12 @@ See [Command Reference](guide/26-command-reference.md) for the full help command
 - **Settings Management**: View and configure ForkliftController settings (feature flags, performance tuning, resource limits)
 - **Machine-Readable Help**: Full command schema available as JSON/YAML for automation, MCP servers, and AI agents
 
+## Environment Variables
+
+- `MTV_VDDK_INIT_IMAGE`: Default VDDK init image for VMware providers
+- `MTV_INVENTORY_URL`: Base URL for inventory service
+- `MTV_INVENTORY_INSECURE_SKIP_TLS`: Skip TLS verification for inventory service connections (set to "true" to enable)
+
 ## Documentation
 
 **[Complete Technical Guide](guide/)** - Comprehensive documentation covering all features and use cases
@@ -191,7 +197,14 @@ Start the MCP server using docker or podman:
 docker run --rm -p 8080:8080 \
   -e MCP_KUBE_SERVER=https://api.cluster.example.com:6443 \
   -e MCP_KUBE_TOKEN=sha256~xxxx \
-  quay.io/kubev2v/kubectl-mtv-mcp-server:latest
+  quay.io/yaacov/kubectl-mtv-mcp-server:latest
+
+# Run in read-only mode (disables write operations)
+docker run --rm -p 8080:8080 \
+  -e MCP_KUBE_SERVER=https://api.cluster.example.com:6443 \
+  -e MCP_KUBE_TOKEN=sha256~xxxx \
+  -e MCP_READ_ONLY=true \
+  quay.io/yaacov/kubectl-mtv-mcp-server:latest
 ```
 
 The server accepts the following environment variables:
@@ -207,27 +220,28 @@ The server accepts the following environment variables:
 | `MCP_KEY_FILE` | | Path to TLS private key |
 | `MCP_OUTPUT_FORMAT` | `text` | Default output format |
 | `MCP_MAX_RESPONSE_CHARS` | `0` | Max response size (0 = unlimited) |
+| `MCP_READ_ONLY` | `false` | Set to `true` to disable write operations |
 
-## Building & Testing with a Container Image
+## Building & Testing
 
-Build the container image and run the MCP end-to-end test suite against it:
+Build and test the container image with the MCP end-to-end test suite:
 
 ```bash
 # Build the image (linux/amd64)
 make image-build-amd64
 
-# Run the e2e tests against the container image
-make test-e2e-mcp-image MCP_IMAGE=quay.io/kubev2v/kubectl-mtv-mcp-server:0.0.0-dev-amd64
+# Run e2e tests against the container image
+make test-e2e-mcp-image MCP_IMAGE=quay.io/yaacov/kubectl-mtv-mcp-server:0.0.0-dev-amd64
+
+# Run e2e tests against the local binary build
+make test-e2e-mcp
+
+# Run e2e tests against an already running server
+MCP_SSE_URL=http://localhost:8080/sse make test-e2e-mcp-external
 ```
 
 You can also set `MCP_IMAGE` in `e2e/mcp/.env` (see `e2e/mcp/env.example`) and
 use `CONTAINER_ENGINE` to choose between docker and podman.
-
-## Environment Variables
-
-- `MTV_VDDK_INIT_IMAGE`: Default VDDK init image for VMware providers
-- `MTV_INVENTORY_URL`: Base URL for inventory service
-- `MTV_INVENTORY_INSECURE_SKIP_TLS`: Skip TLS verification for inventory service connections (set to "true" to enable)
 
 ## License
 

@@ -1,20 +1,26 @@
 """
 Root conftest -- shared fixtures, helpers, and constants for MCP E2E tests.
 
-The MCP server is started in SSE mode as a subprocess.  Tests connect
-via the Python MCP SDK's SSE client.  Environment variables are loaded
-from a .env file if present; otherwise plain ``os.environ`` is used.
+Tests assume a running MCP server is available at MCP_SSE_URL.
+
+Server lifecycle management (start/stop) is handled separately via make
+targets, allowing flexible deployment:
+  - Binary mode: Local kubectl-mtv process
+  - Container mode: Docker/podman container
+  - Remote mode: External service
+
+Environment variables are loaded from a .env file if present; otherwise
+plain ``os.environ`` is used.
 """
 
 import asyncio as _asyncio
 import contextlib
 import json
 import os
-import shutil
-import signal
 import socket
 import subprocess
 import time
+import urllib.parse
 
 import pytest
 import pytest_asyncio
@@ -65,22 +71,22 @@ if not _raw_govc.rstrip("/").endswith("/sdk"):
 VSPHERE_URL: str = _raw_govc
 
 # ---------------------------------------------------------------------------
-# MCP server settings
+# MCP server settings -- tests connect to a running server
 # ---------------------------------------------------------------------------
+MCP_SSE_HOST: str = os.environ.get("MCP_SSE_HOST", "127.0.0.1")
+MCP_SSE_PORT: str = os.environ.get("MCP_SSE_PORT", "18443")
+MCP_SSE_URL: str = os.environ.get(
+    "MCP_SSE_URL",
+    f"http://{MCP_SSE_HOST}:{MCP_SSE_PORT}/sse"
+)
+
+# Server management settings (used by make targets, not by tests)
 MTV_BINARY: str = os.environ.get(
     "MTV_BINARY",
     os.path.join(os.path.dirname(__file__), "..", "..", "kubectl-mtv"),
 )
-MCP_SSE_PORT: str = os.environ.get("MCP_SSE_PORT", "18443")
-MCP_SSE_URL: str = f"http://127.0.0.1:{MCP_SSE_PORT}/sse"
-
-# Container image mode -- when MCP_IMAGE is set the tests start the MCP
-# server inside a container instead of running the local binary directly.
 MCP_IMAGE: str = os.environ.get("MCP_IMAGE", "")
-CONTAINER_ENGINE: str = os.environ.get(
-    "CONTAINER_ENGINE",
-    "",
-)
+CONTAINER_ENGINE: str = os.environ.get("CONTAINER_ENGINE", "")
 
 # ---------------------------------------------------------------------------
 # Test resources — environment-specific, REQUIRED (no defaults)
@@ -342,106 +348,47 @@ def _delete_namespace(name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Helper: detect container engine
+# Helper: verify MCP server is reachable
 # ---------------------------------------------------------------------------
-def _detect_container_engine() -> str:
-    """Return the path to docker or podman, preferring CONTAINER_ENGINE env."""
-    if CONTAINER_ENGINE:
-        return CONTAINER_ENGINE
-    for candidate in ("docker", "podman"):
-        path = shutil.which(candidate)
-        if path:
-            return path
-    raise RuntimeError(
-        "MCP_IMAGE is set but no container engine found. "
-        "Install docker or podman, or set CONTAINER_ENGINE."
-    )
+def _verify_server_reachable() -> None:
+    """Verify the MCP SSE server is reachable at the configured URL.
+    
+    Raises:
+        RuntimeError: If the server is not reachable.
+    """
+    parsed = urllib.parse.urlparse(MCP_SSE_URL)
+    host = parsed.hostname or "127.0.0.1"
+    port = parsed.port or 80
+    
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(5)
+        if s.connect_ex((host, port)) != 0:
+            raise RuntimeError(
+                f"MCP server is not reachable at {MCP_SSE_URL}\n"
+                f"Please start the server first:\n"
+                f"  make server-start          # Start binary mode server\n"
+                f"  make server-start-image    # Start container mode server\n"
+                f"Or use an existing server by setting MCP_SSE_URL"
+            )
 
 
 # ---------------------------------------------------------------------------
-# Fixture: start the MCP server subprocess in SSE mode
+# Fixture: verify server is running (session-scoped, runs once)
 # ---------------------------------------------------------------------------
 @pytest.fixture(scope="session")
 def mcp_server_process():
-    """Start kubectl-mtv mcp-server --sse and yield the subprocess.
-
-    When ``MCP_IMAGE`` is set the server is started inside a container
-    (using docker/podman) with the appropriate port mapping and
-    environment variables.  Otherwise the local binary is executed
-    directly.
+    """Verify MCP server is reachable before tests start.
+    
+    Tests assume an external process is managing the server lifecycle.
+    Use make targets to start/stop the server:
+      - make server-start (binary mode)
+      - make server-start-image (container mode)
+      - make server-stop
     """
-    if MCP_IMAGE:
-        engine = _detect_container_engine()
-        container_name = f"mcp-e2e-{MCP_SSE_PORT}"
-
-        # The container image listens on port 8080 internally.
-        # Token is NOT baked in -- clients must send Authorization headers.
-        cmd = [
-            engine, "run", "--rm",
-            "--name", container_name,
-            "-p", f"127.0.0.1:{MCP_SSE_PORT}:8080",
-            "-e", f"MCP_KUBE_SERVER={KUBE_API_URL}",
-            "-e", "MCP_KUBE_INSECURE=true",
-            "-e", "MCP_PORT=8080",
-            "-e", "MCP_HOST=0.0.0.0",
-            MCP_IMAGE,
-        ]
-    else:
-        container_name = ""
-        engine = ""
-        # Token is NOT baked in -- clients must send Authorization headers.
-        cmd = [
-            MTV_BINARY, "mcp-server",
-            "--sse",
-            "--port", MCP_SSE_PORT,
-            "--server", KUBE_API_URL,
-            "--insecure-skip-tls-verify",
-        ]
-
-    # Block kubeconfig fallback so the server cannot pick up ambient
-    # credentials from the host — authentication must come via headers.
-    env = {**os.environ, "KUBECONFIG": "/dev/null"}
-
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=None,
-        env=env,
-    )
-
-    # Give the server a moment to start listening
-    deadline = time.monotonic() + 30 if MCP_IMAGE else time.monotonic() + 15
-    started = False
-    while time.monotonic() < deadline:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(("127.0.0.1", int(MCP_SSE_PORT))) == 0:
-                started = True
-                break
-        time.sleep(0.3)
-
-    if not started:
-        proc.kill()
-        raise RuntimeError(
-            f"MCP SSE server failed to start on port {MCP_SSE_PORT} "
-            "(check server stderr output above)"
-        )
-
-    yield proc
-
-    # Teardown: graceful shutdown
-    if container_name and engine:
-        # Stop the container (sends SIGTERM, then SIGKILL after grace period)
-        subprocess.run(
-            [engine, "stop", "-t", "10", container_name],
-            capture_output=True, timeout=30,
-        )
-    else:
-        proc.send_signal(signal.SIGTERM)
-    try:
-        proc.wait(timeout=15)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        proc.wait(timeout=5)
+    _verify_server_reachable()
+    print(f"\n[Connected] MCP server at {MCP_SSE_URL}")
+    yield None  # No process to manage
+    # No teardown - server lifecycle is managed externally
 
 
 # ---------------------------------------------------------------------------

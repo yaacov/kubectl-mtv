@@ -6,6 +6,7 @@ credentials, and tools are in use.  It also verifies that ``kubectl-mtv``
 is executable and will fail the entire suite early if it is not.
 """
 
+import os
 import subprocess
 import sys
 
@@ -16,6 +17,7 @@ from conftest import (
     GOVC_USERNAME,
     KUBE_API_URL,
     MCP_IMAGE,
+    MCP_SSE_HOST,
     MCP_SSE_PORT,
     MCP_SSE_URL,
     MCP_VERBOSE,
@@ -71,7 +73,11 @@ async def test_print_banner(mcp_session):
     """
     cli_ver, cli_ok = _cli_version()
 
-    server_mode = f"container ({MCP_IMAGE})" if MCP_IMAGE else f"local binary ({MTV_BINARY})"
+    # Determine server info - tests always connect to an existing server
+    if MCP_IMAGE:
+        server_info = f"Container image: {MCP_IMAGE}"
+    else:
+        server_info = f"Binary: {MTV_BINARY}"
 
     banner = "\n".join([
         "",
@@ -82,11 +88,11 @@ async def test_print_banner(mcp_session):
         f"  Python:           {sys.version.split()[0]}",
         f"  pytest:           {pytest.__version__}",
         f"  kubectl-mtv:      {cli_ver}",
+        _section("MCP Server Connection"),
+        f"  MCP SSE URL:      {MCP_SSE_URL}",
+        f"  Server info:      {server_info}",
         _section("Cluster"),
         f"  API URL:          {KUBE_API_URL}",
-        f"  MCP server mode:  {server_mode}",
-        f"  MCP SSE port:     {MCP_SSE_PORT}",
-        f"  MCP SSE URL:      {MCP_SSE_URL}",
         _section("vSphere source"),
         f"  GOVC_URL:         {GOVC_URL}",
         f"  Provider URL:     {VSPHERE_URL}",

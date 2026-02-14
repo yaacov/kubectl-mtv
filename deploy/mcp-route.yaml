@@ -1,0 +1,26 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: kubectl-mtv-mcp-server
+  namespace: openshift-mtv
+  labels:
+    app.kubernetes.io/name: kubectl-mtv-mcp-server
+    app.kubernetes.io/component: mcp-server
+    app.kubernetes.io/part-of: kubectl-mtv
+spec:
+  to:
+    kind: Service
+    name: kubectl-mtv-mcp-server
+    weight: 100
+  port:
+    targetPort: https
+  tls:
+    # Re-encrypt mode: TLS from client → router (with route cert)
+    # and TLS from router → pod (with service cert)
+    termination: reencrypt
+    # Verify the backend service certificate against the service CA
+    destinationCACertificate: |
+      # This will be auto-populated by OpenShift with the service CA cert
+      # The service-ca operator manages this automatically
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

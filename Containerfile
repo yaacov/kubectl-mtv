@@ -12,8 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# ---- Builder stage ----
-FROM registry.access.redhat.com/ubi9/go-toolset:latest AS builder
+# ---- Downloader stage (runs on native platform) ----
+FROM --platform=$BUILDPLATFORM registry.access.redhat.com/ubi9/ubi-minimal:latest AS downloader
+
+ARG TARGETARCH=amd64
+
+WORKDIR /downloads
+
+# Download kubectl for the target architecture (curl is already available via curl-minimal)
+RUN curl -L "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${TARGETARCH}/kubectl" \
+    --output kubectl
+
+# ---- Builder stage (runs on native platform, cross-compiles for target) ----
+FROM --platform=$BUILDPLATFORM registry.access.redhat.com/ubi9/go-toolset:latest AS builder
 
 ARG TARGETARCH=amd64
 ARG VERSION=0.0.0-dev
@@ -21,9 +32,8 @@ ARG VERSION=0.0.0-dev
 USER root
 WORKDIR /build
 
-# Download kubectl for the target architecture
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${TARGETARCH}/kubectl" && \
-    chmod +x kubectl
+# Copy kubectl from downloader stage
+COPY --from=downloader /downloads/kubectl ./kubectl
 
 # Copy go module files first for better layer caching
 COPY go.mod go.sum ./
@@ -46,35 +56,17 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 ARG TARGETARCH=amd64
 
-LABEL name="kubectl-mtv-mcp-server" \
-      summary="kubectl-mtv MCP server for AI-assisted VM migrations" \
-      description="MCP (Model Context Protocol) server exposing kubectl-mtv migration toolkit for AI assistants. Runs in SSE mode over HTTP." \
-      io.k8s.display-name="kubectl-mtv MCP Server" \
-      io.k8s.description="MCP server for kubectl-mtv providing AI-assisted VM migration capabilities via SSE transport." \
-      maintainer="Yaacov Zamir <kobi.zamir@gmail.com>"
-
-# Install ca-certificates for TLS support
-RUN microdnf install -y ca-certificates && \
-    microdnf clean all
-
-# Copy binaries from builder
-COPY --from=builder /build/kubectl /usr/local/bin/kubectl
-COPY --from=builder /build/kubectl-mtv /usr/local/bin/kubectl-mtv
-
-# Create non-root user
-RUN microdnf install -y shadow-utils && \
-    useradd -r -u 1001 -g 0 -d /home/mtv -s /sbin/nologin mtv && \
-    microdnf remove -y shadow-utils && \
-    microdnf clean all && \
-    mkdir -p /home/mtv && \
-    chown 1001:0 /home/mtv
+# Copy binaries from builder (set execute permissions during copy)
+COPY --from=builder --chmod=755 /build/kubectl /usr/local/bin/kubectl
+COPY --from=builder --chmod=755 /build/kubectl-mtv /usr/local/bin/kubectl-mtv
 
 # --- Environment variables ---
 # SSE server settings
 ENV MCP_HOST="0.0.0.0" \
     MCP_PORT="8080" \
     MCP_OUTPUT_FORMAT="text" \
-    MCP_MAX_RESPONSE_CHARS="0"
+    MCP_MAX_RESPONSE_CHARS="0" \
+    MCP_READ_ONLY="false"
 
 # TLS settings (optional - provide paths to enable TLS)
 ENV MCP_CERT_FILE="" \
@@ -100,4 +92,13 @@ ENTRYPOINT ["/bin/sh", "-c", "\
     ${MCP_KEY_FILE:+--key-file \"${MCP_KEY_FILE}\"} \
     ${MCP_KUBE_SERVER:+--server \"${MCP_KUBE_SERVER}\"} \
     ${MCP_KUBE_TOKEN:+--token \"${MCP_KUBE_TOKEN}\"} \
-    $([ \"${MCP_KUBE_INSECURE}\" = \"true\" ] && echo --insecure-skip-tls-verify)"]
+    $([ \"${MCP_KUBE_INSECURE}\" = \"true\" ] && echo --insecure-skip-tls-verify) \
+    $([ \"${MCP_READ_ONLY}\" = \"true\" ] && echo --read-only)"]
+
+# Labels at the end for better readability
+LABEL name="kubectl-mtv-mcp-server" \
+      summary="kubectl-mtv MCP server for AI-assisted VM migrations" \
+      description="MCP (Model Context Protocol) server exposing kubectl-mtv migration toolkit for AI assistants. Runs in SSE mode over HTTP." \
+      io.k8s.display-name="kubectl-mtv MCP Server" \
+      io.k8s.description="MCP server for kubectl-mtv providing AI-assisted VM migration capabilities via SSE transport." \
+      maintainer="Yaacov Zamir <kobi.zamir@gmail.com>"
