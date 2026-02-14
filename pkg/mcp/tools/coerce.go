@@ -9,7 +9,18 @@ import (
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/yaacov/kubectl-mtv/pkg/mcp/util"
 )
+
+// extractKubeCredsFromRequest extracts Kubernetes credentials from the request's
+// Extra.Header field and adds them to the context. The wrapper in mcpserver.go
+// ensures that Extra.Header is populated for SSE mode.
+func extractKubeCredsFromRequest(ctx context.Context, req *mcp.CallToolRequest) context.Context {
+	if req.Extra != nil && req.Extra.Header != nil {
+		return util.WithKubeCredsFromHeaders(ctx, req.Extra.Header)
+	}
+	return ctx
+}
 
 // AddToolWithCoercion registers a tool with the server using the low-level
 // s.AddTool API, adding a boolean coercion layer that converts string boolean

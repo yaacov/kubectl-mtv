@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -105,15 +106,39 @@ Manual Claude config: Add to claude_desktop_config.json:
 				// SSE mode - run HTTP server
 				addr := net.JoinHostPort(host, port)
 
-				// Create MCP handler
-				handler := mcp.NewSSEHandler(func(req *http.Request) *mcp.Server {
-					server, err := createMCPServer()
+				// Create MCP handler with header capture for SSE mode
+				// The SSE transport doesn't populate RequestExtra.Header automatically.
+				// The createMCPServerWithHeaderCapture callback is invoked once during
+				// session initiation (the initial SSE GET request) and captures HTTP headers
+				// at that time. Those captured headers persist for the lifetime of the SSE
+				// session and are injected into RequestExtra.Header for all subsequent tool
+				// calls within that session. The outer POST-logging wrapper below provides
+				// diagnostic logging per-request but doesn't affect header propagation.
+				innerHandler := mcp.NewSSEHandler(func(req *http.Request) *mcp.Server {
+					server, err := createMCPServerWithHeaderCapture(req)
 					if err != nil {
 						log.Printf("Failed to create server: %v", err)
 						return nil
 					}
 					return server
 				}, nil)
+
+				// Wrap to log header capture (without leaking sensitive data)
+				handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodPost {
+						if auth := r.Header.Get("Authorization"); auth != "" {
+							// Extract only the scheme (e.g., "Bearer") without token content
+							scheme := "unknown"
+							if parts := strings.SplitN(auth, " ", 2); len(parts) > 0 {
+								scheme = parts[0]
+							}
+							log.Printf("[auth] SERVER: POST request with Authorization: %s [REDACTED]", scheme)
+						} else {
+							log.Printf("[auth] SERVER: POST request with NO Authorization header")
+						}
+					}
+					innerHandler.ServeHTTP(w, r)
+				})
 
 				server := &http.Server{
 					Addr:    addr,
@@ -203,6 +228,13 @@ Manual Claude config: Add to claude_desktop_config.json:
 // createMCPServer creates the MCP server with dynamically discovered tools.
 // Discovery happens at startup using kubectl-mtv help --machine.
 func createMCPServer() (*mcp.Server, error) {
+	return createMCPServerWithHeaderCapture(nil)
+}
+
+// createMCPServerWithHeaderCapture creates the MCP server with HTTP header capture
+// The req parameter contains the HTTP request that triggered server creation,
+// which may include authentication headers that we want to pass to tool handlers
+func createMCPServerWithHeaderCapture(req *http.Request) (*mcp.Server, error) {
 	ctx := context.Background()
 	registry, err := discovery.NewRegistry(ctx)
 	if err != nil {
@@ -218,11 +250,36 @@ func createMCPServer() (*mcp.Server, error) {
 	// The mtv_help tool provides on-demand detailed help for any command or topic.
 	// Use AddToolWithCoercion for tools with boolean parameters to handle string
 	// booleans ("True"/"true") from AI models that don't send proper JSON booleans.
-	tools.AddToolWithCoercion(server, tools.GetMinimalMTVReadTool(registry), tools.HandleMTVRead(registry))
-	tools.AddToolWithCoercion(server, tools.GetMinimalMTVWriteTool(registry), tools.HandleMTVWrite(registry))
-	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlLogsTool(), tools.HandleKubectlLogs)
-	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlTool(), tools.HandleKubectl)
-	mcp.AddTool(server, tools.GetMTVHelpTool(), tools.HandleMTVHelp)
+
+	// Since the SSE transport doesn't populate RequestExtra.Header, we wrap each
+	// tool handler to manually inject headers from the HTTP request
+	var capturedHeaders http.Header
+	if req != nil {
+		capturedHeaders = req.Header
+	}
+
+	tools.AddToolWithCoercion(server, tools.GetMinimalMTVReadTool(registry), wrapWithHeaders(tools.HandleMTVRead(registry), capturedHeaders))
+	tools.AddToolWithCoercion(server, tools.GetMinimalMTVWriteTool(registry), wrapWithHeaders(tools.HandleMTVWrite(registry), capturedHeaders))
+	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlLogsTool(), wrapWithHeaders(tools.HandleKubectlLogs, capturedHeaders))
+	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlTool(), wrapWithHeaders(tools.HandleKubectl, capturedHeaders))
+	mcp.AddTool(server, tools.GetMTVHelpTool(), wrapWithHeaders(tools.HandleMTVHelp, capturedHeaders))
 
 	return server, nil
+}
+
+// wrapWithHeaders wraps a tool handler to inject captured HTTP headers into RequestExtra
+func wrapWithHeaders[In, Out any](
+	handler func(context.Context, *mcp.CallToolRequest, In) (*mcp.CallToolResult, Out, error),
+	headers http.Header,
+) func(context.Context, *mcp.CallToolRequest, In) (*mcp.CallToolResult, Out, error) {
+	return func(ctx context.Context, req *mcp.CallToolRequest, input In) (*mcp.CallToolResult, Out, error) {
+		// Inject headers into RequestExtra if not already present
+		if req.Extra == nil && headers != nil {
+			req.Extra = &mcp.RequestExtra{Header: headers}
+		} else if req.Extra != nil && req.Extra.Header == nil && headers != nil {
+			req.Extra.Header = headers
+		}
+
+		return handler(ctx, req, input)
+	}
 }
