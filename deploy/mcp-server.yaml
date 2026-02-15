@@ -21,13 +21,11 @@
 #   The pod itself has NO RBAC bindings — permissions are entirely
 #   determined by the UI user's own token. No shared credentials.
 #
-# TLS:
-#   The Service is annotated with service.beta.openshift.io/serving-cert-secret-name.
-#   OpenShift's service-ca operator automatically generates a TLS certificate
-#   signed by the cluster service CA and stores it in the named Secret.
-#   The Pod mounts this Secret and the MCP server serves HTTPS.
+# HTTP:
+#   The Service uses plain HTTP communication.
+#   The Route provides TLS termination at the edge (ingress router).
 #
-# SSE endpoint: https://kubectl-mtv-mcp-server.openshift-mtv.svc:8443/sse
+# SSE endpoint: http://kubectl-mtv-mcp-server.openshift-mtv.svc:8080/sse
 # ---
 
 apiVersion: v1
@@ -60,24 +58,20 @@ spec:
     - name: mcp-server
       image: quay.io/yaacov/kubectl-mtv-mcp-server:latest
       ports:
-        - name: https
-          containerPort: 8443
+        - name: http
+          containerPort: 8080
           protocol: TCP
       env:
         - name: MCP_HOST
           value: "0.0.0.0"
         - name: MCP_PORT
-          value: "8443"
+          value: "8080"
         - name: MCP_OUTPUT_FORMAT
           value: "text"
         - name: MCP_MAX_RESPONSE_CHARS
           value: "0"
         - name: MCP_KUBE_SERVER
           value: "https://kubernetes.default.svc"
-        - name: MCP_CERT_FILE
-          value: "/etc/tls/private/tls.crt"
-        - name: MCP_KEY_FILE
-          value: "/etc/tls/private/tls.key"
         # Set to "true" to disable write operations (read-only mode)
         - name: MCP_READ_ONLY
           value: "false"
@@ -96,26 +90,20 @@ spec:
           memory: 256Mi
       readinessProbe:
         tcpSocket:
-          port: https
+          port: http
         initialDelaySeconds: 5
         periodSeconds: 10
       livenessProbe:
         tcpSocket:
-          port: https
+          port: http
         initialDelaySeconds: 10
         periodSeconds: 30
       volumeMounts:
-        - name: tls
-          mountPath: /etc/tls/private
-          readOnly: true
         - name: tmp
           mountPath: /tmp
         - name: home
           mountPath: /home/mtv
   volumes:
-    - name: tls
-      secret:
-        secretName: kubectl-mtv-mcp-server-tls
     - name: tmp
       emptyDir: {}
     - name: home
@@ -132,17 +120,13 @@ metadata:
     app.kubernetes.io/name: kubectl-mtv-mcp-server
     app.kubernetes.io/component: mcp-server
     app.kubernetes.io/part-of: kubectl-mtv
-  annotations:
-    # OpenShift service-ca operator: auto-generate a TLS cert/key pair
-    # for this service and store it in the named Secret.
-    service.beta.openshift.io/serving-cert-secret-name: kubectl-mtv-mcp-server-tls
 spec:
   type: ClusterIP
   selector:
     app.kubernetes.io/name: kubectl-mtv-mcp-server
   ports:
-    - name: https
-      port: 8443
-      targetPort: https
+    - name: http
+      port: 8080
+      targetPort: http
       protocol: TCP
 

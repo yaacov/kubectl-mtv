@@ -13,14 +13,10 @@ spec:
     name: kubectl-mtv-mcp-server
     weight: 100
   port:
-    targetPort: https
+    targetPort: http
   tls:
-    # Re-encrypt mode: TLS from client → router (with route cert)
-    # and TLS from router → pod (with service cert)
-    termination: reencrypt
-    # Verify the backend service certificate against the service CA
-    destinationCACertificate: |
-      # This will be auto-populated by OpenShift with the service CA cert
-      # The service-ca operator manages this automatically
+    # Edge termination: TLS from client → router (with route cert),
+    # then HTTP from router → pod
+    termination: edge
     insecureEdgeTerminationPolicy: Redirect
   wildcardPolicy: None
