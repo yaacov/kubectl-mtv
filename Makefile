@@ -30,6 +30,11 @@ IMAGE_TAG ?= $(VERSION)
 IMAGE ?= $(IMAGE_REGISTRY)/$(IMAGE_ORG)/$(IMAGE_NAME)
 CONTAINER_ENGINE ?= $(shell command -v docker 2>/dev/null || command -v podman 2>/dev/null)
 
+# Docker buildx adds provenance attestations by default, which turns images
+# into manifest lists and breaks `manifest create`. Disable for docker only;
+# podman does not support (or need) this flag.
+PROVENANCE_FLAG := $(if $(findstring docker,$(CONTAINER_ENGINE)),--provenance=false,)
+
 # Path to forklift repository for verify-defaults target
 # Override with: make verify-defaults FORKLIFT_PATH=/path/to/forklift
 FORKLIFT_PATH ?= ../../kubev2v/forklift
@@ -225,6 +230,7 @@ test-list-namespaces:
 image-build-amd64:
 	$(CONTAINER_ENGINE) build \
 		--platform linux/amd64 \
+		$(PROVENANCE_FLAG) \
 		--build-arg TARGETARCH=amd64 \
 		--build-arg VERSION=$(VERSION) \
 		-f Containerfile \
@@ -236,6 +242,7 @@ image-build-amd64:
 image-build-arm64:
 	$(CONTAINER_ENGINE) build \
 		--platform linux/arm64 \
+		$(PROVENANCE_FLAG) \
 		--build-arg TARGETARCH=arm64 \
 		--build-arg VERSION=$(VERSION) \
 		-f Containerfile \
@@ -255,13 +262,13 @@ image-push-arm64:
 ## image-manifest: Create and push multi-arch manifest list
 .PHONY: image-manifest
 image-manifest:
-	$(CONTAINER_ENGINE) manifest rm $(IMAGE):$(IMAGE_TAG) || true
+	-@$(CONTAINER_ENGINE) manifest rm $(IMAGE):$(IMAGE_TAG) 2>/dev/null
 	$(CONTAINER_ENGINE) manifest create $(IMAGE):$(IMAGE_TAG) \
 		$(IMAGE):$(IMAGE_TAG)-amd64 \
 		$(IMAGE):$(IMAGE_TAG)-arm64
 	$(CONTAINER_ENGINE) manifest push $(IMAGE):$(IMAGE_TAG)
 	@echo "Tagging and pushing as latest..."
-	$(CONTAINER_ENGINE) manifest rm $(IMAGE):latest || true
+	-@$(CONTAINER_ENGINE) manifest rm $(IMAGE):latest 2>/dev/null
 	$(CONTAINER_ENGINE) manifest create $(IMAGE):latest \
 		$(IMAGE):$(IMAGE_TAG)-amd64 \
 		$(IMAGE):$(IMAGE_TAG)-arm64
