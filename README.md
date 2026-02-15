@@ -231,7 +231,7 @@ Build and test the container image with the MCP end-to-end test suite:
 make image-build-amd64
 
 # Run e2e tests against the container image
-make test-e2e-mcp-image MCP_IMAGE=quay.io/yaacov/kubectl-mtv-mcp-server:0.0.0-dev-amd64
+make test-e2e-mcp-image MCP_IMAGE=quay.io/yaacov/kubectl-mtv-mcp-server
 
 # Run e2e tests against the local binary build
 make test-e2e-mcp
