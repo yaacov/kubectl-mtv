@@ -70,6 +70,8 @@ spec:
           value: "text"
         - name: MCP_MAX_RESPONSE_CHARS
           value: "0"
+        - name: MCP_KUBE_INSECURE
+          value: 'true'
         - name: MCP_KUBE_SERVER
           value: "https://kubernetes.default.svc"
         # Set to "true" to disable write operations (read-only mode)
