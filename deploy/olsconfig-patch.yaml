@@ -11,11 +11,6 @@
 #   oc patch olsconfig cluster --type json \
 #     -p '[{"op":"remove","path":"/spec/mcpServers"},{"op":"remove","path":"/spec/featureGates"}]'
 #
-# Header valueFrom types:
-#   client     — forward the logged-in UI user's own Bearer token (recommended)
-#   kubernetes — use the Lightspeed operator's SA token
-#   secret     — use a value from a named Secret (secretRef.name)
-#
 spec:
   featureGates:
     - MCPServer

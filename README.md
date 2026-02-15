@@ -243,6 +243,32 @@ MCP_SSE_URL=http://localhost:8080/sse make test-e2e-mcp-external
 You can also set `MCP_IMAGE` in `e2e/mcp/.env` (see `e2e/mcp/env.example`) and
 use `CONTAINER_ENGINE` to choose between docker and podman.
 
+## Deploying MCP Server to OpenShift
+
+Deploy the MCP server directly to OpenShift:
+
+```bash
+# Deploy the MCP server (pod and service)
+oc apply -f https://raw.githubusercontent.com/yaacov/kubectl-mtv/main/deploy/mcp-server.yaml
+
+# Register the MCP server with OpenShift Lightspeed
+oc patch olsconfig cluster --type merge \
+  -p "$(curl -s https://raw.githubusercontent.com/yaacov/kubectl-mtv/main/deploy/olsconfig-patch.yaml)"
+```
+
+To remove the MCP server:
+
+```bash
+# Unregister from Lightspeed
+oc patch olsconfig cluster --type json \
+  -p '[{"op":"remove","path":"/spec/mcpServers"},{"op":"remove","path":"/spec/featureGates"}]'
+
+# Delete the MCP server resources
+oc delete -f https://raw.githubusercontent.com/yaacov/kubectl-mtv/main/deploy/mcp-server.yaml
+```
+
+See [MCP Server Guide](guide/22-model-context-protocol-mcp-server-integration.md) for more details on OpenShift integration.
+
 ## License
 
 Apache-2.0
