@@ -21,11 +21,12 @@ spec:
     - MCPServer
   mcpServers:
     - name: kubectl-mtv
-      url: https://kubectl-mtv-mcp-server.openshift-mtv.svc:8443/sse
-      timeout: 30
-      headers:
-        - name: Authorization
-          valueFrom:
-            type: client
+      streamableHTTP:
+        url: http://kubectl-mtv-mcp-server.openshift-mtv.svc:8080/mcp
+        timeout: 30
+        sseReadTimeout: 30
+        enableSSE: true
+        headers:
+          Authorization: kubernetes
   ols:
     introspectionEnabled: true
