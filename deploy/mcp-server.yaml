@@ -1,10 +1,10 @@
 # kubectl-mtv MCP Server — OpenShift Deployment
 #
-# Deploys the MCP server Pod + Service in SSE mode on an OpenShift cluster.
+# Deploys the MCP server Deployment + Service in SSE mode on an OpenShift cluster.
 # Lightspeed integration is handled separately (see deploy/olsconfig-patch.yaml).
 #
 # Quick start:
-#   oc apply -f deploy/mcp-server.yaml          # pod + service
+#   oc apply -f deploy/mcp-server.yaml          # deployment + service
 #   oc patch olsconfig cluster --type merge \    # register with Lightspeed
 #     -p "$(cat deploy/olsconfig-patch.yaml)"
 #
@@ -18,7 +18,7 @@
 #   4. kubectl is called with --server https://kubernetes.default.svc --token <user-token>.
 #   5. The Kubernetes API authenticates and authorizes using that user's identity.
 #
-#   The pod itself has NO RBAC bindings — permissions are entirely
+#   The deployment itself has NO RBAC bindings — permissions are entirely
 #   determined by the UI user's own token. No shared credentials.
 #
 # HTTP:
@@ -39,8 +39,8 @@ metadata:
     app.kubernetes.io/part-of: kubectl-mtv
 
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: kubectl-mtv-mcp-server
   namespace: openshift-mtv
@@ -49,68 +49,78 @@ metadata:
     app.kubernetes.io/component: mcp-server
     app.kubernetes.io/part-of: kubectl-mtv
 spec:
-  serviceAccountName: kubectl-mtv-mcp-server
-  securityContext:
-    runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
-  containers:
-    - name: mcp-server
-      image: quay.io/yaacov/kubectl-mtv-mcp-server:latest
-      ports:
-        - name: http
-          containerPort: 8080
-          protocol: TCP
-      env:
-        - name: MCP_HOST
-          value: "0.0.0.0"
-        - name: MCP_PORT
-          value: "8080"
-        - name: MCP_OUTPUT_FORMAT
-          value: "text"
-        - name: MCP_MAX_RESPONSE_CHARS
-          value: "0"
-        - name: MCP_KUBE_INSECURE
-          value: 'true'
-        - name: MCP_KUBE_SERVER
-          value: "https://kubernetes.default.svc"
-        # Set to "true" to disable write operations (read-only mode)
-        - name: MCP_READ_ONLY
-          value: "false"
-
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubectl-mtv-mcp-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubectl-mtv-mcp-server
+        app.kubernetes.io/component: mcp-server
+        app.kubernetes.io/part-of: kubectl-mtv
+    spec:
+      serviceAccountName: kubectl-mtv-mcp-server
       securityContext:
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
-        capabilities:
-          drop: ["ALL"]
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits:
-          cpu: 500m
-          memory: 256Mi
-      readinessProbe:
-        tcpSocket:
-          port: http
-        initialDelaySeconds: 5
-        periodSeconds: 10
-      livenessProbe:
-        tcpSocket:
-          port: http
-        initialDelaySeconds: 10
-        periodSeconds: 30
-      volumeMounts:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mcp-server
+          image: quay.io/yaacov/kubectl-mtv-mcp-server:latest
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: MCP_HOST
+              value: "0.0.0.0"
+            - name: MCP_PORT
+              value: "8080"
+            - name: MCP_OUTPUT_FORMAT
+              value: "text"
+            - name: MCP_MAX_RESPONSE_CHARS
+              value: "0"
+            - name: MCP_KUBE_INSECURE
+              value: 'true'
+            - name: MCP_KUBE_SERVER
+              value: "https://kubernetes.default.svc"
+            # Set to "true" to disable write operations (read-only mode)
+            - name: MCP_READ_ONLY
+              value: "false"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: home
+              mountPath: /home/mtv
+      volumes:
         - name: tmp
-          mountPath: /tmp
+          emptyDir: {}
         - name: home
-          mountPath: /home/mtv
-  volumes:
-    - name: tmp
-      emptyDir: {}
-    - name: home
-      emptyDir: {}
-  restartPolicy: Always
+          emptyDir: {}
 
 ---
 apiVersion: v1
