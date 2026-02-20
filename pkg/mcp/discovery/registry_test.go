@@ -202,38 +202,6 @@ func TestRegistry_IsReadWrite(t *testing.T) {
 	}
 }
 
-func TestRegistry_GetCommand(t *testing.T) {
-	readCmd := &Command{Path: []string{"get", "plan"}, Description: "Get plans"}
-	writeCmd := &Command{Path: []string{"create", "plan"}, Description: "Create plan"}
-
-	registry := &Registry{
-		ReadOnly: map[string]*Command{
-			"get/plan": readCmd,
-		},
-		ReadWrite: map[string]*Command{
-			"create/plan": writeCmd,
-		},
-	}
-
-	tests := []struct {
-		pathKey  string
-		expected *Command
-	}{
-		{"get/plan", readCmd},
-		{"create/plan", writeCmd},
-		{"unknown/cmd", nil},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.pathKey, func(t *testing.T) {
-			result := registry.GetCommand(tt.pathKey)
-			if result != tt.expected {
-				t.Errorf("GetCommand(%q) = %v, want %v", tt.pathKey, result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestRegistry_ListReadOnlyCommands(t *testing.T) {
 	registry := &Registry{
 		ReadOnly: map[string]*Command{
@@ -241,6 +209,7 @@ func TestRegistry_ListReadOnlyCommands(t *testing.T) {
 			"describe/vm":      {Path: []string{"describe", "vm"}},
 			"get/inventory/vm": {Path: []string{"get", "inventory", "vm"}},
 		},
+		ReadOnlyOrder: []string{"get/plan", "describe/vm", "get/inventory/vm"},
 		ReadWrite: map[string]*Command{
 			"create/plan": {Path: []string{"create", "plan"}},
 		},
@@ -248,8 +217,8 @@ func TestRegistry_ListReadOnlyCommands(t *testing.T) {
 
 	result := registry.ListReadOnlyCommands()
 
-	// Should be sorted
-	expected := []string{"describe/vm", "get/inventory/vm", "get/plan"}
+	// Should preserve Cobra registration order
+	expected := []string{"get/plan", "describe/vm", "get/inventory/vm"}
 	if len(result) != len(expected) {
 		t.Fatalf("ListReadOnlyCommands() returned %d items, want %d", len(result), len(expected))
 	}
@@ -271,12 +240,13 @@ func TestRegistry_ListReadWriteCommands(t *testing.T) {
 			"delete/plan": {Path: []string{"delete", "plan"}},
 			"start/plan":  {Path: []string{"start", "plan"}},
 		},
+		ReadWriteOrder: []string{"start/plan", "create/plan", "delete/plan"},
 	}
 
 	result := registry.ListReadWriteCommands()
 
-	// Should be sorted
-	expected := []string{"create/plan", "delete/plan", "start/plan"}
+	// Should preserve Cobra registration order
+	expected := []string{"start/plan", "create/plan", "delete/plan"}
 	if len(result) != len(expected) {
 		t.Fatalf("ListReadWriteCommands() returned %d items, want %d", len(result), len(expected))
 	}
@@ -284,311 +254,6 @@ func TestRegistry_ListReadWriteCommands(t *testing.T) {
 	for i, v := range expected {
 		if result[i] != v {
 			t.Errorf("ListReadWriteCommands()[%d] = %q, want %q", i, result[i], v)
-		}
-	}
-}
-
-func TestBuildCommandArgs(t *testing.T) {
-	tests := []struct {
-		name          string
-		cmdPath       string
-		flags         map[string]string
-		namespace     string
-		allNamespaces bool
-		expected      []string
-	}{
-		{
-			name:     "simple command",
-			cmdPath:  "get/plan",
-			expected: []string{"get", "plan"},
-		},
-		{
-			name:     "with flag",
-			cmdPath:  "get/plan",
-			flags:    map[string]string{"name": "my-plan"},
-			expected: []string{"get", "plan", "--name", "my-plan"},
-		},
-		{
-			name:      "with namespace",
-			cmdPath:   "get/plan",
-			namespace: "test-ns",
-			expected:  []string{"get", "plan", "--namespace", "test-ns"},
-		},
-		{
-			name:          "with all namespaces",
-			cmdPath:       "get/plan",
-			allNamespaces: true,
-			expected:      []string{"get", "plan", "--all-namespaces"},
-		},
-		{
-			name:     "with string flag",
-			cmdPath:  "get/plan",
-			flags:    map[string]string{"output": "json"},
-			expected: []string{"get", "plan", "--output", "json"},
-		},
-		{
-			name:     "with boolean true flag",
-			cmdPath:  "get/plan",
-			flags:    map[string]string{"watch": "true"},
-			expected: []string{"get", "plan", "--watch"},
-		},
-		{
-			name:     "with boolean false flag - skipped",
-			cmdPath:  "get/plan",
-			flags:    map[string]string{"watch": "false"},
-			expected: []string{"get", "plan"},
-		},
-		{
-			name:      "namespace flag in map is ignored",
-			cmdPath:   "get/plan",
-			namespace: "test-ns",
-			flags:     map[string]string{"namespace": "other-ns"},
-			expected:  []string{"get", "plan", "--namespace", "test-ns"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := BuildCommandArgs(tt.cmdPath, tt.flags, tt.namespace, tt.allNamespaces)
-
-			if len(result) != len(tt.expected) {
-				t.Fatalf("BuildCommandArgs() returned %v, want %v", result, tt.expected)
-			}
-
-			for i, v := range tt.expected {
-				if result[i] != v {
-					t.Errorf("BuildCommandArgs()[%d] = %q, want %q", i, result[i], v)
-				}
-			}
-		})
-	}
-}
-
-func TestFormatUsageShort(t *testing.T) {
-	tests := []struct {
-		name     string
-		cmd      *Command
-		expected string
-	}{
-		{
-			name: "command path",
-			cmd: &Command{
-				PathString: "get plan",
-			},
-			expected: "get plan",
-		},
-		{
-			name: "multi-segment path",
-			cmd: &Command{
-				PathString: "create provider",
-			},
-			expected: "create provider",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := formatUsageShort(tt.cmd)
-			if result != tt.expected {
-				t.Errorf("formatUsageShort() = %q, want %q", result, tt.expected)
-			}
-		})
-	}
-}
-
-func TestRegistry_GenerateReadOnlyDescription_Synthetic(t *testing.T) {
-	registry := &Registry{
-		ReadOnly: map[string]*Command{
-			"get/plan": {
-				PathString:  "get plan",
-				Description: "Get migration plans",
-			},
-		},
-		ReadWrite: map[string]*Command{},
-		GlobalFlags: []Flag{
-			{Name: "namespace", Description: "Target namespace"},
-		},
-	}
-
-	result := registry.GenerateReadOnlyDescription()
-
-	if !strings.Contains(result, "read-only") {
-		t.Error("Description should mention read-only")
-	}
-	if !strings.Contains(result, "get plan") {
-		t.Error("Description should include command")
-	}
-	if !strings.Contains(result, "Get migration plans") {
-		t.Error("Description should include command description")
-	}
-	// Root verbs should be derived from the command map
-	if !strings.Contains(result, "Commands: get") {
-		t.Error("Description should contain data-derived root verbs")
-	}
-	// Global flags should be derived from GlobalFlags data (important flags)
-	if !strings.Contains(result, "namespace: Target namespace") {
-		t.Error("Description should contain global flag descriptions from data")
-	}
-}
-
-func TestRegistry_GenerateReadWriteDescription_Synthetic(t *testing.T) {
-	registry := &Registry{
-		ReadOnly: map[string]*Command{
-			"get/plan": {PathString: "get plan", Description: "Get plans"},
-		},
-		ReadWrite: map[string]*Command{
-			"create/plan": {
-				PathString:  "create plan",
-				Description: "Create a migration plan",
-			},
-		},
-		GlobalFlags: []Flag{
-			{Name: "namespace", Description: "Target namespace"},
-		},
-	}
-
-	result := registry.GenerateReadWriteDescription()
-
-	if !strings.Contains(result, "WARNING") {
-		t.Error("Description should include WARNING")
-	}
-	if !strings.Contains(result, "create plan") {
-		t.Error("Description should include command")
-	}
-	if !strings.Contains(result, "Create a migration plan") {
-		t.Error("Description should include command description")
-	}
-	// Should derive read-only root verbs for the NOTE line
-	if !strings.Contains(result, "For read-only operations (get)") {
-		t.Errorf("Description should derive read-only root verbs: %s", result)
-	}
-}
-
-// --- Tests using real help --machine output ---
-
-func TestRegistry_RealHelpMachine_ReadOnlyDescription(t *testing.T) {
-	registry := loadRealRegistry(t)
-
-	result := registry.GenerateReadOnlyDescription()
-
-	// Should contain key read-only commands
-	for _, expected := range []string{
-		"health",
-		"get plan",
-		"get provider",
-		"get inventory vm",
-		"describe plan",
-		"settings get",
-	} {
-		if !strings.Contains(result, expected) {
-			t.Errorf("Read-only description should contain %q", expected)
-		}
-	}
-
-	// Should NOT contain write commands
-	for _, notExpected := range []string{
-		"create provider",
-		"delete plan",
-		"start plan",
-	} {
-		if strings.Contains(result, notExpected) {
-			t.Errorf("Read-only description should NOT contain write command %q", notExpected)
-		}
-	}
-}
-
-func TestRegistry_RealHelpMachine_ReadWriteDescription(t *testing.T) {
-	registry := loadRealRegistry(t)
-
-	result := registry.GenerateReadWriteDescription()
-
-	// Should contain key write commands
-	for _, expected := range []string{
-		"create provider",
-		"create plan",
-		"delete plan",
-		"start plan",
-		"patch provider",
-		"cancel plan",
-	} {
-		if !strings.Contains(result, expected) {
-			t.Errorf("Read-write description should contain %q", expected)
-		}
-	}
-
-	// Should contain env var documentation with embedded support
-	if !strings.Contains(result, "${ENV_VAR_NAME}") {
-		t.Error("Description should document env var syntax")
-	}
-	if !strings.Contains(result, "${GOVC_URL}/sdk") {
-		t.Error("Description should document embedded env var references")
-	}
-}
-
-func TestRegistry_RealHelpMachine_FlagReference(t *testing.T) {
-	registry := loadRealRegistry(t)
-
-	result := registry.GenerateReadWriteDescription()
-
-	// Should contain the flag reference section
-	if !strings.Contains(result, "Flag reference for complex commands:") {
-		t.Fatal("Description should contain flag reference section")
-	}
-
-	// Should surface required flags that previously caused 100% failure
-	requiredFlags := []struct {
-		command string
-		flag    string
-	}{
-		{"create provider", "--type"},
-		{"create provider", "[REQUIRED]"},
-		{"create provider", "[enum:"},
-		{"cancel plan", "--vms"},
-		{"cancel plan", "[REQUIRED]"},
-		{"create host", "--provider"},
-		{"create host", "[REQUIRED]"},
-		{"create vddk-image", "--tag"},
-		{"create vddk-image", "--tar"},
-	}
-
-	for _, rf := range requiredFlags {
-		if !strings.Contains(result, rf.flag) {
-			t.Errorf("Flag reference should contain %q (for %s)", rf.flag, rf.command)
-		}
-	}
-
-	// Should surface key flags that the LLM needs for common operations
-	keyFlags := []string{
-		"--provider-insecure-skip-tls",
-		"--url",
-		"--username",
-		"--password",
-		"--sdk-endpoint",
-		"--vddk-init-image",
-		"--source",
-		"--target",
-		"--migration-type",
-	}
-
-	for _, flag := range keyFlags {
-		if !strings.Contains(result, flag) {
-			t.Errorf("Flag reference should contain key flag %q", flag)
-		}
-	}
-
-	// Should surface enum values for constrained flags
-	enumValues := []string{
-		"openshift",
-		"vsphere",
-		"ovirt",
-		"openstack",
-		"cold",
-		"warm",
-	}
-
-	for _, val := range enumValues {
-		if !strings.Contains(result, val) {
-			t.Errorf("Flag reference should contain enum value %q", val)
 		}
 	}
 }
@@ -620,101 +285,6 @@ func TestRegistry_RealHelpMachine_CommandCounts(t *testing.T) {
 	for _, cmd := range keyWriteCommands {
 		if registry.ReadWrite[cmd] == nil {
 			t.Errorf("Expected read-write command %q to exist", cmd)
-		}
-	}
-}
-
-func TestRegistry_RealHelpMachine_KARLReference(t *testing.T) {
-	registry := loadRealRegistry(t)
-
-	result := registry.GenerateReadWriteDescription()
-
-	// KARL syntax reference should be surfaced via LongDescription of create plan and patch plan.
-	// Detailed KARL syntax is available via 'help karl'; command descriptions contain a summary.
-	karlKeywords := []string{
-		"Affinity Syntax (KARL)",
-		"REQUIRE",
-		"PREFER",
-		"AVOID",
-		"REPEL",
-		"pods(",
-		"weight=",
-		"Topology:",
-		"help karl",
-	}
-
-	for _, keyword := range karlKeywords {
-		if !strings.Contains(result, keyword) {
-			t.Errorf("Read-write description should contain KARL keyword %q", keyword)
-		}
-	}
-}
-
-func TestRegistry_RealHelpMachine_QueryLanguageReference(t *testing.T) {
-	registry := loadRealRegistry(t)
-
-	// Query language reference should appear in the write description (via create plan LongDescription).
-	// Detailed TSL syntax and field lists are available via 'help tsl'; command descriptions contain a summary.
-	writeResult := registry.GenerateReadWriteDescription()
-	tslKeywords := []string{
-		"Query Language (TSL)",
-		"where",
-		"~=",
-		"cpuCount",
-		"memoryMB",
-		"powerState",
-		"len(disks)",
-		"help tsl",
-	}
-
-	for _, keyword := range tslKeywords {
-		if !strings.Contains(writeResult, keyword) {
-			t.Errorf("Read-write description should contain TSL keyword %q", keyword)
-		}
-	}
-
-	// Query language reference should also appear in the read-only description
-	// (via get inventory vm LongDescription)
-	readResult := registry.GenerateReadOnlyDescription()
-	readTSLKeywords := []string{
-		"Query Language (TSL)",
-		"where",
-		"like",
-		"~=",
-		"ORDER BY",
-		"--output json",
-		"cpuCount",
-		"help tsl",
-	}
-
-	for _, keyword := range readTSLKeywords {
-		if !strings.Contains(readResult, keyword) {
-			t.Errorf("Read-only description should contain TSL keyword %q", keyword)
-		}
-	}
-}
-
-// --- Tests for generic helper functions ---
-
-func TestUniqueRootVerbs(t *testing.T) {
-	commands := map[string]*Command{
-		"get/plan":         {},
-		"get/provider":     {},
-		"get/inventory/vm": {},
-		"describe/plan":    {},
-		"health":           {},
-		"settings/get":     {},
-	}
-
-	roots := uniqueRootVerbs(commands)
-	expected := []string{"describe", "get", "health", "settings"}
-
-	if len(roots) != len(expected) {
-		t.Fatalf("uniqueRootVerbs() = %v, want %v", roots, expected)
-	}
-	for i, v := range expected {
-		if roots[i] != v {
-			t.Errorf("uniqueRootVerbs()[%d] = %q, want %q", i, roots[i], v)
 		}
 	}
 }
@@ -911,10 +481,10 @@ func TestRegistry_RealHelpMachine_NoAdminCommands(t *testing.T) {
 	}
 }
 
-func TestRegistry_RealHelpMachine_MinimalReadOnlyGroupsInventory(t *testing.T) {
+func TestRegistry_RealHelpMachine_ReadOnlyGroupsInventory(t *testing.T) {
 	registry := loadRealRegistry(t)
 
-	result := registry.GenerateMinimalReadOnlyDescription()
+	result := registry.GenerateReadOnlyDescription()
 
 	// Should have a compacted inventory line with "RESOURCE"
 	if !strings.Contains(result, "get inventory RESOURCE") {
@@ -934,11 +504,8 @@ func TestRegistry_RealHelpMachine_MinimalReadOnlyGroupsInventory(t *testing.T) {
 	if !strings.Contains(result, "get inventory") {
 		t.Error("Examples should include an inventory command")
 	}
-	if !strings.Contains(result, "query") {
-		t.Error("Inventory example should include a query flag to demonstrate TSL filtering")
-	}
-	if !strings.Contains(result, "TSL") {
-		t.Error("Description should include TSL syntax hint")
+	if !strings.Contains(result, "WORKFLOW") {
+		t.Error("Description should include WORKFLOW instruction")
 	}
 	if !strings.Contains(result, "mtv_help") {
 		t.Error("Description should reference mtv_help for detailed flags")
@@ -951,9 +518,9 @@ func TestRegistry_RealHelpMachine_MinimalReadOnlyGroupsInventory(t *testing.T) {
 	if !strings.Contains(result, "get plan") {
 		t.Error("Description should list non-grouped commands like 'get plan'")
 	}
-	// Should include short MTV context preamble
-	if !strings.Contains(result, "Migration Toolkit for Virtualization") {
-		t.Error("Minimal description should include MTV context preamble")
+	// MTV context preamble should be in server instructions, not duplicated in tool description
+	if strings.Contains(result, "Migration Toolkit for Virtualization") {
+		t.Error("Tool description should NOT duplicate MTV preamble (now in server instructions)")
 	}
 	// Should NOT include orphaned convention notes (removed)
 	if strings.Contains(result, "Args: <required>, [optional]") {
@@ -961,10 +528,37 @@ func TestRegistry_RealHelpMachine_MinimalReadOnlyGroupsInventory(t *testing.T) {
 	}
 }
 
-func TestRegistry_RealHelpMachine_MinimalReadWriteNoBareParents(t *testing.T) {
+func TestRegistry_RealHelpMachine_ServerInstructions(t *testing.T) {
 	registry := loadRealRegistry(t)
 
-	result := registry.GenerateMinimalReadWriteDescription()
+	result := registry.GenerateServerInstructions()
+
+	// Should explain what MTV/Forklift is
+	if !strings.Contains(result, "Migration Toolkit for Virtualization") {
+		t.Error("Server instructions should explain what MTV is")
+	}
+	if !strings.Contains(result, "Forklift") {
+		t.Error("Server instructions should mention the Forklift name")
+	}
+	// Should list the three tools
+	for _, tool := range []string{"mtv_read", "mtv_write", "mtv_help"} {
+		if !strings.Contains(result, tool) {
+			t.Errorf("Server instructions should mention %q tool", tool)
+		}
+	}
+	// Should establish the workflow pattern
+	if !strings.Contains(result, "mtv_help") {
+		t.Error("Server instructions should reference mtv_help in workflow")
+	}
+	if !strings.Contains(result, "Workflow") {
+		t.Error("Server instructions should include numbered workflow steps")
+	}
+}
+
+func TestRegistry_RealHelpMachine_ReadWriteNoBareParents(t *testing.T) {
+	registry := loadRealRegistry(t)
+
+	result := registry.GenerateReadWriteDescription()
 
 	// Real write commands should be present
 	if !strings.Contains(result, "create plan") {
@@ -977,11 +571,10 @@ func TestRegistry_RealHelpMachine_MinimalReadWriteNoBareParents(t *testing.T) {
 	if !strings.Contains(result, "Examples:") {
 		t.Error("Minimal write description should contain examples section")
 	}
-	// Should include KARL hint
-	if !strings.Contains(result, "KARL") {
-		t.Error("Minimal write description should include KARL hint")
+	// Should include WORKFLOW instruction and mtv_help reference
+	if !strings.Contains(result, "WORKFLOW") {
+		t.Error("Minimal write description should include WORKFLOW instruction")
 	}
-	// Should include mtv_help reference
 	if !strings.Contains(result, "mtv_help") {
 		t.Error("Minimal write description should reference mtv_help")
 	}
@@ -1043,4 +636,138 @@ func TestRegistry_RealHelpMachine_CreateProviderFlags(t *testing.T) {
 	if !found {
 		t.Error("create provider should have --provider-insecure-skip-tls flag")
 	}
+}
+
+func TestFormatCommandHelp_Nil(t *testing.T) {
+	result := FormatCommandHelp(nil)
+	if result != "" {
+		t.Errorf("nil command should return empty string, got: %q", result)
+	}
+}
+
+func TestFormatCommandHelp_RequiredFirst(t *testing.T) {
+	cmd := &Command{
+		PathString: "create provider",
+		Flags: []Flag{
+			{Name: "url", Type: "string", Description: "Provider URL"},
+			{Name: "type", Type: "string", Required: true, Description: "Provider type", Enum: []string{"vsphere", "ovirt"}},
+			{Name: "name", Type: "string", Required: true, Description: "Name of the provider"},
+			{Name: "internal-id", Type: "string", Description: "Internal ID", Hidden: true},
+		},
+		Examples: []Example{
+			{Description: "Create vSphere", Command: "kubectl-mtv create provider --name prod --type vsphere --url https://vcenter/sdk"},
+		},
+	}
+
+	result := FormatCommandHelp(cmd)
+
+	if !strings.Contains(result, `--- Help for "create provider" ---`) {
+		t.Error("should contain command header")
+	}
+
+	// Required flags should appear before optional flags
+	typeIdx := strings.Index(result, "--type")
+	nameIdx := strings.Index(result, "--name")
+	urlIdx := strings.Index(result, "--url")
+	if typeIdx < 0 || nameIdx < 0 || urlIdx < 0 {
+		t.Fatalf("missing expected flags in output:\n%s", result)
+	}
+	if urlIdx < typeIdx || urlIdx < nameIdx {
+		t.Errorf("optional --url should appear after required flags; type@%d name@%d url@%d", typeIdx, nameIdx, urlIdx)
+	}
+
+	// Required markers
+	if !strings.Contains(result, "(REQUIRED)") {
+		t.Error("required flags should be marked (REQUIRED)")
+	}
+
+	// Enum values
+	if !strings.Contains(result, "[vsphere, ovirt]") {
+		t.Error("enum values should be shown in brackets")
+	}
+
+	// Hidden flags excluded
+	if strings.Contains(result, "internal_id") || strings.Contains(result, "internal-id") {
+		t.Error("hidden flags should not appear")
+	}
+
+	// Example in MCP format
+	if !strings.Contains(result, "Example:") {
+		t.Error("should contain example")
+	}
+	if !strings.Contains(result, `command: "create provider"`) {
+		t.Error("example should be in MCP format")
+	}
+}
+
+func TestFormatCommandHelp_MultipleExamples(t *testing.T) {
+	cmd := &Command{
+		PathString: "get plan",
+		Flags: []Flag{
+			{Name: "namespace", Type: "string", Description: "Target namespace"},
+		},
+		Examples: []Example{
+			{Description: "List all plans", Command: "kubectl-mtv get plan --namespace ns1"},
+			{Description: "Get specific plan", Command: "kubectl-mtv get plan --namespace ns1 --name my-plan"},
+		},
+	}
+
+	result := FormatCommandHelp(cmd)
+
+	// Multiple examples should use "Examples:" header (plural)
+	if !strings.Contains(result, "Examples:") {
+		t.Error("multiple examples should use plural header")
+	}
+	if strings.Contains(result, "Example:") && !strings.Contains(result, "Examples:") {
+		t.Error("should use 'Examples:' not 'Example:' for multiple examples")
+	}
+}
+
+func TestFormatCommandHelp_NoFlagsNoExamples(t *testing.T) {
+	cmd := &Command{
+		PathString: "get plan",
+	}
+
+	result := FormatCommandHelp(cmd)
+
+	if !strings.Contains(result, `--- Help for "get plan" ---`) {
+		t.Error("should contain header even with no flags/examples")
+	}
+	if strings.Contains(result, "Flags:") {
+		t.Error("should not have Flags section when no flags")
+	}
+	if strings.Contains(result, "Example") {
+		t.Error("should not have Example section when no examples")
+	}
+}
+
+func TestFormatCommandHelp_RealCreateProvider(t *testing.T) {
+	registry := loadRealRegistry(t)
+
+	cmd, ok := registry.ReadWrite["create/provider"]
+	if !ok {
+		t.Skip("create/provider not found in registry")
+	}
+
+	result := FormatCommandHelp(cmd)
+
+	if !strings.Contains(result, `--- Help for "create provider" ---`) {
+		t.Error("should contain command header")
+	}
+	if !strings.Contains(result, "(REQUIRED)") {
+		t.Error("should show required flags")
+	}
+	if !strings.Contains(result, "--type") {
+		t.Error("should list --type flag")
+	}
+
+	// All examples should be present (no cap)
+	allExamples := convertCLIToMCPExamples(cmd, len(cmd.Examples))
+	for _, ex := range allExamples {
+		if !strings.Contains(result, ex) {
+			t.Errorf("missing example in help text: %s", ex)
+		}
+	}
+
+	t.Logf("FormatCommandHelp output (%d chars):\n%s", len(result), result)
 }
