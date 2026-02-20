@@ -21,19 +21,22 @@ type MTVHelpInput struct {
 func GetMTVHelpTool() *mcp.Tool {
 	return &mcp.Tool{
 		Name: "mtv_help",
-		Description: `Get help: flags, usage, examples for any command, or syntax refs for topics.
+		Description: `Get detailed flags, usage, and examples for any MTV command or topic.
+
+WHEN TO USE: Before calling any mtv_read or mtv_write command, call mtv_help("<command>") first to learn its required flags and syntax. The mtv_read/mtv_write descriptions list available commands but not their flags — mtv_help fills that gap.
+
+Workflow: find the command in mtv_read/mtv_write → mtv_help("<command>") → execute with correct flags.
 
 Commands: any from mtv_read/mtv_write, e.g.:
   "get plan", "get provider", "get inventory vm"
   "describe plan", "create provider", "create plan"
   "start plan", "patch plan", "delete plan"
+  "health logs"
 Topics:
   "tsl" - VM query language with field list per provider (vSphere, oVirt, OpenStack, EC2)
   "karl" - VM placement affinity/anti-affinity rules (e.g. "REQUIRE tag:zone=us-east")
 
-IMPORTANT: Call mtv_help("tsl") before writing inventory queries to learn available fields and syntax.
-
-Output: Returns command flags, usage, and examples as structured data.`,
+Returns: command flags (with required/optional markers), usage pattern, and examples as structured data.`,
 		OutputSchema: mtvOutputSchema,
 	}
 }

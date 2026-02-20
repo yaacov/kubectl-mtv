@@ -42,34 +42,10 @@ var mtvOutputSchema = map[string]any{
 }
 
 // GetMTVReadTool returns the tool definition for read-only MTV commands.
+// The input schema (jsonschema tags on MTVReadInput) already describes parameters.
+// The description lists available commands and a hint to use mtv_help.
 func GetMTVReadTool(registry *discovery.Registry) *mcp.Tool {
 	description := registry.GenerateReadOnlyDescription()
-
-	return &mcp.Tool{
-		Name:         "mtv_read",
-		Description:  description,
-		OutputSchema: mtvOutputSchema,
-	}
-}
-
-// GetMinimalMTVReadTool returns a minimal tool definition for read-only MTV commands.
-// The input schema (jsonschema tags on MTVReadInput) already describes parameters.
-// The description only lists available commands and a hint to use mtv_help.
-func GetMinimalMTVReadTool(registry *discovery.Registry) *mcp.Tool {
-	description := registry.GenerateMinimalReadOnlyDescription()
-
-	return &mcp.Tool{
-		Name:         "mtv_read",
-		Description:  description,
-		OutputSchema: mtvOutputSchema,
-	}
-}
-
-// GetUltraMinimalMTVReadTool returns the smallest possible tool definition for read-only
-// MTV commands, optimized for very small models (< 8B parameters).
-// Lists only the most common commands, 2 examples, and omits flags/workflow/notes.
-func GetUltraMinimalMTVReadTool(registry *discovery.Registry) *mcp.Tool {
-	description := registry.GenerateUltraMinimalReadOnlyDescription()
 
 	return &mcp.Tool{
 		Name:         "mtv_read",
@@ -163,6 +139,9 @@ func HandleMTVRead(registry *discovery.Registry) func(context.Context, *mcp.Call
 
 		// Check for CLI errors and surface as MCP IsError response
 		if errResult := buildCLIErrorResult(data); errResult != nil {
+			if cmd := registry.ReadOnly[cmdPath]; cmd != nil {
+				enrichErrorWithHelp(errResult, cmd)
+			}
 			return errResult, nil, nil
 		}
 
@@ -335,6 +314,10 @@ func appendNormalizedFlags(args []string, flags map[string]any, skipFlags map[st
 			continue
 		}
 
+		// Convert underscores back to hyphens: help text uses snake_case for JSON/MCP
+		// convention, but the CLI expects kebab-case (e.g. --migrate-shared-disks).
+		name = strings.ReplaceAll(name, "_", "-")
+
 		// Determine flag prefix: single dash for single-char flags, double dash for multi-char
 		prefix := "--"
 		if len(name) == 1 {
@@ -402,6 +385,20 @@ func buildCLIErrorResult(data map[string]interface{}) *mcp.CallToolResult {
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: errMsg}},
 		IsError: true,
+	}
+}
+
+// enrichErrorWithHelp appends the command's formatted help (flags, examples)
+// to a CLI error result so the LLM can self-correct without a separate mtv_help call.
+func enrichErrorWithHelp(errResult *mcp.CallToolResult, cmd *discovery.Command) {
+	helpText := discovery.FormatCommandHelp(cmd)
+	if helpText == "" {
+		return
+	}
+	if len(errResult.Content) > 0 {
+		if tc, ok := errResult.Content[0].(*mcp.TextContent); ok {
+			tc.Text += "\n\n" + helpText
+		}
 	}
 }
 

@@ -20,6 +20,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 	var watch bool
 	var vms bool
 	var disk bool
+	var vmsTable bool
+	var query string
 
 	var planName string
 	cmd := &cobra.Command{
@@ -30,7 +32,9 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 Lists all plans in the namespace, or retrieves details for a specific plan.
 Use --vms to see the migration status of individual VMs within a plan.
 Use --disk to see the disk transfer status with individual disk details.
-Use both --vms and --disk together to see VMs with their disk details.`,
+Use both --vms and --disk together to see VMs with their disk details.
+Use --vms-table to see all VMs across plans in a flat table with source/target inventory details.
+Use --query with --vms-table to filter, sort, or select columns using TSL syntax.`,
 		Example: `  # List all plans in current namespace
   kubectl-mtv get plans
 
@@ -50,7 +54,19 @@ Use both --vms and --disk together to see VMs with their disk details.`,
   kubectl-mtv get plan --name my-migration --disk
 
   # Get both VM and disk transfer status
-  kubectl-mtv get plan --name my-migration --vms --disk`,
+  kubectl-mtv get plan --name my-migration --vms --disk
+
+  # Show all VMs across all plans in a table
+  kubectl-mtv get plans --vms-table
+
+  # Show VMs for a specific plan in a table
+  kubectl-mtv get plan --name my-migration --vms-table
+
+  # Filter VMs table by plan status
+  kubectl-mtv get plans --vms-table --query "where planStatus = 'Failed'"
+
+  # Export VMs table as JSON
+  kubectl-mtv get plans --vms-table --output json`,
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -64,6 +80,17 @@ Use both --vms and --disk together to see VMs with their disk details.`,
 			kubeConfigFlags := globalConfig.GetKubeConfigFlags()
 			allNamespaces := globalConfig.GetAllNamespaces()
 			namespace := client.ResolveNamespaceWithAllFlag(kubeConfigFlags, allNamespaces)
+
+			// If --vms-table flag is used, show flat VM table with inventory details
+			if vmsTable {
+				logNamespaceOperation("Getting VMs table", namespace, allNamespaces)
+				logOutputFormat(outputFormatFlag.GetValue())
+
+				inventoryURL := globalConfig.GetInventoryURL()
+				inventoryInsecureSkipTLS := globalConfig.GetInventoryInsecureSkipTLS()
+
+				return plan.ListVMsTable(ctx, kubeConfigFlags, planName, namespace, inventoryURL, inventoryInsecureSkipTLS, outputFormatFlag.GetValue(), query, watch)
+			}
 
 			// If both --vms and --disk flags are used, show combined view
 			if vms && disk {
@@ -120,6 +147,8 @@ Use both --vms and --disk together to see VMs with their disk details.`,
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	cmd.Flags().BoolVar(&vms, "vms", false, "Get VMs status in the migration plan (requires plan NAME)")
 	cmd.Flags().BoolVar(&disk, "disk", false, "Get disk transfer status in the migration plan (requires plan NAME)")
+	cmd.Flags().BoolVar(&vmsTable, "vms-table", false, "Show all VMs across plans in a flat table with source/target inventory details")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (only with --vms-table)")
 
 	// Add completion for name and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("name", completion.PlanNameCompletion(kubeConfigFlags)); err != nil {

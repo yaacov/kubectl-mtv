@@ -31,6 +31,7 @@ func testRegistry() *discovery.Registry {
 			},
 			"health": {Path: []string{"health"}, PathString: "health", Description: "Health check"},
 		},
+		ReadOnlyOrder: []string{"get/plan", "get/provider", "get/inventory/vm", "describe/plan", "health"},
 		ReadWrite: map[string]*discovery.Command{
 			"create/provider": {
 				Path: []string{"create", "provider"}, PathString: "create provider", Description: "Create provider",
@@ -45,6 +46,7 @@ func testRegistry() *discovery.Registry {
 				Path: []string{"start", "plan"}, PathString: "start plan", Description: "Start plan",
 			},
 		},
+		ReadWriteOrder: []string{"create/provider", "create/plan", "delete/plan", "start/plan"},
 	}
 }
 
@@ -63,7 +65,7 @@ func TestGetMTVReadTool(t *testing.T) {
 	}
 
 	// Description should reference read-only commands
-	for _, keyword := range []string{"get plan", "health"} {
+	for _, keyword := range []string{"get plan", "health", "mtv_help"} {
 		if !strings.Contains(tool.Description, keyword) {
 			t.Errorf("Description should contain %q", keyword)
 		}
@@ -83,7 +85,6 @@ func TestGetMTVReadTool(t *testing.T) {
 			t.Errorf("OutputSchema.properties should contain %q", key)
 		}
 	}
-	// "command" should NOT be in the output schema (stripped to prevent CLI mimicry)
 	if _, exists := props["command"]; exists {
 		t.Error("OutputSchema.properties should NOT contain 'command' (stripped to help small LLMs)")
 	}
@@ -282,6 +283,18 @@ func TestAppendNormalizedFlags(t *testing.T) {
 			skipFlags:    map[string]bool{"namespace": true},
 			wantContains: []string{"--query", "keep-me"},
 			wantMissing:  []string{"--namespace"},
+		},
+		{
+			name:         "underscores converted to hyphens",
+			flags:        map[string]any{"migrate_shared_disks": false},
+			wantContains: []string{"--migrate-shared-disks=false"},
+			wantMissing:  []string{"migrate_shared_disks"},
+		},
+		{
+			name:         "underscore string flag converted to hyphen",
+			flags:        map[string]any{"tail_lines": float64(100)},
+			wantContains: []string{"--tail-lines", "100"},
+			wantMissing:  []string{"tail_lines"},
 		},
 	}
 
@@ -605,8 +618,10 @@ func newRegistryFromBinary(t *testing.T, binary string, extraArgs ...string) *di
 		switch cmd.Category {
 		case "read":
 			registry.ReadOnly[pathKey] = cmd
+			registry.ReadOnlyOrder = append(registry.ReadOnlyOrder, pathKey)
 		default:
 			registry.ReadWrite[pathKey] = cmd
+			registry.ReadWriteOrder = append(registry.ReadWriteOrder, pathKey)
 		}
 	}
 
@@ -621,83 +636,44 @@ type toolSizes struct {
 }
 
 // TestLiveToolContextSize builds the kubectl-mtv binary from source, discovers
-// commands, and compares the OLD (full) vs NEW (minimal + mtv_help) tool
-// descriptions that would be sent to an AI agent.
+// commands, and reports tool description sizes.
 //
 // Run with: go test -v -run TestLiveToolContextSize ./pkg/mcp/tools/
 func TestLiveToolContextSize(t *testing.T) {
-	// Build kubectl-mtv from source to ensure latest code is tested
 	binary := buildTestBinary(t)
 	registry := newRegistryFromBinary(t, binary)
 
-	// --- OLD mode: full descriptions (2 tools) ---
-	oldRead := registry.GenerateReadOnlyDescription()
-	oldWrite := registry.GenerateReadWriteDescription()
+	readDesc := registry.GenerateReadOnlyDescription()
+	writeDesc := registry.GenerateReadWriteDescription()
+	helpDesc := GetMTVHelpTool().Description
 
-	oldTools := []toolSizes{
-		{name: "mtv_read", chars: len(oldRead), lines: strings.Count(oldRead, "\n") + 1},
-		{name: "mtv_write", chars: len(oldWrite), lines: strings.Count(oldWrite, "\n") + 1},
+	tools := []toolSizes{
+		{name: "mtv_read", chars: len(readDesc), lines: strings.Count(readDesc, "\n") + 1},
+		{name: "mtv_write", chars: len(writeDesc), lines: strings.Count(writeDesc, "\n") + 1},
+		{name: "mtv_help", chars: len(helpDesc), lines: strings.Count(helpDesc, "\n") + 1},
 	}
 
-	// --- NEW mode: minimal descriptions (5 tools) ---
-	newRead := registry.GenerateMinimalReadOnlyDescription()
-	newWrite := registry.GenerateMinimalReadWriteDescription()
-	newLogs := GetMinimalKubectlLogsTool().Description
-	newKubectl := GetMinimalKubectlTool().Description
-	newHelp := GetMTVHelpTool().Description
-
-	newTools := []toolSizes{
-		{name: "mtv_read", chars: len(newRead), lines: strings.Count(newRead, "\n") + 1},
-		{name: "mtv_write", chars: len(newWrite), lines: strings.Count(newWrite, "\n") + 1},
-		{name: "kubectl_logs", chars: len(newLogs), lines: strings.Count(newLogs, "\n") + 1},
-		{name: "kubectl", chars: len(newKubectl), lines: strings.Count(newKubectl, "\n") + 1},
-		{name: "mtv_help", chars: len(newHelp), lines: strings.Count(newHelp, "\n") + 1},
-	}
-
-	// --- Report ---
 	t.Logf("=== MCP Tool Context Size Report (live kubectl-mtv) ===")
 	t.Logf("")
 
-	oldTotal := 0
-	t.Logf("--- OLD mode (full descriptions, 2 tools) ---")
-	for _, ts := range oldTools {
+	total := 0
+	for _, ts := range tools {
 		t.Logf("  %-20s %6d chars  %4d lines  ~%d tokens", ts.name, ts.chars, ts.lines, ts.chars/4)
-		oldTotal += ts.chars
+		total += ts.chars
 	}
-	t.Logf("  %-20s %6d chars            ~%d tokens", "TOTAL", oldTotal, oldTotal/4)
-
+	t.Logf("  %-20s %6d chars            ~%d tokens", "TOTAL", total, total/4)
 	t.Logf("")
-
-	newTotal := 0
-	t.Logf("--- NEW mode (minimal + mtv_help, 5 tools) ---")
-	for _, ts := range newTools {
-		t.Logf("  %-20s %6d chars  %4d lines  ~%d tokens", ts.name, ts.chars, ts.lines, ts.chars/4)
-		newTotal += ts.chars
-	}
-	t.Logf("  %-20s %6d chars            ~%d tokens", "TOTAL", newTotal, newTotal/4)
-
-	t.Logf("")
-
-	saved := oldTotal - newTotal
-	pct := float64(saved) / float64(oldTotal) * 100
-	t.Logf("--- SAVINGS ---")
-	t.Logf("  Saved: %d chars / ~%d tokens (%.1f%% reduction)", saved, saved/4, pct)
 	t.Logf("  Read commands:  %d", len(registry.ReadOnly))
 	t.Logf("  Write commands: %d", len(registry.ReadWrite))
 	t.Logf("====================================================")
 
-	// Dump new minimal descriptions for inspection
 	t.Logf("")
-	t.Logf("--- [NEW] mtv_read description ---")
-	t.Logf("\n%s", newRead)
-	t.Logf("--- [NEW] mtv_write description ---")
-	t.Logf("\n%s", newWrite)
-	t.Logf("--- [NEW] kubectl_logs description ---")
-	t.Logf("\n%s", newLogs)
-	t.Logf("--- [NEW] kubectl description ---")
-	t.Logf("\n%s", newKubectl)
-	t.Logf("--- [NEW] mtv_help description ---")
-	t.Logf("\n%s", newHelp)
+	t.Logf("--- mtv_read description ---")
+	t.Logf("\n%s", readDesc)
+	t.Logf("--- mtv_write description ---")
+	t.Logf("\n%s", writeDesc)
+	t.Logf("--- mtv_help description ---")
+	t.Logf("\n%s", helpDesc)
 }
 
 // --- filterResponseFields tests ---
@@ -961,6 +937,69 @@ func TestBuildCLIErrorResult_StderrOnly(t *testing.T) {
 	}
 	if !strings.Contains(text.Text, "exit 1") {
 		t.Errorf("error text should contain exit code, got: %s", text.Text)
+	}
+}
+
+// --- enrichErrorWithHelp tests ---
+
+func TestEnrichErrorWithHelp(t *testing.T) {
+	cmd := &discovery.Command{
+		PathString: "create provider",
+		Flags: []discovery.Flag{
+			{Name: "type", Type: "string", Required: true, Description: "Provider type", Enum: []string{"vsphere", "ovirt"}},
+			{Name: "url", Type: "string", Description: "Provider URL"},
+		},
+		Examples: []discovery.Example{
+			{Description: "Create vSphere", Command: "kubectl-mtv create provider --type vsphere --url https://vcenter/sdk"},
+		},
+	}
+
+	data := map[string]interface{}{
+		"return_value": float64(1),
+		"stderr":       "Error: required flag --type not set",
+	}
+	errResult := buildCLIErrorResult(data)
+	if errResult == nil {
+		t.Fatal("expected error result")
+	}
+
+	enrichErrorWithHelp(errResult, cmd)
+
+	text := errResult.Content[0].(*mcp.TextContent)
+
+	// Original error should still be present
+	if !strings.Contains(text.Text, "required flag --type not set") {
+		t.Error("original error message should be preserved")
+	}
+
+	// Help section should be appended
+	if !strings.Contains(text.Text, `--- Help for "create provider" ---`) {
+		t.Error("help header should be appended")
+	}
+	if !strings.Contains(text.Text, "(REQUIRED)") {
+		t.Error("required flags should be shown")
+	}
+	if !strings.Contains(text.Text, "[vsphere, ovirt]") {
+		t.Error("enum values should be shown")
+	}
+	if !strings.Contains(text.Text, `command: "create provider"`) {
+		t.Error("MCP-style example should be included")
+	}
+}
+
+func TestEnrichErrorWithHelp_NilCommand(t *testing.T) {
+	data := map[string]interface{}{
+		"return_value": float64(1),
+		"stderr":       "some error",
+	}
+	errResult := buildCLIErrorResult(data)
+	original := errResult.Content[0].(*mcp.TextContent).Text
+
+	enrichErrorWithHelp(errResult, nil)
+
+	after := errResult.Content[0].(*mcp.TextContent).Text
+	if original != after {
+		t.Error("nil command should not modify the error result")
 	}
 }
 

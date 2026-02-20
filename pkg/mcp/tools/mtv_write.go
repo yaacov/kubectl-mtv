@@ -19,34 +19,11 @@ type MTVWriteInput struct {
 	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, does not execute. Returns the equivalent CLI command in the output field instead"`
 }
 
-// GetUltraMinimalMTVWriteTool returns the smallest possible tool definition for read-write
-// MTV commands, optimized for very small models (< 8B parameters).
-func GetUltraMinimalMTVWriteTool(registry *discovery.Registry) *mcp.Tool {
-	description := registry.GenerateUltraMinimalReadWriteDescription()
-
-	return &mcp.Tool{
-		Name:         "mtv_write",
-		Description:  description,
-		OutputSchema: mtvOutputSchema,
-	}
-}
-
 // GetMTVWriteTool returns the tool definition for read-write MTV commands.
+// The input schema (jsonschema tags on MTVWriteInput) already describes parameters.
+// The description lists available commands and hints to use mtv_help.
 func GetMTVWriteTool(registry *discovery.Registry) *mcp.Tool {
 	description := registry.GenerateReadWriteDescription()
-
-	return &mcp.Tool{
-		Name:         "mtv_write",
-		Description:  description,
-		OutputSchema: mtvOutputSchema,
-	}
-}
-
-// GetMinimalMTVWriteTool returns a minimal tool definition for read-write MTV commands.
-// The input schema (jsonschema tags on MTVWriteInput) already describes parameters.
-// The description only lists available commands and hints to use mtv_help.
-func GetMinimalMTVWriteTool(registry *discovery.Registry) *mcp.Tool {
-	description := registry.GenerateMinimalReadWriteDescription()
 
 	return &mcp.Tool{
 		Name:         "mtv_write",
@@ -104,6 +81,9 @@ func HandleMTVWrite(registry *discovery.Registry) func(context.Context, *mcp.Cal
 
 		// Check for CLI errors and surface as MCP IsError response
 		if errResult := buildCLIErrorResult(data); errResult != nil {
+			if cmd := registry.ReadWrite[cmdPath]; cmd != nil {
+				enrichErrorWithHelp(errResult, cmd)
+			}
 			return errResult, nil, nil
 		}
 
