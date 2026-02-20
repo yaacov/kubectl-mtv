@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/yaacov/kubectl-mtv/pkg/util/tui"
@@ -16,37 +17,58 @@ const DefaultInterval = 5 * time.Second
 // RenderFunc is a function that renders output and returns an error if any
 type RenderFunc func() error
 
-// Watch uses TUI mode for watching with smooth updates and interactive features
-// It exits when user presses q or Ctrl+C
-func Watch(renderFunc RenderFunc, interval time.Duration) error {
-	// Create a data fetcher that captures output from the renderFunc
-	dataFetcher := func() (string, error) {
-		// Create a pipe to capture stdout
+// stdoutMu serializes access to os.Stdout inside captureOutput so concurrent
+// data fetches don't race on the global file descriptor.
+var stdoutMu sync.Mutex
+
+// captureOutput wraps a RenderFunc into a DataFetcher by capturing its stdout.
+func captureOutput(renderFunc RenderFunc) tui.DataFetcher {
+	return func() (output string, retErr error) {
+		stdoutMu.Lock()
+		defer stdoutMu.Unlock()
+
 		oldStdout := os.Stdout
 		r, w, err := os.Pipe()
 		if err != nil {
 			return "", fmt.Errorf("failed to create pipe: %w", err)
 		}
+
 		os.Stdout = w
 
-		// Create a channel to collect output
-		outputChan := make(chan string)
+		// Buffered so the reader goroutine never blocks if we return early.
+		outputChan := make(chan string, 1)
 		go func() {
 			var buf strings.Builder
-			_, _ = io.Copy(&buf, r) // Explicitly ignore copy errors as we're just capturing output
+			_, _ = io.Copy(&buf, r)
 			outputChan <- buf.String()
 		}()
 
-		// Call renderFunc which will print to our captured stdout
-		renderErr := renderFunc()
+		defer func() {
+			w.Close()
+			os.Stdout = oldStdout
+			output = <-outputChan
 
-		// Restore stdout
-		w.Close()
-		os.Stdout = oldStdout
-		output := <-outputChan
+			if p := recover(); p != nil {
+				retErr = fmt.Errorf("renderFunc panicked: %v", p)
+			}
+		}()
 
-		return output, renderErr
+		retErr = renderFunc()
+		return
 	}
+}
 
-	return tui.Run(dataFetcher, interval)
+// Watch uses TUI mode for watching with smooth updates and interactive features.
+func Watch(renderFunc RenderFunc, interval time.Duration) error {
+	return tui.Run(captureOutput(renderFunc), interval)
+}
+
+// WatchWithQuery uses TUI mode with interactive query editing support.
+func WatchWithQuery(renderFunc RenderFunc, interval time.Duration, queryUpdater tui.QueryUpdater, currentQuery string) error {
+	return tui.RunWithOptions(
+		captureOutput(renderFunc),
+		interval,
+		tui.WithQueryUpdater(queryUpdater),
+		tui.WithInitialQuery(currentQuery),
+	)
 }
