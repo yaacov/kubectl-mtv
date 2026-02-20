@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 )
 
 // ANSI color codes
@@ -66,9 +67,9 @@ func StripANSI(text string) string {
 	return ansiRegex.ReplaceAllString(text, "")
 }
 
-// VisibleLength returns the visible length of a string, excluding ANSI color codes
+// VisibleLength returns the visible rune count of a string, excluding ANSI color codes
 func VisibleLength(text string) int {
-	return len(StripANSI(text))
+	return utf8.RuneCountInString(StripANSI(text))
 }
 
 // ColorizeStatus returns a colored string based on status value
@@ -79,7 +80,7 @@ func ColorizeStatus(status string) string {
 		return Blue(status)
 	case "executing":
 		return Blue(status)
-	case "completed":
+	case "completed", "succeeded":
 		return Green(status)
 	case "pending":
 		return Yellow(status)
@@ -89,6 +90,21 @@ func ColorizeStatus(status string) string {
 		return Cyan(status)
 	default:
 		return status
+	}
+}
+
+// ColorizePowerState returns a colored string based on VM power state
+func ColorizePowerState(state string) string {
+	state = strings.TrimSpace(state)
+	switch strings.ToLower(state) {
+	case "running":
+		return Green(state)
+	case "stopped":
+		return Yellow(state)
+	case "not found":
+		return Red(state)
+	default:
+		return state
 	}
 }
 

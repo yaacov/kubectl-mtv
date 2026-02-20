@@ -22,13 +22,13 @@ import (
 // vmTableHeaders defines the default columns for the VMs table.
 var vmTableHeaders = []output.Header{
 	{DisplayName: "VM", JSONPath: "vm"},
-	{DisplayName: "SOURCE STATUS", JSONPath: "sourceStatus"},
+	{DisplayName: "SOURCE STATUS", JSONPath: "sourceStatus", ColorFunc: output.ColorizePowerState},
 	{DisplayName: "SOURCE IP", JSONPath: "sourceIP"},
 	{DisplayName: "TARGET", JSONPath: "target"},
 	{DisplayName: "TARGET IP", JSONPath: "targetIP"},
-	{DisplayName: "TARGET STATUS", JSONPath: "targetStatus"},
+	{DisplayName: "TARGET STATUS", JSONPath: "targetStatus", ColorFunc: output.ColorizePowerState},
 	{DisplayName: "PLAN", JSONPath: "plan"},
-	{DisplayName: "PLAN STATUS", JSONPath: "planStatus"},
+	{DisplayName: "PLAN STATUS", JSONPath: "planStatus", ColorFunc: output.ColorizeStatus},
 	{DisplayName: "PROGRESS", JSONPath: "progress"},
 }
 
