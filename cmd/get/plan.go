@@ -72,8 +72,12 @@ Use --query with --vms-table to filter, sort, or select columns using TSL syntax
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			if !watch {
+				timeout := 30 * time.Second
+				if vmsTable {
+					timeout = 120 * time.Second
+				}
 				var cancel context.CancelFunc
-				ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+				ctx, cancel = context.WithTimeout(ctx, timeout)
 				defer cancel()
 			}
 

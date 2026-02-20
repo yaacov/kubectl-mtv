@@ -21,6 +21,18 @@ var (
 				Background(lipgloss.Color("196")).
 				Padding(0, 1)
 
+	// Search/query input bar style
+	inputBarStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("230")).
+			Background(lipgloss.Color("25")).
+			Padding(0, 1)
+
+	// Search results navigation bar style
+	searchResultsBarStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("230")).
+				Background(lipgloss.Color("136")).
+				Padding(0, 1)
+
 	// Help styles
 	helpStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
@@ -61,10 +73,52 @@ func (m Model) View() string {
 		b.WriteString("\n")
 	}
 
-	// Render the status bar
-	b.WriteString(m.renderStatusBar())
+	// Render bottom bar based on current mode
+	switch m.mode {
+	case modeSearch:
+		b.WriteString(m.renderSearchBar())
+	case modeSearchResults:
+		b.WriteString(m.renderSearchResultsBar())
+	case modeQuery:
+		b.WriteString(m.renderQueryBar())
+	default:
+		b.WriteString(m.renderStatusBar())
+	}
 
 	return b.String()
+}
+
+// renderSearchBar renders the search input bar at the bottom.
+func (m Model) renderSearchBar() string {
+	matchInfo := ""
+	if m.searchInput.Value() != "" {
+		total := len(m.searchMatches)
+		if total > 0 {
+			matchInfo = fmt.Sprintf(" [%d/%d]", m.searchIndex+1, total)
+		} else {
+			matchInfo = " [no match]"
+		}
+	}
+
+	text := "/" + m.searchInput.View() + matchInfo
+	return inputBarStyle.Width(m.width).Render(text)
+}
+
+// renderSearchResultsBar renders the bar shown while navigating search results.
+func (m Model) renderSearchResultsBar() string {
+	total := len(m.searchMatches)
+	pos := ""
+	if total > 0 {
+		pos = fmt.Sprintf("[%d/%d]", m.searchIndex+1, total)
+	}
+	text := fmt.Sprintf("/%s  %s  (n/N: next/prev  Esc: exit search  /: new search)", m.searchTerm, pos)
+	return searchResultsBarStyle.Width(m.width).Render(text)
+}
+
+// renderQueryBar renders the query input bar at the bottom.
+func (m Model) renderQueryBar() string {
+	text := ":" + m.queryInput.View()
+	return inputBarStyle.Width(m.width).Render(text)
 }
 
 // renderStatusBar renders the status bar at the bottom
@@ -87,6 +141,16 @@ func (m Model) renderStatusBar() string {
 	// Refresh interval
 	parts = append(parts, fmt.Sprintf("Refresh: %ds", int(m.refreshInterval.Seconds())))
 
+	// Search match count (persists in normal mode after confirmed search)
+	if m.searchTerm != "" && len(m.searchMatches) > 0 {
+		parts = append(parts, fmt.Sprintf("Match: %d/%d", m.searchIndex+1, len(m.searchMatches)))
+	}
+
+	// Active query indicator
+	if m.currentQuery != "" && m.queryUpdater != nil {
+		parts = append(parts, fmt.Sprintf("Query: %s", m.currentQuery))
+	}
+
 	// Scroll position hint
 	scrollPercent := m.viewport.ScrollPercent()
 	if scrollPercent > 0 || scrollPercent < 1 {
@@ -103,7 +167,6 @@ func (m Model) renderStatusBar() string {
 	if m.lastError != nil {
 		style = statusBarErrorStyle
 		errorMsg := fmt.Sprintf("Error: %v", m.lastError)
-		// Truncate error message if too long
 		if len(errorMsg) > m.width-10 {
 			errorMsg = errorMsg[:m.width-13] + "..."
 		}
@@ -123,22 +186,24 @@ func (m Model) renderHelpOverlay() string {
 	helpContent := helpTitleStyle.Render("Keyboard Shortcuts") + "\n\n"
 	helpContent += m.help.View(m.keys)
 
-	// Add additional information
 	helpContent += "\n\n"
-	helpContent += lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(
-		"TIP: Use +/- to adjust refresh interval\n" +
-			"Press ? again to close this help",
-	)
+
+	tips := "TIP: Use +/- to adjust refresh interval\n"
+	if m.queryUpdater != nil {
+		tips += "Use : to enter a TSL query filter\n"
+	}
+	tips += "Press ? again to close this help"
+
+	helpContent += lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(tips)
 
 	// Center the help panel
 	helpBox := helpStyle.Render(helpContent)
 
-	// Calculate centering
 	helpWidth := lipgloss.Width(helpBox)
 	helpHeight := lipgloss.Height(helpBox)
 
 	horizontalMargin := (m.width - helpWidth) / 2
-	verticalMargin := (m.height - helpHeight - 3) / 2 // -3 for status bar and spacing
+	verticalMargin := (m.height - helpHeight - 3) / 2
 
 	if horizontalMargin < 0 {
 		horizontalMargin = 0
@@ -147,7 +212,6 @@ func (m Model) renderHelpOverlay() string {
 		verticalMargin = 0
 	}
 
-	// Add margin to center the help box
 	centeredHelp := lipgloss.NewStyle().
 		MarginLeft(horizontalMargin).
 		MarginTop(verticalMargin).

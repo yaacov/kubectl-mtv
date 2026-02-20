@@ -46,9 +46,12 @@ func ListVMsTable(
 	outputFormat, queryStr string,
 	watchMode bool,
 ) error {
-	return watch.WrapWithWatch(watchMode, outputFormat, func() error {
-		return listVMsTableOnce(ctx, configFlags, planName, namespace, inventoryURL, insecureSkipTLS, outputFormat, queryStr)
-	}, watch.DefaultInterval)
+	currentQuery := queryStr
+	queryUpdater := func(q string) { currentQuery = q }
+
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listVMsTableOnce(ctx, configFlags, planName, namespace, inventoryURL, insecureSkipTLS, outputFormat, currentQuery)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listVMsTableOnce(

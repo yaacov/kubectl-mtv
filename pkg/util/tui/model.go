@@ -6,12 +6,44 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 // DataFetcher is a function that fetches and returns data as a formatted string
 type DataFetcher func() (string, error)
+
+// QueryUpdater is a callback that updates the query parameter used by the DataFetcher.
+// Commands that support TSL queries provide this so the TUI can interactively change the query.
+type QueryUpdater func(query string)
+
+// tuiMode represents the current interactive mode of the TUI.
+type tuiMode int
+
+const (
+	modeNormal tuiMode = iota
+	modeSearch
+	modeSearchResults
+	modeQuery
+)
+
+// Option configures optional TUI features.
+type Option func(*Model)
+
+// WithQueryUpdater enables interactive query mode (`:` key) with the given callback.
+func WithQueryUpdater(fn QueryUpdater) Option {
+	return func(m *Model) {
+		m.queryUpdater = fn
+	}
+}
+
+// WithInitialQuery sets the initial query string shown when entering query mode.
+func WithInitialQuery(q string) Option {
+	return func(m *Model) {
+		m.currentQuery = q
+	}
+}
 
 // Model represents the TUI state
 type Model struct {
@@ -30,6 +62,17 @@ type Model struct {
 	quitting        bool
 	width           int
 	height          int
+
+	// Interactive search/query
+	mode               tuiMode
+	searchInput        textinput.Model
+	queryInput         textinput.Model
+	searchTerm         string
+	searchMatches      []matchInfo
+	searchIndex        int
+	highlightedContent string
+	queryUpdater       QueryUpdater
+	currentQuery       string
 }
 
 // keyMap defines the keybindings for the TUI
@@ -45,11 +88,15 @@ type keyMap struct {
 	Help        key.Binding
 	IncreaseInt key.Binding
 	DecreaseInt key.Binding
+	Search      key.Binding
+	NextMatch   key.Binding
+	PrevMatch   key.Binding
+	Query       key.Binding
 }
 
 // ShortHelp returns keybindings to be shown in the mini help view
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Help, k.Refresh, k.Quit}
+	return []key.Binding{k.Help, k.Search, k.Refresh, k.Quit}
 }
 
 // FullHelp returns keybindings for the expanded help view
@@ -57,6 +104,7 @@ func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down, k.PageUp, k.PageDown},
 		{k.Home, k.End},
+		{k.Search, k.NextMatch, k.PrevMatch, k.Query},
 		{k.Refresh, k.IncreaseInt, k.DecreaseInt},
 		{k.Help, k.Quit},
 	}
@@ -109,16 +157,40 @@ func defaultKeys() keyMap {
 			key.WithKeys("-"),
 			key.WithHelp("-", "decrease refresh interval"),
 		),
+		Search: key.NewBinding(
+			key.WithKeys("/"),
+			key.WithHelp("/", "search"),
+		),
+		NextMatch: key.NewBinding(
+			key.WithKeys("n"),
+			key.WithHelp("n", "next match"),
+		),
+		PrevMatch: key.NewBinding(
+			key.WithKeys("N"),
+			key.WithHelp("N", "prev match"),
+		),
+		Query: key.NewBinding(
+			key.WithKeys(":"),
+			key.WithHelp(":", "query (TSL)"),
+		),
 	}
 }
 
 // NewModel creates a new TUI model
-func NewModel(dataFetcher DataFetcher, refreshInterval time.Duration) Model {
+func NewModel(dataFetcher DataFetcher, refreshInterval time.Duration, opts ...Option) Model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = spinnerStyle
 
-	return Model{
+	si := textinput.New()
+	si.Placeholder = "search..."
+	si.CharLimit = 256
+
+	qi := textinput.New()
+	qi.Placeholder = "where ... order by ... limit ..."
+	qi.CharLimit = 512
+
+	m := Model{
 		spinner:         s,
 		help:            help.New(),
 		keys:            defaultKeys(),
@@ -129,7 +201,17 @@ func NewModel(dataFetcher DataFetcher, refreshInterval time.Duration) Model {
 		showHelp:        false,
 		ready:           false,
 		quitting:        false,
+		mode:            modeNormal,
+		searchInput:     si,
+		queryInput:      qi,
+		searchIndex:     -1,
 	}
+
+	for _, opt := range opts {
+		opt(&m)
+	}
+
+	return m
 }
 
 // Init initializes the TUI model
