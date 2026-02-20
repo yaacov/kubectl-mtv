@@ -65,6 +65,7 @@ func PrintTableWithQuery(data interface{}, defaultHeaders []Header, queryOpts *q
 type Header struct {
 	DisplayName string
 	JSONPath    string
+	ColorFunc   func(string) string
 }
 
 // TablePrinter prints tabular data with dynamically sized columns
@@ -258,7 +259,11 @@ func (t *TablePrinter) Print() error {
 	for i, item := range t.items {
 		row := make([]string, len(t.headers))
 		for j, header := range t.headers {
-			row[j] = t.extractValue(item, header.JSONPath)
+			value := t.extractValue(item, header.JSONPath)
+			if header.ColorFunc != nil {
+				value = header.ColorFunc(value)
+			}
+			row[j] = value
 		}
 		t.printRow(row, widths)
 
@@ -281,7 +286,8 @@ func (t *TablePrinter) PrintEmpty(message string) error {
 	return nil
 }
 
-// printRow prints a single row with the specified column widths
+// printRow prints a single row with the specified column widths.
+// Handles ANSI color codes by using visible length for padding calculations.
 func (t *TablePrinter) printRow(row []string, widths []int) {
 	var sb strings.Builder
 
@@ -290,15 +296,30 @@ func (t *TablePrinter) printRow(row []string, widths []int) {
 			break
 		}
 
-		// Truncate if the cell is too long
 		displayCell := cell
-		if utf8.RuneCountInString(cell) > t.maxColWidth {
-			displayCell = cell[:t.maxColWidth-3] + "..."
+		visLen := VisibleLength(cell)
+
+		if visLen > t.maxColWidth {
+			runes := []rune(StripANSI(cell))
+			truncLen := t.maxColWidth - 3
+			if truncLen > len(runes) {
+				truncLen = len(runes)
+			}
+			if truncLen < 0 {
+				truncLen = 0
+			}
+			displayCell = string(runes[:truncLen]) + "..."
+			visLen = t.maxColWidth
 		}
 
-		// Format with proper padding
-		format := fmt.Sprintf("%%-%ds", widths[i]+t.padding)
-		sb.WriteString(fmt.Sprintf(format, displayCell))
+		targetWidth := widths[i] + t.padding
+		pad := targetWidth - visLen
+		if pad < 0 {
+			pad = 0
+		}
+
+		sb.WriteString(displayCell)
+		sb.WriteString(strings.Repeat(" ", pad))
 	}
 
 	fmt.Fprintln(t.writer, strings.TrimRight(sb.String(), " "))
