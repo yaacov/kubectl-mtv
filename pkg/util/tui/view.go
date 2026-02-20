@@ -10,7 +10,6 @@ import (
 
 // Styles for the TUI
 var (
-	// Status bar styles
 	statusBarStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("230")).
 			Background(lipgloss.Color("63")).
@@ -21,7 +20,16 @@ var (
 				Background(lipgloss.Color("196")).
 				Padding(0, 1)
 
-	// Help styles
+	inputBarStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("230")).
+			Background(lipgloss.Color("27")).
+			Padding(0, 1)
+
+	searchResultsBarStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("232")).
+				Background(lipgloss.Color("214")).
+				Padding(0, 1)
+
 	helpStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("63")).
@@ -34,7 +42,6 @@ var (
 			Foreground(lipgloss.Color("63")).
 			MarginBottom(1)
 
-	// Spinner style
 	spinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
 )
 
@@ -50,33 +57,66 @@ func (m Model) View() string {
 
 	var b strings.Builder
 
-	// Render the main content viewport
 	b.WriteString(m.viewport.View())
 	b.WriteString("\n")
 
-	// Render help overlay if visible
 	if m.showHelp {
 		b.WriteString("\n")
 		b.WriteString(m.renderHelpOverlay())
 		b.WriteString("\n")
 	}
 
-	// Render the status bar
-	b.WriteString(m.renderStatusBar())
+	switch m.mode {
+	case modeSearch:
+		b.WriteString(m.renderSearchBar())
+	case modeSearchResults:
+		b.WriteString(m.renderSearchResultsBar())
+	case modeQuery:
+		b.WriteString(m.renderQueryBar())
+	default:
+		b.WriteString(m.renderStatusBar())
+	}
 
 	return b.String()
+}
+
+// renderSearchBar renders the search input bar.
+func (m Model) renderSearchBar() string {
+	matchCount := len(m.searchMatches)
+	suffix := ""
+	if m.searchInput.Value() != "" {
+		suffix = fmt.Sprintf("  [%d matches]", matchCount)
+	}
+
+	text := "/" + m.searchInput.View() + suffix
+	return inputBarStyle.Width(m.width).Render(text)
+}
+
+// renderSearchResultsBar renders the bar shown while navigating search results.
+func (m Model) renderSearchResultsBar() string {
+	total := len(m.searchMatches)
+	current := m.searchIndex + 1
+
+	text := fmt.Sprintf(" /%s  [%d/%d]  n/N: next/prev  Esc: clear  /: new search",
+		m.searchTerm, current, total)
+
+	return searchResultsBarStyle.Width(m.width).Render(text)
+}
+
+// renderQueryBar renders the query input bar.
+func (m Model) renderQueryBar() string {
+	text := ":" + m.queryInput.View()
+	return inputBarStyle.Width(m.width).Render(text)
 }
 
 // renderStatusBar renders the status bar at the bottom
 func (m Model) renderStatusBar() string {
 	var parts []string
 
-	// Loading indicator
 	if m.loading {
 		parts = append(parts, m.spinner.View()+" Refreshing...")
 	}
 
-	// Last update time
 	elapsed := time.Since(m.lastUpdate)
 	if elapsed < time.Minute {
 		parts = append(parts, fmt.Sprintf("Updated %ds ago", int(elapsed.Seconds())))
@@ -84,33 +124,39 @@ func (m Model) renderStatusBar() string {
 		parts = append(parts, fmt.Sprintf("Updated %s ago", elapsed.Round(time.Second)))
 	}
 
-	// Refresh interval
 	parts = append(parts, fmt.Sprintf("Refresh: %ds", int(m.refreshInterval.Seconds())))
 
-	// Scroll position hint
+	if m.queryUpdater != nil && m.currentQuery != "" {
+		q := m.currentQuery
+		if len(q) > 30 {
+			q = q[:27] + "..."
+		}
+		parts = append(parts, fmt.Sprintf("Query: %s", q))
+	}
+
+	if m.searchTerm != "" {
+		parts = append(parts, fmt.Sprintf("/%s [%d]", m.searchTerm, len(m.searchMatches)))
+	}
+
 	scrollPercent := m.viewport.ScrollPercent()
 	if scrollPercent > 0 || scrollPercent < 1 {
 		parts = append(parts, fmt.Sprintf("Scroll: %d%%", int(scrollPercent*100)))
 	}
 
-	// Quick help hint
 	parts = append(parts, "Press ? for help")
 
 	statusText := strings.Join(parts, " • ")
 
-	// Use error style if there's an error, otherwise normal style
 	style := statusBarStyle
 	if m.lastError != nil {
 		style = statusBarErrorStyle
 		errorMsg := fmt.Sprintf("Error: %v", m.lastError)
-		// Truncate error message if too long
 		if len(errorMsg) > m.width-10 {
 			errorMsg = errorMsg[:m.width-13] + "..."
 		}
 		statusText = errorMsg + " • " + statusText
 	}
 
-	// Ensure the status bar fits the width
 	if len(statusText) > m.width-4 {
 		statusText = statusText[:m.width-7] + "..."
 	}
@@ -123,22 +169,23 @@ func (m Model) renderHelpOverlay() string {
 	helpContent := helpTitleStyle.Render("Keyboard Shortcuts") + "\n\n"
 	helpContent += m.help.View(m.keys)
 
-	// Add additional information
 	helpContent += "\n\n"
-	helpContent += lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(
-		"TIP: Use +/- to adjust refresh interval\n" +
-			"Press ? again to close this help",
-	)
+	tips := "TIP: Use +/- to adjust refresh interval\n" +
+		"     / to search, n/N to navigate matches"
+	if m.queryUpdater != nil {
+		tips += "\n     : to edit the filter query"
+	}
+	tips += "\n     Press ? again to close this help"
 
-	// Center the help panel
+	helpContent += lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(tips)
+
 	helpBox := helpStyle.Render(helpContent)
 
-	// Calculate centering
 	helpWidth := lipgloss.Width(helpBox)
 	helpHeight := lipgloss.Height(helpBox)
 
 	horizontalMargin := (m.width - helpWidth) / 2
-	verticalMargin := (m.height - helpHeight - 3) / 2 // -3 for status bar and spacing
+	verticalMargin := (m.height - helpHeight - 3) / 2
 
 	if horizontalMargin < 0 {
 		horizontalMargin = 0
@@ -147,7 +194,6 @@ func (m Model) renderHelpOverlay() string {
 		verticalMargin = 0
 	}
 
-	// Add margin to center the help box
 	centeredHelp := lipgloss.NewStyle().
 		MarginLeft(horizontalMargin).
 		MarginTop(verticalMargin).
