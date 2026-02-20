@@ -225,35 +225,6 @@ func TestCoerceBooleans_MTVWriteInput(t *testing.T) {
 	}
 }
 
-func TestCoerceBooleans_KubectlLogsInput(t *testing.T) {
-	// KubectlLogsInput has flags and dry_run at top level.
-	// Boolean params like previous etc. are inside the flags map.
-	data := json.RawMessage(`{"dry_run":"True"}`)
-	result := CoerceBooleans[KubectlLogsInput](data)
-
-	var input KubectlLogsInput
-	if err := json.Unmarshal(result, &input); err != nil {
-		t.Fatalf("Failed to unmarshal: %v", err)
-	}
-	if !input.DryRun {
-		t.Error("DryRun should be true")
-	}
-}
-
-func TestCoerceBooleans_KubectlInput(t *testing.T) {
-	// KubectlInput has action, flags, and dry_run at top level.
-	data := json.RawMessage(`{"action":"get","dry_run":"True"}`)
-	result := CoerceBooleans[KubectlInput](data)
-
-	var input KubectlInput
-	if err := json.Unmarshal(result, &input); err != nil {
-		t.Fatalf("Failed to unmarshal: %v", err)
-	}
-	if !input.DryRun {
-		t.Error("DryRun should be true")
-	}
-}
-
 // --- parseBoolValue tests ---
 
 func TestParseBoolValue(t *testing.T) {

@@ -16,15 +16,15 @@ type Registry struct {
 	// ReadOnly contains commands that don't modify cluster state
 	ReadOnly map[string]*Command
 
-	// ReadOnlyOrder preserves the original registration order of read-only
-	// commands from help --machine. This is used for example selection so
-	// the first command per group matches the developer's intended ordering.
+	// ReadOnlyOrder preserves the Cobra registration order of read-only
+	// commands from help --machine. Used for all iteration: command listings,
+	// example selection, and descriptions.
 	ReadOnlyOrder []string
 
 	// ReadWrite contains commands that modify cluster state
 	ReadWrite map[string]*Command
 
-	// ReadWriteOrder preserves the original registration order of read-write commands.
+	// ReadWriteOrder preserves the Cobra registration order of read-write commands.
 	ReadWriteOrder []string
 
 	// Parents contains non-runnable structural parent commands
@@ -126,41 +126,18 @@ func NewRegistry(ctx context.Context) (*Registry, error) {
 	return registry, nil
 }
 
-// GetCommand returns a command by its path key (e.g., "get/plan").
-func (r *Registry) GetCommand(pathKey string) *Command {
-	if cmd, ok := r.ReadOnly[pathKey]; ok {
-		return cmd
-	}
-	if cmd, ok := r.ReadWrite[pathKey]; ok {
-		return cmd
-	}
-	return nil
-}
-
-// GetCommandByPath returns a command by its path slice.
-func (r *Registry) GetCommandByPath(path []string) *Command {
-	key := strings.Join(path, "/")
-	return r.GetCommand(key)
-}
-
-// ListReadOnlyCommands returns sorted list of read-only command paths.
+// ListReadOnlyCommands returns read-only command paths in Cobra registration order.
 func (r *Registry) ListReadOnlyCommands() []string {
-	var commands []string
-	for key := range r.ReadOnly {
-		commands = append(commands, key)
-	}
-	sort.Strings(commands)
-	return commands
+	out := make([]string, len(r.ReadOnlyOrder))
+	copy(out, r.ReadOnlyOrder)
+	return out
 }
 
-// ListReadWriteCommands returns sorted list of read-write command paths.
+// ListReadWriteCommands returns read-write command paths in Cobra registration order.
 func (r *Registry) ListReadWriteCommands() []string {
-	var commands []string
-	for key := range r.ReadWrite {
-		commands = append(commands, key)
-	}
-	sort.Strings(commands)
-	return commands
+	out := make([]string, len(r.ReadWriteOrder))
+	copy(out, r.ReadWriteOrder)
+	return out
 }
 
 // IsReadOnly checks if a command path is read-only.
@@ -175,83 +152,33 @@ func (r *Registry) IsReadWrite(pathKey string) bool {
 	return ok
 }
 
-// GenerateReadOnlyDescription generates a description for the read-only tool.
-func (r *Registry) GenerateReadOnlyDescription() string {
-	roots := uniqueRootVerbs(r.ReadOnly)
-
+// GenerateServerInstructions generates the MCP server-level instructions sent
+// during initialization. This gives the LLM domain context (what MTV/Forklift is)
+// and establishes the tool usage workflow before it sees any tool descriptions.
+func (r *Registry) GenerateServerInstructions() string {
 	var sb strings.Builder
-	sb.WriteString("MTV (Migration Toolkit for Virtualization) migrates VMs from VMware vSphere, oVirt, OpenStack, and Amazon EC2 into OpenShift Virtualization (KubeVirt).\n\n")
-	sb.WriteString("Execute read-only kubectl-mtv commands to query MTV resources.\n\n")
-	sb.WriteString(fmt.Sprintf("Commands: %s\n\n", strings.Join(roots, ", ")))
-	sb.WriteString("Available commands:\n")
 
-	commands := r.ListReadOnlyCommands()
-	for _, key := range commands {
-		cmd := r.ReadOnly[key]
-		// Format: "get plan [NAME]" -> "get plan [NAME] - Get migration plans"
-		usage := formatUsageShort(cmd)
-		sb.WriteString(fmt.Sprintf("- %s - %s\n", usage, cmd.Description))
-	}
-
-	sb.WriteString(r.formatGlobalFlags())
-
-	// Include extended notes from commands that have substantial LongDescription
-	sb.WriteString(r.generateReadOnlyCommandNotes())
-
-	sb.WriteString("\nEnvironment Variable References:\n")
-	sb.WriteString("- Use ${ENV_VAR_NAME} syntax to pass environment variable references as flag values\n")
+	sb.WriteString("MTV (Migration Toolkit for Virtualization), also known as Forklift, migrates virtual machines from VMware vSphere, oVirt (RHV), OpenStack, and Amazon EC2 into OpenShift Virtualization (KubeVirt).\n")
+	sb.WriteString("\nThis server provides three tools:\n")
+	sb.WriteString("  mtv_read  - Query resources (plans, providers, inventory, mappings, health, logs, settings)\n")
+	sb.WriteString("  mtv_write - Create, modify, or delete resources (providers, plans, mappings, hooks)\n")
+	sb.WriteString("  mtv_help  - Get detailed flags, syntax, and examples for any command\n")
+	sb.WriteString("\nWorkflow:\n")
+	sb.WriteString("  1. Find the command you need in mtv_read or mtv_write\n")
+	sb.WriteString("  2. Call mtv_help(\"<command>\") to learn its flags and see examples\n")
+	sb.WriteString("  3. Execute the command with the correct flags\n")
+	sb.WriteString("\nThe tool descriptions list available commands but not their flags — always call mtv_help first for unfamiliar commands.\n")
 
 	return sb.String()
 }
 
-// GenerateReadWriteDescription generates a description for the read-write tool.
-func (r *Registry) GenerateReadWriteDescription() string {
-	var sb strings.Builder
-	sb.WriteString("Execute kubectl-mtv commands that modify cluster state.\n\n")
-	sb.WriteString("WARNING: These commands create, modify, or delete resources.\n\n")
-	sb.WriteString("Typical migration workflow:\n")
-	sb.WriteString("1. Set namespace for the migration\n")
-	sb.WriteString("2. Check existing providers with mtv_read \"get provider\"; create via mtv_write \"create provider\" only if needed\n")
-	sb.WriteString("3. Browse VMs with mtv_read \"get inventory vm\" + TSL queries\n")
-	sb.WriteString("4. Create a migration plan (network/storage mappings are auto-generated; use --network-pairs/--storage-pairs to override)\n")
-	sb.WriteString("5. Start the plan\n")
-	sb.WriteString("6. Monitor with mtv_read \"get plan\", debug with kubectl_logs\n\n")
-	readRoots := uniqueRootVerbs(r.ReadOnly)
-	sb.WriteString(fmt.Sprintf("NOTE: For read-only operations (%s), use the mtv_read tool instead.\n\n", strings.Join(readRoots, ", ")))
-	sb.WriteString("Available commands:\n")
-
-	commands := r.ListReadWriteCommands()
-	for _, key := range commands {
-		cmd := r.ReadWrite[key]
-		usage := formatUsageShort(cmd)
-		sb.WriteString(fmt.Sprintf("- %s - %s\n", usage, cmd.Description))
-	}
-
-	sb.WriteString(r.formatGlobalFlags())
-
-	// Append per-command flag reference for complex write commands
-	sb.WriteString(r.generateFlagReference())
-
-	sb.WriteString("\nEnvironment Variable References:\n")
-	sb.WriteString("You can pass environment variable references instead of literal values for any flag:\n")
-	sb.WriteString("- Use ${ENV_VAR_NAME} syntax with curly braces (e.g., url: \"${GOVC_URL}\", password: \"${VCENTER_PASSWORD}\")\n")
-	sb.WriteString("- Env vars can be embedded in strings (e.g., url: \"${GOVC_URL}/sdk\", endpoint: \"https://${HOST}:${PORT}/api\")\n")
-	sb.WriteString("- IMPORTANT: Only ${VAR} format is recognized as env var reference. Bare $VAR is treated as literal value.\n")
-	sb.WriteString("- The MCP server resolves the env var at execution time\n")
-	sb.WriteString("- Sensitive values (passwords, tokens) are masked in command output for security\n")
-
-	return sb.String()
-}
-
-// GenerateMinimalReadOnlyDescription generates a minimal description for the read-only tool.
+// GenerateReadOnlyDescription generates the description for the read-only tool.
 // It puts the command list first (most critical for the LM), followed by examples
-// and a hint to use mtv_help. Domain context and conventions are omitted to stay
-// within client description limits and avoid noise for smaller models.
-func (r *Registry) GenerateMinimalReadOnlyDescription() string {
+// and a hint to use mtv_help.
+func (r *Registry) GenerateReadOnlyDescription() string {
 	var sb strings.Builder
 
-	sb.WriteString("MTV (Migration Toolkit for Virtualization) migrates VMs from VMware vSphere, oVirt, OpenStack, and Amazon EC2 into OpenShift Virtualization (KubeVirt).\n")
-	sb.WriteString("\nQuery MTV resources (read-only).\n")
+	sb.WriteString("Query MTV resources (read-only).\n")
 	sb.WriteString("\nCommands:\n")
 
 	// Detect deep sibling groups (depth >= 3) for compaction
@@ -275,7 +202,7 @@ func (r *Registry) GenerateMinimalReadOnlyDescription() string {
 	}
 
 	// Examples: first example from each command in order, capped at N
-	examples := r.collectOrderedExamples(r.ReadOnly, r.ReadOnlyOrder, 6)
+	examples := r.collectOrderedExamples(r.ReadOnly, r.ReadOnlyOrder, 10)
 	if len(examples) > 0 {
 		sb.WriteString("\nExamples:\n")
 		for _, ex := range examples {
@@ -285,18 +212,18 @@ func (r *Registry) GenerateMinimalReadOnlyDescription() string {
 
 	sb.WriteString(r.formatGlobalFlags())
 
-	sb.WriteString("\nDefault output is table. For structured data, use flags: {output: \"json\"} and fields: [\"name\", \"status\"] to limit response size.\n")
+	sb.WriteString("\nWORKFLOW: Find the command above → call mtv_help(\"<command>\") to get its flags and examples → then execute.\n")
+	sb.WriteString("Default output is table. For structured data, use flags: {output: \"json\"} and fields: [\"name\", \"status\"] to limit response size.\n")
 	sb.WriteString("IMPORTANT: 'fields' is a TOP-LEVEL parameter, NOT inside flags. Example: {command: \"get plan\", flags: {output: \"json\"}, fields: [\"name\", \"status\"]}\n")
-	sb.WriteString("Use mtv_help for flags, TSL query syntax, and examples.\n")
-	sb.WriteString("IMPORTANT: Before writing inventory queries, call mtv_help(\"tsl\") to learn available fields per provider and query syntax.\n")
+	sb.WriteString("RULE: ALWAYS include namespace in flags. Never omit it.\n")
+	sb.WriteString("RULE: Only include optional flags (e.g. mapping pairs, skip-verify) when the user explicitly needs them. Leave them empty otherwise.\n")
 	return sb.String()
 }
 
-// GenerateMinimalReadWriteDescription generates a minimal description for the read-write tool.
+// GenerateReadWriteDescription generates the description for the read-write tool.
 // It puts the command list first (most critical for the LM), followed by examples
-// and a hint to use mtv_help. Domain context and conventions are omitted to stay
-// within client description limits and avoid noise for smaller models.
-func (r *Registry) GenerateMinimalReadWriteDescription() string {
+// and a hint to use mtv_help.
+func (r *Registry) GenerateReadWriteDescription() string {
 	// Detect bare parent commands to skip them from the listing.
 	// Admin commands are already filtered out by NewRegistry.
 	bareParents := detectBareParents(r.ReadWrite)
@@ -310,7 +237,7 @@ func (r *Registry) GenerateMinimalReadWriteDescription() string {
 	sb.WriteString("3. Browse VMs with mtv_read \"get inventory vm\" + TSL queries\n")
 	sb.WriteString("4. Create a migration plan (network/storage mappings are auto-generated; use --network-pairs/--storage-pairs to override)\n")
 	sb.WriteString("5. Start the plan\n")
-	sb.WriteString("6. Monitor with mtv_read \"get plan\", debug with kubectl_logs\n")
+	sb.WriteString("6. Monitor with mtv_read \"get plan\"\n")
 	sb.WriteString("\nCommands:\n")
 
 	commands := r.ListReadWriteCommands()
@@ -319,11 +246,10 @@ func (r *Registry) GenerateMinimalReadWriteDescription() string {
 			continue
 		}
 		cmd := r.ReadWrite[key]
-		usage := formatUsageShort(cmd)
-		sb.WriteString(fmt.Sprintf("  %s - %s\n", usage, cmd.Description))
+		sb.WriteString(fmt.Sprintf("  %s - %s\n", cmd.CommandPath(), cmd.Description))
 	}
 
-	examples := r.collectOrderedExamples(r.ReadWrite, r.ReadWriteOrder, 8)
+	examples := r.collectOrderedExamples(r.ReadWrite, r.ReadWriteOrder, 10)
 	if len(examples) > 0 {
 		sb.WriteString("\nExamples:\n")
 		for _, ex := range examples {
@@ -333,215 +259,9 @@ func (r *Registry) GenerateMinimalReadWriteDescription() string {
 
 	sb.WriteString(r.formatGlobalFlags())
 
-	sb.WriteString("\nCall mtv_help before create/patch to learn required flags, TSL (Tree Search Language) query syntax, and KARL (affinity/anti-affinity rule) syntax.\n")
-	return sb.String()
-}
-
-// ultraMinimalReadCommands lists the most commonly used read commands for the
-// ultra-minimal description. Only these are shown to very small models.
-var ultraMinimalReadCommands = map[string]bool{
-	"get/plan":                true,
-	"get/provider":            true,
-	"describe/plan":           true,
-	"get/inventory/vm":        true,
-	"get/mapping":             true,
-	"health":                  true,
-	"settings/get":            true,
-	"get/inventory/network":   true,
-	"get/inventory/datastore": true,
-}
-
-// ultraMinimalWriteCommands lists the most commonly used write commands.
-var ultraMinimalWriteCommands = map[string]bool{
-	"create/provider":        true,
-	"create/plan":            true,
-	"start/plan":             true,
-	"delete/plan":            true,
-	"delete/provider":        true,
-	"patch/plan":             true,
-	"create/mapping/network": true,
-	"create/mapping/storage": true,
-}
-
-// GenerateUltraMinimalReadOnlyDescription generates the shortest possible description
-// for the read-only tool, optimized for very small models (< 8B parameters).
-// It lists only the most common commands, 2 examples, and omits flags/workflow/notes.
-func (r *Registry) GenerateUltraMinimalReadOnlyDescription() string {
-	var sb strings.Builder
-
-	sb.WriteString("Query MTV migration resources (read-only).\n")
-	sb.WriteString("\nCommands:\n")
-
-	// List only ultra-minimal commands that exist in the registry
-	commands := r.ListReadOnlyCommands()
-	for _, key := range commands {
-		if !ultraMinimalReadCommands[key] {
-			continue
-		}
-		cmd := r.ReadOnly[key]
-		sb.WriteString(fmt.Sprintf("  %s - %s\n", cmd.CommandPath(), cmd.Description))
-	}
-
-	// If we have inventory commands not in the explicit list, mention them as a group
-	hasInventory := false
-	for key := range r.ReadOnly {
-		if strings.HasPrefix(key, "get/inventory/") && !ultraMinimalReadCommands[key] {
-			hasInventory = true
-			break
-		}
-	}
-	if hasInventory {
-		sb.WriteString("  get inventory RESOURCE - Get other inventory resources (disk, host, cluster, ...)\n")
-	}
-
-	sb.WriteString("\nExamples:\n")
-	sb.WriteString("  {command: \"get plan\", flags: {namespace: \"demo\"}}\n")
-	sb.WriteString("  {command: \"get inventory vm\", flags: {provider: \"vsphere-prod\", namespace: \"demo\"}}\n")
-	sb.WriteString("\nUse mtv_help for flags and query syntax.\n")
-
-	return sb.String()
-}
-
-// GenerateUltraMinimalReadWriteDescription generates the shortest possible description
-// for the read-write tool, optimized for very small models (< 8B parameters).
-func (r *Registry) GenerateUltraMinimalReadWriteDescription() string {
-	var sb strings.Builder
-
-	sb.WriteString("Create, modify, or delete MTV migration resources.\n")
-	sb.WriteString("\nCommands:\n")
-
-	commands := r.ListReadWriteCommands()
-	for _, key := range commands {
-		if !ultraMinimalWriteCommands[key] {
-			continue
-		}
-		cmd := r.ReadWrite[key]
-		sb.WriteString(fmt.Sprintf("  %s - %s\n", cmd.CommandPath(), cmd.Description))
-	}
-
-	sb.WriteString("\nExamples:\n")
-	sb.WriteString("  {command: \"create plan\", flags: {name: \"my-plan\", source: \"vsphere-prod\", target: \"host\", vms: \"web-server\", namespace: \"demo\"}}\n")
-	sb.WriteString("  {command: \"start plan\", flags: {name: \"my-plan\", namespace: \"demo\"}}\n")
-	sb.WriteString("\nCall mtv_help before create/patch to learn required flags.\n")
-
-	return sb.String()
-}
-
-// generateFlagReference builds a concise per-command flag reference for write commands.
-// It includes all flags for commands that have required flags or many flags (complex commands),
-// so the LLM can construct valid calls without guessing flag names.
-func (r *Registry) generateFlagReference() string {
-	var sb strings.Builder
-
-	// Collect commands that need flag documentation:
-	// 1. Commands with any required flags (these fail 100% without flag knowledge)
-	// 2. Key complex commands (create/patch provider, create plan, create mapping)
-	type commandEntry struct {
-		pathKey string
-		cmd     *Command
-	}
-
-	// Get sorted list of write commands
-	keys := r.ListReadWriteCommands()
-
-	// First pass: identify commands with required flags or many flags
-	var flaggedCommands []commandEntry
-	for _, key := range keys {
-		cmd := r.ReadWrite[key]
-		if cmd == nil || len(cmd.Flags) == 0 {
-			continue
-		}
-
-		hasRequired := false
-		for _, f := range cmd.Flags {
-			if f.Required {
-				hasRequired = true
-				break
-			}
-		}
-
-		// Include if: has required flags, or is a complex command (>5 flags)
-		if hasRequired || len(cmd.Flags) > 5 {
-			flaggedCommands = append(flaggedCommands, commandEntry{key, cmd})
-		}
-	}
-
-	if len(flaggedCommands) == 0 {
-		return ""
-	}
-
-	sb.WriteString("\nFlag reference for complex commands:\n")
-
-	for _, entry := range flaggedCommands {
-		cmd := entry.cmd
-		cmdPath := strings.ReplaceAll(entry.pathKey, "/", " ")
-
-		// Include the command's LongDescription when available, as it may contain
-		// syntax references (e.g., KARL affinity syntax, TSL query language)
-		if cmd.LongDescription != "" {
-			sb.WriteString(fmt.Sprintf("\n%s notes:\n%s\n", cmdPath, cmd.LongDescription))
-		}
-
-		sb.WriteString(fmt.Sprintf("\n%s flags:\n", cmdPath))
-
-		for _, f := range cmd.Flags {
-			if f.Hidden {
-				continue
-			}
-
-			// Format: "  --name (type) - description [REQUIRED] [enum: a|b|c]"
-			line := fmt.Sprintf("  --%s", f.Name)
-
-			// Add type for non-bool flags
-			if f.Type != "bool" {
-				line += fmt.Sprintf(" (%s)", f.Type)
-			}
-
-			line += fmt.Sprintf(" - %s", f.Description)
-
-			if f.Required {
-				line += " [REQUIRED]"
-			}
-
-			if len(f.Enum) > 0 {
-				line += fmt.Sprintf(" [enum: %s]", strings.Join(f.Enum, "|"))
-			}
-
-			sb.WriteString(line + "\n")
-		}
-	}
-
-	return sb.String()
-}
-
-// generateReadOnlyCommandNotes includes LongDescription from read-only commands
-// that have substantial documentation (e.g., query language syntax references).
-// This surfaces documentation that was added to Cobra Long descriptions into the
-// MCP tool description, so AI clients can discover syntax without external docs.
-func (r *Registry) generateReadOnlyCommandNotes() string {
-	var sb strings.Builder
-
-	// Minimum length threshold to avoid including trivial one-liner descriptions
-	const minLongDescLength = 200
-
-	commands := r.ListReadOnlyCommands()
-	var hasNotes bool
-
-	for _, key := range commands {
-		cmd := r.ReadOnly[key]
-		if cmd == nil || len(cmd.LongDescription) < minLongDescLength {
-			continue
-		}
-
-		if !hasNotes {
-			sb.WriteString("\nCommand notes:\n")
-			hasNotes = true
-		}
-
-		cmdPath := strings.ReplaceAll(key, "/", " ")
-		sb.WriteString(fmt.Sprintf("\n%s:\n%s\n", cmdPath, cmd.LongDescription))
-	}
-
+	sb.WriteString("\nWORKFLOW: Find the command above → call mtv_help(\"<command>\") to get required flags and examples → then execute.\n")
+	sb.WriteString("RULE: ALWAYS include namespace in flags. Never omit it.\n")
+	sb.WriteString("RULE: Only include optional flags (e.g. mapping pairs, skip-verify) when the user explicitly needs them. Leave them empty otherwise.\n")
 	return sb.String()
 }
 
@@ -715,22 +435,68 @@ func shellTokenize(s string) []string {
 	return tokens
 }
 
-// uniqueRootVerbs extracts the unique first path element from a set of commands
-// and returns them sorted. For example, commands "get/plan", "get/provider",
-// "describe/plan", "health" produce ["describe", "get", "health"].
-func uniqueRootVerbs(commands map[string]*Command) []string {
-	seen := make(map[string]bool)
-	for key := range commands {
-		parts := strings.SplitN(key, "/", 2)
-		seen[parts[0]] = true
+// FormatCommandHelp formats a command's flags and examples as LLM-friendly help text
+// suitable for embedding in error messages. Required flags are listed first with a
+// (REQUIRED) marker, enum values are shown in brackets, and hidden flags are excluded.
+// All examples are included, converted to MCP-style call format.
+func FormatCommandHelp(cmd *Command) string {
+	if cmd == nil {
+		return ""
 	}
 
-	roots := make([]string, 0, len(seen))
-	for root := range seen {
-		roots = append(roots, root)
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("--- Help for \"%s\" ---\n", cmd.CommandPath()))
+
+	var required, optional []Flag
+	for _, f := range cmd.Flags {
+		if f.Hidden {
+			continue
+		}
+		if f.Required {
+			required = append(required, f)
+		} else {
+			optional = append(optional, f)
+		}
 	}
-	sort.Strings(roots)
-	return roots
+
+	if len(required) > 0 || len(optional) > 0 {
+		sb.WriteString("Flags:\n")
+		for _, f := range required {
+			sb.WriteString(formatFlagLine(f, true))
+		}
+		for _, f := range optional {
+			sb.WriteString(formatFlagLine(f, false))
+		}
+	}
+
+	mcpExamples := convertCLIToMCPExamples(cmd, len(cmd.Examples))
+	if len(mcpExamples) > 0 {
+		if len(mcpExamples) == 1 {
+			sb.WriteString(fmt.Sprintf("Example: %s\n", mcpExamples[0]))
+		} else {
+			sb.WriteString("Examples:\n")
+			for _, ex := range mcpExamples {
+				sb.WriteString(fmt.Sprintf("  %s\n", ex))
+			}
+		}
+	}
+
+	return sb.String()
+}
+
+// formatFlagLine renders a single flag as a help line.
+// Example: "  --name string (REQUIRED) - Name of the provider [vsphere, ovirt]"
+func formatFlagLine(f Flag, required bool) string {
+	displayName := strings.ReplaceAll(f.Name, "-", "_")
+	line := fmt.Sprintf("  --%s %s", displayName, f.Type)
+	if required {
+		line += " (REQUIRED)"
+	}
+	line += " - " + f.Description
+	if len(f.Enum) > 0 {
+		line += " [" + strings.Join(f.Enum, ", ") + "]"
+	}
+	return line + "\n"
 }
 
 // importantGlobalFlags lists the global flags that are relevant for MCP tool descriptions.
@@ -861,44 +627,4 @@ func detectBareParents(commands map[string]*Command) map[string]bool {
 	}
 
 	return bareParents
-}
-
-// formatUsageShort returns a short usage string for a command.
-func formatUsageShort(cmd *Command) string {
-	return cmd.CommandPath()
-}
-
-// BuildCommandArgs builds command-line arguments from command path and flags.
-func BuildCommandArgs(cmdPath string, flags map[string]string, namespace string, allNamespaces bool) []string {
-	var args []string
-
-	// Add command path
-	parts := strings.Split(cmdPath, "/")
-	args = append(args, parts...)
-
-	// Add namespace flags
-	if allNamespaces {
-		args = append(args, "--all-namespaces")
-	} else if namespace != "" {
-		args = append(args, "--namespace", namespace)
-	}
-
-	// Add other flags
-	for name, value := range flags {
-		if name == "namespace" || name == "all_namespaces" {
-			continue // Already handled
-		}
-		if value == "true" {
-			// Boolean flag
-			args = append(args, "--"+name)
-		} else if value == "false" {
-			// Skip false boolean flags
-			continue
-		} else if value != "" {
-			// String/int flag with value
-			args = append(args, "--"+name, value)
-		}
-	}
-
-	return args
 }

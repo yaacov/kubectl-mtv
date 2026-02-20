@@ -251,10 +251,11 @@ func createMCPServerWithHeaderCapture(req *http.Request, readOnlyMode bool) (*mc
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "kubectl-mtv",
 		Version: version.ClientVersion,
-	}, nil)
+	}, &mcp.ServerOptions{
+		Instructions: registry.GenerateServerInstructions(),
+	})
 
-	// Register tools with minimal descriptions (the input schema covers parameter usage).
-	// The mtv_help tool provides on-demand detailed help for any command or topic.
+	// Register tools. The mtv_help tool provides on-demand detailed help for any command or topic.
 	// Use AddToolWithCoercion for tools with boolean parameters to handle string
 	// booleans ("True"/"true") from AI models that don't send proper JSON booleans.
 
@@ -266,14 +267,12 @@ func createMCPServerWithHeaderCapture(req *http.Request, readOnlyMode bool) (*mc
 	}
 
 	// Always register read-only tools
-	tools.AddToolWithCoercion(server, tools.GetMinimalMTVReadTool(registry), wrapWithHeaders(tools.HandleMTVRead(registry), capturedHeaders))
-	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlLogsTool(), wrapWithHeaders(tools.HandleKubectlLogs, capturedHeaders))
-	tools.AddToolWithCoercion(server, tools.GetMinimalKubectlTool(), wrapWithHeaders(tools.HandleKubectl, capturedHeaders))
+	tools.AddToolWithCoercion(server, tools.GetMTVReadTool(registry), wrapWithHeaders(tools.HandleMTVRead(registry), capturedHeaders))
 	mcp.AddTool(server, tools.GetMTVHelpTool(), wrapWithHeaders(tools.HandleMTVHelp, capturedHeaders))
 
 	// Only register write tool if not in read-only mode
 	if !readOnlyMode {
-		tools.AddToolWithCoercion(server, tools.GetMinimalMTVWriteTool(registry), wrapWithHeaders(tools.HandleMTVWrite(registry), capturedHeaders))
+		tools.AddToolWithCoercion(server, tools.GetMTVWriteTool(registry), wrapWithHeaders(tools.HandleMTVWrite(registry), capturedHeaders))
 	} else {
 		log.Println("Running in read-only mode - write operations disabled")
 	}

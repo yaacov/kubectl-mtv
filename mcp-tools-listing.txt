@@ -1,0 +1,165 @@
+--- tools/mtv_read.json ---
+{
+  "name": "mtv_read",
+  "description": "Query MTV resources (read-only).\n\nCommands:\n  describe hook - Describe a migration hook\n  describe host - Describe a migration host\n  describe mapping - Describe mappings\n  describe mapping network - Describe a network mapping\n  describe mapping storage - Describe a storage mapping\n  describe plan - Describe a migration plan\n  get hook - Get hooks\n  get host - Get hosts\n  get mapping - Get mappings\n  get mapping network - Get network mappings\n  get mapping storage - Get storage mappings\n  get plan - Get migration plans\n  get provider - Get providers\n  health - Check the health and deployment status of the MTV/Forklift system\n  health logs - Query forklift-controller structured JSON logs\n  settings - View and manage ForkliftController settings\n  settings get - Get ForkliftController setting value(s)\n  get inventory RESOURCE - Get inventory resources\n    Resources: cluster, data-volume, datacenter, datastore, disk, disk-profile, ec2-instance, ec2-network, ec2-volume, ec2-volume-type, flavor, folder, host, image, instance, namespace, network, nic-profile, project, provider, pvc, resource-pool, snapshot, storage, subnet, vm, volume, volumetype\n\nExamples:\n  {command: \"describe hook\", flags: {name: \"my-post-hook\"}}\n  {command: \"describe host\", flags: {name: \"esxi-host-1\"}}\n  {command: \"describe mapping network\", flags: {name: \"my-net-map\"}}\n  {command: \"describe mapping storage\", flags: {name: \"my-storage-map\"}}\n  {command: \"describe plan\", flags: {name: \"my-migration\"}}\n  {command: \"get hook\"}\n\nCommon flags:\n- all_namespaces: list resources across all namespaces\n- inventory_url: Base URL for the inventory service\n- namespace: If present, the namespace scope for this CLI request\n- verbose: verbose output level (0=silent, 1=info, 2=debug, 3=trace)\n\nWORKFLOW: Find the command above → call mtv_help(\"<command>\") to get its flags and examples → then execute.\nDefault output is table. For structured data, use flags: {output: \"json\"} and fields: [\"name\", \"status\"] to limit response size.\nIMPORTANT: 'fields' is a TOP-LEVEL parameter, NOT inside flags. Example: {command: \"get plan\", flags: {output: \"json\"}, fields: [\"name\", \"status\"]}\nRULE: ALWAYS include namespace in flags. Never omit it.\nRULE: Only include optional flags (e.g. mapping pairs, skip-verify) when the user explicitly needs them. Leave them empty otherwise.\n",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "command": {
+        "type": "string",
+        "description": "Command path (e.g. get plan, get inventory vm, describe mapping)"
+      },
+      "dry_run": {
+        "type": "boolean",
+        "description": "If true, does not execute. Returns the equivalent CLI command in the output field instead"
+      },
+      "fields": {
+        "type": "array",
+        "description": "Limit JSON to these top-level keys only (e.g. [name, id, concerns])",
+        "items": {
+          "type": "string"
+        }
+      },
+      "flags": {
+        "type": "object",
+        "description": "All parameters including positional args and options (e.g. name: \"my-plan\", provider: \"my-vsphere\", output: \"json\", namespace: \"ns\", query: \"where cpuCount > 4\")",
+        "additionalProperties": true
+      }
+    },
+    "required": [
+      "command"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "data": {
+        "description": "Response data (object or array)",
+        "oneOf": [
+          {
+            "type": "object"
+          },
+          {
+            "type": "array"
+          }
+        ]
+      },
+      "output": {
+        "description": "Text output",
+        "type": "string"
+      },
+      "return_value": {
+        "description": "Exit code (0=success)",
+        "type": "integer"
+      },
+      "stderr": {
+        "description": "Error output",
+        "type": "string"
+      }
+    }
+  }
+}
+
+--- tools/mtv_write.json ---
+{
+  "name": "mtv_write",
+  "description": "Create, modify, or delete MTV resources (write operations).\n\nTypical migration workflow:\n1. Set namespace for the migration\n2. Check existing providers with mtv_read \"get provider\"; create via mtv_write \"create provider\" only if needed\n3. Browse VMs with mtv_read \"get inventory vm\" + TSL queries\n4. Create a migration plan (network/storage mappings are auto-generated; use --network-pairs/--storage-pairs to override)\n5. Start the plan\n6. Monitor with mtv_read \"get plan\"\n\nCommands:\n  archive plan - Archive one or more migration plans\n  cancel plan - Cancel specific VMs in a running migration plan\n  create hook - Create a migration hook\n  create host - Create migration hosts\n  create mapping network - Create a new network mapping\n  create mapping storage - Create a new storage mapping\n  create plan - Create a migration plan\n  create provider - Create a new provider\n  create vddk-image - Create a VDDK image for MTV\n  cutover plan - Set the cutover time for one or more warm migration plans\n  delete hook - Delete one or more migration hooks\n  delete host - Delete one or more migration hosts\n  delete mapping network - Delete one or more network mappings\n  delete mapping storage - Delete one or more storage mappings\n  delete plan - Delete one or more migration plans\n  delete provider - Delete one or more providers\n  patch mapping network - Patch a network mapping\n  patch mapping storage - Patch a storage mapping\n  patch plan - Patch a migration plan\n  patch planvm - Patch a specific VM within a migration plan\n  patch provider - Patch an existing provider\n  settings set - Set a ForkliftController setting value\n  settings unset - Remove a ForkliftController setting (revert to default)\n  start plan - Start one or more migration plans\n  unarchive plan - Unarchive one or more migration plans\n\nExamples:\n  {command: \"archive plan\", flags: {name: \"my-migration\"}}\n  {command: \"cancel plan\", flags: {name: \"my-migration\", vms: \"vm1,vm2\"}}\n  {command: \"create mapping network\", flags: {name: \"my-net-map\", network_pairs: \"VM Network:default\", source: \"vsphere-prod\", target: \"host\"}}\n  {command: \"create mapping storage\", flags: {name: \"my-storage-map\", source: \"vsphere-prod\", storage_pairs: \"datastore1:standard,datastore2:fast\", target: \"host\"}}\n  {command: \"create plan\", flags: {name: \"my-migration\", network_pairs: \"VM Network:default\", source: \"vsphere-prod\", storage_pairs: \"datastore1:standard\", target: \"host\", vms: \"web-server,db-server\"}}\n  {command: \"create provider\", flags: {name: \"vsphere-prod\", type: \"vsphere\", url: \"https://vcenter.example.com/sdk\", username: \"admin@vsphere.local\", vddk_init_image: \"quay.io/kubev2v/vddk:latest\"}}\n  {command: \"create vddk-image\", flags: {tag: \"quay.io/myorg/vddk:8.0.1\", tar: \"VMware-vix-disklib-8.0.1-21562716.x86_64.tar.gz\"}}\n  {command: \"cutover plan\", flags: {name: \"my-warm-migration\"}}\n\nCommon flags:\n- all_namespaces: list resources across all namespaces\n- inventory_url: Base URL for the inventory service\n- namespace: If present, the namespace scope for this CLI request\n- verbose: verbose output level (0=silent, 1=info, 2=debug, 3=trace)\n\nWORKFLOW: Find the command above → call mtv_help(\"<command>\") to get required flags and examples → then execute.\nRULE: ALWAYS include namespace in flags. Never omit it.\nRULE: Only include optional flags (e.g. mapping pairs, skip-verify) when the user explicitly needs them. Leave them empty otherwise.\n",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "command": {
+        "type": "string",
+        "description": "Command path (e.g. create provider, delete plan, patch mapping)"
+      },
+      "dry_run": {
+        "type": "boolean",
+        "description": "If true, does not execute. Returns the equivalent CLI command in the output field instead"
+      },
+      "flags": {
+        "type": "object",
+        "description": "All parameters including positional args and options (e.g. name: \"my-provider\", type: \"vsphere\", url: \"https://vcenter/sdk\", namespace: \"ns\")",
+        "additionalProperties": true
+      }
+    },
+    "required": [
+      "command"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "data": {
+        "description": "Response data (object or array)",
+        "oneOf": [
+          {
+            "type": "object"
+          },
+          {
+            "type": "array"
+          }
+        ]
+      },
+      "output": {
+        "description": "Text output",
+        "type": "string"
+      },
+      "return_value": {
+        "description": "Exit code (0=success)",
+        "type": "integer"
+      },
+      "stderr": {
+        "description": "Error output",
+        "type": "string"
+      }
+    }
+  }
+}
+
+--- tools/mtv_help.json ---
+{
+  "name": "mtv_help",
+  "description": "Get detailed flags, usage, and examples for any MTV command or topic.\n\nWHEN TO USE: Before calling any mtv_read or mtv_write command, call mtv_help(\"<command>\") first to learn its required flags and syntax. The mtv_read/mtv_write descriptions list available commands but not their flags — mtv_help fills that gap.\n\nWorkflow: find the command in mtv_read/mtv_write → mtv_help(\"<command>\") → execute with correct flags.\n\nCommands: any from mtv_read/mtv_write, e.g.:\n  \"get plan\", \"get provider\", \"get inventory vm\"\n  \"describe plan\", \"create provider\", \"create plan\"\n  \"start plan\", \"patch plan\", \"delete plan\"\n  \"health logs\"\nTopics:\n  \"tsl\" - VM query language with field list per provider (vSphere, oVirt, OpenStack, EC2)\n  \"karl\" - VM placement affinity/anti-affinity rules (e.g. \"REQUIRE tag:zone=us-east\")\n\nReturns: command flags (with required/optional markers), usage pattern, and examples as structured data.",
+  "arguments": {
+    "type": "object",
+    "properties": {
+      "command": {
+        "type": "string",
+        "description": "Command or topic (e.g. create plan, get inventory vm, tsl, karl)"
+      }
+    },
+    "required": [
+      "command"
+    ],
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "data": {
+        "description": "Response data (object or array)",
+        "oneOf": [
+          {
+            "type": "object"
+          },
+          {
+            "type": "array"
+          }
+        ]
+      },
+      "output": {
+        "description": "Text output",
+        "type": "string"
+      },
+      "return_value": {
+        "description": "Exit code (0=success)",
+        "type": "integer"
+      },
+      "stderr": {
+        "description": "Error output",
+        "type": "string"
+      }
+    }
+  }
+}

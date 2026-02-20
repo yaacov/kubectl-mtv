@@ -23,8 +23,8 @@ func TestGetMTVWriteTool(t *testing.T) {
 		t.Error("Description should not be empty")
 	}
 
-	// Description should reference write commands
-	for _, keyword := range []string{"create provider", "create plan"} {
+	// Description should reference write commands and mtv_help
+	for _, keyword := range []string{"create provider", "create plan", "mtv_help"} {
 		if !strings.Contains(tool.Description, keyword) {
 			t.Errorf("Description should contain %q", keyword)
 		}
@@ -44,7 +44,6 @@ func TestGetMTVWriteTool(t *testing.T) {
 			t.Errorf("OutputSchema.properties should contain %q", key)
 		}
 	}
-	// "command" should NOT be in the output schema (stripped to prevent CLI mimicry)
 	if _, exists := props["command"]; exists {
 		t.Error("OutputSchema.properties should NOT contain 'command' (stripped to help small LLMs)")
 	}
