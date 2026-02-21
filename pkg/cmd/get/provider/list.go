@@ -352,10 +352,10 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 		headers = append(headers,
 			output.Header{DisplayName: "TYPE", JSONPath: "spec.type"},
 			output.Header{DisplayName: "URL", JSONPath: "spec.url"},
-			output.Header{DisplayName: "STATUS", JSONPath: "status.phase"},
-			output.Header{DisplayName: "CONNECTED", JSONPath: "conditionStatuses.ConnectionStatus"},
-			output.Header{DisplayName: "INVENTORY", JSONPath: "conditionStatuses.InventoryStatus"},
-			output.Header{DisplayName: "READY", JSONPath: "conditionStatuses.ReadyStatus"},
+			output.Header{DisplayName: "STATUS", JSONPath: "status.phase", ColorFunc: output.ColorizeStatus},
+			output.Header{DisplayName: "CONNECTED", JSONPath: "conditionStatuses.ConnectionStatus", ColorFunc: output.ColorizeConditionStatus},
+			output.Header{DisplayName: "INVENTORY", JSONPath: "conditionStatuses.InventoryStatus", ColorFunc: output.ColorizeConditionStatus},
+			output.Header{DisplayName: "READY", JSONPath: "conditionStatuses.ReadyStatus", ColorFunc: output.ColorizeConditionStatus},
 		)
 
 		// Determine which provider types are present

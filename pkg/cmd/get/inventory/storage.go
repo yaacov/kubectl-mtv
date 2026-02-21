@@ -46,8 +46,8 @@ func listStorageOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 		defaultHeaders = []output.Header{
 			{DisplayName: "NAME", JSONPath: "name"},
 			{DisplayName: "ID", JSONPath: "id"},
-			{DisplayName: "DEFAULT", JSONPath: "object.metadata.annotations[storageclass.kubernetes.io/is-default-class]"},
-			{DisplayName: "VIRT-DEFAULT", JSONPath: "object.metadata.annotations[storageclass.kubevirt.io/is-default-virt-class]"},
+			{DisplayName: "DEFAULT", JSONPath: "object.metadata.annotations[storageclass.kubernetes.io/is-default-class]", ColorFunc: output.ColorizeBooleanString},
+			{DisplayName: "VIRT-DEFAULT", JSONPath: "object.metadata.annotations[storageclass.kubevirt.io/is-default-virt-class]", ColorFunc: output.ColorizeBooleanString},
 		}
 	case "ec2":
 		defaultHeaders = []output.Header{
@@ -63,7 +63,7 @@ func listStorageOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 			{DisplayName: "TYPE", JSONPath: "type"},
 			{DisplayName: "CAPACITY", JSONPath: "capacityHuman"},
 			{DisplayName: "FREE", JSONPath: "freeHuman"},
-			{DisplayName: "MAINTENANCE", JSONPath: "maintenance"},
+			{DisplayName: "MAINTENANCE", JSONPath: "maintenance", ColorFunc: output.ColorizeBooleanString},
 		}
 	}
 

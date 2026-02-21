@@ -3,6 +3,7 @@ package output
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -27,13 +28,28 @@ const (
 // ansiRegex is a regular expression that matches ANSI color escape codes
 var ansiRegex = regexp.MustCompile("\033\\[[0-9;]*m")
 
+// colorEnabled controls whether ANSI color codes are emitted.
+// Defaults to true; set to false via SetColorEnabled for terminals that
+// don't support colors or when the --no-color flag / NO_COLOR env var is set.
+var colorEnabled = true
+
+// SetColorEnabled globally enables or disables ANSI color output.
+func SetColorEnabled(enabled bool) { colorEnabled = enabled }
+
+// IsColorEnabled reports whether ANSI color output is currently enabled.
+func IsColorEnabled() bool { return colorEnabled }
+
 // Bold returns a bold-formatted string
 func Bold(text string) string {
 	return ColorizedString(text, BoldText)
 }
 
-// ColorizedString returns a string with the specified color applied
+// ColorizedString returns a string with the specified color applied.
+// When color output is disabled, the text is returned unchanged.
 func ColorizedString(text string, color string) string {
+	if !colorEnabled {
+		return text
+	}
 	return color + text + Reset
 }
 
@@ -72,19 +88,20 @@ func VisibleLength(text string) int {
 	return utf8.RuneCountInString(StripANSI(text))
 }
 
-// ColorizeStatus returns a colored string based on status value
+// ColorizeStatus returns a colored string based on status value.
+// Handles migration-phase statuses (Running, Completed, Failed, ...),
+// general resource statuses (Ready, Not Ready, Unknown, ...),
+// and cloud provider states (stopped, available, terminated, ...).
 func ColorizeStatus(status string) string {
 	status = strings.TrimSpace(status)
 	switch strings.ToLower(status) {
-	case "running":
+	case "running", "executing", "in-use":
 		return Blue(status)
-	case "executing":
-		return Blue(status)
-	case "completed", "succeeded":
+	case "completed", "succeeded", "ready", "available", "bound":
 		return Green(status)
-	case "pending":
+	case "pending", "stopped", "stopping", "creating", "unknown":
 		return Yellow(status)
-	case "failed":
+	case "failed", "not ready", "terminated", "shutting-down", "deleting", "error", "lost":
 		return Red(status)
 	case "canceled":
 		return Cyan(status)
@@ -93,13 +110,15 @@ func ColorizeStatus(status string) string {
 	}
 }
 
-// ColorizePowerState returns a colored string based on VM power state
+// ColorizePowerState returns a colored string based on VM power state.
+// Handles both descriptive states (Running/Stopped) and short forms (On/Off)
+// as set by augmentVMInfo's powerStateHuman field.
 func ColorizePowerState(state string) string {
 	state = strings.TrimSpace(state)
 	switch strings.ToLower(state) {
-	case "running":
+	case "running", "on":
 		return Green(state)
-	case "stopped":
+	case "stopped", "off":
 		return Yellow(state)
 	case "not found":
 		return Red(state)
@@ -119,6 +138,49 @@ func ColorizeBoolean(b bool) string {
 		return Green(fmt.Sprintf("%t", b))
 	}
 	return fmt.Sprintf("%t", b)
+}
+
+// ColorizeConditionStatus returns a colored string for Kubernetes condition status values
+func ColorizeConditionStatus(status string) string {
+	switch strings.TrimSpace(status) {
+	case "True":
+		return Green(status)
+	case "False":
+		return Red(status)
+	default:
+		return status
+	}
+}
+
+// ColorizeBooleanString returns a colored string for string representations of booleans
+func ColorizeBooleanString(val string) string {
+	switch strings.ToLower(strings.TrimSpace(val)) {
+	case "true", "yes":
+		return Green(val)
+	case "false", "no":
+		return Red(val)
+	default:
+		return val
+	}
+}
+
+// ColorizeProgress returns a colored string based on percentage thresholds.
+// Expects strings like "85.0%" or "100.0%".
+func ColorizeProgress(progress string) string {
+	trimmed := strings.TrimSpace(progress)
+	numStr := strings.TrimRight(trimmed, "%")
+	pct, err := strconv.ParseFloat(strings.TrimSpace(numStr), 64)
+	if err != nil {
+		return progress
+	}
+	if pct >= 100 {
+		return Green(progress)
+	} else if pct >= 75 {
+		return Blue(progress)
+	} else if pct >= 25 {
+		return Yellow(progress)
+	}
+	return Cyan(progress)
 }
 
 // TruncateANSI truncates text to maxWidth visible characters while preserving

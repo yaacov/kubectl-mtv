@@ -446,7 +446,7 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 				headers = []output.Header{
 					{DisplayName: "NAME", JSONPath: "name"},
 					{DisplayName: "TYPE", JSONPath: "InstanceType"},
-					{DisplayName: "STATE", JSONPath: "State.Name"},
+					{DisplayName: "STATE", JSONPath: "State.Name", ColorFunc: output.ColorizeStatus},
 					{DisplayName: "PLATFORM", JSONPath: "PlatformDetails"},
 					{DisplayName: "AZ", JSONPath: "Placement.AvailabilityZone"},
 					{DisplayName: "PUBLIC-IP", JSONPath: "PublicIpAddress"},
@@ -456,7 +456,7 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 				headers = []output.Header{
 					{DisplayName: "NAME", JSONPath: "name"},
 					{DisplayName: "ID", JSONPath: "id"},
-					{DisplayName: "POWER", JSONPath: "powerStateHuman"},
+					{DisplayName: "POWER", JSONPath: "powerStateHuman", ColorFunc: output.ColorizePowerState},
 					{DisplayName: "CPU", JSONPath: "cpuCount"},
 					{DisplayName: "MEMORY", JSONPath: "memoryGB"},
 					{DisplayName: "DISK USAGE", JSONPath: "storageUsedGB"},

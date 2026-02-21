@@ -138,7 +138,7 @@ func listProvidersOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 		defaultHeaders = append(defaultHeaders,
 			output.Header{DisplayName: "TYPE", JSONPath: "type"},
 			output.Header{DisplayName: "VERSION", JSONPath: "apiVersion"},
-			output.Header{DisplayName: "PHASE", JSONPath: "object.status.phase"},
+			output.Header{DisplayName: "PHASE", JSONPath: "object.status.phase", ColorFunc: output.ColorizeStatus},
 			output.Header{DisplayName: "VMS", JSONPath: "vmCount"},
 			output.Header{DisplayName: "HOSTS", JSONPath: "hostCount"},
 		)

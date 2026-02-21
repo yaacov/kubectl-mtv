@@ -155,8 +155,8 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 
 		fmt.Printf("\n%s\n", output.Bold("Conditions:"))
 		tableHeaders := []output.Header{
-			{DisplayName: "TYPE", JSONPath: "type"},
-			{DisplayName: "STATUS", JSONPath: "status"},
+			{DisplayName: "TYPE", JSONPath: "type", ColorFunc: output.Bold},
+			{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeConditionStatus},
 			{DisplayName: "CATEGORY", JSONPath: "category"},
 			{DisplayName: "MESSAGE", JSONPath: "message"},
 		}
@@ -173,15 +173,8 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 			category, _, _ := unstructured.NestedString(condition, "category")
 			message, _, _ := unstructured.NestedString(condition, "message")
 
-			switch condStatus {
-			case "True":
-				condStatus = output.Green(condStatus)
-			case "False":
-				condStatus = output.Red(condStatus)
-			}
-
 			items = append(items, map[string]interface{}{
-				"type":     output.Bold(condType),
+				"type":     condType,
 				"status":   condStatus,
 				"category": category,
 				"message":  message,
@@ -250,8 +243,8 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 				fmt.Printf("\n%s\n", output.Bold("Tasks:"))
 				taskHeaders := []output.Header{
 					{DisplayName: "NAME", JSONPath: "name"},
-					{DisplayName: "PHASE", JSONPath: "phase"},
-					{DisplayName: "PROGRESS", JSONPath: "progress"},
+					{DisplayName: "PHASE", JSONPath: "phase", ColorFunc: output.ColorizeStatus},
+					{DisplayName: "PROGRESS", JSONPath: "progress", ColorFunc: output.ColorizeProgress},
 					{DisplayName: "STARTED", JSONPath: "started"},
 					{DisplayName: "COMPLETED", JSONPath: "completed"},
 				}
@@ -278,23 +271,13 @@ func describeVMOnce(configFlags *genericclioptions.ConfigFlags, name, namespace,
 						total, _, _ := unstructured.NestedInt64(progressMap, "total")
 						if total > 0 {
 							percentage := float64(completed) / float64(total) * 100
-							progressText := fmt.Sprintf("%.1f%%", percentage)
-
-							if percentage >= 100 {
-								progress = output.Green(progressText)
-							} else if percentage >= 75 {
-								progress = output.Blue(progressText)
-							} else if percentage >= 25 {
-								progress = output.Yellow(progressText)
-							} else {
-								progress = output.Cyan(progressText)
-							}
+							progress = fmt.Sprintf("%.1f%%", percentage)
 						}
 					}
 
 					taskItems = append(taskItems, map[string]interface{}{
 						"name":      taskName,
-						"phase":     output.ColorizeStatus(taskPhase),
+						"phase":     taskPhase,
 						"progress":  progress,
 						"started":   planutil.FormatTime(taskStarted, useUTC),
 						"completed": planutil.FormatTime(taskCompleted, useUTC),

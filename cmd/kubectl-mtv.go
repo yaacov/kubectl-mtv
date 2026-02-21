@@ -27,6 +27,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/cmd/unarchive"
 	"github.com/yaacov/kubectl-mtv/cmd/version"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/output"
 	pkgversion "github.com/yaacov/kubectl-mtv/pkg/version"
 )
 
@@ -35,6 +36,7 @@ type GlobalConfig struct {
 	Verbosity                int
 	AllNamespaces            bool
 	UseUTC                   bool
+	NoColor                  bool
 	InventoryURL             string
 	InventoryInsecureSkipTLS bool
 	KubeConfigFlags          *genericclioptions.ConfigFlags
@@ -151,9 +153,12 @@ Migrate virtual machines from VMware vSphere, oVirt (RHV), OpenStack, and OVA to
 				klog.Warningf("Failed to set klog verbosity: %v", err)
 			}
 
+			// Disable ANSI color output when requested
+			output.SetColorEnabled(!globalConfig.NoColor)
+
 			// Log global configuration if verbosity is enabled
-			logDebugf("Global configuration - Verbosity: %d, All Namespaces: %t",
-				globalConfig.Verbosity, globalConfig.AllNamespaces)
+			logDebugf("Global configuration - Verbosity: %d, All Namespaces: %t, NoColor: %t",
+				globalConfig.Verbosity, globalConfig.AllNamespaces, globalConfig.NoColor)
 		},
 	}
 
@@ -165,6 +170,7 @@ Migrate virtual machines from VMware vSphere, oVirt (RHV), OpenStack, and OVA to
 	rootCmd.PersistentFlags().BoolVar(&globalConfig.UseUTC, "use-utc", false, "format timestamps in UTC instead of local timezone")
 	rootCmd.PersistentFlags().StringVarP(&globalConfig.InventoryURL, "inventory-url", "i", os.Getenv("MTV_INVENTORY_URL"), "Base URL for the inventory service")
 	rootCmd.PersistentFlags().BoolVar(&globalConfig.InventoryInsecureSkipTLS, "inventory-insecure-skip-tls", os.Getenv("MTV_INVENTORY_INSECURE_SKIP_TLS") == "true", "Skip TLS verification for inventory service connections")
+	rootCmd.PersistentFlags().BoolVar(&globalConfig.NoColor, "no-color", os.Getenv("NO_COLOR") != "", "Disable colored output (also respects NO_COLOR env var)")
 
 	// Mark global flags that should appear in AI/MCP tool descriptions.
 	// These are surfaced via the "llm-relevant" pflag annotation, which the help

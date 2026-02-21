@@ -43,7 +43,7 @@ func listDataCentersOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 		{DisplayName: "NAME", JSONPath: "name"},
 		{DisplayName: "ID", JSONPath: "id"},
 		{DisplayName: "DESCRIPTION", JSONPath: "description"},
-		{DisplayName: "STATUS", JSONPath: "status"},
+		{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeStatus},
 	}
 
 	// Fetch datacenters inventory from the provider based on provider type

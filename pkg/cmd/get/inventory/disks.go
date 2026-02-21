@@ -64,7 +64,7 @@ func listDisksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Confi
 			{DisplayName: "SIZE", JSONPath: "provisionedSizeHuman"},
 			{DisplayName: "ACTUAL-SIZE", JSONPath: "actualSizeHuman"},
 			{DisplayName: "TYPE", JSONPath: "storageType"},
-			{DisplayName: "STATUS", JSONPath: "status"},
+			{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeStatus},
 		}
 	}
 

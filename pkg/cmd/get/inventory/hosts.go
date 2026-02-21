@@ -99,12 +99,12 @@ func listHostsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Confi
 		defaultHeaders := []output.Header{
 			{DisplayName: "NAME", JSONPath: "name"},
 			{DisplayName: "ID", JSONPath: "id"},
-			{DisplayName: "STATUS", JSONPath: "status"},
+			{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeStatus},
 			{DisplayName: "VERSION", JSONPath: "productVersion"},
 			{DisplayName: "MGMT IP", JSONPath: "managementServerIp"},
 			{DisplayName: "CORES", JSONPath: "cpuCores"},
 			{DisplayName: "SOCKETS", JSONPath: "cpuSockets"},
-			{DisplayName: "MAINTENANCE", JSONPath: "inMaintenance"},
+			{DisplayName: "MAINTENANCE", JSONPath: "inMaintenance", ColorFunc: output.ColorizeBooleanString},
 		}
 		return output.PrintTableWithQuery(hosts, defaultHeaders, queryOpts, emptyMessage)
 	}
