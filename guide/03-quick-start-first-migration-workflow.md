@@ -85,19 +85,22 @@ Choose the appropriate command for your source platform:
 
 #### VMware vSphere Provider
 
+Before creating the provider, set the global VDDK image so all vSphere providers benefit from optimized disk transfers:
+
 ```bash
-# Basic vSphere provider
+# Set the global VDDK image (recommended)
+kubectl mtv settings set --setting vddk_image \
+  --value quay.io/your-registry/vddk:8.0.1
+```
+
+> If you do not have permission to modify ForkliftController settings, you can pass `--vddk-init-image` directly on the provider instead. See [Chapter 25: Settings Management](25-settings-management) for details.
+
+```bash
+# vSphere provider (uses the global VDDK image automatically)
 kubectl mtv create provider --name vsphere-source --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourPassword
-
-# vSphere provider with VDDK optimization (recommended)
-kubectl mtv create provider --name vsphere-source --type vsphere \
-  --url https://vcenter.example.com/sdk \
-  --username administrator@vsphere.local \
-  --password YourPassword \
-  --vddk-init-image quay.io/your-registry/vddk:8.0.1
 
 # vSphere provider with TLS verification disabled (for testing)
 kubectl mtv create provider --name vsphere-source --type vsphere \
