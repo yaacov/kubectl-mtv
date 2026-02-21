@@ -290,13 +290,12 @@ func FetchVMsByQueryWithInsecure(ctx context.Context, kubeConfigFlags *genericcl
 // ListVMs queries the provider's VM inventory and displays the results
 // ListVMsWithInsecure queries the provider's VM inventory and displays the results with optional insecure TLS skip verification
 func ListVMsWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listVMsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listVMsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listVMsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string, insecureSkipTLS bool) error {
@@ -436,7 +435,9 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 			}
 			tablePrinter = output.NewTablePrinter().
 				WithHeaders(headers...).
-				WithSelectOptions(queryOpts.Select)
+				WithSelectOptions(queryOpts.Select).
+				WithJSONPathRow().
+				WithSeparator("─")
 		} else {
 			// Use provider-specific table headers
 			var headers []output.Header
@@ -465,7 +466,10 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 				}
 			}
 
-			tablePrinter = output.NewTablePrinter().WithHeaders(headers...)
+			tablePrinter = output.NewTablePrinter().
+				WithHeaders(headers...).
+				WithJSONPathRow().
+				WithSeparator("─")
 		}
 
 		// Add items with expanded concern data

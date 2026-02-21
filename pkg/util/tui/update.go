@@ -219,11 +219,11 @@ func (m Model) handleSearchResultsKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.searchInput.Focus()
 		return m, m.searchInput.Cursor.BlinkCmd()
 
-	case key.Matches(msg, m.keys.Quit):
+	case msg.Type == tea.KeyCtrlC:
 		m.quitting = true
 		return m, tea.Quit
 
-	case msg.Type == tea.KeyEsc:
+	case msg.Type == tea.KeyEsc, msg.String() == "q":
 		m.clearSearch()
 		m.mode = modeNormal
 		return m, nil

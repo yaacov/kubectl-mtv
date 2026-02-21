@@ -13,13 +13,12 @@ import (
 
 // ListDatastoresWithInsecure queries the provider's datastore inventory with optional insecure TLS skip verification
 func ListDatastoresWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listDatastoresOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listDatastoresOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listDatastoresOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listDatastoresOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {

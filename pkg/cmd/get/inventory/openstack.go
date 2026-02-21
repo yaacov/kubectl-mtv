@@ -13,13 +13,12 @@ import (
 
 // ListInstancesWithInsecure queries the provider's instance inventory with optional insecure TLS skip verification
 func ListInstancesWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listInstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listInstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listInstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listInstancesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
@@ -92,13 +91,12 @@ func listInstancesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 
 // ListImagesWithInsecure queries the provider's image inventory with optional insecure TLS skip verification
 func ListImagesWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listImagesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listImagesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listImagesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listImagesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
@@ -173,13 +171,12 @@ func listImagesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Conf
 
 // ListFlavorsWithInsecure queries the provider's flavor inventory with optional insecure TLS skip verification
 func ListFlavorsWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listFlavorsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listFlavorsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listFlavorsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listFlavorsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
@@ -256,13 +253,12 @@ func listFlavorsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 // ListProjects queries the provider's project inventory and displays the results
 // ListProjectsWithInsecure queries the provider's project inventory with optional insecure TLS skip verification
 func ListProjectsWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listProjectsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listProjectsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listProjectsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listProjectsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
@@ -333,13 +329,12 @@ func listProjectsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 
 // ListVolumesWithInsecure queries the provider's volume inventory with optional insecure TLS skip verification
 func ListVolumesWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listVolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listVolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listVolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listVolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
@@ -415,13 +410,12 @@ func listVolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 
 // ListVolumeTypesWithInsecure queries the provider's volume type inventory with optional insecure TLS skip verification
 func ListVolumeTypesWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listVolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listVolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listVolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listVolumeTypesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
@@ -492,13 +486,12 @@ func listVolumeTypesOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 
 // ListSnapshotsWithInsecure queries the provider's snapshot inventory with optional insecure TLS skip verification
 func ListSnapshotsWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listSnapshotsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listSnapshotsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listSnapshotsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listSnapshotsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
@@ -573,13 +566,12 @@ func listSnapshotsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 
 // ListSubnetsWithInsecure queries the provider's subnet inventory with optional insecure TLS skip verification
 func ListSubnetsWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listSubnetsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listSubnetsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listSubnetsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listSubnetsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {

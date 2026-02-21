@@ -46,10 +46,15 @@ func PrintTableWithQuery(data interface{}, defaultHeaders []Header, queryOpts *q
 		}
 		printer = NewTablePrinter().
 			WithHeaders(headers...).
-			WithSelectOptions(queryOpts.Select)
+			WithSelectOptions(queryOpts.Select).
+			WithJSONPathRow().
+			WithSeparator("─")
 	} else {
 		// Use the provided default headers
-		printer = NewTablePrinter().WithHeaders(defaultHeaders...)
+		printer = NewTablePrinter().
+			WithHeaders(defaultHeaders...).
+			WithJSONPathRow().
+			WithSeparator("─")
 	}
 
 	if len(items) == 0 && emptyMessage != "" {
@@ -69,16 +74,17 @@ type Header struct {
 
 // TablePrinter prints tabular data with dynamically sized columns
 type TablePrinter struct {
-	headers       []Header
-	items         []map[string]interface{}
-	padding       int
-	minWidth      int
-	writer        io.Writer
-	maxColWidth   int
-	expandedData  map[int]string       // Stores expanded data for each row by index
-	selectOptions []query.SelectOption // Optional: select options for advanced extraction
-	separator     string               // if set, printed between header and data rows
-	columnWidths  []int                // if set, overrides auto-calculated widths
+	headers         []Header
+	items           []map[string]interface{}
+	padding         int
+	minWidth        int
+	writer          io.Writer
+	maxColWidth     int
+	expandedData    map[int]string       // Stores expanded data for each row by index
+	selectOptions   []query.SelectOption // Optional: select options for advanced extraction
+	separator       string               // if set, printed between header and data rows
+	columnWidths    []int                // if set, overrides auto-calculated widths
+	showJSONPathRow bool                 // if true, prints a row of JSON paths below the header
 }
 
 // NewTablePrinter creates a new TablePrinter
@@ -139,6 +145,12 @@ func (t *TablePrinter) WithSelectOptions(selectOptions []query.SelectOption) *Ta
 // WithSeparator sets the character used to draw a separator line between the header and data rows
 func (t *TablePrinter) WithSeparator(char string) *TablePrinter {
 	t.separator = char
+	return t
+}
+
+// WithJSONPathRow enables printing a row of JSON paths below the header row
+func (t *TablePrinter) WithJSONPathRow() *TablePrinter {
+	t.showJSONPathRow = true
 	return t
 }
 
@@ -242,6 +254,12 @@ func (t *TablePrinter) calculateColumnWidths() []int {
 		if headerWidth > widths[i] {
 			widths[i] = min(headerWidth, t.maxColWidth)
 		}
+		if t.showJSONPathRow {
+			pathWidth := len(header.JSONPath) + 2 // +2 for surrounding brackets
+			if pathWidth > widths[i] {
+				widths[i] = min(pathWidth, t.maxColWidth)
+			}
+		}
 	}
 
 	// Calculate row data for width determination
@@ -271,6 +289,14 @@ func (t *TablePrinter) Print() error {
 		headerRow[i] = header.DisplayName
 	}
 	t.printRow(headerRow, widths)
+
+	if t.showJSONPathRow {
+		pathRow := make([]string, len(t.headers))
+		for i, header := range t.headers {
+			pathRow[i] = "[" + header.JSONPath + "]"
+		}
+		t.printRow(pathRow, widths)
+	}
 
 	if t.separator != "" {
 		t.printSeparator(widths)

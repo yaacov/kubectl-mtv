@@ -199,6 +199,11 @@ func buildPlanVMRows(
 		// Target inventory lookup
 		tgtStatus, tgtIP := lookupTargetWorkload(targetWorkloads, tgtDisplayName)
 
+		planDisplay := planNameStr
+		if !planDetails.IsReady {
+			planDisplay = planNameStr + " " + output.Red("[not ready]")
+		}
+
 		row := map[string]interface{}{
 			"vm":           vmName,
 			"sourceStatus": srcStatus,
@@ -206,7 +211,7 @@ func buildPlanVMRows(
 			"target":       tgtDisplay,
 			"targetIP":     tgtIP,
 			"targetStatus": tgtStatus,
-			"plan":         planNameStr,
+			"plan":         planDisplay,
 			"planStatus":   planDetails.Status,
 			"progress":     progressStr,
 		}

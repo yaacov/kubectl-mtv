@@ -13,13 +13,12 @@ import (
 
 // ListEC2InstancesWithInsecure queries the provider's EC2 instance inventory with optional insecure TLS skip verification
 func ListEC2InstancesWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listEC2InstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listEC2InstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listEC2InstancesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listEC2InstancesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
@@ -96,13 +95,12 @@ func listEC2InstancesOnce(ctx context.Context, kubeConfigFlags *genericclioption
 
 // ListEC2VolumesWithInsecure queries the provider's EC2 EBS volume inventory with optional insecure TLS skip verification
 func ListEC2VolumesWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listEC2VolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listEC2VolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listEC2VolumesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listEC2VolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
@@ -182,13 +180,12 @@ func listEC2VolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.
 
 // ListEC2VolumeTypesWithInsecure queries the provider's EC2 volume type inventory with optional insecure TLS skip verification
 func ListEC2VolumeTypesWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listEC2VolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listEC2VolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listEC2VolumeTypesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listEC2VolumeTypesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
@@ -260,13 +257,12 @@ func listEC2VolumeTypesOnce(ctx context.Context, kubeConfigFlags *genericcliopti
 
 // ListEC2NetworksWithInsecure queries the provider's EC2 network inventory (VPCs and Subnets) with optional insecure TLS skip verification
 func ListEC2NetworksWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listEC2NetworksOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	currentQuery := query
+	queryUpdater := func(q string) { currentQuery = q }
 
-	return listEC2NetworksOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listEC2NetworksOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
+	}, watch.DefaultInterval, queryUpdater, currentQuery)
 }
 
 func listEC2NetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
