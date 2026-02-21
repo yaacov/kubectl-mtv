@@ -290,12 +290,11 @@ func FetchVMsByQueryWithInsecure(ctx context.Context, kubeConfigFlags *genericcl
 // ListVMs queries the provider's VM inventory and displays the results
 // ListVMsWithInsecure queries the provider's VM inventory and displays the results with optional insecure TLS skip verification
 func ListVMsWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string, watchMode bool, insecureSkipTLS bool) error {
-	currentQuery := query
-	queryUpdater := func(q string) { currentQuery = q }
+	sq := watch.NewSafeQuery(query)
 
 	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
-		return listVMsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, currentQuery, insecureSkipTLS)
-	}, watch.DefaultInterval, queryUpdater, currentQuery)
+		return listVMsOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, extendedOutput, sq.Get(), insecureSkipTLS)
+	}, watch.DefaultInterval, sq.Set, query)
 }
 
 func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, extendedOutput bool, query string, insecureSkipTLS bool) error {

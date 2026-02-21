@@ -14,12 +14,11 @@ import (
 
 // ListNamespacesWithInsecure queries the provider's namespace inventory with optional insecure TLS skip verification
 func ListNamespacesWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	currentQuery := query
-	queryUpdater := func(q string) { currentQuery = q }
+	sq := watch.NewSafeQuery(query)
 
 	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
-		return listNamespacesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
-	}, watch.DefaultInterval, queryUpdater, currentQuery)
+		return listNamespacesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, sq.Get(), insecureSkipTLS)
+	}, watch.DefaultInterval, sq.Set, query)
 }
 
 func listNamespacesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {

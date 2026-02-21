@@ -14,12 +14,11 @@ import (
 
 // ListStorageWithInsecure queries the provider's storage inventory and displays the results with optional insecure TLS skip verification
 func ListStorageWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	currentQuery := query
-	queryUpdater := func(q string) { currentQuery = q }
+	sq := watch.NewSafeQuery(query)
 
 	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
-		return listStorageOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, currentQuery, insecureSkipTLS)
-	}, watch.DefaultInterval, queryUpdater, currentQuery)
+		return listStorageOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, sq.Get(), insecureSkipTLS)
+	}, watch.DefaultInterval, sq.Set, query)
 }
 
 func listStorageOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
