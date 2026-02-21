@@ -8,6 +8,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/help"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
@@ -62,6 +63,7 @@ Host information is useful for planning migrations and understanding the source 
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for provider and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
@@ -125,6 +127,7 @@ organizational units that contain clusters, hosts, and VMs.`,
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for provider and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
@@ -188,6 +191,7 @@ together and define resource pools for VMs.`,
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for provider and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
@@ -251,6 +255,7 @@ size, storage location, and attachment to VMs.`,
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for provider and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {

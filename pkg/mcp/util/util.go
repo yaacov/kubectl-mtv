@@ -203,6 +203,9 @@ var selfExePath = func() string {
 // Precedence: context (HTTP headers) > CLI defaults > kubeconfig (implicit).
 // If dry run mode is enabled in the context, it returns a teaching response instead of executing.
 func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
+	// Always disable ANSI color codes -- MCP consumers are LLMs, not terminals
+	args = append([]string{"--no-color"}, args...)
+
 	// Prepend --insecure-skip-tls-verify when configured (before server/token)
 	if defaultInsecureSkipTLS {
 		args = append([]string{"--insecure-skip-tls-verify"}, args...)

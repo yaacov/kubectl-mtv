@@ -318,6 +318,32 @@ kubectl mtv get plan --name production-migration \
 kubectl mtv describe plan --name production-migration | grep -i error
 ```
 
+#### VMs Table View
+
+The `--vms-table` flag provides a flat table of all VMs across plans with source and target inventory details. This is useful for getting a single overview of every VM in flight, regardless of which plan it belongs to.
+
+The table columns are: VM, SOURCE STATUS, SOURCE IP, TARGET, TARGET IP, TARGET STATUS, PLAN, PLAN STATUS, and PROGRESS.
+
+```bash
+# Show all VMs across all plans in a single table
+kubectl mtv get plans --vms-table
+
+# Show VMs for a specific plan
+kubectl mtv get plan --name production-migration --vms-table
+
+# Watch VMs table for real-time progress updates
+kubectl mtv get plans --vms-table --watch
+
+# Filter to only VMs in failed plans
+kubectl mtv get plans --vms-table --query "where planStatus = 'Failed'"
+
+# Filter to VMs that are still powered on at the source
+kubectl mtv get plans --vms-table --query "where sourceStatus = 'poweredOn'"
+
+# Export VMs table as JSON for scripting
+kubectl mtv get plans --vms-table --output json
+```
+
 ### Monitoring Multiple Plans
 
 ```bash

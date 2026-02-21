@@ -274,14 +274,25 @@ func buildArgs(cmdPath string, flags map[string]any) []string {
 		}
 	}
 	if userOutput != "" {
-		// User explicitly requested an output format
 		args = append(args, "--output", userOutput)
-	} else {
-		// Use configured default from MCP server
+	} else if cmdPath != "health/logs" {
 		format := util.GetOutputFormat()
-		// For "text" format, don't add --output flag to use default table output
 		if format != "text" {
 			args = append(args, "--output", format)
+		}
+	}
+
+	// health/logs uses --format instead of --output for its output format.
+	// Default "pretty" is colorized human output; inject "json" for the LLM.
+	if cmdPath == "health/logs" {
+		var userFormat string
+		if flags != nil {
+			if v, ok := flags["format"]; ok {
+				userFormat = fmt.Sprintf("%v", v)
+			}
+		}
+		if userFormat == "" {
+			args = append(args, "--format", "json")
 		}
 	}
 
@@ -291,6 +302,8 @@ func buildArgs(cmdPath string, flags map[string]any) []string {
 		"all_namespaces": true, "A": true,
 		"inventory_url": true, "inventory-url": true, "i": true,
 		"output": true, "o": true,
+		// --watch starts an interactive TUI that hangs the MCP subprocess
+		"watch": true, "w": true,
 	}
 
 	// Add other flags using the normalizer

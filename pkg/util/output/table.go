@@ -478,13 +478,13 @@ func PrintConditions(conditions []interface{}) {
 		if condMap, ok := condition.(map[string]interface{}); ok {
 			condType, _ := condMap["type"].(string)
 			condStatus, _ := condMap["status"].(string)
-			reason, _ := condMap["reason"].(string)
+			category, _ := condMap["category"].(string)
 			message, _ := condMap["message"].(string)
 			lastTransitionTime, _ := condMap["lastTransitionTime"].(string)
 
 			fmt.Printf("  %s: %s", Bold(condType), ColorizeStatus(condStatus))
-			if reason != "" {
-				fmt.Printf(" (%s)", reason)
+			if category != "" {
+				fmt.Printf(" (%s)", ColorizeCategory(category))
 			}
 			fmt.Println()
 

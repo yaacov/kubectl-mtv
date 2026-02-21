@@ -8,6 +8,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/provider"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/help"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
@@ -70,6 +71,7 @@ environments for VM migrations. Lists all providers or retrieves details for a s
 	cmd.Flags().StringVarP(&providerName, "name", "M", "", "Provider name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for name and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("name", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {

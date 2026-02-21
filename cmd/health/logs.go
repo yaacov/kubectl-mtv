@@ -10,6 +10,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	pkghealth "github.com/yaacov/kubectl-mtv/pkg/cmd/health"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/help"
 )
 
 // NewLogsCmd creates the "health logs" subcommand for querying forklift-controller
@@ -165,6 +166,7 @@ General options:
 	cmd.Flags().StringVar(&filterLogger, "filter-logger", "", "Filter by logger type (plan, provider, migration, networkMap, storageMap)")
 	cmd.Flags().StringVar(&format, "format", "pretty", "Output format (json, text, pretty)")
 	cmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "Strip kubectl timestamp prefixes from output")
+	help.MarkMCPHidden(cmd, "no-timestamps")
 
 	return cmd
 }

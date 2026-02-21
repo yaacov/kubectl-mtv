@@ -8,6 +8,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/help"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
@@ -51,6 +52,7 @@ func NewInventoryInstanceCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glo
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for provider and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
@@ -101,6 +103,7 @@ func NewInventoryImageCmd(kubeConfigFlags *genericclioptions.ConfigFlags, global
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for output format flag
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -150,6 +153,7 @@ func NewInventoryFlavorCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for provider and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
@@ -202,6 +206,7 @@ func NewInventoryProjectCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for provider and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
@@ -254,6 +259,7 @@ func NewInventoryVolumeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for provider and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
@@ -306,6 +312,7 @@ func NewInventoryVolumeTypeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for provider and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
@@ -358,6 +365,7 @@ func NewInventorySnapshotCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glo
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for provider and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {
@@ -410,6 +418,7 @@ func NewInventorySubnetCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for provider and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("provider", completion.ProviderNameCompletion(kubeConfigFlags)); err != nil {

@@ -110,6 +110,21 @@ func ColorizeStatus(status string) string {
 	}
 }
 
+// ColorizeCategory returns a colored string based on condition category.
+func ColorizeCategory(category string) string {
+	category = strings.TrimSpace(category)
+	switch strings.ToLower(category) {
+	case "critical", "error":
+		return Red(category)
+	case "warn":
+		return Yellow(category)
+	case "advisory", "information", "required":
+		return Green(category)
+	default:
+		return category
+	}
+}
+
 // ColorizePowerState returns a colored string based on VM power state.
 // Handles both descriptive states (Running/Stopped) and short forms (On/Off)
 // as set by augmentVMInfo's powerStateHuman field.

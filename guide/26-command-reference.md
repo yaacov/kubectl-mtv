@@ -19,6 +19,7 @@ These flags are available for all `kubectl-mtv` commands:
 | `--kubeconfig` | | string | | Path to the kubeconfig file |
 | `--context` | | string | | The name of the kubeconfig context to use |
 | `--namespace` | `-n` | string | | If present, the namespace scope for this CLI request |
+| `--no-color` | | bool | `$NO_COLOR` | Disable colored output (also respects NO_COLOR env var) |
 
 ## Resource Management Commands
 
@@ -39,7 +40,35 @@ kubectl mtv get plans [flags]  # Alias
 - `--name, -M`: Plan name (optional, omit to list all)
 - `--output, -o`: Output format (table, json, yaml)
 - `--watch, -w`: Watch for changes
+- `--vms`: Get VMs status in the migration plan (requires plan name)
+- `--disk`: Get disk transfer status in the migration plan (requires plan name)
+- `--vms-table`: Show all VMs across plans in a flat table with source/target inventory details
+- `--query, -q`: Query filter using TSL syntax (only with `--vms-table`)
 - `--inventory-url, -i`: Base URL for the inventory service
+
+**VMs Table Examples:**
+
+The `--vms-table` flag produces a flat table of all VMs across plans with columns: VM, SOURCE STATUS, SOURCE IP, TARGET, TARGET IP, TARGET STATUS, PLAN, PLAN STATUS, and PROGRESS.
+
+```bash
+# Show all VMs across all plans in a flat table
+kubectl mtv get plans --vms-table
+
+# Show VMs for a specific plan in a table
+kubectl mtv get plan --name my-migration --vms-table
+
+# Filter VMs table by plan status
+kubectl mtv get plans --vms-table --query "where planStatus = 'Failed'"
+
+# Filter VMs table by source power state
+kubectl mtv get plans --vms-table --query "where sourceStatus = 'poweredOn'"
+
+# Export VMs table as JSON
+kubectl mtv get plans --vms-table --output json
+
+# Watch VMs table for real-time updates
+kubectl mtv get plans --vms-table --watch
+```
 
 #### get provider [--name PROVIDER_NAME]
 

@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/mapping"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/help"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
@@ -67,6 +68,7 @@ mapping type.`,
 	cmd.Flags().StringVarP(&mappingName, "name", "M", "", "Mapping name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watchFlag, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
@@ -129,6 +131,7 @@ definitions (NADs) or pod networking.`,
 	cmd.Flags().StringVarP(&mappingName, "name", "M", "", "Mapping name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for name and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("name", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -193,6 +196,7 @@ storage classes with optional volume mode and access mode settings.`,
 	cmd.Flags().StringVarP(&mappingName, "name", "M", "", "Mapping name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
+	help.MarkMCPHidden(cmd, "watch")
 
 	// Add completion for name and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("name", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

@@ -50,6 +50,17 @@ kubectl mtv health --output yaml
 | `--log-lines` | | `100` | Number of log lines per pod to analyze |
 | `--namespace` | `-n` | | Scope providers and plans to a namespace |
 | `--all-namespaces` | `-A` | | Scan providers and plans across all namespaces |
+| `--no-color` | | `$NO_COLOR` | Disable colored output (also respects `NO_COLOR` env var) |
+
+Use `--no-color` (or set the `NO_COLOR` environment variable) when piping health output to a file or another tool to strip ANSI escape codes:
+
+```bash
+# Pipe health report to a file without color codes
+kubectl mtv health --no-color > health-report.txt
+
+# Use the NO_COLOR environment variable
+NO_COLOR=1 kubectl mtv health | tee health-report.txt
+```
 
 ## Understanding the Report
 

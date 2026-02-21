@@ -215,7 +215,7 @@ func (r *Registry) GenerateReadOnlyDescription() string {
 	sb.WriteString("\nWORKFLOW: Find the command above → call mtv_help(\"<command>\") to get its flags and examples → then execute.\n")
 	sb.WriteString("Default output is table. For structured data, use flags: {output: \"json\"} and fields: [\"name\", \"status\"] to limit response size.\n")
 	sb.WriteString("IMPORTANT: 'fields' is a TOP-LEVEL parameter, NOT inside flags. Example: {command: \"get plan\", flags: {output: \"json\"}, fields: [\"name\", \"status\"]}\n")
-	sb.WriteString("RULE: ALWAYS include namespace in flags. Never omit it.\n")
+	sb.WriteString("RULE: ALWAYS include namespace or all_namespaces in flags. Never omit both.\n")
 	sb.WriteString("RULE: Only include optional flags (e.g. mapping pairs, skip-verify) when the user explicitly needs them. Leave them empty otherwise.\n")
 	return sb.String()
 }
@@ -260,7 +260,7 @@ func (r *Registry) GenerateReadWriteDescription() string {
 	sb.WriteString(r.formatGlobalFlags())
 
 	sb.WriteString("\nWORKFLOW: Find the command above → call mtv_help(\"<command>\") to get required flags and examples → then execute.\n")
-	sb.WriteString("RULE: ALWAYS include namespace in flags. Never omit it.\n")
+	sb.WriteString("RULE: ALWAYS include namespace or all_namespaces in flags. Never omit both.\n")
 	sb.WriteString("RULE: Only include optional flags (e.g. mapping pairs, skip-verify) when the user explicitly needs them. Leave them empty otherwise.\n")
 	return sb.String()
 }
