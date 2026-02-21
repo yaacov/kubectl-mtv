@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 25: Settings Management"
+parent: "VI. Operational Excellence, Debugging, and AI Integration"
+nav_order: 7
 ---
 
 The `settings` command lets you view and configure ForkliftController settings directly from the command line. You can inspect current values, enable feature flags, tune performance parameters, adjust container resource limits, and revert any setting to its default. All command examples are verified against the implementation.
@@ -182,10 +184,10 @@ kubectl mtv settings --output json
 
 After configuring settings:
 
-1. **Verify System Health**: Confirm the system is operating correctly in [Chapter 24: System Health Checks](/kubectl-mtv/24-system-health-checks)
-2. **Review Command Reference**: See all available commands in [Chapter 26: Command Reference](/kubectl-mtv/26-command-reference)
+1. **Verify System Health**: Confirm the system is operating correctly in [Chapter 24: System Health Checks](../24-system-health-checks)
+2. **Review Command Reference**: See all available commands in [Chapter 26: Command Reference](../26-command-reference)
 
 ---
 
-*Previous: [Chapter 24: System Health Checks](/kubectl-mtv/24-system-health-checks)*
-*Next: [Chapter 26: Command Reference](/kubectl-mtv/26-command-reference)*
+*Previous: [Chapter 24: System Health Checks](../24-system-health-checks)*
+*Next: [Chapter 26: Command Reference](../26-command-reference)*

@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 4: Migration Types and Strategy Selection"
+parent: "I. Introduction and Fundamentals"
+nav_order: 4
 ---
 
 Understanding migration types is crucial for selecting the appropriate strategy based on your downtime requirements, complexity tolerance, and source platform capabilities. This chapter provides comprehensive details about each migration approach to help you make informed decisions for your specific use cases.
@@ -366,7 +368,7 @@ Live migration maintains continuous service operation through:
 
 ## Conversion Migration
 
-Conversion migration is a specialized migration type for integration with external storage vendors and custom migration workflows. For comprehensive coverage of conversion migration including architecture, prerequisites, workflow, and troubleshooting, see [Chapter 5: Conversion Migration](/kubectl-mtv/05-conversion-migration).
+Conversion migration is a specialized migration type for integration with external storage vendors and custom migration workflows. For comprehensive coverage of conversion migration including architecture, prerequisites, workflow, and troubleshooting, see [Chapter 5: Conversion Migration](../05-conversion-migration).
 
 ## Migration Strategy Decision Framework
 
@@ -399,12 +401,12 @@ Choose your migration approach based on these key factors:
    - Need minimal downtime (minutes)? --> Warm Migration
    - Require near-zero downtime (seconds)? --> Live Migration (KubeVirt only)
 
-3. **Complexity Tolerance**
+4. **Complexity Tolerance**
    - Prefer simple, predictable process? --> Cold Migration
    - Accept moderate complexity for reduced downtime? --> Warm Migration
    - Have advanced technical capabilities? --> Live Migration
 
-4. **Business Impact Assessment**
+5. **Business Impact Assessment**
    - Non-critical systems? --> Cold Migration
    - Production systems with flexibility? --> Warm Migration
    - Mission-critical, zero-tolerance systems? --> Live Migration
@@ -447,7 +449,7 @@ kubectl mtv create plan --name vendor-conversion \
 
 ### Official Performance Data
 
-Based on [Forklift performance testing](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#warm-migration_forklift-versus-cold-migration):
+Based on [Forklift performance testing](https://kubev2v.github.io/forklift-documentation/#warm-migration_forklift-versus-cold-migration):
 
 #### Cold Migration Performance
 
@@ -489,7 +491,7 @@ kubectl mtv create plan --name distributed-cold \
 kubectl mtv create plan --name optimized-cold \
   --migration-type cold \
   --convertor-node-selector "storage=nvme,network=10gbe" \
-  --convertor-affinity "REQUIRE nodes(storage-tier=premium) on node"
+  --convertor-affinity "REQUIRE pods(storage-tier=premium) on node"
 ```
 
 #### Warm Migration Optimization
@@ -573,13 +575,13 @@ kubectl exec convertor-pod -- iostat -x 1 5
 
 After understanding migration types and strategies:
 
-1. **Conversion Migration**: Learn about external storage vendor integration in [Chapter 5: Conversion Migration](/kubectl-mtv/05-conversion-migration)
-2. **Installation Setup**: Ensure proper kubectl-mtv installation in [Chapter 2: Installation and Prerequisites](/kubectl-mtv/02-installation-and-prerequisites)
-3. **Quick Start**: Try your first migration in [Chapter 3: Quick Start - First Migration Workflow](/kubectl-mtv/03-quick-start-first-migration-workflow)
-4. **Provider Setup**: Configure source platforms in [Chapter 6: Provider Management](/kubectl-mtv/06-provider-management)
-5. **Advanced Planning**: Explore detailed migration planning in [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)
+1. **Conversion Migration**: Learn about external storage vendor integration in [Chapter 5: Conversion Migration](../05-conversion-migration)
+2. **Installation Setup**: Ensure proper kubectl-mtv installation in [Chapter 2: Installation and Prerequisites](../02-installation-and-prerequisites)
+3. **Quick Start**: Try your first migration in [Chapter 3: Quick Start - First Migration Workflow](../03-quick-start-first-migration-workflow)
+4. **Provider Setup**: Configure source platforms in [Chapter 6: Provider Management](../06-provider-management)
+5. **Advanced Planning**: Explore detailed migration planning in [Chapter 13: Migration Plan Creation](../13-migration-plan-creation)
 
 ---
 
-*Previous: [Chapter 3: Quick Start - First Migration Workflow](/kubectl-mtv/03-quick-start-first-migration-workflow)*  
-*Next: [Chapter 5: Conversion Migration](/kubectl-mtv/05-conversion-migration)*
+*Previous: [Chapter 3: Quick Start - First Migration Workflow](../03-quick-start-first-migration-workflow)*  
+*Next: [Chapter 5: Conversion Migration](../05-conversion-migration)*

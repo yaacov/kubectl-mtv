@@ -1,8 +1,9 @@
 source "https://rubygems.org"
 
+gem "base64"
+gem "csv"
 gem "jekyll", "~> 4.3.0"
-# Use minima from GitHub master branch (v3) which supports Jekyll 4 and custom-head.html
-gem "minima", github: "jekyll/minima"
+gem "just-the-docs", "~> 0.12.0"
 
 # Jekyll plugins
 group :jekyll_plugins do

@@ -1,6 +1,8 @@
 ---
-layout: page
-title: "Chapter 18: Best Practices and Security"
+layout: default
+title: "Chapter 21: Best Practices and Security"
+parent: "VI. Operational Excellence, Debugging, and AI Integration"
+nav_order: 3
 ---
 
 Implementing secure and efficient migration practices is essential for production environments. This chapter covers comprehensive best practices for plan management, provider security, query optimization, and secure operations derived from real-world deployment experience and security requirements.
@@ -775,10 +777,10 @@ echo "Plan $PLAN_NAME tagged with change request $CHANGE_TICKET"
 
 After implementing comprehensive best practices and security:
 
-1. **AI Integration**: Explore advanced automation in [Chapter 22: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/22-model-context-protocol-mcp-server-integration)
-2. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 23: Integration with KubeVirt Tools](/kubectl-mtv/23-integration-with-kubevirt-tools)
+1. **AI Integration**: Explore advanced automation in [Chapter 22: Model Context Protocol (MCP) Server Integration](../22-model-context-protocol-mcp-server-integration)
+2. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 23: Integration with KubeVirt Tools](../23-integration-with-kubevirt-tools)
 
 ---
 
-*Previous: [Chapter 20: Debugging and Troubleshooting](/kubectl-mtv/20-debugging-and-troubleshooting)*  
-*Next: [Chapter 22: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/22-model-context-protocol-mcp-server-integration)*
+*Previous: [Chapter 20: Debugging and Troubleshooting](../20-debugging-and-troubleshooting)*  
+*Next: [Chapter 22: Model Context Protocol (MCP) Server Integration](../22-model-context-protocol-mcp-server-integration)*

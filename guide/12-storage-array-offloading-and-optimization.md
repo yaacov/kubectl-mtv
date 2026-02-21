@@ -1,11 +1,13 @@
 ---
-layout: page
+layout: default
 title: "Chapter 12: Storage Array Offloading and Optimization"
+parent: "IV. Mapping and Plan Configuration"
+nav_order: 2
 ---
 
 Storage array offloading represents one of the most advanced optimization techniques available in `kubectl-mtv`, capable of dramatically reducing migration time and network overhead by leveraging direct storage array capabilities. This chapter provides comprehensive coverage of storage offloading concepts, supported platforms, configuration, and best practices.
 
-For foundational information about migration performance, see the [official Forklift performance recommendations](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#mtv-performance-recommendation_forklift).
+For foundational information about migration performance, see the [official Forklift performance recommendations](https://kubev2v.github.io/forklift-documentation/#mtv-performance-recommendation_forklift).
 
 ## Overview of Storage Array Offloading
 
@@ -788,12 +790,12 @@ The key to successful implementation lies in thorough planning, proper configura
 
 After implementing storage array offloading:
 
-1. **Advanced Planning**: Explore detailed migration planning in [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)
-2. **VM Customization**: Learn about individual VM customization in [Chapter 14: Customizing Individual VMs](/kubectl-mtv/14-customizing-individual-vms-planvms-format)
-3. **Performance Optimization**: Configure convertor pod optimization in [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
-4. **Monitoring**: Implement comprehensive monitoring in [Chapter 20: Debugging and Troubleshooting](/kubectl-mtv/20-debugging-and-troubleshooting)
+1. **Advanced Planning**: Explore detailed migration planning in [Chapter 13: Migration Plan Creation](../13-migration-plan-creation)
+2. **VM Customization**: Learn about individual VM customization in [Chapter 14: Customizing Individual VMs](../14-customizing-individual-vms-planvms-format)
+3. **Performance Optimization**: Configure convertor pod optimization in [Chapter 16: Migration Process Optimization](../16-migration-process-optimization)
+4. **Monitoring**: Implement comprehensive monitoring in [Chapter 20: Debugging and Troubleshooting](../20-debugging-and-troubleshooting)
 
 ---
 
-*Previous: [Chapter 11: Mapping Management](/kubectl-mtv/11-mapping-management)*  
-*Next: [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)*
+*Previous: [Chapter 11: Mapping Management](../11-mapping-management)*  
+*Next: [Chapter 13: Migration Plan Creation](../13-migration-plan-creation)*

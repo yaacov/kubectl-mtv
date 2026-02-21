@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 5: Conversion Migration"
+parent: "I. Introduction and Fundamentals"
+nav_order: 5
 ---
 
 Conversion migration is a specialized migration type designed for integration with external storage vendors and custom migration workflows.
@@ -398,5 +400,5 @@ After understanding conversion migration:
 
 ---
 
-*Previous: [Chapter 4: Migration Types and Strategy Selection](/kubectl-mtv/04-migration-types-and-strategy-selection)*  
-*Next: [Chapter 6: Provider Management](/kubectl-mtv/06-provider-management)*
+*Previous: [Chapter 4: Migration Types and Strategy Selection](../04-migration-types-and-strategy-selection)*  
+*Next: [Chapter 6: Provider Management](../06-provider-management)*

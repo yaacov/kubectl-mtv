@@ -1,11 +1,13 @@
 ---
-layout: page
+layout: default
 title: "Chapter 27: TSL - Tree Search Language Reference"
+parent: "VII. Reference and Appendices"
+nav_order: 2
 ---
 
 TSL (Tree Search Language) is a powerful, open-source query language developed by Yaacov Zamir that provides SQL-like filtering capabilities for structured data. This chapter is a **pure language reference** covering TSL syntax, operators, functions, and field access rules.
 
-For practical kubectl-mtv examples, provider-specific field tables, migration workflows, and troubleshooting, see [Chapter 10: Query Language Reference and Advanced Filtering](/kubectl-mtv/10-query-language-reference-and-advanced-filtering).
+For practical kubectl-mtv examples, provider-specific field tables, migration workflows, and troubleshooting, see [Chapter 10: Query Language Reference and Advanced Filtering](../10-query-language-reference-and-advanced-filtering).
 
 ## What is TSL?
 
@@ -433,11 +435,11 @@ kubectl mtv help tsl
 
 ## Further Reading
 
-- [Chapter 10: Query Language Reference and Advanced Filtering](/kubectl-mtv/10-query-language-reference-and-advanced-filtering) -- provider field tables, practical examples, migration workflows, and optimization tips
-- [Chapter 9: Inventory Management](/kubectl-mtv/09-inventory-management) -- inventory commands that accept TSL queries
-- [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation) -- using TSL for query-driven VM selection
+- [Chapter 10: Query Language Reference and Advanced Filtering](../10-query-language-reference-and-advanced-filtering) -- provider field tables, practical examples, migration workflows, and optimization tips
+- [Chapter 9: Inventory Management](../09-inventory-management) -- inventory commands that accept TSL queries
+- [Chapter 13: Migration Plan Creation](../13-migration-plan-creation) -- using TSL for query-driven VM selection
 
 ---
 
-*Previous: [Chapter 26: Command Reference](/kubectl-mtv/26-command-reference)*
-*Next: [Chapter 28: KARL - Kubernetes Affinity Rule Language Reference](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference)*
+*Previous: [Chapter 26: Command Reference](../26-command-reference)*
+*Next: [Chapter 28: KARL - Kubernetes Affinity Rule Language Reference](../28-karl-kubernetes-affinity-rule-language-reference)*

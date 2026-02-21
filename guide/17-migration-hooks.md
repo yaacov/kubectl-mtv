@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 17: Migration Hooks"
+parent: "V. Advanced Migration Customization and Optimization"
+nav_order: 3
 ---
 
 Migration hooks provide powerful custom automation capabilities that enable running custom code at specific points during the migration process. This chapter covers comprehensive hook development, deployment, and integration with migration workflows.
@@ -784,12 +786,12 @@ ansible-playbook -i localhost, playbook.yml
 
 After mastering migration hooks:
 
-1. **Advanced Plan Management**: Learn dynamic plan modification in [Chapter 18: Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching)
-2. **Execute Migrations**: Manage complete migration lifecycle in [Chapter 19: Plan Lifecycle Execution](/kubectl-mtv/19-plan-lifecycle-execution)
-3. **Troubleshooting**: Master debugging techniques in [Chapter 20: Debugging and Troubleshooting](/kubectl-mtv/20-debugging-and-troubleshooting)
-4. **Best Practices**: Learn operational excellence in [Chapter 21: Best Practices and Security](/kubectl-mtv/21-best-practices-and-security)
+1. **Advanced Plan Management**: Learn dynamic plan modification in [Chapter 18: Advanced Plan Patching](../18-advanced-plan-patching)
+2. **Execute Migrations**: Manage complete migration lifecycle in [Chapter 19: Plan Lifecycle Execution](../19-plan-lifecycle-execution)
+3. **Troubleshooting**: Master debugging techniques in [Chapter 20: Debugging and Troubleshooting](../20-debugging-and-troubleshooting)
+4. **Best Practices**: Learn operational excellence in [Chapter 21: Best Practices and Security](../21-best-practices-and-security)
 
 ---
 
-*Previous: [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)*  
-*Next: [Chapter 18: Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching)*
+*Previous: [Chapter 16: Migration Process Optimization](../16-migration-process-optimization)*  
+*Next: [Chapter 18: Advanced Plan Patching](../18-advanced-plan-patching)*

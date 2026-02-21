@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 20: Debugging and Troubleshooting"
+parent: "VI. Operational Excellence, Debugging, and AI Integration"
+nav_order: 2
 ---
 
 Effective troubleshooting is essential for successful VM migrations. This chapter covers comprehensive debugging techniques, common issues and their solutions, monitoring strategies, and systematic problem resolution approaches verified from the kubectl-mtv implementation and documentation.
@@ -765,11 +767,11 @@ kubectl mtv describe mapping storage --name mapping-name
 
 After mastering debugging and troubleshooting:
 
-1. **Best Practices**: Learn operational excellence in [Chapter 21: Best Practices and Security](/kubectl-mtv/21-best-practices-and-security)
-2. **AI Integration**: Explore advanced automation in [Chapter 22: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/22-model-context-protocol-mcp-server-integration)
-3. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 23: Integration with KubeVirt Tools](/kubectl-mtv/23-integration-with-kubevirt-tools)
+1. **Best Practices**: Learn operational excellence in [Chapter 21: Best Practices and Security](../21-best-practices-and-security)
+2. **AI Integration**: Explore advanced automation in [Chapter 22: Model Context Protocol (MCP) Server Integration](../22-model-context-protocol-mcp-server-integration)
+3. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 23: Integration with KubeVirt Tools](../23-integration-with-kubevirt-tools)
 
 ---
 
-*Previous: [Chapter 19: Plan Lifecycle Execution](/kubectl-mtv/19-plan-lifecycle-execution)*  
-*Next: [Chapter 21: Best Practices and Security](/kubectl-mtv/21-best-practices-and-security)*
+*Previous: [Chapter 19: Plan Lifecycle Execution](../19-plan-lifecycle-execution)*  
+*Next: [Chapter 21: Best Practices and Security](../21-best-practices-and-security)*

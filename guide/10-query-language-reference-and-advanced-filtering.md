@@ -1,11 +1,13 @@
 ---
-layout: page
+layout: default
 title: "Chapter 10: Query Language Reference and Advanced Filtering"
+parent: "III. Inventory and Advanced Query Language"
+nav_order: 2
 ---
 
-kubectl-mtv integrates the powerful [Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-reference), developed by Yaacov Zamir, which provides SQL-like filtering capabilities for inventory resources. This chapter provides a complete reference for TSL syntax and advanced query techniques.
+kubectl-mtv integrates the powerful [Tree Search Language (TSL)](../27-tsl-tree-search-language-reference), developed by Yaacov Zamir, which provides SQL-like filtering capabilities for inventory resources. This chapter provides a complete reference for TSL syntax and advanced query techniques.
 
-> **Quick Reference**: For a concise, self-contained TSL syntax reference, see [Chapter 27: TSL - Tree Search Language Reference](/kubectl-mtv/27-tsl-tree-search-language-reference).
+> **Quick Reference**: For a concise, self-contained TSL syntax reference, see [Chapter 27: TSL - Tree Search Language Reference](../27-tsl-tree-search-language-reference).
 
 ## Introduction to Tree Search Language (TSL)
 
@@ -637,10 +639,10 @@ kubectl mtv get inventory vms --provider vsphere-prod --query "where any(network
 
 ```bash
 # Get provider inventory status
-kubectl mtv get inventory providers --provider vsphere-prod --query "where status = 'Ready'"
+kubectl mtv get inventory providers --name vsphere-prod --query "where status = 'Ready'"
 
 # Check provider resource counts
-kubectl mtv get inventory providers --provider vsphere-prod --query "where vmCount > 100"
+kubectl mtv get inventory providers --name vsphere-prod --query "where vmCount > 100"
 
 # Monitor provider connectivity
 kubectl mtv get inventory provider --query "where lastHeartbeat > '2024-01-01T00:00:00Z'"
@@ -972,19 +974,19 @@ TSL provides a powerful, SQL-like query interface for kubectl-mtv inventory oper
 - **Provider Fields**: vSphere, oVirt, OpenStack, EC2 fields plus computed fields
 - **Performance**: Optimized for large-scale inventory queries
 
-> **See also**: [Chapter 27: TSL - Tree Search Language Reference](/kubectl-mtv/27-tsl-tree-search-language-reference) for a concise, printable quick-reference card.
+> **See also**: [Chapter 27: TSL - Tree Search Language Reference](../27-tsl-tree-search-language-reference) for a concise, printable quick-reference card.
 
 ## Next Steps
 
 After mastering TSL queries:
 
-1. **TSL Quick Reference**: See the self-contained syntax reference in [Chapter 27: TSL - Tree Search Language Reference](/kubectl-mtv/27-tsl-tree-search-language-reference)
-2. **Apply to Mappings**: Use queries for mapping creation in [Chapter 11: Mapping Management](/kubectl-mtv/11-mapping-management)
-3. **Plan Creation**: Leverage queries for plan development in [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)
-4. **VM Customization**: Use query results for VM customization in [Chapter 14: Customizing Individual VMs](/kubectl-mtv/14-customizing-individual-vms-planvms-format)
-5. **Optimization**: Apply query insights in [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
+1. **TSL Quick Reference**: See the self-contained syntax reference in [Chapter 27: TSL - Tree Search Language Reference](../27-tsl-tree-search-language-reference)
+2. **Apply to Mappings**: Use queries for mapping creation in [Chapter 11: Mapping Management](../11-mapping-management)
+3. **Plan Creation**: Leverage queries for plan development in [Chapter 13: Migration Plan Creation](../13-migration-plan-creation)
+4. **VM Customization**: Use query results for VM customization in [Chapter 14: Customizing Individual VMs](../14-customizing-individual-vms-planvms-format)
+5. **Optimization**: Apply query insights in [Chapter 16: Migration Process Optimization](../16-migration-process-optimization)
 
 ---
 
-*Previous: [Chapter 9: Inventory Management](/kubectl-mtv/09-inventory-management)*  
-*Next: [Chapter 11: Mapping Management](/kubectl-mtv/11-mapping-management)*
+*Previous: [Chapter 9: Inventory Management](../09-inventory-management)*  
+*Next: [Chapter 11: Mapping Management](../11-mapping-management)*

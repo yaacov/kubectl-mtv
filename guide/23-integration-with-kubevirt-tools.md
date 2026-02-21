@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 23: Integration with KubeVirt Tools"
+parent: "VI. Operational Excellence, Debugging, and AI Integration"
+nav_order: 5
 ---
 
 After successful VM migration with `kubectl-mtv`, the migrated VMs become full KubeVirt virtual machines that can be managed using the broader KubeVirt ecosystem. This chapter covers the seamless integration between `kubectl-mtv` and `virtctl`, enabling complete VM lifecycle management from migration through ongoing operations.
@@ -784,5 +786,5 @@ This complete toolchain enables organizations to migrate from traditional virtua
 
 ---
 
-*Previous: [Chapter 22: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/22-model-context-protocol-mcp-server-integration)*  
-*Next: [Chapter 24: System Health Checks](/kubectl-mtv/24-system-health-checks)*
+*Previous: [Chapter 22: Model Context Protocol (MCP) Server Integration](../22-model-context-protocol-mcp-server-integration)*  
+*Next: [Chapter 24: System Health Checks](../24-system-health-checks)*

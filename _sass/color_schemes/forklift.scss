@@ -1,0 +1,16 @@
+@use 'sass:color';
+@import "color_schemes/dark";
+
+$body-background-color: #1a1a2e;
+$sidebar-color: #16213e;
+$body-text-color: #e0e0e0;
+$link-color: #4fc3f7;
+$nav-child-link-color: #81d4fa;
+$body-heading-color: #e1f5fe;
+$search-background-color: #0f3460;
+$feedback-color: color.adjust($sidebar-color, $lightness: -3%);
+$table-background-color: #16213e;
+$code-background-color: #0f3460;
+$search-result-preview-color: #b0bec5;
+$btn-primary-color: #4fc3f7;
+$base-button-color: #1a237e;

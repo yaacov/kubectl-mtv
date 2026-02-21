@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 28: KARL - Kubernetes Affinity Rule Language Reference"
+parent: "VII. Reference and Appendices"
+nav_order: 3
 ---
 
 KARL (Kubernetes Affinity Rule Language) is a concise, human-readable syntax for expressing Kubernetes pod affinity and anti-affinity rules. In kubectl-mtv, KARL is used with the `--target-affinity` and `--convertor-affinity` flags to control where migrated VMs and convertor pods are scheduled.
@@ -444,11 +446,11 @@ kubectl mtv help karl
 
 ## Further Reading
 
-- [Chapter 15: Target VM Placement](/kubectl-mtv/15-target-vm-placement) -- detailed target affinity scenarios and examples
-- [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization) -- convertor affinity for migration performance
-- [Chapter 18: Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching) -- patching affinity rules on existing plans
+- [Chapter 15: Target VM Placement](../15-target-vm-placement) -- detailed target affinity scenarios and examples
+- [Chapter 16: Migration Process Optimization](../16-migration-process-optimization) -- convertor affinity for migration performance
+- [Chapter 18: Advanced Plan Patching](../18-advanced-plan-patching) -- patching affinity rules on existing plans
 
 ---
 
-*Previous: [Chapter 27: TSL - Tree Search Language Reference](/kubectl-mtv/27-tsl-tree-search-language-reference)*
-*Next: Return to [Table of Contents](/kubectl-mtv/)*
+*Previous: [Chapter 27: TSL - Tree Search Language Reference](../27-tsl-tree-search-language-reference)*
+*Next: Return to [Table of Contents](../)*
