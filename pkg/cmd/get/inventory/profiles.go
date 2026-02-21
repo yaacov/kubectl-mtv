@@ -13,13 +13,11 @@ import (
 
 // ListDiskProfilesWithInsecure queries the provider's disk profile inventory with optional insecure TLS skip verification
 func ListDiskProfilesWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listDiskProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	sq := watch.NewSafeQuery(query)
 
-	return listDiskProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listDiskProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, sq.Get(), insecureSkipTLS)
+	}, watch.DefaultInterval, sq.Set, query)
 }
 
 func listDiskProfilesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {
@@ -90,13 +88,11 @@ func listDiskProfilesOnce(ctx context.Context, kubeConfigFlags *genericclioption
 
 // ListNICProfilesWithInsecure queries the provider's NIC profile inventory with optional insecure TLS skip verification
 func ListNICProfilesWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listNICProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	sq := watch.NewSafeQuery(query)
 
-	return listNICProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listNICProfilesOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, sq.Get(), insecureSkipTLS)
+	}, watch.DefaultInterval, sq.Set, query)
 }
 
 func listNICProfilesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {

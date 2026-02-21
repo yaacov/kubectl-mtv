@@ -15,13 +15,11 @@ import (
 
 // ListProvidersWithInsecure queries the providers and displays their inventory information with optional insecure TLS skip verification
 func ListProvidersWithInsecure(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, watchMode bool, insecureSkipTLS bool) error {
-	if watchMode {
-		return watch.Watch(func() error {
-			return listProvidersOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
-		}, watch.DefaultInterval)
-	}
+	sq := watch.NewSafeQuery(query)
 
-	return listProvidersOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, query, insecureSkipTLS)
+	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
+		return listProvidersOnce(ctx, kubeConfigFlags, providerName, namespace, inventoryURL, outputFormat, sq.Get(), insecureSkipTLS)
+	}, watch.DefaultInterval, sq.Set, query)
 }
 
 func listProvidersOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigFlags, providerName, namespace string, inventoryURL string, outputFormat string, query string, insecureSkipTLS bool) error {

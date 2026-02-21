@@ -27,9 +27,17 @@ var vmTableHeaders = []output.Header{
 	{DisplayName: "TARGET", JSONPath: "target"},
 	{DisplayName: "TARGET IP", JSONPath: "targetIP"},
 	{DisplayName: "TARGET STATUS", JSONPath: "targetStatus", ColorFunc: output.ColorizePowerState},
-	{DisplayName: "PLAN", JSONPath: "plan"},
+	{DisplayName: "PLAN", JSONPath: "plan", ColorFunc: colorizePlanName},
 	{DisplayName: "PLAN STATUS", JSONPath: "planStatus", ColorFunc: output.ColorizeStatus},
 	{DisplayName: "PROGRESS", JSONPath: "progress"},
+}
+
+// colorizePlanName returns a red-colored string when the plan is not ready.
+func colorizePlanName(s string) string {
+	if strings.Contains(s, "[not ready]") {
+		return output.Red(s)
+	}
+	return s
 }
 
 // inventoryCacheEntry holds cached inventory data for a provider.
@@ -47,12 +55,11 @@ func ListVMsTable(
 	outputFormat, queryStr string,
 	watchMode bool,
 ) error {
-	currentQuery := queryStr
-	queryUpdater := func(q string) { currentQuery = q }
+	sq := watch.NewSafeQuery(queryStr)
 
 	return watch.WrapWithWatchAndQuery(watchMode, outputFormat, func() error {
-		return listVMsTableOnce(ctx, configFlags, planName, namespace, inventoryURL, insecureSkipTLS, outputFormat, currentQuery)
-	}, watch.DefaultInterval, queryUpdater, currentQuery)
+		return listVMsTableOnce(ctx, configFlags, planName, namespace, inventoryURL, insecureSkipTLS, outputFormat, sq.Get())
+	}, watch.DefaultInterval, sq.Set, queryStr)
 }
 
 func listVMsTableOnce(
@@ -199,6 +206,11 @@ func buildPlanVMRows(
 		// Target inventory lookup
 		tgtStatus, tgtIP := lookupTargetWorkload(targetWorkloads, tgtDisplayName)
 
+		planDisplay := planNameStr
+		if !planDetails.IsReady {
+			planDisplay = planNameStr + " [not ready]"
+		}
+
 		row := map[string]interface{}{
 			"vm":           vmName,
 			"sourceStatus": srcStatus,
@@ -206,7 +218,7 @@ func buildPlanVMRows(
 			"target":       tgtDisplay,
 			"targetIP":     tgtIP,
 			"targetStatus": tgtStatus,
-			"plan":         planNameStr,
+			"plan":         planDisplay,
 			"planStatus":   planDetails.Status,
 			"progress":     progressStr,
 		}
