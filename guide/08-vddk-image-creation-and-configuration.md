@@ -1,11 +1,13 @@
 ---
-layout: page
+layout: default
 title: "Chapter 8: VDDK Image Creation and Configuration"
+parent: "II. Provider, Host, and VDDK Management"
+nav_order: 3
 ---
 
 VMware Virtual Disk Development Kit (VDDK) provides optimized disk transfer capabilities for VMware vSphere migrations. This chapter covers creating VDDK container images and configuring them for maximum performance.
 
-For background information on VDDK and its integration with Forklift, see the [official VDDK documentation](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#creating-vddk-image_forklift).
+For background information on VDDK and its integration with Forklift, see the [official VDDK documentation](https://kubev2v.github.io/forklift-documentation/#creating-vddk-image_forklift).
 
 ## Why VDDK is Recommended for VMware Disk Transfers
 
@@ -791,12 +793,12 @@ podman run --rm quay.io/company/vddk:8.0.1 \
 
 After configuring VDDK:
 
-1. **Explore Inventory**: Discover VMs and resources in [Chapter 9: Inventory Management](/kubectl-mtv/09-inventory-management)
-2. **Create Mappings**: Configure resource mappings in [Chapter 11: Mapping Management](/kubectl-mtv/11-mapping-management)
-3. **Optimize Performance**: Learn advanced techniques in [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
-4. **Plan Migrations**: Create optimized plans in [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)
+1. **Explore Inventory**: Discover VMs and resources in [Chapter 9: Inventory Management](../09-inventory-management)
+2. **Create Mappings**: Configure resource mappings in [Chapter 11: Mapping Management](../11-mapping-management)
+3. **Optimize Performance**: Learn advanced techniques in [Chapter 16: Migration Process Optimization](../16-migration-process-optimization)
+4. **Plan Migrations**: Create optimized plans in [Chapter 13: Migration Plan Creation](../13-migration-plan-creation)
 
 ---
 
-*Previous: [Chapter 7: Migration Host Management](/kubectl-mtv/07-migration-host-management)*  
-*Next: [Chapter 9: Inventory Management](/kubectl-mtv/09-inventory-management)*
+*Previous: [Chapter 7: Migration Host Management](../07-migration-host-management)*  
+*Next: [Chapter 9: Inventory Management](../09-inventory-management)*

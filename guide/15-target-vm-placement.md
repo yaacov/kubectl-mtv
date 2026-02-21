@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 15: Target VM Placement (Operational Lifetime)"
+parent: "V. Advanced Migration Customization and Optimization"
+nav_order: 1
 ---
 
 Target VM placement controls where and how VMs run in the target Kubernetes cluster after migration. This chapter covers comprehensive VM scheduling, affinity rules, and operational configuration for the target environment.
@@ -163,9 +165,9 @@ kubectl mtv create plan --name preserve-state \
 
 ## Target Affinity with KARL Syntax
 
-[KARL (Kubernetes Affinity Rule Language)](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference) provides expressive affinity rules for advanced VM placement.
+[KARL (Kubernetes Affinity Rule Language)](../28-karl-kubernetes-affinity-rule-language-reference) provides expressive affinity rules for advanced VM placement.
 
-> **Quick Reference**: For a concise, self-contained KARL syntax reference, see [Chapter 28: KARL - Kubernetes Affinity Rule Language Reference](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference).
+> **Quick Reference**: For a concise, self-contained KARL syntax reference, see [Chapter 28: KARL - Kubernetes Affinity Rule Language Reference](../28-karl-kubernetes-affinity-rule-language-reference).
 
 ### KARL Rule Types
 
@@ -635,13 +637,13 @@ kubectl mtv create plan --name cpu-distribution \
 
 After mastering target VM placement:
 
-1. **KARL Quick Reference**: See the self-contained syntax reference in [Chapter 28: KARL - Kubernetes Affinity Rule Language Reference](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference)
-2. **Optimize Migration Process**: Learn convertor optimization in [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
-3. **Create Hooks**: Develop migration automation in [Chapter 17: Migration Hooks](/kubectl-mtv/17-migration-hooks)
-4. **Advanced Plan Modification**: Learn plan patching in [Chapter 18: Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching)
-5. **Execute Migrations**: Manage plan lifecycle in [Chapter 19: Plan Lifecycle Execution](/kubectl-mtv/19-plan-lifecycle-execution)
+1. **KARL Quick Reference**: See the self-contained syntax reference in [Chapter 28: KARL - Kubernetes Affinity Rule Language Reference](../28-karl-kubernetes-affinity-rule-language-reference)
+2. **Optimize Migration Process**: Learn convertor optimization in [Chapter 16: Migration Process Optimization](../16-migration-process-optimization)
+3. **Create Hooks**: Develop migration automation in [Chapter 17: Migration Hooks](../17-migration-hooks)
+4. **Advanced Plan Modification**: Learn plan patching in [Chapter 18: Advanced Plan Patching](../18-advanced-plan-patching)
+5. **Execute Migrations**: Manage plan lifecycle in [Chapter 19: Plan Lifecycle Execution](../19-plan-lifecycle-execution)
 
 ---
 
-*Previous: [Chapter 14: Customizing Individual VMs (PlanVMS Format)](/kubectl-mtv/14-customizing-individual-vms-planvms-format)*  
-*Next: [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)*
+*Previous: [Chapter 14: Customizing Individual VMs (PlanVMS Format)](../14-customizing-individual-vms-planvms-format)*  
+*Next: [Chapter 16: Migration Process Optimization](../16-migration-process-optimization)*

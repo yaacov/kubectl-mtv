@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 16: Migration Process Optimization (Convertor Pod Scheduling)"
+parent: "V. Advanced Migration Customization and Optimization"
+nav_order: 2
 ---
 
 Migration process optimization focuses on optimizing the temporary infrastructure used during VM conversion and migration, particularly the virt-v2v convertor pods. This chapter covers performance tuning, resource management, and strategic placement of migration workloads.
@@ -167,7 +169,7 @@ kubectl mtv create plan --name storage-network \
 
 ## Convertor Affinity with KARL Syntax
 
-[KARL](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference) affinity rules provide advanced convertor placement control using the same syntax as target VM affinity (see [Chapter 28: KARL Reference](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference) for complete syntax details):
+[KARL](../28-karl-kubernetes-affinity-rule-language-reference) affinity rules provide advanced convertor placement control using the same syntax as target VM affinity (see [Chapter 28: KARL Reference](../28-karl-kubernetes-affinity-rule-language-reference) for complete syntax details):
 
 ### Storage Co-location Patterns
 
@@ -679,12 +681,12 @@ kubectl mtv create plan --name cold-cost-optimized \
 
 After mastering migration process optimization:
 
-1. **Implement Hooks**: Add custom automation in [Chapter 17: Migration Hooks](/kubectl-mtv/17-migration-hooks)
-2. **Advanced Plan Management**: Learn plan patching in [Chapter 18: Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching)
-3. **Execute Migrations**: Manage plan lifecycle in [Chapter 19: Plan Lifecycle Execution](/kubectl-mtv/19-plan-lifecycle-execution)
-4. **Troubleshooting**: Master debugging in [Chapter 20: Debugging and Troubleshooting](/kubectl-mtv/20-debugging-and-troubleshooting)
+1. **Implement Hooks**: Add custom automation in [Chapter 17: Migration Hooks](../17-migration-hooks)
+2. **Advanced Plan Management**: Learn plan patching in [Chapter 18: Advanced Plan Patching](../18-advanced-plan-patching)
+3. **Execute Migrations**: Manage plan lifecycle in [Chapter 19: Plan Lifecycle Execution](../19-plan-lifecycle-execution)
+4. **Troubleshooting**: Master debugging in [Chapter 20: Debugging and Troubleshooting](../20-debugging-and-troubleshooting)
 
 ---
 
-*Previous: [Chapter 15: Target VM Placement](/kubectl-mtv/15-target-vm-placement)*  
-*Next: [Chapter 17: Migration Hooks](/kubectl-mtv/17-migration-hooks)*
+*Previous: [Chapter 15: Target VM Placement](../15-target-vm-placement)*  
+*Next: [Chapter 17: Migration Hooks](../17-migration-hooks)*

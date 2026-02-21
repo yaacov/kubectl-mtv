@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 1: Overview of kubectl-mtv"
+parent: "I. Introduction and Fundamentals"
+nav_order: 1
 ---
 
 ## What is kubectl-mtv?
@@ -9,7 +11,7 @@ title: "Chapter 1: Overview of kubectl-mtv"
 
 As a `kubectl` plugin, `kubectl-mtv` integrates directly with your existing Kubernetes workflow, providing a familiar command-line experience for managing complex VM migrations. It acts as a bridge between traditional virtualization infrastructure and modern container orchestration platforms, enabling organizations to modernize their workloads by migrating to Kubernetes-native virtualization.
 
-For complete information about the underlying migration technology, see the [official Forklift documentation](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html).
+For complete information about the underlying migration technology, see the [official Forklift documentation](https://kubev2v.github.io/forklift-documentation/).
 
 ## Core Functionality and Supported Platforms
 
@@ -17,12 +19,12 @@ For complete information about the underlying migration technology, see the [off
 
 `kubectl-mtv` supports migration from the following virtualization platforms:
 
-- **VMware vSphere** - Full support for vCenter-managed VMware environments with advanced features like VDDK optimization (see [VMware Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#vmware-prerequisites_forklift))
-- **Red Hat Virtualization (oVirt/RHV)** - Complete support for oVirt and Red Hat Virtualization platforms (see [oVirt Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#rhv-prerequisites_forklift))
-- **Red Hat OpenStack Platform** - Support for OpenStack-based virtualization environments (see [OpenStack Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#openstack-prerequisites_forklift))
+- **VMware vSphere** - Full support for vCenter-managed VMware environments with advanced features like VDDK optimization (see [VMware Prerequisites](https://kubev2v.github.io/forklift-documentation/#vmware-prerequisites_forklift))
+- **Red Hat Virtualization (oVirt/RHV)** - Complete support for oVirt and Red Hat Virtualization platforms (see [oVirt Prerequisites](https://kubev2v.github.io/forklift-documentation/#rhv-prerequisites_forklift))
+- **Red Hat OpenStack Platform** - Support for OpenStack-based virtualization environments (see [OpenStack Prerequisites](https://kubev2v.github.io/forklift-documentation/#openstack-prerequisites_forklift))
 - **Amazon EC2** - Support for migrating EC2 instances from AWS
-- **KubeVirt/OpenShift Virtualization** - Support for migrating VMs between KubeVirt clusters or within the same cluster (see [KubeVirt Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#cnv-prerequisites_forklift))
-- **OVA Files** - Direct import and conversion of OVA (Open Virtualization Appliance) files (see [OVA Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#ova-prerequisites_forklift))
+- **KubeVirt/OpenShift Virtualization** - Support for migrating VMs between KubeVirt clusters or within the same cluster (see [KubeVirt Prerequisites](https://kubev2v.github.io/forklift-documentation/#cnv-prerequisites_forklift))
+- **OVA Files** - Direct import and conversion of OVA (Open Virtualization Appliance) files (see [OVA Prerequisites](https://kubev2v.github.io/forklift-documentation/#ova-prerequisites_forklift))
 
 ### Target Platform
 
@@ -32,20 +34,20 @@ For complete information about the underlying migration technology, see the [off
 
 The tool supports multiple migration strategies to accommodate different use cases:
 
-- **Cold Migration** - Traditional offline migration where the source VM is powered down during the process (see [Forklift Cold Migration](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#cold-migration_forklift))
-- **Warm Migration** - Pre-copy migration that minimizes downtime by transferring data while the VM is running, followed by a brief cutover period (see [Forklift Warm Migration](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#warm-migration_forklift))
-- **Live Migration** - Advanced migration with minimal downtime using KubeVirt's live migration capabilities (available only for KubeVirt/OpenShift Virtualization sources) (see [Forklift Live Migration](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#about-live-migration_forklift))
-- **Conversion Migration** - Perform only guest conversion and VM creation when storage vendors provide pre-populated PVCs (VMware sources only) (see [Chapter 5: Conversion Migration](/kubectl-mtv/05-conversion-migration))
+- **Cold Migration** - Traditional offline migration where the source VM is powered down during the process (see [Forklift Cold Migration](https://kubev2v.github.io/forklift-documentation/#cold-migration_forklift))
+- **Warm Migration** - Pre-copy migration that minimizes downtime by transferring data while the VM is running, followed by a brief cutover period (see [Forklift Warm Migration](https://kubev2v.github.io/forklift-documentation/#warm-migration_forklift))
+- **Live Migration** - Advanced migration with minimal downtime using KubeVirt's live migration capabilities (available only for KubeVirt/OpenShift Virtualization sources) (see [Forklift Live Migration](https://kubev2v.github.io/forklift-documentation/#about-live-migration_forklift))
+- **Conversion Migration** - Perform only guest conversion and VM creation when storage vendors provide pre-populated PVCs (VMware sources only) (see [Chapter 5: Conversion Migration](../05-conversion-migration))
 
 For detailed information about migration types, see:
-- [Chapter 4: Migration Types and Strategy Selection](/kubectl-mtv/04-migration-types-and-strategy-selection) - Cold, warm, and live migration strategies
-- [Chapter 5: Conversion Migration](/kubectl-mtv/05-conversion-migration) - External storage vendor integration workflows
+- [Chapter 4: Migration Types and Strategy Selection](../04-migration-types-and-strategy-selection) - Cold, warm, and live migration strategies
+- [Chapter 5: Conversion Migration](../05-conversion-migration) - External storage vendor integration workflows
 
 ## Key Features
 
 ### 1. Advanced Query Language Integration
 
-`kubectl-mtv` incorporates the powerful **[Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-reference)**, developed by Yaacov Zamir, which enables sophisticated filtering and searching of inventory resources. This is a kubectl-mtv-specific enhancement not available in the base Forklift web interface:
+`kubectl-mtv` incorporates the powerful **[Tree Search Language (TSL)](../27-tsl-tree-search-language-reference)**, developed by Yaacov Zamir, which enables sophisticated filtering and searching of inventory resources. This is a kubectl-mtv-specific enhancement not available in the base Forklift web interface:
 
 - **SQL-like syntax** for intuitive resource queries
 - **Complex filtering** with support for logical operators (AND, OR, NOT)
@@ -65,7 +67,7 @@ The tool provides multiple approaches to resource mapping:
 - **Explicit Mappings** - Pre-defined network and storage mappings for consistent, reusable configurations
 - **Inline Mapping Pairs** - Direct specification of source-to-target mappings during plan creation
 - **Automatic Default Mappings** - Intelligent mapping based on available target resources
-- **Enhanced Storage Options** - Support for volume modes, access modes, and advanced storage array offloading for up to 10x faster migrations (see [Chapter 12: Storage Array Offloading](/kubectl-mtv/12-storage-array-offloading-and-optimization))
+- **Enhanced Storage Options** - Support for volume modes, access modes, and advanced storage array offloading for up to 10x faster migrations (see [Chapter 12: Storage Array Offloading](../12-storage-array-offloading-and-optimization))
 
 ### 3. VDDK (Virtual Disk Development Kit) Support
 
@@ -87,7 +89,7 @@ Comprehensive lifecycle management for migrations:
 
 ### 5. Kubernetes-native Resource Management (KARL)
 
-Integration with the **[Kubernetes Affinity Rule Language (KARL)](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference)** for advanced pod placement. This is a kubectl-mtv-specific enhancement that simplifies complex Kubernetes affinity expressions:
+Integration with the **[Kubernetes Affinity Rule Language (KARL)](../28-karl-kubernetes-affinity-rule-language-reference)** for advanced pod placement. This is a kubectl-mtv-specific enhancement that simplifies complex Kubernetes affinity expressions:
 
 - **Declarative Affinity Rules** - Express complex placement requirements using natural language syntax
 - **Topology-aware Placement** - Support for node, zone, region, and rack-level affinity
@@ -96,8 +98,8 @@ Integration with the **[Kubernetes Affinity Rule Language (KARL)](/kubectl-mtv/2
 
 Example KARL syntax:
 ```bash
---target-affinity "REQUIRE pods with app=database on node"
---convertor-affinity "PREFER pods with storage=high-performance on zone"
+--target-affinity "REQUIRE pods(app=database) on node"
+--convertor-affinity "PREFER pods(storage=high-performance) on zone"
 ```
 
 ### 6. Migration Hooks and Automation
@@ -124,15 +126,15 @@ Advanced AI assistant integration for enhanced user experience. This is a kubect
 `kubectl-mtv` serves as the primary command-line interface for the Forklift project, which is Red Hat's upstream migration toolkit. The relationship between these components is as follows:
 
 ### Forklift Controller
-- **Backend Engine** - Handles the actual migration orchestration and execution (see [Forklift Architecture](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#architecture_forklift))
-- **Custom Resource Management** - Manages Kubernetes custom resources for providers, plans, and mappings (see [Forklift Custom Resources](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#forklift-custom-resources))
+- **Backend Engine** - Handles the actual migration orchestration and execution (see [Forklift Architecture](https://kubev2v.github.io/forklift-documentation/#architecture_forklift))
+- **Custom Resource Management** - Manages Kubernetes custom resources for providers, plans, and mappings (see [Forklift Custom Resources](https://kubev2v.github.io/forklift-documentation/#forklift-custom-resources))
 - **Integration Layer** - Interfaces with source virtualization platforms and target KubeVirt infrastructure
 
 ### kubectl-mtv CLI
 - **User Interface** - Provides intuitive command-line access to Forklift functionality
 - **Resource Management** - Simplifies creation, modification, and monitoring of migration resources
 - **Workflow Orchestration** - Streamlines complex migration workflows into simple command sequences
-- **Advanced Features** - Adds sophisticated query capabilities ([TSL](/kubectl-mtv/27-tsl-tree-search-language-reference)), affinity management ([KARL](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference)), hooks, and AI integration
+- **Advanced Features** - Adds sophisticated query capabilities ([TSL](../27-tsl-tree-search-language-reference)), affinity management ([KARL](../28-karl-kubernetes-affinity-rule-language-reference)), hooks, and AI integration
 
 ### Migration Toolkit for Virtualization (MTV)
 - **Product Integration** - MTV is Red Hat's supported product offering that includes Forklift
@@ -163,4 +165,4 @@ The following chapters will guide you through:
 
 ---
 
-*Next: [Chapter 2: Installation and Prerequisites](/kubectl-mtv/02-installation-and-prerequisites)*
+*Next: [Chapter 2: Installation and Prerequisites](../02-installation-and-prerequisites)*

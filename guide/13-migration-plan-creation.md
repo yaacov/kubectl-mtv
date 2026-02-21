@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 13: Migration Plan Creation"
+parent: "IV. Mapping and Plan Configuration"
+nav_order: 3
 ---
 
 Migration plans are the core orchestration resources that define which VMs to migrate, how to map their resources, and what settings to apply during migration. This chapter covers comprehensive plan creation with all supported configuration options.
@@ -78,7 +80,7 @@ kubectl mtv create plan --name json-migration \
 
 ### Method 3: Query String Selection (`--vms "where ..."`)
 
-Use [Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-reference) queries for dynamic VM selection:
+Use [Tree Search Language (TSL)](../27-tsl-tree-search-language-reference) queries for dynamic VM selection:
 
 #### Basic Query Selection
 
@@ -188,7 +190,7 @@ kubectl mtv create plan --name simple-migration \
 
 ### Migration Types
 
-kubectl-mtv supports four migration types (see [Forklift Migration Types](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#about-cold-warm-migration_forklift)):
+kubectl-mtv supports four migration types (see [Forklift Migration Types](https://kubev2v.github.io/forklift-documentation/#about-cold-warm-migration_forklift)):
 
 | Type | Description | Use Case |
 |------|-------------|----------|
@@ -197,7 +199,7 @@ kubectl-mtv supports four migration types (see [Forklift Migration Types](https:
 | `live` | Live migration (KubeVirt sources only) | Zero-downtime migration between KubeVirt clusters |
 | `conversion` | Guest conversion only (VMware only) | When storage vendors provide pre-populated PVCs |
 
-For detailed information about conversion migration, including prerequisites, workflow, and integration requirements, see [Chapter 5: Conversion Migration](/kubectl-mtv/05-conversion-migration).
+For detailed information about conversion migration, including prerequisites, workflow, and integration requirements, see [Chapter 5: Conversion Migration](../05-conversion-migration).
 
 #### Migration Type Examples
 
@@ -341,7 +343,7 @@ kubectl mtv create plan --name full-scheduling \
   --vms "database-cluster-01"
 ```
 
-#### VM Affinity with [KARL (Kubernetes Affinity Rule Language)](/kubectl-mtv/28-karl-kubernetes-affinity-rule-language-reference)
+#### VM Affinity with [KARL (Kubernetes Affinity Rule Language)](../28-karl-kubernetes-affinity-rule-language-reference)
 
 ```bash
 # Require co-location with specific pods
@@ -771,7 +773,7 @@ kubectl mtv create plan --name mixed-mappings \
 
 1. **Start Small**: Begin with test/development VMs
 2. **Batch by Similarity**: Group VMs with similar requirements
-3. **Use Queries Effectively**: Leverage [TSL](/kubectl-mtv/27-tsl-tree-search-language-reference) for dynamic VM selection
+3. **Use Queries Effectively**: Leverage [TSL](../27-tsl-tree-search-language-reference) for dynamic VM selection
 4. **Plan Resource Capacity**: Ensure target resources can handle the workload
 
 ### Configuration Best Practices
@@ -792,12 +794,12 @@ kubectl mtv create plan --name mixed-mappings \
 
 After mastering plan creation:
 
-1. **Customize VMs**: Learn detailed VM customization in [Chapter 14: Customizing Individual VMs (PlanVMS Format)](/kubectl-mtv/14-customizing-individual-vms-planvms-format)
-2. **Optimize Placement**: Configure advanced placement in [Chapter 15: Target VM Placement](/kubectl-mtv/15-target-vm-placement)
-3. **Execute Plans**: Manage plan lifecycle in [Chapter 19: Plan Lifecycle Execution](/kubectl-mtv/19-plan-lifecycle-execution)
-4. **Advanced Patching**: Modify existing plans in [Chapter 18: Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching)
+1. **Customize VMs**: Learn detailed VM customization in [Chapter 14: Customizing Individual VMs (PlanVMS Format)](../14-customizing-individual-vms-planvms-format)
+2. **Optimize Placement**: Configure advanced placement in [Chapter 15: Target VM Placement](../15-target-vm-placement)
+3. **Execute Plans**: Manage plan lifecycle in [Chapter 19: Plan Lifecycle Execution](../19-plan-lifecycle-execution)
+4. **Advanced Patching**: Modify existing plans in [Chapter 18: Advanced Plan Patching](../18-advanced-plan-patching)
 
 ---
 
-*Previous: [Chapter 12: Storage Array Offloading and Optimization](/kubectl-mtv/12-storage-array-offloading-and-optimization)*  
-*Next: [Chapter 14: Customizing Individual VMs (PlanVMS Format)](/kubectl-mtv/14-customizing-individual-vms-planvms-format)*
+*Previous: [Chapter 12: Storage Array Offloading and Optimization](../12-storage-array-offloading-and-optimization)*  
+*Next: [Chapter 14: Customizing Individual VMs (PlanVMS Format)](../14-customizing-individual-vms-planvms-format)*

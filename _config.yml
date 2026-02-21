@@ -1,43 +1,54 @@
 # Site settings
 title: kubectl-mtv Technical Guide
-email: ""
 description: >-
   Comprehensive technical guide for kubectl-mtv - the powerful command-line interface 
   that transforms how you migrate virtual machines to Kubernetes.
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
+baseurl: ""
+url: ""
+
+# Theme
+theme: just-the-docs
+color_scheme: forklift
+
+# Search
+search_enabled: true
+search:
+  heading_level: 2
+  previews: 3
+  preview_words_before: 5
+  preview_words_after: 10
+
+# Code copy button
+enable_copy_code_button: true
+
+# Heading anchors
+heading_anchors: true
+
+# Navigation
+nav_sort: case_insensitive
 
 # GitHub repository
-github_username: yaacov
-repository: yaacov/kubectl-mtv
+aux_links:
+  GitHub:
+    - "https://github.com/yaacov/kubectl-mtv"
+aux_links_new_tab: true
 
 # Build settings
 markdown: kramdown
-theme: minima
 plugins:
   - jekyll-feed
   - jekyll-sitemap
   - jekyll-seo-tag
 
-# Permalink structure (GitHub Pages standard)
+# Permalink structure
 permalink: pretty
 
-# Default layout for guide pages  
+# Default layout for guide pages
 defaults:
   - scope:
       path: "guide"
     values:
-      layout: "page"
-      permalink: /:basename/
-  - scope:
-      path: "guide/README.md"
-    values:
-      layout: "page"
-      permalink: /
-
-# Navigation
-header_pages:
-  - guide/README.md
+      layout: "default"
 
 # Kramdown settings
 kramdown:
@@ -58,10 +69,6 @@ exclude:
   - Gemfile
   - Gemfile.lock
   - node_modules/
-  - vendor/bundle/
-  - vendor/cache/
-  - vendor/gems/
-  - vendor/ruby/
   - cmd/
   - pkg/
   - tests/

@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 3: Quick Start - First Migration Workflow"
+parent: "I. Introduction and Fundamentals"
+nav_order: 3
 ---
 
 This chapter provides a complete step-by-step walkthrough of your first migration using `kubectl-mtv`. We'll migrate a VM from VMware vSphere to KubeVirt, covering all essential steps from initial setup to completion monitoring.
@@ -9,7 +11,7 @@ This chapter provides a complete step-by-step walkthrough of your first migratio
 
 Before starting this workflow, ensure you have:
 
-- `kubectl-mtv` installed and working (see [Chapter 2](/kubectl-mtv/02-installation-and-prerequisites))
+- `kubectl-mtv` installed and working (see [Chapter 2](../02-installation-and-prerequisites))
 - Access to a Kubernetes cluster with Forklift/MTV installed
 - Connection to a source virtualization platform (vSphere, oVirt, OpenStack, or OVA)
 - Appropriate RBAC permissions
@@ -514,11 +516,11 @@ For full details, see [Mapping Management](11-mapping-management.md).
 
 After completing your first migration:
 
-1. **Explore Advanced Features**: Learn about [Provider Management](/kubectl-mtv/06-provider-management) and [VDDK Optimization](/kubectl-mtv/08-vddk-image-creation-and-configuration)
-2. **Master Query Language**: Dive into [Advanced Filtering](/kubectl-mtv/10-query-language-reference-and-advanced-filtering)
-3. **Optimize Performance**: Study [Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
-4. **Add Automation**: Implement [Migration Hooks](/kubectl-mtv/17-migration-hooks)
-5. **Scale Up**: Plan larger migrations with [Best Practices](/kubectl-mtv/21-best-practices-and-security)
+1. **Explore Advanced Features**: Learn about [Provider Management](../06-provider-management) and [VDDK Optimization](../08-vddk-image-creation-and-configuration)
+2. **Master Query Language**: Dive into [Advanced Filtering](../10-query-language-reference-and-advanced-filtering)
+3. **Optimize Performance**: Study [Migration Process Optimization](../16-migration-process-optimization)
+4. **Add Automation**: Implement [Migration Hooks](../17-migration-hooks)
+5. **Scale Up**: Plan larger migrations with [Best Practices](../21-best-practices-and-security)
 
 ## Troubleshooting Quick Reference
 
@@ -551,5 +553,5 @@ kubectl logs -n konveyor-forklift deployment/forklift-controller
 
 ---
 
-*Previous: [Chapter 2: Installation and Prerequisites](/kubectl-mtv/02-installation-and-prerequisites)*  
-*Next: [Chapter 4: Migration Types and Strategy Selection](/kubectl-mtv/04-migration-types-and-strategy-selection)*
+*Previous: [Chapter 2: Installation and Prerequisites](../02-installation-and-prerequisites)*  
+*Next: [Chapter 4: Migration Types and Strategy Selection](../04-migration-types-and-strategy-selection)*

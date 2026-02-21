@@ -1,11 +1,13 @@
 ---
-layout: page
+layout: default
 title: "Chapter 11: Mapping Management"
+parent: "IV. Mapping and Plan Configuration"
+nav_order: 1
 ---
 
 Mappings define the critical relationships between source and target resources, ensuring VMs are migrated to appropriate networks and storage systems. This chapter covers comprehensive mapping management for both network and storage resources.
 
-For foundational concepts about network and storage mappings, see the [official Forklift mapping documentation](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#about-network-maps_forklift) and [storage mapping documentation](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migration_Toolkit_for_Virtualization/master/index.html#about-storage-maps_forklift).
+For foundational concepts about network and storage mappings, see the [official Forklift mapping documentation](https://kubev2v.github.io/forklift-documentation/#about-network-maps_forklift) and [storage mapping documentation](https://kubev2v.github.io/forklift-documentation/#about-storage-maps_forklift).
 
 ## Overview
 
@@ -687,7 +689,7 @@ kubectl mtv create plan --name inline-migration \
 
 1. **Match Performance Requirements**: Map high-IOPS workloads to fast storage classes
 2. **Consider Access Patterns**: Use appropriate volume modes and access modes
-3. **Leverage Storage Array Features**: Use offloading for compatible storage systems (see [Chapter 12: Storage Array Offloading](/kubectl-mtv/12-storage-array-offloading-and-optimization) for detailed information)
+3. **Leverage Storage Array Features**: Use offloading for compatible storage systems (see [Chapter 12: Storage Array Offloading](../12-storage-array-offloading-and-optimization) for detailed information)
 4. **Plan for Scale**: Consider storage capacity and performance implications
 
 ### Operational Best Practices
@@ -701,12 +703,12 @@ kubectl mtv create plan --name inline-migration \
 
 After mastering mapping management:
 
-1. **Plan Creation**: Use mappings in [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)
-2. **VM Customization**: Apply mappings to specific VMs in [Chapter 14: Customizing Individual VMs](/kubectl-mtv/14-customizing-individual-vms-planvms-format)
-3. **Optimization**: Leverage mapping insights in [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
-4. **Advanced Patching**: Learn plan patching in [Chapter 18: Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching)
+1. **Plan Creation**: Use mappings in [Chapter 13: Migration Plan Creation](../13-migration-plan-creation)
+2. **VM Customization**: Apply mappings to specific VMs in [Chapter 14: Customizing Individual VMs](../14-customizing-individual-vms-planvms-format)
+3. **Optimization**: Leverage mapping insights in [Chapter 16: Migration Process Optimization](../16-migration-process-optimization)
+4. **Advanced Patching**: Learn plan patching in [Chapter 18: Advanced Plan Patching](../18-advanced-plan-patching)
 
 ---
 
-*Previous: [Chapter 10: Query Language Reference and Advanced Filtering](/kubectl-mtv/10-query-language-reference-and-advanced-filtering)*
-*Next: [Chapter 12: Storage Array Offloading and Optimization](/kubectl-mtv/12-storage-array-offloading-and-optimization)*
+*Previous: [Chapter 10: Query Language Reference and Advanced Filtering](../10-query-language-reference-and-advanced-filtering)*
+*Next: [Chapter 12: Storage Array Offloading and Optimization](../12-storage-array-offloading-and-optimization)*

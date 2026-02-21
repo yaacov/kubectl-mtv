@@ -1,0 +1,49 @@
+.main-content {
+  max-width: 1000px !important;
+
+  pre,
+  pre code,
+  code.highlight,
+  .highlight pre,
+  .highlight code {
+    font-size: 1rem !important;
+  }
+}
+
+body {
+  background: linear-gradient(
+    to right,
+    $sidebar-color calc((100vw - 1280px) / 2 + 280px),
+    $body-background-color calc((100vw - 1280px) / 2 + 280px)
+  ) !important;
+}
+
+.nav-list-item .nav-list-link:hover,
+.nav-list-item .nav-list-link.active {
+  background-image: none !important;
+  background-color: $feedback-color !important;
+}
+
+@media (max-width: 66.5rem) {
+  body {
+    background: $body-background-color !important;
+  }
+}
+
+@media (min-width: 66.5rem) {
+  .side-bar {
+    width: 280px !important;
+    min-width: 280px !important;
+    padding-left: 1.25rem !important;
+    left: calc(max(0px, (100vw - 1280px) / 2)) !important;
+  }
+
+  .side-bar + .main {
+    margin-left: calc(280px + max(0px, (100vw - 1280px) / 2)) !important;
+    max-width: 1000px !important;
+  }
+
+  .main-content-wrap {
+    max-width: 1000px !important;
+  }
+}

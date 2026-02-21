@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 22: Model Context Protocol (MCP) Server Integration"
+parent: "VI. Operational Excellence, Debugging, and AI Integration"
+nav_order: 4
 ---
 
 The Model Context Protocol (MCP) server provides AI assistants with comprehensive access to Forklift migration resources, enabling intelligent automation and assistance for migration planning, execution, and troubleshooting. This chapter covers complete MCP integration from basic setup to advanced AI-assisted workflows.
@@ -889,9 +891,9 @@ Configure these in your LLM hosting platform or client application:
 
 After mastering MCP integration:
 
-1. **Complete Migration Toolkit**: Explore complementary tools in [Chapter 23: Integration with KubeVirt Tools](/kubectl-mtv/23-integration-with-kubevirt-tools)
+1. **Complete Migration Toolkit**: Explore complementary tools in [Chapter 23: Integration with KubeVirt Tools](../23-integration-with-kubevirt-tools)
 
 ---
 
-*Previous: [Chapter 21: Best Practices and Security](/kubectl-mtv/21-best-practices-and-security)*  
-*Next: [Chapter 23: Integration with KubeVirt Tools](/kubectl-mtv/23-integration-with-kubevirt-tools)*
+*Previous: [Chapter 21: Best Practices and Security](../21-best-practices-and-security)*  
+*Next: [Chapter 23: Integration with KubeVirt Tools](../23-integration-with-kubevirt-tools)*

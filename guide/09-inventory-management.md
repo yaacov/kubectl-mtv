@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 9: Inventory Management"
+parent: "III. Inventory and Advanced Query Language"
+nav_order: 1
 ---
 
 Inventory management is a core feature of kubectl-mtv that allows you to discover, explore, and query resources from various virtualization providers. This chapter covers comprehensive inventory operations for migration planning and resource discovery.
@@ -91,7 +93,7 @@ kubectl mtv get inventory <resource> --provider <provider> [flags]
 ### Common Flags
 
 - `-o, --output`: Output format (table, json, yaml, planvms for VMs)
-- `-q, --query`: Query filter using [Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-reference)
+- `-q, --query`: Query filter using [Tree Search Language (TSL)](../27-tsl-tree-search-language-reference)
 - `-w, --watch`: Watch for real-time changes
 - `--extended`: Show extended information (where supported)
 - `--inventory-url`: Custom inventory service URL
@@ -184,10 +186,10 @@ Check provider health and connectivity:
 kubectl mtv get inventory providers
 
 # Get detailed inventory from specific provider
-kubectl mtv get inventory providers --provider vsphere-prod
+kubectl mtv get inventory providers --name vsphere-prod
 
 # Monitor provider status
-kubectl mtv get inventory providers --provider vsphere-prod --watch
+kubectl mtv get inventory providers --name vsphere-prod --watch
 ```
 
 ## Output Formats
@@ -304,7 +306,7 @@ items:
 
 ### Query-Based VM Discovery
 
-Use the [Tree Search Language (TSL)](/kubectl-mtv/27-tsl-tree-search-language-reference) for sophisticated filtering:
+Use the [Tree Search Language (TSL)](../27-tsl-tree-search-language-reference) for sophisticated filtering:
 
 ```bash
 # Find powered-on VMs with high memory
@@ -541,7 +543,7 @@ Monitor inventory changes in real-time:
 kubectl mtv get inventory vms --provider vsphere-prod --watch
 
 # Watch provider status
-kubectl mtv get inventory providers --provider vsphere-prod --watch
+kubectl mtv get inventory providers --name vsphere-prod --watch
 
 # Monitor network changes
 kubectl mtv get inventory networks --provider vsphere-prod --watch
@@ -610,7 +612,7 @@ jq '.items[] | select(.powerState == "poweredOn")' vms-cache.json
 kubectl mtv describe provider --name vsphere-prod
 
 # Test inventory service connectivity
-kubectl mtv get inventory providers --provider vsphere-prod
+kubectl mtv get inventory providers --name vsphere-prod
 
 # Check inventory service URL
 echo $MTV_INVENTORY_URL
@@ -701,12 +703,12 @@ kubectl mtv get inventory datastores --provider vsphere-prod \
 
 After mastering inventory management:
 
-1. **Learn Query Language**: Master advanced filtering in [Chapter 10: Query Language Reference and Advanced Filtering](/kubectl-mtv/10-query-language-reference-and-advanced-filtering)
-2. **Create Mappings**: Define resource mappings in [Chapter 11: Mapping Management](/kubectl-mtv/11-mapping-management)
-3. **Plan Migrations**: Use inventory data for planning in [Chapter 13: Migration Plan Creation](/kubectl-mtv/13-migration-plan-creation)
-4. **Optimize Performance**: Apply inventory insights in [Chapter 16: Migration Process Optimization](/kubectl-mtv/16-migration-process-optimization)
+1. **Learn Query Language**: Master advanced filtering in [Chapter 10: Query Language Reference and Advanced Filtering](../10-query-language-reference-and-advanced-filtering)
+2. **Create Mappings**: Define resource mappings in [Chapter 11: Mapping Management](../11-mapping-management)
+3. **Plan Migrations**: Use inventory data for planning in [Chapter 13: Migration Plan Creation](../13-migration-plan-creation)
+4. **Optimize Performance**: Apply inventory insights in [Chapter 16: Migration Process Optimization](../16-migration-process-optimization)
 
 ---
 
-*Previous: [Chapter 8: VDDK Image Creation and Configuration](/kubectl-mtv/08-vddk-image-creation-and-configuration)*  
-*Next: [Chapter 10: Query Language Reference and Advanced Filtering](/kubectl-mtv/10-query-language-reference-and-advanced-filtering)*
+*Previous: [Chapter 8: VDDK Image Creation and Configuration](../08-vddk-image-creation-and-configuration)*  
+*Next: [Chapter 10: Query Language Reference and Advanced Filtering](../10-query-language-reference-and-advanced-filtering)*

@@ -1,6 +1,8 @@
 ---
-layout: page
+layout: default
 title: "Chapter 19: Plan Lifecycle Execution"
+parent: "VI. Operational Excellence, Debugging, and AI Integration"
+nav_order: 1
 ---
 
 Migration plans follow a defined lifecycle from creation through completion. This chapter covers the complete execution workflow, including starting migrations, managing warm migration cutover, canceling workloads, monitoring progress, and handling plan archival. All command examples are verified against the implementation.
@@ -717,12 +719,12 @@ kubectl patch plan problem-plan --type='merge' -p='{"spec":{"vms":[]}}'
 
 After mastering plan lifecycle execution:
 
-1. **Troubleshooting**: Learn to debug migration issues in [Chapter 20: Debugging and Troubleshooting](/kubectl-mtv/20-debugging-and-troubleshooting)
-2. **Best Practices**: Master operational excellence in [Chapter 21: Best Practices and Security](/kubectl-mtv/21-best-practices-and-security)
-3. **AI Integration**: Explore advanced automation in [Chapter 22: Model Context Protocol (MCP) Server Integration](/kubectl-mtv/22-model-context-protocol-mcp-server-integration)
-4. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 23: Integration with KubeVirt Tools](/kubectl-mtv/23-integration-with-kubevirt-tools)
+1. **Troubleshooting**: Learn to debug migration issues in [Chapter 20: Debugging and Troubleshooting](../20-debugging-and-troubleshooting)
+2. **Best Practices**: Master operational excellence in [Chapter 21: Best Practices and Security](../21-best-practices-and-security)
+3. **AI Integration**: Explore advanced automation in [Chapter 22: Model Context Protocol (MCP) Server Integration](../22-model-context-protocol-mcp-server-integration)
+4. **Tool Integration**: Learn KubeVirt ecosystem integration in [Chapter 23: Integration with KubeVirt Tools](../23-integration-with-kubevirt-tools)
 
 ---
 
-*Previous: [Chapter 18: Advanced Plan Patching](/kubectl-mtv/18-advanced-plan-patching)*  
-*Next: [Chapter 20: Debugging and Troubleshooting](/kubectl-mtv/20-debugging-and-troubleshooting)*
+*Previous: [Chapter 18: Advanced Plan Patching](../18-advanced-plan-patching)*  
+*Next: [Chapter 20: Debugging and Troubleshooting](../20-debugging-and-troubleshooting)*

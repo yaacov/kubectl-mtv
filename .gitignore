@@ -214,6 +214,11 @@ kubectl-mtv-*-*.zip
 kubectl-mtv-*-*.tar.gz.sha256sum
 kubectl-mtv-*-*.zip.sha256sum
 
+# Jekyll build artifacts
+_site/
+.jekyll-cache/
+Gemfile.lock
+
 # MCP release artifacts
 mcp/kubectl-mtv-mcp-servers*.tar.gz
 mcp/kubectl-mtv-mcp-servers*.tar.gz.sha256sum
