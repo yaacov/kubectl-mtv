@@ -12,17 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# ---- Downloader stage (runs on native platform) ----
-FROM --platform=$BUILDPLATFORM registry.access.redhat.com/ubi9/ubi-minimal:latest AS downloader
-
-ARG TARGETARCH=amd64
-
-WORKDIR /downloads
-
-# Download kubectl for the target architecture (curl is already available via curl-minimal)
-RUN curl -L "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${TARGETARCH}/kubectl" \
-    --output kubectl
-
 # ---- Builder stage (runs on native platform, cross-compiles for target) ----
 FROM --platform=$BUILDPLATFORM registry.access.redhat.com/ubi9/go-toolset:latest AS builder
 
@@ -31,9 +20,6 @@ ARG VERSION=0.0.0-dev
 
 USER root
 WORKDIR /build
-
-# Copy kubectl from downloader stage
-COPY --from=downloader /downloads/kubectl ./kubectl
 
 # Copy go module files first for better layer caching
 COPY go.mod go.sum ./
@@ -56,8 +42,7 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 
 ARG TARGETARCH=amd64
 
-# Copy binaries from builder (set execute permissions during copy)
-COPY --from=builder --chmod=755 /build/kubectl /usr/local/bin/kubectl
+# Copy binary from builder (set execute permissions during copy)
 COPY --from=builder --chmod=755 /build/kubectl-mtv /usr/local/bin/kubectl-mtv
 
 # --- Environment variables ---

@@ -15,7 +15,7 @@
 #   1. User interacts with Lightspeed in the OpenShift console.
 #   2. Lightspeed sends "Authorization: Bearer <user-token>" to the MCP server.
 #   3. The MCP server extracts the token from the header.
-#   4. kubectl is called with --server https://kubernetes.default.svc --token <user-token>.
+#   4. kubectl-mtv is called with --server https://kubernetes.default.svc --token <user-token>.
 #   5. The Kubernetes API authenticates and authorizes using that user's identity.
 #
 #   The deployment itself has NO RBAC bindings — permissions are entirely
