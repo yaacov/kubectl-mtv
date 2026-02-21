@@ -104,24 +104,47 @@ kubectl mtv create provider --name esxi-host --type vsphere \
 
 #### vSphere Provider with VDDK Optimization
 
-```bash
-# vSphere provider with VDDK image (recommended for performance)
-kubectl mtv create provider --name vsphere-prod --type vsphere \
-  --url https://vcenter.example.com/sdk \
-  --username administrator@vsphere.local \
-  --password YourSecurePassword \
-  --vddk-init-image quay.io/your-registry/vddk:8.0.1
+VDDK is recommended for optimal VMware disk transfer performance. The preferred approach is to set the VDDK image globally so that **all** vSphere providers use it automatically.
 
-# With advanced VDDK optimization
+**Step 1 — Set the global VDDK image (recommended)**
+
+```bash
+kubectl mtv settings set --setting vddk_image \
+  --value quay.io/your-registry/vddk:8.0.1
+```
+
+Once the global image is configured, create a vSphere provider without specifying `--vddk-init-image` — it will inherit the global setting:
+
+```bash
+kubectl mtv create provider --name vsphere-prod --type vsphere \
+  --url https://vcenter.example.com/sdk \
+  --username administrator@vsphere.local \
+  --password YourSecurePassword
+```
+
+For advanced VDDK optimization you can still add the tuning flags:
+
+```bash
 kubectl mtv create provider --name vsphere-prod --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourSecurePassword \
-  --vddk-init-image quay.io/your-registry/vddk:8.0.1 \
   --use-vddk-aio-optimization \
   --vddk-buf-size-in-64k 64 \
   --vddk-buf-count 8
 ```
+
+> **Fallback — per-provider VDDK image.** If you do not have permission to modify ForkliftController settings, you can specify the VDDK image directly on the provider instead:
+>
+> ```bash
+> kubectl mtv create provider --name vsphere-prod --type vsphere \
+>   --url https://vcenter.example.com/sdk \
+>   --username administrator@vsphere.local \
+>   --password YourSecurePassword \
+>   --vddk-init-image quay.io/your-registry/vddk:8.0.1
+> ```
+>
+> See [Chapter 25: Settings Management](25-settings-management) for full details on global settings.
 
 #### vSphere Provider with Custom CA Certificate
 
@@ -155,8 +178,7 @@ kubectl mtv create provider --name vsphere-test --type vsphere \
 # Use existing secret for credentials
 kubectl mtv create provider --name vsphere-prod --type vsphere \
   --url https://vcenter.example.com/sdk \
-  --secret existing-vcenter-secret \
-  --vddk-init-image quay.io/your-registry/vddk:8.0.1
+  --secret existing-vcenter-secret
 ```
 
 ### oVirt/RHV Provider

@@ -410,9 +410,34 @@ kubectl mtv create provider --name vsphere-test --type vsphere \
 
 ## Using the VDDK Image in Provider Creation
 
-### Automatic VDDK Image Usage
+### Setting the Global VDDK Image (Recommended)
 
-When `MTV_VDDK_INIT_IMAGE` is set, providers automatically use the VDDK image:
+The recommended way to configure VDDK is to set the image globally using the `settings` command. This ensures **all** vSphere providers use the VDDK image automatically, without specifying it on every provider:
+
+```bash
+# Set the global VDDK image
+kubectl mtv settings set --setting vddk_image \
+  --value quay.io/company/vddk:8.0.1
+
+# Verify the setting
+kubectl mtv settings get --setting vddk_image
+```
+
+Once the global image is configured, create providers without the `--vddk-init-image` flag:
+
+```bash
+# Provider automatically uses the global VDDK image
+kubectl mtv create provider --name vsphere-auto --type vsphere \
+  --url https://vcenter.example.com/sdk \
+  --username administrator@vsphere.local \
+  --password YourPassword
+```
+
+See [Chapter 25: Settings Management](25-settings-management) for the full list of configurable settings.
+
+### Automatic VDDK Image via Environment Variable
+
+When the `MTV_VDDK_INIT_IMAGE` environment variable is set, providers also pick up the VDDK image automatically:
 
 ```bash
 # This will automatically use the VDDK image from MTV_VDDK_INIT_IMAGE
@@ -422,9 +447,9 @@ kubectl mtv create provider --name vsphere-auto --type vsphere \
   --password YourPassword
 ```
 
-### Explicit VDDK Image Specification
+### Per-Provider VDDK Image (Fallback)
 
-Override the default VDDK image per provider:
+If you do not have permission to modify ForkliftController settings, you can specify the VDDK image directly on the provider:
 
 ```bash
 # Use specific VDDK image for this provider
@@ -437,7 +462,7 @@ kubectl mtv create provider --name vsphere-custom --type vsphere \
 
 ### VDDK Performance Optimization
 
-Enable advanced VDDK optimization features:
+Enable advanced VDDK optimization features. When the VDDK image is set globally, you only need to add the tuning flags:
 
 ```bash
 # Provider with VDDK AIO optimization
@@ -445,7 +470,6 @@ kubectl mtv create provider --name vsphere-optimized --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourPassword \
-  --vddk-init-image quay.io/company/vddk:8.0.1 \
   --use-vddk-aio-optimization
 
 # Provider with custom VDDK buffer settings
@@ -453,7 +477,6 @@ kubectl mtv create provider --name vsphere-tuned --type vsphere \
   --url https://vcenter.example.com/sdk \
   --username administrator@vsphere.local \
   --password YourPassword \
-  --vddk-init-image quay.io/company/vddk:8.0.1 \
   --use-vddk-aio-optimization \
   --vddk-buf-size-in-64k 128 \
   --vddk-buf-count 16
