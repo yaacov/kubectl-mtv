@@ -93,7 +93,7 @@ kubectl mtv settings set --setting vddk_image \
   --value quay.io/your-registry/vddk:8.0.1
 ```
 
-> If you do not have permission to modify ForkliftController settings, you can pass `--vddk-init-image` directly on the provider instead. See [Chapter 25: Settings Management](25-settings-management) for details.
+> If you do not have permission to modify ForkliftController settings, you can pass `--vddk-init-image` directly on the provider instead. See [Chapter 25: Settings Management](../25-settings-management) for details.
 
 ```bash
 # vSphere provider (uses the global VDDK image automatically)

@@ -144,7 +144,7 @@ kubectl mtv create provider --name vsphere-prod --type vsphere \
 >   --vddk-init-image quay.io/your-registry/vddk:8.0.1
 > ```
 >
-> See [Chapter 25: Settings Management](25-settings-management) for full details on global settings.
+> See [Chapter 25: Settings Management](../25-settings-management) for full details on global settings.
 
 #### vSphere Provider with Custom CA Certificate
 

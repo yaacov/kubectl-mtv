@@ -433,7 +433,7 @@ kubectl mtv create provider --name vsphere-auto --type vsphere \
   --password YourPassword
 ```
 
-See [Chapter 25: Settings Management](25-settings-management) for the full list of configurable settings.
+See [Chapter 25: Settings Management](../25-settings-management) for the full list of configurable settings.
 
 ### Automatic VDDK Image via Environment Variable
 
