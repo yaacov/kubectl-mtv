@@ -13,6 +13,38 @@ import (
 // Version 1.2 removes positional args, provider hints, migration hints, and LLM annotations.
 const SchemaVersion = "1.2"
 
+// MCPHiddenAnnotation is the pflag annotation key used to hide flags from
+// machine-readable help (help --machine) while keeping them visible in
+// human CLI --help. Flags like --watch (interactive TUI) or --vms-table
+// (human table view) should be annotated with this.
+const MCPHiddenAnnotation = "mcp-hidden"
+
+// MarkMCPHidden annotates the named flags so they are excluded from machine-
+// readable help output (used by the MCP server) but remain visible in normal
+// CLI --help. This is for flags that are meaningful to humans but harmful or
+// useless for LLM tool use (e.g. interactive TUI, human-only display modes).
+func MarkMCPHidden(cmd *cobra.Command, names ...string) {
+	for _, name := range names {
+		f := cmd.Flags().Lookup(name)
+		if f == nil {
+			continue
+		}
+		if f.Annotations == nil {
+			f.Annotations = make(map[string][]string)
+		}
+		f.Annotations[MCPHiddenAnnotation] = []string{"true"}
+	}
+}
+
+// isMCPHidden returns true if the flag carries the mcp-hidden annotation.
+func isMCPHidden(f *pflag.Flag) bool {
+	if f.Annotations == nil {
+		return false
+	}
+	vals, ok := f.Annotations[MCPHiddenAnnotation]
+	return ok && len(vals) > 0 && vals[0] == "true"
+}
+
 // EnumValuer is an interface for flags that provide valid values.
 // Custom flag types can implement this to expose their allowed values.
 type EnumValuer interface {
@@ -77,6 +109,9 @@ func Generate(rootCmd *cobra.Command, cliVersion string, opts Options) *HelpSche
 	if opts.IncludeGlobalFlags {
 		rootCmd.PersistentFlags().VisitAll(func(f *pflag.Flag) {
 			if f.Hidden && !opts.IncludeHidden {
+				return
+			}
+			if isMCPHidden(f) && !opts.IncludeHidden {
 				return
 			}
 			schema.GlobalFlags = append(schema.GlobalFlags, flagToSchema(f))
@@ -149,6 +184,10 @@ func commandToSchema(cmd *cobra.Command, path []string, opts Options) Command {
 	// Extract local flags (not inherited)
 	cmd.LocalFlags().VisitAll(func(f *pflag.Flag) {
 		if f.Hidden && !opts.IncludeHidden {
+			return
+		}
+		// Skip mcp-hidden flags in machine-readable output (same condition)
+		if isMCPHidden(f) && !opts.IncludeHidden {
 			return
 		}
 		schema := flagToSchema(f)

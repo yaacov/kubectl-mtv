@@ -9,6 +9,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/plan"
+	"github.com/yaacov/kubectl-mtv/pkg/cmd/help"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
@@ -149,6 +150,7 @@ Use --query with --vms-table to filter, sort, or select columns using TSL syntax
 	cmd.Flags().BoolVar(&disk, "disk", false, "Get disk transfer status in the migration plan (requires plan NAME)")
 	cmd.Flags().BoolVar(&vmsTable, "vms-table", false, "Show all VMs across plans in a flat table with source/target inventory details")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (only with --vms-table)")
+	help.MarkMCPHidden(cmd, "watch", "vms-table")
 
 	// Add completion for name and output format flags
 	if err := cmd.RegisterFlagCompletionFunc("name", completion.PlanNameCompletion(kubeConfigFlags)); err != nil {
