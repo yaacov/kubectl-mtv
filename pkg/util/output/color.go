@@ -121,6 +121,50 @@ func ColorizeBoolean(b bool) string {
 	return fmt.Sprintf("%t", b)
 }
 
+// TruncateANSI truncates text to maxWidth visible characters while preserving
+// ANSI color codes. Appends "..." and a Reset code when truncation occurs.
+func TruncateANSI(text string, maxWidth int) string {
+	if maxWidth <= 0 {
+		return ""
+	}
+	if VisibleLength(text) <= maxWidth {
+		return text
+	}
+
+	truncWidth := maxWidth - 3
+	if truncWidth < 0 {
+		truncWidth = 0
+	}
+
+	var result strings.Builder
+	visCount := 0
+	runes := []rune(text)
+	i := 0
+
+	for i < len(runes) && visCount < truncWidth {
+		if runes[i] == '\033' {
+			for i < len(runes) {
+				result.WriteRune(runes[i])
+				if runes[i] == 'm' {
+					i++
+					break
+				}
+				i++
+			}
+			continue
+		}
+		result.WriteRune(runes[i])
+		visCount++
+		i++
+	}
+
+	result.WriteString(Reset)
+	if truncWidth < maxWidth {
+		result.WriteString("...")
+	}
+	return result.String()
+}
+
 // ColorizedSeparator returns a separator line with the specified color
 func ColorizedSeparator(length int, color string) string {
 	return ColorizedString(strings.Repeat("=", length), color)

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -16,6 +15,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/settings"
 	"github.com/yaacov/kubectl-mtv/pkg/util/config"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
+	"github.com/yaacov/kubectl-mtv/pkg/util/output"
 )
 
 // GlobalConfigGetter is a type alias for the shared config interface.
@@ -202,28 +202,26 @@ func formatOutput(settingValues []settings.SettingValue, format string) error {
 
 // formatTable formats settings as a table.
 func formatTable(settingValues []settings.SettingValue) error {
-	// Create a strings.Builder to write to
-	var sb strings.Builder
-	w := tabwriter.NewWriter(&sb, 0, 0, 2, ' ', 0)
-
-	// Print header
-	fmt.Fprintln(w, "CATEGORY\tSETTING\tVALUE\tDEFAULT")
-
-	// Group by category and print
+	tableHeaders := []output.Header{
+		{DisplayName: "CATEGORY", JSONPath: "category"},
+		{DisplayName: "SETTING", JSONPath: "setting"},
+		{DisplayName: "VALUE", JSONPath: "value"},
+		{DisplayName: "DEFAULT", JSONPath: "default"},
+	}
+	items := make([]map[string]interface{}, 0, len(settingValues))
 	for _, sv := range settingValues {
-		value := settings.FormatValue(sv)
-		defaultVal := settings.FormatDefault(sv.Definition)
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
-			sv.Definition.Category,
-			sv.Name,
-			value,
-			defaultVal,
-		)
+		items = append(items, map[string]interface{}{
+			"category": string(sv.Definition.Category),
+			"setting":  sv.Name,
+			"value":    settings.FormatValue(sv),
+			"default":  settings.FormatDefault(sv.Definition),
+		})
 	}
 
-	w.Flush()
-	fmt.Print(sb.String())
-	return nil
+	return output.NewTablePrinter().
+		WithHeaders(tableHeaders...).
+		AddItems(items).
+		Print()
 }
 
 // settingOutput is used for JSON/YAML output.

@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/yaacov/kubectl-mtv/pkg/util/query"
 )
@@ -78,6 +77,8 @@ type TablePrinter struct {
 	maxColWidth   int
 	expandedData  map[int]string       // Stores expanded data for each row by index
 	selectOptions []query.SelectOption // Optional: select options for advanced extraction
+	separator     string               // if set, printed between header and data rows
+	columnWidths  []int                // if set, overrides auto-calculated widths
 }
 
 // NewTablePrinter creates a new TablePrinter
@@ -132,6 +133,18 @@ func (t *TablePrinter) WithExpandedData(index int, data string) *TablePrinter {
 // WithSelectOptions sets the select options for the table printer
 func (t *TablePrinter) WithSelectOptions(selectOptions []query.SelectOption) *TablePrinter {
 	t.selectOptions = selectOptions
+	return t
+}
+
+// WithSeparator sets the character used to draw a separator line between the header and data rows
+func (t *TablePrinter) WithSeparator(char string) *TablePrinter {
+	t.separator = char
+	return t
+}
+
+// WithColumnWidths sets explicit column widths, overriding auto-calculation
+func (t *TablePrinter) WithColumnWidths(widths []int) *TablePrinter {
+	t.columnWidths = widths
 	return t
 }
 
@@ -213,6 +226,10 @@ func (t *TablePrinter) calculateColumnWidths() []int {
 		return []int{}
 	}
 
+	if len(t.columnWidths) == numCols {
+		return t.columnWidths
+	}
+
 	// Initialize widths with minimum values
 	widths := make([]int, numCols)
 	for i := range widths {
@@ -221,7 +238,7 @@ func (t *TablePrinter) calculateColumnWidths() []int {
 
 	// Check header widths
 	for i, header := range t.headers {
-		headerWidth := utf8.RuneCountInString(header.DisplayName)
+		headerWidth := VisibleLength(header.DisplayName)
 		if headerWidth > widths[i] {
 			widths[i] = min(headerWidth, t.maxColWidth)
 		}
@@ -231,7 +248,7 @@ func (t *TablePrinter) calculateColumnWidths() []int {
 	for _, item := range t.items {
 		for i, header := range t.headers {
 			value := t.extractValue(item, header.JSONPath)
-			cellWidth := utf8.RuneCountInString(value)
+			cellWidth := VisibleLength(value)
 			if cellWidth > widths[i] {
 				widths[i] = min(cellWidth, t.maxColWidth)
 			}
@@ -254,6 +271,10 @@ func (t *TablePrinter) Print() error {
 		headerRow[i] = header.DisplayName
 	}
 	t.printRow(headerRow, widths)
+
+	if t.separator != "" {
+		t.printSeparator(widths)
+	}
 
 	// Print item rows and expanded data if available
 	for i, item := range t.items {
@@ -300,15 +321,7 @@ func (t *TablePrinter) printRow(row []string, widths []int) {
 		visLen := VisibleLength(cell)
 
 		if visLen > t.maxColWidth {
-			runes := []rune(StripANSI(cell))
-			truncLen := t.maxColWidth - 3
-			if truncLen > len(runes) {
-				truncLen = len(runes)
-			}
-			if truncLen < 0 {
-				truncLen = 0
-			}
-			displayCell = string(runes[:truncLen]) + "..."
+			displayCell = TruncateANSI(cell, t.maxColWidth)
 			visLen = t.maxColWidth
 		}
 
@@ -323,6 +336,18 @@ func (t *TablePrinter) printRow(row []string, widths []int) {
 	}
 
 	fmt.Fprintln(t.writer, strings.TrimRight(sb.String(), " "))
+}
+
+// printSeparator prints a separator line between the header and data rows.
+func (t *TablePrinter) printSeparator(widths []int) {
+	var sb strings.Builder
+	for i, w := range widths {
+		sb.WriteString(strings.Repeat(t.separator, w))
+		if i < len(widths)-1 {
+			sb.WriteString(strings.Repeat(" ", t.padding))
+		}
+	}
+	fmt.Fprintln(t.writer, sb.String())
 }
 
 // min returns the minimum of two integers
