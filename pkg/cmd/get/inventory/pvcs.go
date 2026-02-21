@@ -46,7 +46,7 @@ func listPersistentVolumeClaimsOnce(ctx context.Context, kubeConfigFlags *generi
 			{DisplayName: "NAME", JSONPath: "name"},
 			{DisplayName: "NAMESPACE", JSONPath: "namespace"},
 			{DisplayName: "ID", JSONPath: "id"},
-			{DisplayName: "STATUS", JSONPath: "object.status.phase"},
+			{DisplayName: "STATUS", JSONPath: "object.status.phase", ColorFunc: output.ColorizeStatus},
 			{DisplayName: "CAPACITY", JSONPath: "object.status.capacity.storage"},
 			{DisplayName: "STORAGE_CLASS", JSONPath: "object.spec.storageClassName"},
 			{DisplayName: "ACCESS_MODES", JSONPath: "object.spec.accessModes"},

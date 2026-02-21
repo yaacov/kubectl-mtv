@@ -124,8 +124,8 @@ func printNoMigrationMessage(planName string, plan *unstructured.Unstructured) {
 	if err == nil && exists && len(specVMs) > 0 {
 		fmt.Printf("\n%s\n", output.Bold("Plan VM Specifications:"))
 		tableHeaders := []output.Header{
-			{DisplayName: "NAME", JSONPath: "name"},
-			{DisplayName: "ID", JSONPath: "id"},
+			{DisplayName: "NAME", JSONPath: "name", ColorFunc: output.Yellow},
+			{DisplayName: "ID", JSONPath: "id", ColorFunc: output.Cyan},
 		}
 		items := make([]map[string]interface{}, 0, len(specVMs))
 
@@ -138,8 +138,8 @@ func printNoMigrationMessage(planName string, plan *unstructured.Unstructured) {
 			vmName, _, _ := unstructured.NestedString(vm, "name")
 			vmID, _, _ := unstructured.NestedString(vm, "id")
 			items = append(items, map[string]interface{}{
-				"name": output.Yellow(vmName),
-				"id":   output.Cyan(vmID),
+				"name": vmName,
+				"id":   vmID,
 			})
 		}
 
@@ -192,8 +192,8 @@ func printPipelineTable(vm map[string]interface{}, vmCompletionStatus string) {
 
 	fmt.Printf("\n%s\n", output.Bold("Pipeline:"))
 	tableHeaders := []output.Header{
-		{DisplayName: "PHASE", JSONPath: "phase"},
-		{DisplayName: "NAME", JSONPath: "name"},
+		{DisplayName: "PHASE", JSONPath: "phase", ColorFunc: output.ColorizeStatus},
+		{DisplayName: "NAME", JSONPath: "name", ColorFunc: output.Bold},
 		{DisplayName: "STARTED", JSONPath: "started"},
 		{DisplayName: "COMPLETED", JSONPath: "completed"},
 		{DisplayName: "PROGRESS", JSONPath: "progress"},
@@ -242,8 +242,8 @@ func printPipelineTable(vm map[string]interface{}, vmCompletionStatus string) {
 		}
 
 		items = append(items, map[string]interface{}{
-			"phase":     output.ColorizeStatus(phaseStatus),
-			"name":      output.Bold(phaseName),
+			"phase":     phaseStatus,
+			"name":      phaseName,
 			"started":   phaseStarted,
 			"completed": phaseCompleted,
 			"progress":  progress,
@@ -288,7 +288,7 @@ func printDisksTable(vm map[string]interface{}, vmCompletionStatus string) {
 		fmt.Printf("\n%s %s\n", output.Bold("Disk Transfers:"), output.Yellow(phaseName))
 		tableHeaders := []output.Header{
 			{DisplayName: "NAME", JSONPath: "name"},
-			{DisplayName: "PHASE", JSONPath: "phase"},
+			{DisplayName: "PHASE", JSONPath: "phase", ColorFunc: output.ColorizeStatus},
 			{DisplayName: "PROGRESS", JSONPath: "progress"},
 			{DisplayName: "SIZE", JSONPath: "size"},
 			{DisplayName: "DURATION", JSONPath: "duration"},
@@ -378,7 +378,7 @@ func printDisksTable(vm map[string]interface{}, vmCompletionStatus string) {
 
 			items = append(items, map[string]interface{}{
 				"name":      taskName,
-				"phase":     output.ColorizeStatus(taskPhase),
+				"phase":     taskPhase,
 				"progress":  progress,
 				"size":      size,
 				"duration":  duration,

@@ -83,9 +83,9 @@ func listNetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 		defaultHeaders = []output.Header{
 			{DisplayName: "NAME", JSONPath: "name"},
 			{DisplayName: "ID", JSONPath: "id"},
-			{DisplayName: "STATUS", JSONPath: "status"},
-			{DisplayName: "SHARED", JSONPath: "shared"},
-			{DisplayName: "ADMIN-UP", JSONPath: "adminStateUp"},
+			{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeStatus},
+			{DisplayName: "SHARED", JSONPath: "shared", ColorFunc: output.ColorizeBooleanString},
+			{DisplayName: "ADMIN-UP", JSONPath: "adminStateUp", ColorFunc: output.ColorizeBooleanString},
 			{DisplayName: "SUBNETS", JSONPath: "subnetsCount"},
 		}
 	case "ec2":
@@ -94,8 +94,8 @@ func listNetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 			{DisplayName: "ID", JSONPath: "id"},
 			{DisplayName: "TYPE", JSONPath: "networkType"},
 			{DisplayName: "CIDR", JSONPath: "CidrBlock"},
-			{DisplayName: "STATE", JSONPath: "State"},
-			{DisplayName: "DEFAULT", JSONPath: "IsDefault"},
+			{DisplayName: "STATE", JSONPath: "State", ColorFunc: output.ColorizeStatus},
+			{DisplayName: "DEFAULT", JSONPath: "IsDefault", ColorFunc: output.ColorizeBooleanString},
 		}
 	default:
 		defaultHeaders = []output.Header{

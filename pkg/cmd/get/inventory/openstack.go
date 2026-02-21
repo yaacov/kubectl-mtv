@@ -42,7 +42,7 @@ func listInstancesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 	defaultHeaders := []output.Header{
 		{DisplayName: "NAME", JSONPath: "name"},
 		{DisplayName: "ID", JSONPath: "id"},
-		{DisplayName: "STATUS", JSONPath: "status"},
+		{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeStatus},
 		{DisplayName: "FLAVOR", JSONPath: "flavor.name"},
 		{DisplayName: "IMAGE", JSONPath: "image.name"},
 		{DisplayName: "PROJECT", JSONPath: "project.name"},
@@ -121,7 +121,7 @@ func listImagesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Conf
 	defaultHeaders := []output.Header{
 		{DisplayName: "NAME", JSONPath: "name"},
 		{DisplayName: "ID", JSONPath: "id"},
-		{DisplayName: "STATUS", JSONPath: "status"},
+		{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeStatus},
 		{DisplayName: "SIZE", JSONPath: "sizeHuman"},
 		{DisplayName: "VISIBILITY", JSONPath: "visibility"},
 	}
@@ -286,7 +286,7 @@ func listProjectsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 		{DisplayName: "NAME", JSONPath: "name"},
 		{DisplayName: "ID", JSONPath: "id"},
 		{DisplayName: "DESCRIPTION", JSONPath: "description"},
-		{DisplayName: "ENABLED", JSONPath: "enabled"},
+		{DisplayName: "ENABLED", JSONPath: "enabled", ColorFunc: output.ColorizeBooleanString},
 	}
 
 	// Fetch projects inventory from the provider
@@ -362,10 +362,10 @@ func listVolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 	defaultHeaders := []output.Header{
 		{DisplayName: "NAME", JSONPath: "name"},
 		{DisplayName: "ID", JSONPath: "id"},
-		{DisplayName: "STATUS", JSONPath: "status"},
+		{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeStatus},
 		{DisplayName: "SIZE", JSONPath: "sizeHuman"},
 		{DisplayName: "TYPE", JSONPath: "volumeType"},
-		{DisplayName: "BOOTABLE", JSONPath: "bootable"},
+		{DisplayName: "BOOTABLE", JSONPath: "bootable", ColorFunc: output.ColorizeBooleanString},
 	}
 
 	// Fetch volumes inventory from the provider
@@ -521,7 +521,7 @@ func listSnapshotsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 	defaultHeaders := []output.Header{
 		{DisplayName: "NAME", JSONPath: "name"},
 		{DisplayName: "ID", JSONPath: "id"},
-		{DisplayName: "STATUS", JSONPath: "status"},
+		{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeStatus},
 		{DisplayName: "SIZE", JSONPath: "sizeHuman"},
 		{DisplayName: "VOLUME-ID", JSONPath: "volumeID"},
 	}
@@ -606,7 +606,7 @@ func listSubnetsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 		{DisplayName: "CIDR", JSONPath: "cidr"},
 		{DisplayName: "IP-VERSION", JSONPath: "ipVersion"},
 		{DisplayName: "GATEWAY", JSONPath: "gatewayIP"},
-		{DisplayName: "DHCP", JSONPath: "enableDHCP"},
+		{DisplayName: "DHCP", JSONPath: "enableDHCP", ColorFunc: output.ColorizeBooleanString},
 	}
 
 	// Fetch subnets inventory from the provider

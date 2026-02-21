@@ -325,7 +325,7 @@ func listMappings(ctx context.Context, configFlags *genericclioptions.ConfigFlag
 			output.Header{DisplayName: "TYPE", JSONPath: "type"},
 			output.Header{DisplayName: "SOURCE", JSONPath: "source"},
 			output.Header{DisplayName: "TARGET", JSONPath: "target"},
-			output.Header{DisplayName: "STATUS", JSONPath: "status"},
+			output.Header{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeStatus},
 			output.Header{DisplayName: "OWNER", JSONPath: "owner"},
 			output.Header{DisplayName: "CREATED", JSONPath: "created"},
 		)

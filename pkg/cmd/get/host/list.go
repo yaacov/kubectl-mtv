@@ -193,12 +193,19 @@ func printHostTable(items []map[string]interface{}) error {
 	printer := output.NewTablePrinter()
 
 	// Create headers using Header struct
+	colorFuncs := map[string]func(string) string{
+		"STATUS": output.ColorizeStatus,
+	}
 	var tableHeaders []output.Header
 	for _, header := range headers {
-		tableHeaders = append(tableHeaders, output.Header{
+		h := output.Header{
 			DisplayName: header,
 			JSONPath:    strings.ToLower(strings.ReplaceAll(header, " ", "")),
-		})
+		}
+		if cf, ok := colorFuncs[header]; ok {
+			h.ColorFunc = cf
+		}
+		tableHeaders = append(tableHeaders, h)
 	}
 
 	printer.WithHeaders(tableHeaders...)

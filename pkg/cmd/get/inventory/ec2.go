@@ -49,7 +49,7 @@ func listEC2InstancesOnce(ctx context.Context, kubeConfigFlags *genericclioption
 	defaultHeaders := []output.Header{
 		{DisplayName: "NAME", JSONPath: "name"},
 		{DisplayName: "TYPE", JSONPath: "InstanceType"},
-		{DisplayName: "STATE", JSONPath: "State.Name"},
+		{DisplayName: "STATE", JSONPath: "State.Name", ColorFunc: output.ColorizeStatus},
 		{DisplayName: "PLATFORM", JSONPath: "PlatformDetails"},
 		{DisplayName: "AZ", JSONPath: "Placement.AvailabilityZone"},
 		{DisplayName: "PUBLIC-IP", JSONPath: "PublicIpAddress"},
@@ -133,7 +133,7 @@ func listEC2VolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.
 		{DisplayName: "ID", JSONPath: "id"},
 		{DisplayName: "SIZE", JSONPath: "sizeHuman"},
 		{DisplayName: "TYPE", JSONPath: "VolumeType"},
-		{DisplayName: "STATE", JSONPath: "State"},
+		{DisplayName: "STATE", JSONPath: "State", ColorFunc: output.ColorizeStatus},
 		{DisplayName: "IOPS", JSONPath: "Iops"},
 		{DisplayName: "THROUGHPUT", JSONPath: "Throughput"},
 		{DisplayName: "ATTACHED-TO", JSONPath: "attachedTo"},
@@ -297,8 +297,8 @@ func listEC2NetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 		{DisplayName: "ID", JSONPath: "id"},
 		{DisplayName: "TYPE", JSONPath: "networkType"},
 		{DisplayName: "CIDR", JSONPath: "CidrBlock"},
-		{DisplayName: "STATE", JSONPath: "State"},
-		{DisplayName: "DEFAULT", JSONPath: "IsDefault"},
+		{DisplayName: "STATE", JSONPath: "State", ColorFunc: output.ColorizeStatus},
+		{DisplayName: "DEFAULT", JSONPath: "IsDefault", ColorFunc: output.ColorizeBooleanString},
 	}
 
 	// Fetch EC2 networks from the provider

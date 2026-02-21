@@ -206,11 +206,18 @@ func printHookTable(items []map[string]interface{}) error {
 		"CREATED":         "created",
 	}
 
+	colorFuncs := map[string]func(string) string{
+		"STATUS": output.ColorizeStatus,
+	}
 	for _, header := range headers {
-		tableHeaders = append(tableHeaders, output.Header{
+		h := output.Header{
 			DisplayName: header,
 			JSONPath:    headerMappings[header],
-		})
+		}
+		if cf, ok := colorFuncs[header]; ok {
+			h.ColorFunc = cf
+		}
+		tableHeaders = append(tableHeaders, h)
 	}
 
 	printer.WithHeaders(tableHeaders...)
