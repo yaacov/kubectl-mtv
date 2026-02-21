@@ -195,7 +195,7 @@ func FilterAndFormatJSONLogs(logs string, p LogFilterParams) (interface{}, error
 		return []interface{}{}, nil
 	}
 
-	var logLines []interface{}
+	logLines := make([]interface{}, 0)
 	var filteredLines []string
 	hasFilters := p.HasFilters()
 

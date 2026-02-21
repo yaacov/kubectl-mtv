@@ -430,7 +430,7 @@ func UnmarshalJSONResponse(responseJSON string) (map[string]interface{}, error) 
 
 		// Try parsing as JSON object
 		var jsonObj map[string]interface{}
-		if err := json.Unmarshal([]byte(stdout), &jsonObj); err == nil {
+		if err := json.Unmarshal([]byte(stdout), &jsonObj); err == nil && jsonObj != nil {
 			delete(cmdResponse, "stdout")
 			cmdResponse["data"] = jsonObj
 			cleanupResponse(cmdResponse)
@@ -439,7 +439,7 @@ func UnmarshalJSONResponse(responseJSON string) (map[string]interface{}, error) 
 
 		// Try parsing as JSON array
 		var jsonArr []interface{}
-		if err := json.Unmarshal([]byte(stdout), &jsonArr); err == nil {
+		if err := json.Unmarshal([]byte(stdout), &jsonArr); err == nil && jsonArr != nil {
 			delete(cmdResponse, "stdout")
 			cmdResponse["data"] = jsonArr
 			cleanupResponse(cmdResponse)
