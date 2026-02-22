@@ -19,12 +19,12 @@ For complete information about the underlying migration technology, see the [off
 
 `kubectl-mtv` supports migration from the following virtualization platforms:
 
-- **VMware vSphere** - Full support for vCenter-managed VMware environments with advanced features like VDDK optimization (see [VMware Prerequisites](https://kubev2v.github.io/forklift-documentation/#vmware-prerequisites_forklift))
-- **Red Hat Virtualization (oVirt/RHV)** - Complete support for oVirt and Red Hat Virtualization platforms (see [oVirt Prerequisites](https://kubev2v.github.io/forklift-documentation/#rhv-prerequisites_forklift))
-- **Red Hat OpenStack Platform** - Support for OpenStack-based virtualization environments (see [OpenStack Prerequisites](https://kubev2v.github.io/forklift-documentation/#openstack-prerequisites_forklift))
+- **VMware vSphere** - Full support for vCenter-managed VMware environments with advanced features like VDDK optimization (see [VMware Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#vmware-prerequisites_mtv))
+- **Red Hat Virtualization (oVirt/RHV)** - Complete support for oVirt and Red Hat Virtualization platforms (see [oVirt Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#rhv-prerequisites_mtv))
+- **Red Hat OpenStack Platform** - Support for OpenStack-based virtualization environments (see [OpenStack Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#openstack-prerequisites_mtv))
 - **Amazon EC2** - Support for migrating EC2 instances from AWS
-- **KubeVirt/OpenShift Virtualization** - Support for migrating VMs between KubeVirt clusters or within the same cluster (see [KubeVirt Prerequisites](https://kubev2v.github.io/forklift-documentation/#cnv-prerequisites_forklift))
-- **OVA Files** - Direct import and conversion of OVA (Open Virtualization Appliance) files (see [OVA Prerequisites](https://kubev2v.github.io/forklift-documentation/#ova-prerequisites_forklift))
+- **KubeVirt/OpenShift Virtualization** - Support for migrating VMs between KubeVirt clusters or within the same cluster (see [KubeVirt Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#cnv-prerequisites_mtv))
+- **OVA Files** - Direct import and conversion of OVA (Open Virtualization Appliance) files (see [OVA Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#ova-prerequisites_mtv))
 
 ### Target Platform
 
@@ -34,9 +34,9 @@ For complete information about the underlying migration technology, see the [off
 
 The tool supports multiple migration strategies to accommodate different use cases:
 
-- **Cold Migration** - Traditional offline migration where the source VM is powered down during the process (see [Forklift Cold Migration](https://kubev2v.github.io/forklift-documentation/#cold-migration_forklift))
-- **Warm Migration** - Pre-copy migration that minimizes downtime by transferring data while the VM is running, followed by a brief cutover period (see [Forklift Warm Migration](https://kubev2v.github.io/forklift-documentation/#warm-migration_forklift))
-- **Live Migration** - Advanced migration with minimal downtime using KubeVirt's live migration capabilities (available only for KubeVirt/OpenShift Virtualization sources) (see [Forklift Live Migration](https://kubev2v.github.io/forklift-documentation/#about-live-migration_forklift))
+- **Cold Migration** - Traditional offline migration where the source VM is powered down during the process (see [Forklift Cold Migration](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#cold-migration_mtv))
+- **Warm Migration** - Pre-copy migration that minimizes downtime by transferring data while the VM is running, followed by a brief cutover period (see [Forklift Warm Migration](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#warm-migration))
+- **Live Migration** - Advanced migration with minimal downtime using KubeVirt's live migration capabilities (available only for KubeVirt/OpenShift Virtualization sources) (see [Forklift Live Migration](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#assembly_live-migration_mtv))
 - **Conversion Migration** - Perform only guest conversion and VM creation when storage vendors provide pre-populated PVCs (VMware sources only) (see [Chapter 5: Conversion Migration](../05-conversion-migration))
 
 For detailed information about migration types, see:
@@ -126,8 +126,8 @@ Advanced AI assistant integration for enhanced user experience. This is a kubect
 `kubectl-mtv` serves as the primary command-line interface for the Forklift project, which is Red Hat's upstream migration toolkit. The relationship between these components is as follows:
 
 ### Forklift Controller
-- **Backend Engine** - Handles the actual migration orchestration and execution (see [Forklift Architecture](https://kubev2v.github.io/forklift-documentation/#architecture_forklift))
-- **Custom Resource Management** - Manages Kubernetes custom resources for providers, plans, and mappings (see [Forklift Custom Resources](https://kubev2v.github.io/forklift-documentation/#forklift-custom-resources))
+- **Backend Engine** - Handles the actual migration orchestration and execution (see [Forklift Architecture](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migrating_your_virtual_machines/master.html#assembly_understanding-mtv-migration_mtv))
+- **Custom Resource Management** - Manages Kubernetes custom resources for providers, plans, and mappings (see [Forklift Custom Resources](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migrating_your_virtual_machines/master.html#forklift-custom-resources))
 - **Integration Layer** - Interfaces with source virtualization platforms and target KubeVirt infrastructure
 
 ### kubectl-mtv CLI

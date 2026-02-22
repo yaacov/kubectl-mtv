@@ -7,7 +7,7 @@ nav_order: 1
 
 Mappings define the critical relationships between source and target resources, ensuring VMs are migrated to appropriate networks and storage systems. This chapter covers comprehensive mapping management for both network and storage resources.
 
-For foundational concepts about network and storage mappings, see the [official Forklift mapping documentation](https://kubev2v.github.io/forklift-documentation/#about-network-maps_forklift) and [storage mapping documentation](https://kubev2v.github.io/forklift-documentation/#about-storage-maps_forklift).
+For foundational concepts about network and storage mappings, see the [official Forklift mapping documentation](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#about-network-maps_mtv) and [storage mapping documentation](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#about-storage-maps_mtv).
 
 ## Overview
 

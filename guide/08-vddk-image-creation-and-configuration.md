@@ -7,7 +7,7 @@ nav_order: 3
 
 VMware Virtual Disk Development Kit (VDDK) provides optimized disk transfer capabilities for VMware vSphere migrations. This chapter covers creating VDDK container images and configuring them for maximum performance.
 
-For background information on VDDK and its integration with Forklift, see the [official VDDK documentation](https://kubev2v.github.io/forklift-documentation/#creating-vddk-image_forklift).
+For background information on VDDK and its integration with Forklift, see the [official VDDK documentation](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#creating-vddk-image_mtv).
 
 ## Why VDDK is Recommended for VMware Disk Transfers
 
