@@ -190,7 +190,7 @@ kubectl mtv create plan --name simple-migration \
 
 ### Migration Types
 
-kubectl-mtv supports four migration types (see [Forklift Migration Types](https://kubev2v.github.io/forklift-documentation/#about-cold-warm-migration_forklift)):
+kubectl-mtv supports four migration types (see [Forklift Migration Types](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#about-cold-warm-migration_mtv)):
 
 | Type | Description | Use Case |
 |------|-------------|----------|

@@ -449,7 +449,7 @@ kubectl mtv create plan --name vendor-conversion \
 
 ### Official Performance Data
 
-Based on [Forklift performance testing](https://kubev2v.github.io/forklift-documentation/#warm-migration_forklift-versus-cold-migration):
+Based on [Forklift performance testing](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#mtv-migration-speed-comparison_mtv):
 
 #### Cold Migration Performance
 

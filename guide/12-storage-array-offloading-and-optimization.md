@@ -7,7 +7,7 @@ nav_order: 2
 
 Storage array offloading represents one of the most advanced optimization techniques available in `kubectl-mtv`, capable of dramatically reducing migration time and network overhead by leveraging direct storage array capabilities. This chapter provides comprehensive coverage of storage offloading concepts, supported platforms, configuration, and best practices.
 
-For foundational information about migration performance, see the [official Forklift performance recommendations](https://kubev2v.github.io/forklift-documentation/#mtv-performance-recommendation_forklift).
+For foundational information about migration performance, see the [official Forklift performance recommendations](https://kubev2v.github.io/forklift-documentation/documentation/doc-Migrating_your_virtual_machines/master.html#assembly_mtv-performance-recommendations_mtv).
 
 ## Overview of Storage Array Offloading
 

@@ -7,7 +7,7 @@ nav_order: 1
 
 Providers are the core resources in kubectl-mtv that represent source and target virtualization platforms. This chapter covers complete provider lifecycle management including creation, configuration, patching, and deletion.
 
-For detailed information about provider prerequisites and requirements, see the [official Forklift provider documentation](https://kubev2v.github.io/forklift-documentation/#prerequisites-for-all-providers_forklift).
+For detailed information about provider prerequisites and requirements, see the [official Forklift provider documentation](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#assembly_software-requirements-for-migration_mtv).
 
 ## Overview of Providers
 
