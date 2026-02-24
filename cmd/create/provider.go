@@ -98,20 +98,6 @@ Credentials can be provided directly via flags or through an existing Kubernetes
     --smb-url '//192.168.1.100/VMShare'`,
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// Fetch dynamic provider types from the cluster
-			dynamicTypes, err := client.GetDynamicProviderTypes(kubeConfigFlags)
-			if err != nil {
-				// Log the error but don't fail - we can still work with static types
-				// This allows the command to work even if there are cluster connectivity issues
-				// as long as the user is using a static provider type
-				cmd.PrintErrf("Warning: failed to fetch dynamic provider types: %v\n", err)
-			} else {
-				// Set the dynamic types in the flag
-				providerType.SetDynamicTypes(dynamicTypes)
-			}
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)

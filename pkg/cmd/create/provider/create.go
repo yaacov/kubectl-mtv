@@ -47,9 +47,7 @@ func Create(configFlags *genericclioptions.ConfigFlags, providerType string, opt
 	case "ec2":
 		providerResource, secretResource, err = ec2.CreateProvider(configFlags, options)
 	default:
-		// For dynamic provider types, use generic provider creation
-		// This allows support for DynamicProvider CRs defined in the cluster
-		providerResource, secretResource, err = generic.CreateProvider(configFlags, options, providerType)
+		return fmt.Errorf("unsupported provider type: %s", providerType)
 	}
 
 	// Handle any errors that occurred during provider creation

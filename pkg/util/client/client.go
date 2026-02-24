@@ -76,12 +76,6 @@ var (
 		Resource: "forkliftcontrollers",
 	}
 
-	DynamicProvidersGVR = schema.GroupVersionResource{
-		Group:    Group,
-		Version:  Version,
-		Resource: "dynamicproviders",
-	}
-
 	// SecretGVR is used to access secrets in the cluster
 	SecretsGVR = schema.GroupVersionResource{
 		Group:    "",
@@ -436,41 +430,4 @@ func (c *HTTPClient) GetWithContext(ctx context.Context, path string) ([]byte, e
 	}
 
 	return body, nil
-}
-
-// GetDynamicProviderTypes fetches all DynamicProvider types from the cluster.
-// Returns an empty slice if the CRD is not available (fails gracefully).
-func GetDynamicProviderTypes(configFlags *genericclioptions.ConfigFlags) ([]string, error) {
-	dynamicClient, err := GetDynamicClient(configFlags)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get dynamic client: %v", err)
-	}
-
-	ctx := context.Background()
-
-	// Try to list DynamicProvider resources
-	list, err := dynamicClient.Resource(DynamicProvidersGVR).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		// Check if it's a "not found" error (CRD doesn't exist)
-		if strings.Contains(err.Error(), "not found") ||
-			strings.Contains(err.Error(), "the server could not find the requested resource") {
-			// Fail gracefully - DynamicProvider CRD is not installed
-			return []string{}, nil
-		}
-		return nil, fmt.Errorf("failed to list DynamicProviders: %v", err)
-	}
-
-	// Extract the types from each DynamicProvider
-	types := make([]string, 0, len(list.Items))
-	for _, item := range list.Items {
-		providerType, found, err := unstructured.NestedString(item.Object, "spec", "type")
-		if err != nil {
-			continue // Skip items with errors
-		}
-		if found && providerType != "" {
-			types = append(types, providerType)
-		}
-	}
-
-	return types, nil
 }

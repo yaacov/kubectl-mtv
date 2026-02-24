@@ -7,8 +7,8 @@ import (
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 )
 
-// staticProviderTypes is the single source of truth for built-in provider types.
-var staticProviderTypes = []forkliftv1beta1.ProviderType{
+// providerTypes is the single source of truth for built-in provider types.
+var providerTypes = []forkliftv1beta1.ProviderType{
 	forkliftv1beta1.OpenShift,
 	forkliftv1beta1.VSphere,
 	forkliftv1beta1.OVirt,
@@ -18,10 +18,10 @@ var staticProviderTypes = []forkliftv1beta1.ProviderType{
 	forkliftv1beta1.EC2,
 }
 
-// staticProviderTypeStrings returns the string representations of static provider types.
-func staticProviderTypeStrings() []string {
-	strs := make([]string, len(staticProviderTypes))
-	for i, t := range staticProviderTypes {
+// providerTypeStrings returns the string representations of provider types.
+func providerTypeStrings() []string {
+	strs := make([]string, len(providerTypes))
+	for i, t := range providerTypes {
 		strs[i] = string(t)
 	}
 	return strs
@@ -29,8 +29,7 @@ func staticProviderTypeStrings() []string {
 
 // ProviderTypeFlag implements pflag.Value interface for provider type validation
 type ProviderTypeFlag struct {
-	value        string
-	dynamicTypes []string
+	value string
 }
 
 func (p *ProviderTypeFlag) String() string {
@@ -38,35 +37,14 @@ func (p *ProviderTypeFlag) String() string {
 }
 
 func (p *ProviderTypeFlag) Set(value string) error {
-	// Check static types
-	isValid := false
-	for _, validType := range staticProviderTypes {
+	for _, validType := range providerTypes {
 		if forkliftv1beta1.ProviderType(value) == validType {
-			isValid = true
-			break
+			p.value = value
+			return nil
 		}
 	}
 
-	// Check dynamic types if not found in static types
-	if !isValid {
-		for _, dynamicType := range p.dynamicTypes {
-			if value == dynamicType {
-				isValid = true
-				break
-			}
-		}
-	}
-
-	if !isValid {
-		validTypesStr := strings.Join(staticProviderTypeStrings(), ", ")
-		if len(p.dynamicTypes) > 0 {
-			validTypesStr = fmt.Sprintf("%s, %s", validTypesStr, strings.Join(p.dynamicTypes, ", "))
-		}
-		return fmt.Errorf("invalid provider type: %s. Valid types are: %s", value, validTypesStr)
-	}
-
-	p.value = value
-	return nil
+	return fmt.Errorf("invalid provider type: %s. Valid types are: %s", value, strings.Join(providerTypeStrings(), ", "))
 }
 
 func (p *ProviderTypeFlag) Type() string {
@@ -80,24 +58,10 @@ func (p *ProviderTypeFlag) GetValue() string {
 
 // GetValidValues returns all valid provider type values for auto-completion
 func (p *ProviderTypeFlag) GetValidValues() []string {
-	staticStrs := staticProviderTypeStrings()
-
-	// Combine static and dynamic types
-	allTypes := make([]string, 0, len(staticStrs)+len(p.dynamicTypes))
-	allTypes = append(allTypes, staticStrs...)
-	allTypes = append(allTypes, p.dynamicTypes...)
-
-	return allTypes
-}
-
-// SetDynamicTypes sets the list of dynamic provider types from the cluster
-func (p *ProviderTypeFlag) SetDynamicTypes(types []string) {
-	p.dynamicTypes = types
+	return providerTypeStrings()
 }
 
 // NewProviderTypeFlag creates a new provider type flag
 func NewProviderTypeFlag() *ProviderTypeFlag {
-	return &ProviderTypeFlag{
-		dynamicTypes: []string{},
-	}
+	return &ProviderTypeFlag{}
 }
