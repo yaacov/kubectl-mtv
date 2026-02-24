@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	planv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan"
@@ -179,18 +181,105 @@ func augmentVMInfo(vm map[string]interface{}, extendedOutput bool) string {
 		}
 	}
 
-	// Humanize power state
-	if powerState, exists := vm["powerState"]; exists {
-		if ps, ok := powerState.(string); ok {
-			if strings.Contains(strings.ToLower(ps), "on") {
-				vm["powerStateHuman"] = "On"
-			} else {
-				vm["powerStateHuman"] = "Off"
+	// Augment from VirtualMachineInstance data when available (OpenShift/KubeVirt)
+	augmentFromInstance(vm)
+
+	// Humanize power state: check top-level powerState first (vSphere, oVirt),
+	// then fall back to object.status.printableStatus / object.status.phase (OpenShift/KubeVirt).
+	vm["powerStateHuman"] = humanizePowerState(vm)
+
+	return expandedText
+}
+
+// humanizePowerState derives a human-readable power state from a VM map.
+// It checks top-level powerState (vSphere, oVirt), then falls back to
+// object.status.printableStatus, object.status.phase, and
+// instance.status.phase (OpenShift/KubeVirt).
+func humanizePowerState(vm map[string]interface{}) string {
+	if ps, ok := vm["powerState"].(string); ok && ps != "" {
+		if strings.Contains(strings.ToLower(ps), "on") || strings.Contains(strings.ToLower(ps), "up") {
+			return "On"
+		}
+		return "Off"
+	}
+
+	if ps, found, _ := unstructured.NestedString(vm, "object", "status", "printableStatus"); found && ps != "" {
+		lower := strings.ToLower(ps)
+		if strings.Contains(lower, "running") {
+			return "On"
+		}
+		if strings.Contains(lower, "stopped") || strings.Contains(lower, "off") || strings.Contains(lower, "halted") {
+			return "Off"
+		}
+		return ps
+	}
+
+	for _, prefix := range []string{"object", "instance"} {
+		if phase, found, _ := unstructured.NestedString(vm, prefix, "status", "phase"); found && phase != "" {
+			lower := strings.ToLower(phase)
+			if strings.Contains(lower, "running") {
+				return "On"
+			}
+			if strings.Contains(lower, "stopped") || strings.Contains(lower, "off") {
+				return "Off"
+			}
+			return phase
+		}
+	}
+
+	return ""
+}
+
+// augmentFromInstance extracts runtime info from the optional VirtualMachineInstance
+// data present on OpenShift/KubeVirt VMs. It only fills in fields that are not
+// already populated by the provider inventory.
+func augmentFromInstance(vm map[string]interface{}) {
+	instance, ok := vm["instance"].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	// CPU count from instance spec (cores * sockets * threads)
+	if _, exists := vm["cpuCount"]; !exists {
+		cores, cFound, _ := unstructured.NestedFloat64(instance, "spec", "domain", "cpu", "cores")
+		sockets, sFound, _ := unstructured.NestedFloat64(instance, "spec", "domain", "cpu", "sockets")
+		threads, tFound, _ := unstructured.NestedFloat64(instance, "spec", "domain", "cpu", "threads")
+
+		if cFound && cores > 0 {
+			if !sFound || sockets < 1 {
+				sockets = 1
+			}
+			if !tFound || threads < 1 {
+				threads = 1
+			}
+			vm["cpuCount"] = int64(cores * sockets * threads)
+		}
+	}
+
+	// Memory from instance spec or status
+	if _, exists := vm["memoryGB"]; !exists {
+		memStr := ""
+		if s, found, _ := unstructured.NestedString(instance, "status", "memory", "guestCurrent"); found && s != "" {
+			memStr = s
+		} else if s, found, _ := unstructured.NestedString(instance, "spec", "domain", "memory", "guest"); found && s != "" {
+			memStr = s
+		}
+		if memStr != "" {
+			if q, err := resource.ParseQuantity(memStr); err == nil {
+				memGB := float64(q.Value()) / (1024 * 1024 * 1024)
+				vm["memoryGB"] = fmt.Sprintf("%.1f GB", memGB)
 			}
 		}
 	}
 
-	return expandedText
+	// Guest OS from instance guest agent info
+	if _, exists := vm["guestId"]; !exists {
+		if name, found, _ := unstructured.NestedString(instance, "status", "guestOSInfo", "prettyName"); found && name != "" {
+			vm["guestId"] = name
+		} else if id, found, _ := unstructured.NestedString(instance, "status", "guestOSInfo", "id"); found && id != "" {
+			vm["guestId"] = id
+		}
+	}
 }
 
 // FetchVMsByQuery fetches VMs from inventory based on a query string and returns them as plan VM structs
