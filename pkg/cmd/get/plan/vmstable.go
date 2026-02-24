@@ -523,7 +523,7 @@ func extractPowerStatus(vm map[string]interface{}) string {
 		return st
 	}
 
-	// Check nested object.status.printableStatus (KubeVirt VirtualMachine workloads)
+	// Check nested object.status.printableStatus (KubeVirt VirtualMachine)
 	if ps, found, _ := unstructured.NestedString(vm, "object", "status", "printableStatus"); found && ps != "" {
 		lower := strings.ToLower(ps)
 		if strings.Contains(lower, "running") {
@@ -535,16 +535,18 @@ func extractPowerStatus(vm map[string]interface{}) string {
 		return ps
 	}
 
-	// Check nested object.status.phase (OpenShift workloads with object wrapper)
-	if phase, found, _ := unstructured.NestedString(vm, "object", "status", "phase"); found && phase != "" {
-		lower := strings.ToLower(phase)
-		if strings.Contains(lower, "running") {
-			return "Running"
+	// Check nested status.phase under object or instance (KubeVirt VM / VMI)
+	for _, prefix := range []string{"object", "instance"} {
+		if phase, found, _ := unstructured.NestedString(vm, prefix, "status", "phase"); found && phase != "" {
+			lower := strings.ToLower(phase)
+			if strings.Contains(lower, "running") {
+				return "Running"
+			}
+			if strings.Contains(lower, "stopped") || strings.Contains(lower, "off") {
+				return "Stopped"
+			}
+			return phase
 		}
-		if strings.Contains(lower, "stopped") || strings.Contains(lower, "off") {
-			return "Stopped"
-		}
-		return phase
 	}
 
 	// EC2: State.Name
@@ -593,15 +595,25 @@ func extractIP(vm map[string]interface{}) string {
 		}
 	}
 
-	// OpenShift workload: nested object.status.interfaces
-	if interfaces, found, _ := unstructured.NestedSlice(vm, "object", "status", "interfaces"); found {
-		for _, iface := range interfaces {
-			ifaceMap, ok := iface.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			if ip, ok := ifaceMap["ipAddress"].(string); ok && ip != "" {
-				return ip
+	// OpenShift/KubeVirt: nested status.interfaces under object or instance
+	// KubeVirt VMI interfaces have ipAddress (string) and ipAddresses ([]string).
+	for _, prefix := range []string{"object", "instance"} {
+		if interfaces, found, _ := unstructured.NestedSlice(vm, prefix, "status", "interfaces"); found {
+			for _, iface := range interfaces {
+				ifaceMap, ok := iface.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if ip, ok := ifaceMap["ipAddress"].(string); ok && ip != "" {
+					return ip
+				}
+				if ips, ok := ifaceMap["ipAddresses"].([]interface{}); ok {
+					for _, ipVal := range ips {
+						if ip, ok := ipVal.(string); ok && ip != "" {
+							return ip
+						}
+					}
+				}
 			}
 		}
 	}
