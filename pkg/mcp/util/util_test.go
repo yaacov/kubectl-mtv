@@ -368,6 +368,95 @@ func TestFormatShellCommand(t *testing.T) {
 	}
 }
 
+// --- stripKlogLines tests ---
+
+func TestStripKlogLines(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "no klog lines",
+			input: "Error: failed to list plans: Unauthorized",
+			want:  "Error: failed to list plans: Unauthorized",
+		},
+		{
+			name:  "klog info line removed",
+			input: "I0226 15:18:46.239242  213406 get.go:17] Getting storage mappings from namespace: mcp-e2e-test\nError: failed to list storage mappings: Unauthorized",
+			want:  "Error: failed to list storage mappings: Unauthorized",
+		},
+		{
+			name:  "klog warning line removed",
+			input: "W0226 15:18:46.239242  213406 get.go:17] some warning\nError: something broke",
+			want:  "Error: something broke",
+		},
+		{
+			name:  "klog error line removed",
+			input: "E0226 15:18:46.239242  213406 get.go:17] some error\nError: something broke",
+			want:  "Error: something broke",
+		},
+		{
+			name:  "multiple klog lines removed",
+			input: "I0226 15:18:46.239242  213406 get.go:17] line1\nI0226 15:18:46.339242  213406 get.go:20] line2\nError: Unauthorized",
+			want:  "Error: Unauthorized",
+		},
+		{
+			name:  "klog only produces empty string",
+			input: "I0226 15:18:46.239242  213406 get.go:17] Getting storage mappings",
+			want:  "",
+		},
+		{
+			name:  "empty input",
+			input: "",
+			want:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := stripKlogLines(tt.input)
+			if got != tt.want {
+				t.Errorf("stripKlogLines() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUnmarshalJSONResponse_KlogStrippedFromStderr(t *testing.T) {
+	input := `{"command":"test","return_value":1,"stdout":"","stderr":"I0226 15:18:46.239242  213406 get.go:17] Getting storage mappings from namespace: mcp-e2e-test\nError: failed to list storage mappings: Unauthorized"}`
+
+	result, err := UnmarshalJSONResponse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	stderr, hasStderr := result["stderr"]
+	if !hasStderr {
+		t.Fatal("expected 'stderr' key in result")
+	}
+	stderrStr := stderr.(string)
+	if strings.Contains(stderrStr, "I0226") {
+		t.Errorf("stderr should not contain klog lines, got: %s", stderrStr)
+	}
+	if !strings.Contains(stderrStr, "Unauthorized") {
+		t.Errorf("stderr should still contain the real error, got: %s", stderrStr)
+	}
+}
+
+func TestUnmarshalJSONResponse_KlogOnlyStderrRemoved(t *testing.T) {
+	input := `{"command":"test","return_value":0,"stdout":"OK","stderr":"I0226 15:18:46.239242  213406 get.go:17] Getting plans"}`
+
+	result, err := UnmarshalJSONResponse(input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, hasStderr := result["stderr"]; hasStderr {
+		t.Error("stderr with only klog lines should be stripped entirely")
+	}
+}
+
 // --- Context helpers tests ---
 
 func TestWithKubeToken(t *testing.T) {

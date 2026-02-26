@@ -176,6 +176,24 @@ func GetDefaultInsecureSkipTLS() bool {
 	return defaultInsecureSkipTLS
 }
 
+// klogLinePattern matches klog-formatted lines written to stderr by subprocesses.
+// Format: [IWEF]MMDD HH:MM:SS.MICROSECONDS  PID file:line] message
+var klogLinePattern = regexp.MustCompile(`(?m)^[IWEF]\d{4}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\d+\s+\S+:\d+\]\s.*$`)
+
+// stripKlogLines removes klog output lines from text.
+// Subprocess klog output pollutes stderr and makes error messages
+// returned to the LLM noisy and harder to parse.
+func stripKlogLines(text string) string {
+	cleaned := klogLinePattern.ReplaceAllString(text, "")
+	var lines []string
+	for _, line := range strings.Split(cleaned, "\n") {
+		if strings.TrimSpace(line) != "" {
+			lines = append(lines, line)
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 // CommandResponse represents the structured response from command execution
 type CommandResponse struct {
 	Command     string `json:"command"`
@@ -465,9 +483,14 @@ func cleanupResponse(data map[string]interface{}) {
 	// raw CLI strings instead of structured {command, flags} tool calls.
 	delete(data, "command")
 
-	// Remove empty stderr to reduce noise
-	if stderr, ok := data["stderr"].(string); ok && strings.TrimSpace(stderr) == "" {
-		delete(data, "stderr")
+	// Strip klog lines from stderr, then remove if empty
+	if stderr, ok := data["stderr"].(string); ok {
+		stderr = stripKlogLines(stderr)
+		if strings.TrimSpace(stderr) == "" {
+			delete(data, "stderr")
+		} else {
+			data["stderr"] = stderr
+		}
 	}
 
 	// Truncate long text output if configured
