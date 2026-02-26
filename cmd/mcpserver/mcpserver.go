@@ -3,7 +3,6 @@ package mcpserver
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/mcp/tools"
 	"github.com/yaacov/kubectl-mtv/pkg/mcp/util"
 	"github.com/yaacov/kubectl-mtv/pkg/version"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -99,6 +99,12 @@ Manual Claude config: Add to claude_desktop_config.json:
 			util.SetDefaultKubeToken(kubeToken)
 			util.SetDefaultInsecureSkipTLS(insecureSkipTLS)
 
+			// Propagate verbosity from the inherited global --verbose flag
+			// so tool subprocesses produce matching debug output
+			if v, err := cobraCmd.Flags().GetInt("verbose"); err == nil {
+				util.SetDefaultVerbosity(v)
+			}
+
 			// Create a context that listens for interrupt signals
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -122,7 +128,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 				innerHandler := mcp.NewSSEHandler(func(req *http.Request) *mcp.Server {
 					server, err := createMCPServerWithHeaderCapture(req, readOnly)
 					if err != nil {
-						log.Printf("Failed to create server: %v", err)
+						klog.Errorf("Failed to create server: %v", err)
 						return nil
 					}
 					return server
@@ -137,9 +143,9 @@ Manual Claude config: Add to claude_desktop_config.json:
 							if parts := strings.SplitN(auth, " ", 2); len(parts) > 0 {
 								scheme = parts[0]
 							}
-							log.Printf("[auth] SERVER: POST request with Authorization: %s [REDACTED]", scheme)
+							klog.V(2).Infof("[auth] SERVER: POST request with Authorization: %s [REDACTED]", scheme)
 						} else {
-							log.Printf("[auth] SERVER: POST request with NO Authorization header")
+							klog.V(2).Info("[auth] SERVER: POST request with NO Authorization header")
 						}
 					}
 					innerHandler.ServeHTTP(w, r)
@@ -157,13 +163,13 @@ Manual Claude config: Add to claude_desktop_config.json:
 					useTLS := certFile != "" && keyFile != ""
 
 					if useTLS {
-						log.Printf("Starting kubectl-mtv MCP server with TLS in SSE mode on %s", addr)
-						log.Printf("Using cert: %s, key: %s", certFile, keyFile)
-						log.Printf("Connect clients to: https://%s/sse", addr)
+						klog.V(1).Infof("Starting kubectl-mtv MCP server with TLS in SSE mode on %s", addr)
+						klog.V(1).Infof("Using cert: %s, key: %s", certFile, keyFile)
+						klog.V(1).Infof("Connect clients to: https://%s/sse", addr)
 						errChan <- server.ListenAndServeTLS(certFile, keyFile)
 					} else {
-						log.Printf("Starting kubectl-mtv MCP server in SSE mode on %s", addr)
-						log.Printf("Connect clients to: http://%s/sse", addr)
+						klog.V(1).Infof("Starting kubectl-mtv MCP server in SSE mode on %s", addr)
+						klog.V(1).Infof("Connect clients to: http://%s/sse", addr)
 						errChan <- server.ListenAndServe()
 					}
 				}()
@@ -175,12 +181,12 @@ Manual Claude config: Add to claude_desktop_config.json:
 						return err
 					}
 				case <-sigChan:
-					log.Println("\nShutting down server...")
+					klog.V(1).Info("Shutting down server...")
 					// Give the server 5 seconds to gracefully shutdown
 					shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 					defer shutdownCancel()
 					if err := server.Shutdown(shutdownCtx); err != nil {
-						log.Printf("Server shutdown error: %v", err)
+						klog.Errorf("Server shutdown error: %v", err)
 					}
 				}
 				return nil
@@ -192,8 +198,8 @@ Manual Claude config: Add to claude_desktop_config.json:
 				return fmt.Errorf("failed to create server: %w", err)
 			}
 
-			log.Println("Starting kubectl-mtv MCP server in stdio mode")
-			log.Println("Server is ready and listening for MCP protocol messages on stdin/stdout")
+			klog.V(1).Info("Starting kubectl-mtv MCP server in stdio mode")
+			klog.V(1).Info("Server is ready and listening for MCP protocol messages on stdin/stdout")
 
 			// Run server in a goroutine
 			errChan := make(chan error, 1)
@@ -206,7 +212,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 			case err := <-errChan:
 				return err
 			case <-sigChan:
-				log.Println("\nShutting down server...")
+				klog.V(1).Info("Shutting down server...")
 				cancel()
 				// Give the server a moment to clean up
 				time.Sleep(100 * time.Millisecond)
@@ -274,7 +280,7 @@ func createMCPServerWithHeaderCapture(req *http.Request, readOnlyMode bool) (*mc
 	if !readOnlyMode {
 		tools.AddToolWithCoercion(server, tools.GetMTVWriteTool(registry), wrapWithHeaders(tools.HandleMTVWrite(registry), capturedHeaders))
 	} else {
-		log.Println("Running in read-only mode - write operations disabled")
+		klog.V(1).Info("Running in read-only mode - write operations disabled")
 	}
 
 	return server, nil

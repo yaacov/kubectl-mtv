@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -14,6 +13,7 @@ import (
 	"time"
 
 	shellquote "github.com/kballard/go-shellquote"
+	"k8s.io/klog/v2"
 )
 
 // contextKey is a custom type for context keys to avoid collisions
@@ -166,6 +166,11 @@ func GetDefaultKubeToken() string {
 // When true, --insecure-skip-tls-verify is prepended to every subprocess invocation.
 var defaultInsecureSkipTLS bool
 
+// defaultVerbosity stores the verbosity level set via the global --verbose flag.
+// When > 0, --verbose N is prepended to every subprocess invocation so that
+// tool-spawned commands inherit the same debug/trace level as the MCP server.
+var defaultVerbosity int
+
 // SetDefaultInsecureSkipTLS sets the default TLS skip verification flag.
 func SetDefaultInsecureSkipTLS(skip bool) {
 	defaultInsecureSkipTLS = skip
@@ -174,6 +179,16 @@ func SetDefaultInsecureSkipTLS(skip bool) {
 // GetDefaultInsecureSkipTLS returns whether TLS verification should be skipped.
 func GetDefaultInsecureSkipTLS() bool {
 	return defaultInsecureSkipTLS
+}
+
+// SetDefaultVerbosity sets the verbosity level from the global --verbose flag.
+func SetDefaultVerbosity(v int) {
+	defaultVerbosity = v
+}
+
+// GetDefaultVerbosity returns the configured verbosity level.
+func GetDefaultVerbosity() int {
+	return defaultVerbosity
 }
 
 // CommandResponse represents the structured response from command execution
@@ -206,6 +221,11 @@ func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
 	// Always disable ANSI color codes -- MCP consumers are LLMs, not terminals
 	args = append([]string{"--no-color"}, args...)
 
+	// Propagate verbosity level so subprocesses produce the same debug output
+	if defaultVerbosity > 0 {
+		args = append([]string{"--verbose", fmt.Sprintf("%d", defaultVerbosity)}, args...)
+	}
+
 	// Prepend --insecure-skip-tls-verify when configured (before server/token)
 	if defaultInsecureSkipTLS {
 		args = append([]string{"--insecure-skip-tls-verify"}, args...)
@@ -214,21 +234,24 @@ func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
 	// Check context first (HTTP headers), then fall back to CLI defaults for --server flag
 	// Server flag is prepended first so it appears before --token in the final command
 	if server, ok := GetKubeServer(ctx); ok && server != "" {
+		klog.V(2).Infof("[auth] using --server from HTTP header: %s", server)
 		args = append([]string{"--server", server}, args...)
 	} else if defaultKubeServer != "" {
+		klog.V(2).Infof("[auth] using --server from CLI flag: %s", defaultKubeServer)
 		args = append([]string{"--server", defaultKubeServer}, args...)
+	} else {
+		klog.V(2).Info("[auth] no explicit --server; falling back to kubeconfig")
 	}
 
 	// Check context first (HTTP headers), then fall back to CLI defaults for --token flag
 	if token, ok := GetKubeToken(ctx); ok && token != "" {
-		// Insert --token flag at the beginning of args (after subcommand if present)
-		// This ensures it's processed before any other flags
+		klog.V(2).Info("[auth] using --token from HTTP header")
 		args = append([]string{"--token", token}, args...)
 	} else if defaultKubeToken != "" {
-		log.Println("[auth] RunKubectlMTVCommand: using token from CLI defaults")
+		klog.V(2).Info("[auth] using --token from CLI flag")
 		args = append([]string{"--token", defaultKubeToken}, args...)
 	} else {
-		log.Println("[auth] RunKubectlMTVCommand: NO token available (context or defaults)")
+		klog.V(2).Info("[auth] no explicit --token; falling back to kubeconfig")
 	}
 
 	// Check if we're in dry run mode
