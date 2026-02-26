@@ -51,7 +51,8 @@ ENV MCP_HOST="0.0.0.0" \
     MCP_PORT="8080" \
     MCP_OUTPUT_FORMAT="text" \
     MCP_MAX_RESPONSE_CHARS="0" \
-    MCP_READ_ONLY="false"
+    MCP_READ_ONLY="false" \
+    MCP_VERBOSE="2"
 
 # TLS settings (optional - provide paths to enable TLS)
 ENV MCP_CERT_FILE="" \
@@ -78,7 +79,8 @@ ENTRYPOINT ["/bin/sh", "-c", "\
     ${MCP_KUBE_SERVER:+--server \"${MCP_KUBE_SERVER}\"} \
     ${MCP_KUBE_TOKEN:+--token \"${MCP_KUBE_TOKEN}\"} \
     $([ \"${MCP_KUBE_INSECURE}\" = \"true\" ] && echo --insecure-skip-tls-verify) \
-    $([ \"${MCP_READ_ONLY}\" = \"true\" ] && echo --read-only)"]
+    $([ \"${MCP_READ_ONLY}\" = \"true\" ] && echo --read-only) \
+    ${MCP_VERBOSE:+--verbose \"${MCP_VERBOSE}\"}"]
 
 # Labels at the end for better readability
 LABEL name="kubectl-mtv-mcp-server" \
