@@ -18,25 +18,40 @@ A migration plan is a Kubernetes custom resource that defines:
 - **Migration Configuration**: Type, timing, and behavioral settings
 - **Target Customization**: Where and how VMs should run on the target platform
 
+### Required vs. Optional Fields
+
+Only three flags are required to create a plan: `--name`, `--source`, and `--vms`. Everything else is optional and has sensible defaults:
+
+- **Target provider** (`--target`): Auto-detects the first OpenShift provider in the namespace
+- **Network/storage mappings**: Auto-generated from provider inventory — only specify `--network-pairs`, `--storage-pairs`, `--network-mapping`, or `--storage-mapping` if the auto-detected defaults don't suit your needs
+- **Migration type** (`--migration-type`): Defaults to `cold`
+- **Target namespace** (`--target-namespace`): Defaults to the plan namespace
+- **Target power state** (`--target-power-state`): Defaults to matching the source VM power state
+
+**Do not set optional flags unless you need to override the defaults.** Specifying unnecessary flags makes commands harder to read and may override values you actually want.
+
 ### Plan Components
 
 Every migration plan includes:
 
-1. **Source and Target Providers**: Define the migration endpoints
-2. **VM List**: Specific VMs to include in the migration
-3. **Mappings**: Network and storage resource translations
-4. **Migration Settings**: Type, hooks, templates, and optimization options
+1. **Source Provider**: The virtualization platform to migrate from (required)
+2. **VM List**: Specific VMs to include in the migration (required)
+3. **Target Provider**: The OpenShift cluster to migrate to (auto-detected if omitted)
+4. **Mappings**: Network and storage resource translations (auto-generated if omitted)
+5. **Migration Settings**: Type, hooks, templates, and optimization options (all optional)
 
 ## VM Selection Methods
 
-kubectl-mtv supports three flexible methods for VM selection, verified from the command code:
+kubectl-mtv supports three flexible methods for VM selection, verified from the command code.
+
+**Note**: The examples below use only the required flags. Target provider, mappings, and other settings are auto-detected. See later sections for how to override specific defaults when needed.
 
 ### Method 1: Comma-separated List of VM Names
 
 The simplest method specifies VM names directly:
 
 ```bash
-# Basic VM list
+# Basic VM list — mappings and target are auto-detected
 kubectl mtv create plan --name simple-migration \
   --source vsphere-prod \
   --vms "web-server-01,db-server-01,app-server-01"
@@ -117,11 +132,37 @@ kubectl mtv create plan --name filtered-migration \
 
 ## Mapping Configuration Options in Plan Creation
 
-Migration plans support three approaches for resource mapping:
+When you omit all mapping flags, kubectl-mtv **auto-generates** network and storage mappings from the provider inventory. This is the recommended approach for most migrations. Only override mappings when the auto-detected defaults don't match your requirements.
 
-### Using Existing Mappings
+### Auto-Generated Mappings (Recommended)
 
-Reference pre-created mapping resources:
+Simply omit all mapping flags — kubectl-mtv will auto-detect the correct mappings:
+
+```bash
+# Auto-mapping — no mapping flags needed
+kubectl mtv create plan --name simple-migration \
+  --source vsphere-prod \
+  --vms "where powerState = 'poweredOn'"
+```
+
+All source providers support automatic mapping generation. Provider-specific mappers intelligently match source networks and storage to appropriate target resources.
+
+### Overriding with Default Target Network/Storage
+
+If auto-detection picks the wrong default, you can override just the default targets:
+
+```bash
+# Override only the default target network and storage class
+kubectl mtv create plan --name default-migration \
+  --source vsphere-prod \
+  --default-target-network default \
+  --default-target-storage-class standard-ssd \
+  --vms "test-vm-01,test-vm-02"
+```
+
+### Overriding with Existing Mappings
+
+Reference pre-created mapping resources when you need full control:
 
 ```bash
 # Use existing network and storage mappings
@@ -139,9 +180,9 @@ kubectl mtv create plan --name cross-ns-mappings \
   --vms @vm-list.yaml
 ```
 
-### Using Inline Mapping Pairs
+### Overriding with Inline Mapping Pairs
 
-Define mappings directly in the plan creation command:
+Define mappings directly in the plan creation command when you need per-source control:
 
 ```bash
 # Inline network and storage pairs
@@ -159,42 +200,17 @@ kubectl mtv create plan --name advanced-inline \
   --vms "where cluster.name = 'Prod-Cluster'"
 ```
 
-### Using Default Mappings (Simplest Approach)
-
-Let kubectl-mtv create simple default mappings:
-
-```bash
-# Use default network and storage class
-kubectl mtv create plan --name default-migration \
-  --source vsphere-prod \
-  --default-target-network default \
-  --default-target-storage-class standard-ssd \
-  --vms "test-vm-01,test-vm-02"
-
-# Default pod networking and specific storage
-kubectl mtv create plan --name pod-network-migration \
-  --source vsphere-prod \
-  --default-target-network default \
-  --default-target-storage-class premium-nvme \
-  --vms "where name ~= '^test-.*'"
-
-# Auto-mapping (no mappings needed for any provider)
-kubectl mtv create plan --name simple-migration \
-  --source vsphere-prod \
-  --vms "where powerState = 'poweredOn'"
-```
-
-**Note**: All source providers support automatic mapping generation. Provider-specific mappers intelligently match source networks and storage to appropriate target resources.
-
 ## Key Plan Configuration Flags
+
+The flags below are all **optional** — only use them when you need to override the defaults.
 
 ### Migration Types
 
-kubectl-mtv supports four migration types (see [Forklift Migration Types](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#about-cold-warm-migration_mtv)):
+kubectl-mtv supports four migration types (see [Forklift Migration Types](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#about-cold-warm-migration_mtv)). The default is `cold` — only specify `--migration-type` to use a different type.
 
 | Type | Description | Use Case |
 |------|-------------|----------|
-| `cold` | Offline migration | Production VMs where downtime is acceptable |
+| `cold` | Offline migration (default) | Production VMs where downtime is acceptable |
 | `warm` | Pre-copy with minimal downtime | Large VMs where downtime must be minimized |
 | `live` | Live migration (KubeVirt sources only) | Zero-downtime migration between KubeVirt clusters |
 | `conversion` | Guest conversion only (VMware only) | When storage vendors provide pre-populated PVCs |
@@ -204,10 +220,9 @@ For detailed information about conversion migration, including prerequisites, wo
 #### Migration Type Examples
 
 ```bash
-# Cold migration (default)
+# Cold migration (default — no need to specify --migration-type)
 kubectl mtv create plan --name cold-migration \
   --source vsphere-prod \
-  --migration-type cold \
   --vms "batch-processor-01,backup-server-01"
 
 # Warm migration for large VMs
@@ -232,26 +247,22 @@ kubectl mtv create plan --name conversion-only \
 
 ### Target Namespace and Transfer Network
 
+These are optional. Target namespace defaults to the plan namespace, and transfer network uses the controller default.
+
 #### Target Namespace Configuration
 
 ```bash
-# Specify target namespace
+# Override target namespace (only when VMs should land in a different namespace)
 kubectl mtv create plan --name namespaced-migration \
   --source vsphere-prod \
   --target-namespace production-workloads \
   --vms "prod-web-01,prod-api-01"
-
-# Use current namespace (default)
-kubectl mtv create plan --name current-ns-migration \
-  --source vsphere-prod \
-  -  --vms "dev-app-01,dev-db-01" \
-  --namespace development
 ```
 
 #### Transfer Network Configuration
 
 ```bash
-# Use specific transfer network for disk operations
+# Override transfer network (only when the default network isn't suitable)
 kubectl mtv create plan --name transfer-net-migration \
   --source vsphere-prod \
   --transfer-network migration-net \
@@ -512,88 +523,87 @@ kubectl mtv create plan --name validated-migration \
 
 ## Complete Plan Creation Examples
 
-### Example 1: Enterprise Production Migration
+### Example 1: Minimal Migration (Recommended Starting Point)
+
+Most migrations only need the three required flags. Everything else is auto-detected:
 
 ```bash
-# Comprehensive enterprise migration plan
+# Minimal plan — auto-detects target, mappings, and all other settings
+kubectl mtv create plan --name quick-migration \
+  --source vsphere-prod \
+  --vms "web-server-01,db-server-01"
+```
+
+### Example 2: Development Environment Migration
+
+For dev environments, you may want to override a few specific defaults:
+
+```bash
+# Override only what's needed: target namespace and power state
+kubectl mtv create plan --name dev-migration \
+  --source vsphere-dev \
+  --target-namespace development \
+  --target-power-state on \
+  --vms "dev-web-01,dev-api-01,dev-db-01"
+```
+
+### Example 3: Enterprise Production Migration
+
+Enterprise migrations may need custom mappings, hooks, and placement rules.
+Only specify the flags you actually need to override:
+
+```bash
+# Override mappings, migration type, hooks, and placement
 kubectl mtv create plan --name enterprise-production \
   --source vsphere-production \
-  --target openshift-production \
   --network-mapping enterprise-network-map \
   --storage-mapping enterprise-storage-map \
   --migration-type warm \
   --target-namespace production-workloads \
   --transfer-network migration-backbone \
-  --preserve-static-ips \
   --target-labels "environment=production,migration=phase1" \
   --target-node-selector "zone=east,performance=high" \
-  --pvc-name-template "{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.VmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}" \
   --pre-hook production-backup \
   --post-hook production-validation \
-  --run-preflight-inspection \
-  --delete-guest-conversion-pod \
   --vms "where cluster.name = 'Production-East' and powerState = 'poweredOn' and not template"
 ```
 
-### Example 2: Development Environment Migration
+### Example 4: Query-Based Batch Migration
 
 ```bash
-# Simple development migration
-kubectl mtv create plan --name dev-migration \
-  --source vsphere-dev \
-  --migration-type cold \
-  --default-target-network default \
-  --default-target-storage-class standard-ssd \
-  --target-namespace development \
-  --skip-guest-conversion \
-  --use-compatibility-mode \
-  --target-power-state on \
-  --vms "dev-web-01,dev-api-01,dev-db-01" \
-  --namespace development
-```
-
-### Example 3: Query-Based Batch Migration
-
-```bash
-# Large-scale query-driven migration
+# Override mappings and labels for a batch of small VMs
 kubectl mtv create plan --name batch-small-vms \
   --source vsphere-prod \
-  --migration-type cold \
   --network-pairs "VM Network:default,Management Network:ignored" \
   --storage-pairs "datastore1:standard-ssd,datastore2:premium-nvme;volumeMode=Block" \
   --target-labels "batch=phase1,size=small" \
-  --convertor-node-selector "batch-processing=true" \
-  --pvc-name-template "batch-{% raw %}{{.PlanName}}{% endraw %}-{% raw %}{{.VmName}}{% endraw %}-disk{% raw %}{{.DiskIndex}}{% endraw %}" \
-  --delete-vm-on-fail-migration \
   --vms "where powerState = 'poweredOn' and memoryMB <= 4096 and len(disks) <= 2 and not template"
 ```
 
-### Example 4: Multi-Provider Migration
+### Example 5: Multi-Provider Migration
+
+Only override mappings if the auto-generated ones don't match your environment:
 
 ```bash
-# oVirt to OpenShift migration
+# oVirt to OpenShift — override mappings and migration type
 kubectl mtv create plan --name ovirt-migration \
   --source ovirt-production \
-  --target openshift-target \
   --migration-type warm \
   --network-pairs "ovirtmgmt:default,production:prod-net" \
   --storage-pairs "data:standard-rwo;volumeMode=Filesystem,fast:premium-ssd;volumeMode=Block" \
-  --preserve-cluster-cpu-model \
   --target-namespace migrated-workloads \
   --vms @ovirt-vm-list.yaml
 
-# OpenStack to OpenShift migration
+# OpenStack to OpenShift — override mappings
 kubectl mtv create plan --name openstack-migration \
   --source openstack-prod \
-  --target openshift-target \
-  --migration-type cold \
   --network-pairs "internal:default,external:multus-system/external" \
   --storage-pairs "__DEFAULT__:standard-rwo,ssd:premium-ssd" \
   --target-labels "source=openstack,migration=batch2" \
   --vms "where flavor.name = 'm1.medium' and status = 'ACTIVE'"
 ```
 
-### Example 5: Storage Array Offloading
+### Example 6: Storage Array Offloading
 
 ```bash
 # Plan with storage array offloading
@@ -778,10 +788,12 @@ kubectl mtv create plan --name mixed-mappings \
 
 ### Configuration Best Practices
 
-1. **Use Descriptive Names**: Name plans clearly for operational clarity
-2. **Leverage Templates**: Use naming templates for consistent resource naming
-3. **Document Dependencies**: Maintain clear documentation of plan relationships
-4. **Test Mappings**: Validate mappings before large-scale migrations
+1. **Start Minimal**: Only specify required flags (`--name`, `--source`, `--vms`); let defaults handle the rest
+2. **Override Selectively**: Only add optional flags when the auto-detected defaults don't match your needs
+3. **Use Descriptive Names**: Name plans clearly for operational clarity
+4. **Leverage Templates**: Use naming templates for consistent resource naming
+5. **Document Dependencies**: Maintain clear documentation of plan relationships
+6. **Test Mappings**: Validate mappings before large-scale migrations
 
 ### Operational Best Practices
 
