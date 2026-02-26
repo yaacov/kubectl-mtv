@@ -88,6 +88,9 @@ spec:
             # Set to "true" to disable write operations (read-only mode)
             - name: MCP_READ_ONLY
               value: "false"
+            # Verbosity level (0=silent, 1=info, 2=debug, 3=trace)
+            - name: MCP_VERBOSE
+              value: "2"
 
           securityContext:
             allowPrivilegeEscalation: false
