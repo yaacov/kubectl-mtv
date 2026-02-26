@@ -86,8 +86,11 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 		Short: "Create a migration plan",
 		Long: `Create a migration plan to move VMs from a source provider to OpenShift.
 
-A plan defines which VMs to migrate, the source and target providers, and
-network/storage mappings. VMs can be specified as:
+Only --name, --source, and --vms are required. All other flags are optional
+and have sensible defaults — only set them when you need to override the
+default behavior (see "Optional Fields" below).
+
+VMs can be specified as:
   - Comma-separated names: --vms "vm1,vm2,vm3"
   - TSL query: --vms "where name ~= 'prod-.*' and cpuCount <= 8"
   - YAML/JSON file: --vms @vms.yaml
@@ -97,18 +100,33 @@ Providers:
   --target is the name of the target provider resource (e.g. "host", "ocp-target").
   If --target is omitted, the first OpenShift provider in the namespace is used.
 
-Network and storage mappings can be created inline using --network-pairs and
---storage-pairs, or reference existing mapping resources with --network-mapping
-and --storage-mapping.
+Optional Fields — leave unset unless you need to override:
+  Network/storage mappings are auto-generated from provider inventory when
+  omitted. Only specify --network-pairs, --storage-pairs, --network-mapping,
+  or --storage-mapping if you need custom mappings that differ from the
+  auto-detected defaults.
 
-Mapping Pair Formats:
-  --network-pairs format: "source_network:target" (comma-separated for multiple)
-    target can be a network name, namespace/name, "default" (pod networking), or "ignored" (skip).
-    Example: "VM Network:default" or "prod-net:myns/br-ext,mgmt-net:default"
+  Similarly, flags like --migration-type (default: cold), --target-namespace
+  (default: plan namespace), --target-power-state (default: match source),
+  --preserve-static-ips (default: true), and other boolean/string flags all
+  have reasonable defaults. Setting them unnecessarily makes commands harder
+  to read and may override values you actually want.
 
-  --storage-pairs format: "source_datastore:storage_class" (comma-separated for multiple)
-    Maps source datastores to OpenShift storage classes.
-    Example: "datastore1:standard" or "ds1:fast-ssd,ds2:economy"
+Mapping Pair Formats (when overriding auto-generated mappings):
+  --network-pairs: comma-separated "source:target" pairs. Target forms:
+    source:default                    - Pod networking
+    source:nad-name                   - NAD in plan namespace
+    source:namespace/nad-name         - NAD in explicit namespace
+    source:ignored                    - Skip this network
+    Example: "VM Network:default,Production:myns/br-ext,Backup:ignored"
+
+  --storage-pairs: comma-separated "source:storageclass[;options]" pairs.
+    source:storageclass               - Basic mapping
+    source:sc;volumeMode=Block        - With volume mode (Filesystem|Block)
+    source:sc;accessMode=ReadWriteMany - With access mode
+    source:sc;offloadPlugin=vsphere;offloadVendor=ontap - Storage offload
+    Options are semicolon-separated and can be combined:
+    Example: "ds1:fast-ssd,ds2:economy;volumeMode=Block;accessMode=ReadWriteOnce"
 
 Query Language (TSL):
   The --vms flag accepts TSL queries to select VMs dynamically:
@@ -123,47 +141,47 @@ Affinity Syntax (KARL):
     --convertor-affinity "PREFER pods(app=cache) on zone weight=80"
   Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.
   Run 'kubectl-mtv help karl' for the full syntax reference.`,
-		Example: `  # Create a plan with specific VMs and inline mappings
-  # --target is the name of the target provider resource (omit to auto-detect)
-  # --network-pairs maps source networks to target: "source:target"
-  #   use "default" as target for pod networking
-  # --storage-pairs maps source datastores to storage classes: "source:storageclass"
+		Example: `  # Minimal plan — only required flags; mappings and target are auto-detected
   kubectl-mtv create plan --name my-migration \
     --source vsphere-prod \
-    --target host \
-    --vms "web-server,db-server" \
-    --network-pairs "VM Network:default" \
-    --storage-pairs "datastore1:standard"
+    --vms "web-server,db-server"
 
-  # Multiple network and storage mappings (comma-separated pairs)
-  kubectl-mtv create plan --name multi-map \
-    --source vsphere-prod \
-    --target host \
-    --vms "app-vm,cache-vm" \
-    --network-pairs "VM Network:default,Production:myns/br-ext" \
-    --storage-pairs "datastore1:fast-ssd,datastore2:economy"
-
-  # Create a plan using VM query to select VMs dynamically
+  # Minimal plan with a TSL query to select VMs dynamically
   kubectl-mtv create plan --name batch-migration \
     --source vsphere-prod \
-    --target host \
-    --vms "where name ~= 'legacy-.*'" \
-    --default-target-network default \
-    --default-target-storage-class standard
+    --vms "where name ~= 'legacy-.*'"
 
-  # Create a warm migration plan
+  # Minimal plan from a VM file (auto-detect mappings and target)
+  kubectl-mtv get inventory vms --provider vsphere-prod --output planvms > vms.yaml
+  kubectl-mtv create plan --name file-migration \
+    --source vsphere-prod \
+    --vms @vms.yaml
+
+  # Override the migration type (default is cold)
   kubectl-mtv create plan --name warm-migration \
     --source vsphere-prod \
-    --target host \
     --vms "critical-vm" \
     --migration-type warm
 
-  # Create a plan from VM file
-  kubectl-mtv get inventory vm --provider vsphere-prod --output planvms > vms.yaml
-  kubectl-mtv create plan --name file-migration \
+  # Override auto-detected mappings with explicit inline pairs
+  # Only do this if the auto-generated mappings don't suit your needs
+  kubectl-mtv create plan --name custom-map \
     --source vsphere-prod \
-    --target host \
-    --vms @vms.yaml \
+    --vms "app-vm,cache-vm" \
+    --network-pairs "VM Network:default,Production:myns/br-ext,Backup:ignored" \
+    --storage-pairs "datastore1:fast-ssd,datastore2:economy"
+
+  # Storage pairs with advanced options (volume mode, access mode, offload)
+  kubectl-mtv create plan --name advanced-storage \
+    --source vsphere-prod \
+    --vms "db-server" \
+    --storage-pairs "fast-ds:premium;volumeMode=Block;accessMode=ReadWriteOnce,shared-ds:nfs-class;volumeMode=Filesystem;accessMode=ReadWriteMany"
+
+  # Override default target network and storage class
+  # Only needed when auto-detection doesn't pick the right defaults
+  kubectl-mtv create plan --name explicit-defaults \
+    --source vsphere-prod \
+    --vms "where name ~= 'test-.*'" \
     --default-target-network default \
     --default-target-storage-class standard`,
 		Args:         cobra.NoArgs,
@@ -447,11 +465,11 @@ Affinity Syntax (KARL):
 
 	cmd.Flags().StringVarP(&name, "name", "M", "", "Plan name")
 	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name (supports namespace/name pattern, defaults to plan namespace)")
-	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name (supports namespace/name pattern, defaults to plan namespace)")
-	cmd.Flags().StringVar(&networkMapping, "network-mapping", "", "Network mapping name")
-	cmd.Flags().StringVar(&storageMapping, "storage-mapping", "", "Storage mapping name")
-	cmd.Flags().StringVar(&networkPairs, "network-pairs", "", "Network mapping pairs in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated)")
-	cmd.Flags().StringVar(&storagePairs, "storage-pairs", "", "Storage mapping pairs in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)")
+	cmd.Flags().StringVarP(&targetProvider, "target", "t", "", "Target provider name (auto-detects first OpenShift provider when omitted)")
+	cmd.Flags().StringVar(&networkMapping, "network-mapping", "", "Network mapping name (auto-generated when omitted)")
+	cmd.Flags().StringVar(&storageMapping, "storage-mapping", "", "Storage mapping name (auto-generated when omitted)")
+	cmd.Flags().StringVar(&networkPairs, "network-pairs", "", "Inline network mapping pairs (auto-generated when omitted). Format: 'source:target' (comma-separated)")
+	cmd.Flags().StringVar(&storagePairs, "storage-pairs", "", "Inline storage mapping pairs (auto-generated when omitted). Format: 'source:storage-class[;param=value]' (comma-separated)")
 
 	// Storage enhancement flags
 	cmd.Flags().StringVar(&defaultVolumeMode, "default-volume-mode", "", "Default volume mode for storage pairs (Filesystem|Block)")
@@ -471,17 +489,19 @@ Affinity Syntax (KARL):
 	cmd.Flags().BoolVar(&offloadInsecureSkipTLS, "offload-insecure-skip-tls", false, "Skip TLS verification for offload connections")
 
 	_ = cmd.MarkFlagRequired("name")
+	_ = cmd.MarkFlagRequired("source")
 	cmd.Flags().StringVar(&vmNamesQuaryOrFile, "vms", "", "List of VM names (comma-separated), path to YAML/JSON file (prefix with @), or query string (prefix with 'where ')")
+	_ = cmd.MarkFlagRequired("vms")
 	cmd.Flags().StringVar(&preHook, "pre-hook", "", "Pre-migration hook to add to all VMs in the plan")
 	cmd.Flags().StringVar(&postHook, "post-hook", "", "Post-migration hook to add to all VMs in the plan")
 
 	// PlanSpec flags
 	cmd.Flags().StringVar(&planSpec.Description, "description", "", "Plan description")
-	cmd.Flags().StringVar(&planSpec.TargetNamespace, "target-namespace", "", "Target namespace")
-	cmd.Flags().StringVar(&transferNetwork, "transfer-network", "", "The network attachment definition for disk transfer. Supports 'namespace/network-name' or just 'network-name' (uses plan namespace)")
+	cmd.Flags().StringVar(&planSpec.TargetNamespace, "target-namespace", "", "Target namespace (defaults to plan namespace)")
+	cmd.Flags().StringVar(&transferNetwork, "transfer-network", "", "Network attachment definition for disk transfer. Supports 'namespace/network-name' or 'network-name'")
 	cmd.Flags().BoolVar(&planSpec.PreserveClusterCPUModel, "preserve-cluster-cpu-model", false, "Preserve the CPU model and flags the VM runs with in its cluster")
 	cmd.Flags().BoolVar(&planSpec.PreserveStaticIPs, "preserve-static-ips", true, "Preserve static IP configurations during migration")
-	cmd.Flags().StringVar(&planSpec.PVCNameTemplate, "pvc-name-template", "", "Template for generating PVC names for VM disks. Variables: {{.VmName}}, {{.PlanName}}, {{.DiskIndex}}, {{.WinDriveLetter}}, {{.RootDiskIndex}}, {{.Shared}}, {{.FileName}}")
+	cmd.Flags().StringVar(&planSpec.PVCNameTemplate, "pvc-name-template", "", "Template for generating PVC names. Variables: {{.VmName}}, {{.PlanName}}, {{.DiskIndex}}, {{.WinDriveLetter}}, {{.RootDiskIndex}}, {{.Shared}}, {{.FileName}}")
 	cmd.Flags().StringVar(&planSpec.VolumeNameTemplate, "volume-name-template", "", "Template for generating volume interface names in the target VM. Variables: {{.PVCName}}, {{.VolumeIndex}}")
 	cmd.Flags().StringVar(&planSpec.NetworkNameTemplate, "network-name-template", "", "Template for generating network interface names in the target VM. Variables: {{.NetworkName}}, {{.NetworkNamespace}}, {{.NetworkType}}, {{.NetworkIndex}}")
 	cmd.Flags().BoolVar(&planSpec.MigrateSharedDisks, "migrate-shared-disks", true, "Migrate disks shared between multiple VMs")
@@ -492,9 +512,9 @@ Affinity Syntax (KARL):
 	cmd.Flags().BoolVar(&planSpec.SkipGuestConversion, "skip-guest-conversion", false, "Skip the guest conversion process (raw disk copy mode)")
 	cmd.Flags().BoolVar(&planSpec.RunPreflightInspection, "run-preflight-inspection", true, "Run preflight inspection on VM base disks before starting disk transfer")
 	cmd.Flags().StringVar(&installLegacyDrivers, "install-legacy-drivers", "", "Install legacy Windows drivers (true/false, leave empty for auto-detection)")
-	cmd.Flags().VarP(migrationTypeFlag, "migration-type", "m", "Migration type: cold, warm, live, or conversion")
-	cmd.Flags().StringVarP(&defaultTargetNetwork, "default-target-network", "N", "", "Default target network for network mapping. Use 'default' for pod networking, 'namespace/network-name', or just 'network-name' (uses plan namespace)")
-	cmd.Flags().StringVar(&defaultTargetStorageClass, "default-target-storage-class", "", "Default target storage class for storage mapping")
+	cmd.Flags().VarP(migrationTypeFlag, "migration-type", "m", "Migration type: cold, warm, live, or conversion (default: cold)")
+	cmd.Flags().StringVarP(&defaultTargetNetwork, "default-target-network", "N", "", "Default target network for auto-generated mapping. Use 'default' for pod networking, 'namespace/network-name', or 'network-name'")
+	cmd.Flags().StringVar(&defaultTargetStorageClass, "default-target-storage-class", "", "Default target storage class for auto-generated mapping")
 	cmd.Flags().BoolVar(&useCompatibilityMode, "use-compatibility-mode", true, "Use compatibility devices (SATA bus, E1000E NIC) when skipGuestConversion is true")
 	cmd.Flags().StringSliceVarP(&targetLabels, "target-labels", "L", nil, "Target labels to be added to the VM (e.g., key1=value1,key2=value2)")
 	cmd.Flags().StringSliceVar(&targetNodeSelector, "target-node-selector", nil, "Target node selector to constrain VM scheduling (e.g., key1=value1,key2=value2)")

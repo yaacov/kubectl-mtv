@@ -320,38 +320,41 @@ kubectl mtv create provider --name my-ovirt --type ovirt \
 
 #### create plan --name PLAN_NAME
 
-Create a new migration plan.
+Create a new migration plan. Only `--name`, `--source`, and `--vms` are required. All other flags are optional and have sensible defaults — only set them when you need to override the default behavior. In particular, network/storage mappings are auto-generated from provider inventory when omitted.
 
 ```bash
-kubectl mtv create plan --name <name> [flags]
+kubectl mtv create plan --name <name> --source <provider> --vms <vm-selection> [flags]
 ```
 
-**Provider and Mapping Flags:**
+**Required Flags:**
+- `--name, -M`: Plan name
 - `--source, -S`: Source provider name (supports namespace/name pattern)
-- `--target, -t`: Target provider name (supports namespace/name pattern)
-- `--network-mapping`: Network mapping name
-- `--storage-mapping`: Storage mapping name
-- `--network-pairs`: Network mapping pairs (comma-separated)
-- `--storage-pairs`: Storage mapping pairs (comma-separated with semicolon parameters)
-
-**VM Selection Flags:**
 - `--vms`: List of VM names, file path (@file.yaml), or query string ('where ...')
 
-**Plan Configuration Flags:**
-- `--description`: Plan description
-- `--target-namespace`: Target namespace for migrated VMs
-- `--transfer-network`: Network attachment definition for disk transfer
-- `--migration-type, -m`: Migration type (cold, warm, live, conversion)
-- `--warm`: Enable warm migration (legacy flag)
+**Optional Provider and Mapping Flags (omit to use auto-detected defaults):**
+- `--target, -t`: Target provider name (auto-detects first OpenShift provider when omitted)
+- `--network-mapping`: Network mapping name (omit to auto-generate from inventory)
+- `--storage-mapping`: Storage mapping name (omit to auto-generate from inventory)
+- `--network-pairs`: Network mapping pairs, comma-separated (omit to auto-generate)
+- `--storage-pairs`: Storage mapping pairs, comma-separated with semicolon parameters (omit to auto-generate)
+- `--default-target-network`: Override the default target network for auto-generated mapping
+- `--default-target-storage-class`: Override the default storage class for auto-generated mapping
 
-**Storage Enhancement Flags:**
+**Optional Plan Configuration Flags:**
+- `--description`: Plan description
+- `--target-namespace`: Target namespace for migrated VMs (default: plan namespace)
+- `--transfer-network`: Network attachment definition for disk transfer (default: controller default)
+- `--migration-type, -m`: Migration type: cold, warm, live, or conversion (default: cold)
+- `--warm`: Enable warm migration (legacy flag; use --migration-type=warm instead)
+
+**Optional Storage Enhancement Flags:**
 - `--default-volume-mode`: Default volume mode (Filesystem|Block)
 - `--default-access-mode`: Default access mode (ReadWriteOnce|ReadWriteMany|ReadOnlyMany)
 - `--default-offload-plugin`: Default offload plugin type (vsphere)
 - `--default-offload-secret`: Existing offload secret name
 - `--default-offload-vendor`: Default offload plugin vendor
 
-**Storage Array Offload Flags:**
+**Optional Storage Array Offload Flags:**
 - `--offload-vsphere-username`: vSphere username for offload secret
 - `--offload-vsphere-password`: vSphere password for offload secret
 - `--offload-vsphere-url`: vSphere vCenter URL for offload secret
@@ -361,54 +364,62 @@ kubectl mtv create plan --name <name> [flags]
 - `--offload-cacert`: CA certificate for offload secret
 - `--offload-insecure-skip-tls`: Skip TLS verification for offload connections
 
-**Target VM Placement Flags:**
+**Optional Target VM Placement Flags:**
 - `--target-labels, -L`: Target labels for VMs (key1=value1,key2=value2)
 - `--target-node-selector`: Target node selector for VM scheduling
 - `--target-affinity`: Target affinity using [KARL](../28-karl-kubernetes-affinity-rule-language-reference) syntax
-- `--target-power-state`: Target power state (on, off, auto)
+- `--target-power-state`: Target power state: on, off, or auto (default: match source)
 
-**Convertor Pod Optimization Flags:**
+**Optional Convertor Pod Flags:**
 - `--convertor-labels`: Labels for virt-v2v convertor pods
 - `--convertor-node-selector`: Node selector for convertor pod scheduling
 - `--convertor-affinity`: Convertor affinity using [KARL](../28-karl-kubernetes-affinity-rule-language-reference) syntax
 
-**Template and Customization Flags:**
-- `--pvc-name-template`: PVC name template for VM disks
+**Optional Template and Customization Flags:**
+- `--pvc-name-template`: PVC name template for VM disks (uses built-in template when omitted)
 - `--volume-name-template`: Volume interface name template
 - `--network-name-template`: Network interface name template
 
-**Advanced Flags:**
+**Optional Advanced Flags:**
 - `--preserve-cluster-cpu-model`: Preserve CPU model from oVirt cluster
 - `--preserve-static-ips`: Preserve static IPs of vSphere VMs (default: true)
 - `--migrate-shared-disks`: Migrate shared disks (default: true)
 - `--skip-guest-conversion`: Skip guest conversion process
 - `--delete-vm-on-fail-migration`: Delete target VM when migration fails
-- `--install-legacy-drivers`: Install legacy Windows drivers (true/false/auto)
+- `--install-legacy-drivers`: Install legacy Windows drivers (true/false, leave empty for auto-detection)
 - `--use-compatibility-mode`: Use compatibility devices for bootability (default: true)
 
-**Hook Flags:**
+**Optional Hook Flags:**
 - `--pre-hook`: Pre-migration hook for all VMs
 - `--post-hook`: Post-migration hook for all VMs
 
 **Examples:**
 ```bash
-# Simple plan with VM list
+# Minimal plan — only required flags; target and mappings are auto-detected
 kubectl mtv create plan --name my-migration \
-  --source my-vsphere --target my-openshift \
+  --source my-vsphere \
   --vms vm-web-01,vm-db-02,vm-app-03
 
-# Plan with query-based VM selection
+# Override migration type (default is cold)
 kubectl mtv create plan --name production-migration \
-  --source vsphere-prod --target openshift-prod \
+  --source vsphere-prod \
   --vms "where powerState = 'poweredOn' and name like 'prod-%'" \
   --migration-type warm
 
-# Plan with storage offloading
+# Override auto-generated mappings with inline pairs
+kubectl mtv create plan --name custom-map \
+  --source vsphere-prod \
+  --vms "app-vm,cache-vm" \
+  --network-pairs "VM Network:default" \
+  --storage-pairs "datastore1:fast-ssd"
+
+# Plan with storage offloading (advanced use case)
 kubectl mtv create plan --name offload-migration \
-  --source vsphere-datacenter --target openshift-production \
+  --source vsphere-datacenter \
   --storage-pairs "tier1-ds:flashsystem-gold;offloadPlugin=vsphere;offloadVendor=flashsystem" \
   --offload-vsphere-username vcenter-svc@vsphere.local \
-  --offload-storage-username flashsystem-admin
+  --offload-storage-username flashsystem-admin \
+  --vms "large-vm-01"
 ```
 
 #### create mapping network --name NAME / create mapping storage --name NAME
