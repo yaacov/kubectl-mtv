@@ -172,6 +172,26 @@ kubectl mtv create provider --name vsphere-test --type vsphere \
   --provider-insecure-skip-tls
 ```
 
+#### vSphere Provider with ESXi Clone Method
+
+Configure the ESXi clone method for direct ESXi disk cloning (vSphere only):
+
+```bash
+# Use VIB-based ESXi clone method
+kubectl mtv create provider --name vsphere-vib --type vsphere \
+  --url https://vcenter.example.com/sdk \
+  --username administrator@vsphere.local \
+  --password YourSecurePassword \
+  --esxi-clone-method vib
+
+# Use SSH-based ESXi clone method
+kubectl mtv create provider --name vsphere-ssh --type vsphere \
+  --url https://vcenter.example.com/sdk \
+  --username administrator@vsphere.local \
+  --password YourSecurePassword \
+  --esxi-clone-method ssh
+```
+
 #### vSphere Provider with Existing Secret
 
 ```bash
@@ -504,6 +524,18 @@ kubectl mtv patch provider --name vsphere-prod \
 # Disable VDDK AIO optimization
 kubectl mtv patch provider --name vsphere-prod \
   --use-vddk-aio-optimization=false
+```
+
+#### Update ESXi Clone Method (vSphere Only)
+
+```bash
+# Set ESXi clone method to VIB
+kubectl mtv patch provider --name vsphere-prod \
+  --esxi-clone-method vib
+
+# Set ESXi clone method to SSH
+kubectl mtv patch provider --name vsphere-prod \
+  --esxi-clone-method ssh
 ```
 
 ### Handling Shared Secrets

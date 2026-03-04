@@ -27,6 +27,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	// VSphere VDDK specific flags
 	var useVddkAioOptimization bool
 	var vddkBufSizeIn64K, vddkBufCount int
+	esxiCloneMethod := flags.NewEsxiCloneMethodFlag()
 
 	// OpenStack specific flags
 	var domainName, projectName, regionName string
@@ -130,6 +131,7 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 				UseVddkAioOptimization: useVddkAioOptimization,
 				VddkBufSizeIn64K:       vddkBufSizeIn64K,
 				VddkBufCount:           vddkBufCount,
+				EsxiCloneMethod:        esxiCloneMethod.GetValue(),
 				EC2Region:              ec2Region,
 				EC2TargetRegion:        ec2TargetRegion,
 				EC2TargetAZ:            ec2TargetAZ,
@@ -165,6 +167,7 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 	cmd.Flags().BoolVar(&useVddkAioOptimization, "use-vddk-aio-optimization", false, "Enable VDDK AIO optimization for improved disk transfer performance")
 	cmd.Flags().IntVar(&vddkBufSizeIn64K, "vddk-buf-size-in-64k", 0, "VDDK buffer size in 64K units (VixDiskLib.nfcAio.Session.BufSizeIn64K)")
 	cmd.Flags().IntVar(&vddkBufCount, "vddk-buf-count", 0, "VDDK buffer count (VixDiskLib.nfcAio.Session.BufCount)")
+	cmd.Flags().Var(esxiCloneMethod, "esxi-clone-method", "ESXi clone method for vSphere provider (vib or ssh)")
 
 	// OpenStack specific flags
 	cmd.Flags().StringVar(&domainName, "provider-domain-name", "", "OpenStack domain name")
@@ -195,6 +198,13 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 	// Add completion for sdk-endpoint flag
 	if err := cmd.RegisterFlagCompletionFunc("sdk-endpoint", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return sdkEndpointType.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	// Add completion for esxi-clone-method flag
+	if err := cmd.RegisterFlagCompletionFunc("esxi-clone-method", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return esxiCloneMethod.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
 		panic(err)
 	}

@@ -16,6 +16,7 @@ type ProviderOptions struct {
 	UseVddkAioOptimization bool
 	VddkBufSizeIn64K       int
 	VddkBufCount           int
+	EsxiCloneMethod        string
 	// OpenShift specific options
 	Token string
 	// OpenStack specific options

@@ -11,10 +11,13 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/patch/provider"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewProviderCmd creates the patch provider command
 func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
+	esxiCloneMethod := flags.NewEsxiCloneMethodFlag()
+
 	opts := provider.PatchProviderOptions{
 		ConfigFlags: kubeConfigFlags,
 	}
@@ -52,6 +55,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 			// Set flag change tracking
 			opts.InsecureSkipTLSChanged = cmd.Flag("provider-insecure-skip-tls").Changed
 			opts.UseVddkAioOptimizationChanged = cmd.Flag("use-vddk-aio-optimization").Changed
+			opts.EsxiCloneMethod = esxiCloneMethod.GetValue()
 
 			return provider.PatchProvider(opts)
 		},
@@ -76,6 +80,7 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	cmd.Flags().BoolVar(&opts.UseVddkAioOptimization, "use-vddk-aio-optimization", false, "Enable VDDK AIO optimization for improved disk transfer performance")
 	cmd.Flags().IntVar(&opts.VddkBufSizeIn64K, "vddk-buf-size-in-64k", 0, "VDDK buffer size in 64K units (VixDiskLib.nfcAio.Session.BufSizeIn64K)")
 	cmd.Flags().IntVar(&opts.VddkBufCount, "vddk-buf-count", 0, "VDDK buffer count (VixDiskLib.nfcAio.Session.BufCount)")
+	cmd.Flags().Var(esxiCloneMethod, "esxi-clone-method", "ESXi clone method for vSphere provider (vib or ssh)")
 
 	// OpenStack specific flags
 	cmd.Flags().StringVar(&opts.DomainName, "provider-domain-name", "", "OpenStack domain name")
@@ -97,6 +102,9 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	cmd.Flags().BoolVar(&opts.AutoTargetCredentials, "auto-target-credentials", false, "Automatically fetch target AWS credentials from cluster and target-az from worker nodes")
 
 	_ = cmd.RegisterFlagCompletionFunc("name", completion.ProviderNameCompletion(kubeConfigFlags))
+	_ = cmd.RegisterFlagCompletionFunc("esxi-clone-method", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return esxiCloneMethod.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	})
 
 	return cmd
 }

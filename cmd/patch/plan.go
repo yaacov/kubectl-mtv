@@ -30,6 +30,16 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var convertorNodeSelector []string
 	var convertorAffinity string
 
+	// Conversion temporary storage flags
+	var conversionTempStorageClass string
+	var conversionTempStorageSize string
+	var skipZoneNodeSelector bool
+	var customizationScripts string
+	var virtV2vImage string
+
+	// Change tracking for new bool flags
+	var skipZoneNodeSelectorChanged bool
+
 	// Missing flags from create plan
 	var description string
 	var preserveClusterCPUModel bool
@@ -110,6 +120,7 @@ Affinity Syntax (KARL):
 			skipGuestConversionChanged = cmd.Flags().Changed("skip-guest-conversion")
 			warmChanged = cmd.Flags().Changed("warm")
 			runPreflightInspectionChanged = cmd.Flags().Changed("run-preflight-inspection")
+			skipZoneNodeSelectorChanged = cmd.Flags().Changed("skip-zone-node-selector")
 
 			return plan.PatchPlan(plan.PatchPlanOptions{
 				ConfigFlags: kubeConfigFlags,
@@ -131,6 +142,13 @@ Affinity Syntax (KARL):
 				ConvertorLabels:       convertorLabels,
 				ConvertorNodeSelector: convertorNodeSelector,
 				ConvertorAffinity:     convertorAffinity,
+
+				// Conversion temporary storage fields
+				ConversionTempStorageClass: conversionTempStorageClass,
+				ConversionTempStorageSize:  conversionTempStorageSize,
+				SkipZoneNodeSelector:       skipZoneNodeSelector,
+				CustomizationScripts:       customizationScripts,
+				VirtV2vImage:               virtV2vImage,
 
 				// Additional plan fields
 				Description:                    description,
@@ -160,6 +178,7 @@ Affinity Syntax (KARL):
 				SkipGuestConversionChanged:            skipGuestConversionChanged,
 				WarmChanged:                           warmChanged,
 				RunPreflightInspectionChanged:         runPreflightInspectionChanged,
+				SkipZoneNodeSelectorChanged:           skipZoneNodeSelectorChanged,
 			})
 		},
 	}
@@ -180,6 +199,13 @@ Affinity Syntax (KARL):
 	cmd.Flags().StringSliceVar(&convertorLabels, "convertor-labels", nil, "Labels to be added to virt-v2v convertor pods (e.g., key1=value1,key2=value2)")
 	cmd.Flags().StringSliceVar(&convertorNodeSelector, "convertor-node-selector", nil, "Node selector to constrain convertor pod scheduling (e.g., key1=value1,key2=value2)")
 	cmd.Flags().StringVar(&convertorAffinity, "convertor-affinity", "", "Convertor affinity to constrain convertor pod scheduling using KARL syntax")
+
+	// Conversion temporary storage flags (providers requiring guest conversion)
+	cmd.Flags().StringVar(&conversionTempStorageClass, "conversion-temp-storage-class", "", "Storage class for temporary conversion PVCs (useful for large VM migrations where node ephemeral storage is insufficient)")
+	cmd.Flags().StringVar(&conversionTempStorageSize, "conversion-temp-storage-size", "", "Size of temporary conversion PVC, e.g. '30Gi' or '1Ti' (only used when --conversion-temp-storage-class is set)")
+	cmd.Flags().BoolVar(&skipZoneNodeSelector, "skip-zone-node-selector", false, "Skip adding zone-based node selector to migrated VMs (EC2 only)")
+	cmd.Flags().StringVar(&customizationScripts, "customization-scripts", "", "ConfigMap containing customization scripts for guest conversion. Supports 'namespace/name' or 'name'")
+	cmd.Flags().StringVar(&virtV2vImage, "virt-v2v-image", "", "Override global virt-v2v container image for this plan")
 
 	// Plan metadata and configuration flags
 	cmd.Flags().StringVar(&description, "description", "", "Plan description")
@@ -248,6 +274,8 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	// Additional VM flags
 	var deleteVmOnFailMigration bool
 	var deleteVmOnFailMigrationChanged bool
+	var nbdeClevis bool
+	var nbdeClevisChanged bool
 
 	cmd := &cobra.Command{
 		Use:          "planvm",
@@ -269,10 +297,12 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 
 			// Check if boolean flags have been explicitly set (changed from default)
 			deleteVmOnFailMigrationChanged = cmd.Flags().Changed("delete-vm-on-fail-migration")
+			nbdeClevisChanged = cmd.Flags().Changed("nbde-clevis")
 
 			return plan.PatchPlanVM(kubeConfigFlags, planName, vmName, namespace,
 				targetName, rootDisk, instanceType, pvcNameTemplate, volumeNameTemplate, networkNameTemplate, luksSecret, targetPowerState,
-				addPreHook, addPostHook, removeHook, clearHooks, deleteVmOnFailMigration, deleteVmOnFailMigrationChanged)
+				addPreHook, addPostHook, removeHook, clearHooks, deleteVmOnFailMigration, deleteVmOnFailMigrationChanged,
+				nbdeClevis, nbdeClevisChanged)
 		},
 	}
 
@@ -299,6 +329,7 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 
 	// Additional VM flags
 	cmd.Flags().BoolVar(&deleteVmOnFailMigration, "delete-vm-on-fail-migration", false, "Delete target VM when migration fails (overrides plan-level setting)")
+	cmd.Flags().BoolVar(&nbdeClevis, "nbde-clevis", false, "Enable passphrase-less NBDE/Clevis disk unlocking via TANG server (takes precedence over --luks-secret)")
 
 	// Add completion for hook flags
 	if err := cmd.RegisterFlagCompletionFunc("add-pre-hook", completion.HookResourceNameCompletion(kubeConfigFlags)); err != nil {
