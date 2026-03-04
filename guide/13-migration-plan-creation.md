@@ -494,6 +494,59 @@ kubectl mtv create plan --name warm-no-preflight \
   --vms "test-warm-vm-01"
 ```
 
+### Conversion Temporary Storage
+
+For large VM migrations (10+ TB disks) where node ephemeral storage may be insufficient, use temporary PVCs for conversion scratch space:
+
+```bash
+# Use a dedicated storage class for conversion temporary storage
+kubectl mtv create plan --name large-vm-migration \
+  --source vsphere-prod \
+  --conversion-temp-storage-class fast-scratch \
+  --conversion-temp-storage-size 500Gi \
+  --vms "massive-database-01"
+```
+
+### Customization Scripts
+
+Inject custom scripts to run during guest conversion via a ConfigMap:
+
+```bash
+# Use a ConfigMap containing customization scripts
+kubectl mtv create plan --name custom-scripts \
+  --source vsphere-prod \
+  --customization-scripts migration-scripts/my-custom-scripts \
+  --vms "windows-server-01,linux-app-02"
+```
+
+Script files in the ConfigMap must follow the naming conventions:
+- Windows: `[0-9]+_win_firstboot_[description].ps1`
+- Linux: `[0-9]+_linux_(run|firstboot)_[description].sh`
+
+### Custom virt-v2v Image
+
+Override the global virt-v2v container image for a specific plan:
+
+```bash
+# Use a custom virt-v2v image for this plan
+kubectl mtv create plan --name custom-v2v \
+  --source vsphere-prod \
+  --virt-v2v-image registry.example.com/custom-virt-v2v:latest \
+  --vms "special-vm-01"
+```
+
+### Skip Zone Node Selector (EC2 only)
+
+For EC2 migrations, skip the automatic zone-based node selector:
+
+```bash
+# Skip zone node selector for cross-zone scheduling
+kubectl mtv create plan --name ec2-cross-zone \
+  --source ec2-provider \
+  --skip-zone-node-selector \
+  --vms "ec2-instance-01"
+```
+
 ## Migration Hooks Integration
 
 Add hooks to run custom automation during migrations:

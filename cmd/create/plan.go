@@ -76,6 +76,9 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 	var targetAffinity string
 	var targetPowerState string
 
+	// Conversion temporary storage flags (providers requiring guest conversion)
+	var customizationScripts string
+
 	// Convertor-related flags
 	var convertorLabels []string
 	var convertorNodeSelector []string
@@ -421,6 +424,21 @@ Affinity Syntax (KARL):
 				planSpec.ConvertorAffinity = affinity
 			}
 
+			// Handle customization scripts reference (ConfigMap)
+			if customizationScripts != "" {
+				scriptsNamespace, scriptsName, err := flags.ParseResourceRef(customizationScripts, namespace)
+				if err != nil {
+					return fmt.Errorf("invalid --customization-scripts value: %w", err)
+				}
+
+				planSpec.CustomizationScripts = &corev1.ObjectReference{
+					Kind:       "ConfigMap",
+					APIVersion: "v1",
+					Name:       scriptsName,
+					Namespace:  scriptsNamespace,
+				}
+			}
+
 			// Handle use compatibility mode
 			planSpec.UseCompatibilityMode = useCompatibilityMode
 
@@ -526,6 +544,15 @@ Affinity Syntax (KARL):
 	cmd.Flags().StringSliceVar(&convertorLabels, "convertor-labels", nil, "Labels to be added to virt-v2v convertor pods (e.g., key1=value1,key2=value2)")
 	cmd.Flags().StringSliceVar(&convertorNodeSelector, "convertor-node-selector", nil, "Node selector to constrain convertor pod scheduling (e.g., key1=value1,key2=value2)")
 	cmd.Flags().StringVar(&convertorAffinity, "convertor-affinity", "", "Convertor affinity to constrain convertor pod scheduling using KARL syntax")
+
+	// Conversion temporary storage flags (providers requiring guest conversion)
+	cmd.Flags().StringVar(&planSpec.ConversionTempStorageClass, "conversion-temp-storage-class", "", "Storage class for temporary conversion PVCs (useful for large VM migrations where node ephemeral storage is insufficient)")
+	cmd.Flags().StringVar(&planSpec.ConversionTempStorageSize, "conversion-temp-storage-size", "", "Size of temporary conversion PVC, e.g. '30Gi' or '1Ti' (only used when --conversion-temp-storage-class is set)")
+
+	// Provider-specific flags
+	cmd.Flags().BoolVar(&planSpec.SkipZoneNodeSelector, "skip-zone-node-selector", false, "Skip adding zone-based node selector to migrated VMs (EC2 only)")
+	cmd.Flags().StringVar(&customizationScripts, "customization-scripts", "", "ConfigMap containing customization scripts for guest conversion. Supports 'namespace/name' or 'name'")
+	cmd.Flags().StringVar(&planSpec.VirtV2vImage, "virt-v2v-image", "", "Override global virt-v2v container image for this plan")
 
 	// Add completion for storage enhancement flags
 	if err := cmd.RegisterFlagCompletionFunc("default-volume-mode", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

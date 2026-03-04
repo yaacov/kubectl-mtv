@@ -172,6 +172,29 @@ kubectl mtv patch plan --plan-name urgent-migration \
   --run-preflight-inspection=false
 ```
 
+### Conversion and Guest Conversion Configuration
+
+Configure temporary storage, custom scripts, and virt-v2v image for guest conversion:
+
+```bash
+# Set temporary storage for large VM conversion scratch space
+kubectl mtv patch plan --plan-name large-migration \
+  --conversion-temp-storage-class fast-scratch \
+  --conversion-temp-storage-size 500Gi
+
+# Add customization scripts ConfigMap for guest conversion
+kubectl mtv patch plan --plan-name windows-migration \
+  --customization-scripts migration-scripts/windows-customizations
+
+# Override virt-v2v image for specific migration scenario
+kubectl mtv patch plan --plan-name custom-v2v-migration \
+  --virt-v2v-image registry.example.com/custom-virt-v2v:latest
+
+# Skip zone node selector for EC2 migrations (EC2 only)
+kubectl mtv patch plan --plan-name ec2-migration \
+  --skip-zone-node-selector=true
+```
+
 ### Comprehensive Plan Update Example
 
 ```bash
@@ -245,6 +268,10 @@ Configure VM-specific security settings:
 # Add LUKS decryption secret for encrypted VM
 kubectl mtv patch planvm --plan-name secure-migration --vm-name encrypted-database \
   --luks-secret db-encryption-keys
+
+# Enable NBDE/Clevis passphrase-less disk unlocking via TANG server
+kubectl mtv patch planvm --plan-name secure-migration --vm-name nbde-encrypted-vm \
+  --nbde-clevis=true
 
 # Override plan-level deletion policy for specific VM
 kubectl mtv patch planvm --plan-name test-migration --vm-name experimental-vm \

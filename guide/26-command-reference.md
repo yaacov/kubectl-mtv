@@ -296,6 +296,8 @@ kubectl mtv create provider --name <name> [flags]
 - `--sdk-endpoint`: SDK endpoint type for vSphere provider (vcenter or esxi)
 - `--use-vddk-aio-optimization`: Enable VDDK AIO optimization for vSphere provider
 - `--vddk-buf-size-in-64k`: VDDK buffer size in 64K units
+- `--vddk-buf-count`: VDDK buffer count
+- `--esxi-clone-method`: ESXi clone method (vib or ssh)
 
 **Examples:**
 ```bash
@@ -379,6 +381,13 @@ kubectl mtv create plan --name <name> --source <provider> --vms <vm-selection> [
 - `--pvc-name-template`: PVC name template for VM disks (uses built-in template when omitted)
 - `--volume-name-template`: Volume interface name template
 - `--network-name-template`: Network interface name template
+
+**Optional Conversion and Guest Conversion Flags:**
+- `--conversion-temp-storage-class`: Storage class for temporary conversion PVCs (useful for large VM migrations)
+- `--conversion-temp-storage-size`: Size of temporary conversion PVC (e.g. '30Gi', '1Ti')
+- `--customization-scripts`: ConfigMap containing customization scripts for guest conversion (supports namespace/name)
+- `--virt-v2v-image`: Override global virt-v2v container image for this plan
+- `--skip-zone-node-selector`: Skip zone-based node selector for migrated VMs (EC2 only)
 
 **Optional Advanced Flags:**
 - `--preserve-cluster-cpu-model`: Preserve CPU model from oVirt cluster
@@ -650,6 +659,11 @@ kubectl mtv patch plan --plan-name <plan-name> [flags]
 - `--convertor-labels`: Update convertor pod labels
 - `--convertor-node-selector`: Update convertor node selector
 - `--convertor-affinity`: Update convertor affinity rules
+- `--conversion-temp-storage-class`: Storage class for temporary conversion PVCs
+- `--conversion-temp-storage-size`: Size of temporary conversion PVC
+- `--customization-scripts`: ConfigMap for guest conversion scripts (supports namespace/name)
+- `--virt-v2v-image`: Override virt-v2v container image for this plan
+- `--skip-zone-node-selector`: Skip zone-based node selector (EC2 only)
 
 **Examples:**
 ```bash
@@ -673,9 +687,14 @@ kubectl mtv patch planvm --plan-name <plan-name> --vm-name <vm-name> [flags]
 **VM-Specific Flags:**
 - `--target-name`: Custom target VM name
 - `--instance-type`: KubeVirt instance type
+- `--root-disk`: Primary boot disk selection
 - `--target-power-state`: VM power state after migration (on, off, auto)
-- `--add-hook`: Add a hook (format: step:hook-namespace/hook-name)
-- `--remove-hook`: Remove a hook (format: step:hook-namespace/hook-name)
+- `--luks-secret`: Kubernetes Secret name containing LUKS disk decryption keys
+- `--nbde-clevis`: Enable passphrase-less NBDE/Clevis disk unlocking via TANG server
+- `--delete-vm-on-fail-migration`: Delete target VM when migration fails
+- `--add-pre-hook`: Add a pre-migration hook to this VM
+- `--add-post-hook`: Add a post-migration hook to this VM
+- `--remove-hook`: Remove a hook from this VM by hook name
 - `--clear-hooks`: Clear all hooks for the VM
 - `--pvc-name-template`: Custom PVC naming template for this VM
 - `--volume-name-template`: Custom volume naming template for this VM
@@ -690,8 +709,12 @@ kubectl mtv patch planvm --plan-name my-migration --vm-name vm-web-01 \
 
 # Add hooks to a VM
 kubectl mtv patch planvm --plan-name my-migration --vm-name vm-db-01 \
-  --add-hook PreMigration:default/backup-hook \
-  --add-hook PostMigration:default/validation-hook
+  --add-pre-hook backup-hook \
+  --add-post-hook validation-hook
+
+# Enable NBDE/Clevis for encrypted VM
+kubectl mtv patch planvm --plan-name my-migration --vm-name vm-encrypted \
+  --nbde-clevis=true
 ```
 
 #### patch mapping --name MAPPING_NAME
@@ -733,7 +756,12 @@ kubectl mtv patch provider --name <provider-name> [flags]
 - `--password`: Update password
 - `--provider-token`: Update authentication token
 - `--cacert`: Update CA certificate
-- `--insecure-skip-tls`: Update TLS verification setting
+- `--provider-insecure-skip-tls`: Update TLS verification setting
+- `--vddk-init-image`: Update VDDK init image (vSphere)
+- `--use-vddk-aio-optimization`: Update VDDK AIO optimization (vSphere)
+- `--vddk-buf-size-in-64k`: Update VDDK buffer size (vSphere)
+- `--vddk-buf-count`: Update VDDK buffer count (vSphere)
+- `--esxi-clone-method`: Update ESXi clone method (vSphere, vib or ssh)
 
 ## AI Integration Commands
 

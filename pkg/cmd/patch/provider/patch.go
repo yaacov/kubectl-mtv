@@ -41,6 +41,7 @@ type PatchProviderOptions struct {
 	UseVddkAioOptimizationChanged bool
 	VddkBufSizeIn64K              int
 	VddkBufCount                  int
+	EsxiCloneMethod               string
 
 	// OpenStack settings
 	DomainName  string
@@ -151,6 +152,13 @@ func PatchProvider(opts PatchProviderOptions) error {
 		if opts.UseVddkAioOptimizationChanged {
 			currentSettings["useVddkAioOptimization"] = fmt.Sprintf("%t", opts.UseVddkAioOptimization)
 			klog.V(2).Infof("Updated VDDK AIO optimization to %t", opts.UseVddkAioOptimization)
+			providerUpdated = true
+		}
+
+		// Update ESXi clone method if provided
+		if opts.EsxiCloneMethod != "" {
+			currentSettings["esxiCloneMethod"] = opts.EsxiCloneMethod
+			klog.V(2).Infof("Updated ESXi clone method to '%s'", opts.EsxiCloneMethod)
 			providerUpdated = true
 		}
 
