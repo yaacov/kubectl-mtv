@@ -85,6 +85,8 @@ func listEC2InstancesOnce(ctx context.Context, kubeConfigFlags *genericclioption
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:
@@ -169,6 +171,8 @@ func listEC2VolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:
@@ -245,6 +249,8 @@ func listEC2VolumeTypesOnce(ctx context.Context, kubeConfigFlags *genericcliopti
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:
@@ -327,6 +333,8 @@ func listEC2NetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:

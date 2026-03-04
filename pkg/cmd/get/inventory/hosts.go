@@ -81,29 +81,31 @@ func listHostsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Confi
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" && outputFormat != "markdown" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, markdown", outputFormat)
 	}
 
 	// Handle different output formats
 	emptyMessage := fmt.Sprintf("No hosts found for provider %s", providerName)
+	defaultHeaders := []output.Header{
+		{DisplayName: "NAME", JSONPath: "name"},
+		{DisplayName: "ID", JSONPath: "id"},
+		{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeStatus},
+		{DisplayName: "VERSION", JSONPath: "productVersion"},
+		{DisplayName: "MGMT IP", JSONPath: "managementServerIp"},
+		{DisplayName: "CORES", JSONPath: "cpuCores"},
+		{DisplayName: "SOCKETS", JSONPath: "cpuSockets"},
+		{DisplayName: "MAINTENANCE", JSONPath: "inMaintenance", ColorFunc: output.ColorizeBooleanString},
+	}
+
 	switch outputFormat {
 	case "json":
 		return output.PrintJSONWithEmpty(hosts, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(hosts, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(hosts, defaultHeaders, queryOpts, emptyMessage)
 	default:
-		// Define default headers
-		defaultHeaders := []output.Header{
-			{DisplayName: "NAME", JSONPath: "name"},
-			{DisplayName: "ID", JSONPath: "id"},
-			{DisplayName: "STATUS", JSONPath: "status", ColorFunc: output.ColorizeStatus},
-			{DisplayName: "VERSION", JSONPath: "productVersion"},
-			{DisplayName: "MGMT IP", JSONPath: "managementServerIp"},
-			{DisplayName: "CORES", JSONPath: "cpuCores"},
-			{DisplayName: "SOCKETS", JSONPath: "cpuSockets"},
-			{DisplayName: "MAINTENANCE", JSONPath: "inMaintenance", ColorFunc: output.ColorizeBooleanString},
-		}
 		return output.PrintTableWithQuery(hosts, defaultHeaders, queryOpts, emptyMessage)
 	}
 }

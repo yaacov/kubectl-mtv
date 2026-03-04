@@ -17,6 +17,8 @@ func FormatReport(report *HealthReport, outputFormat string) (string, error) {
 		return formatJSON(report)
 	case "yaml":
 		return formatYAML(report)
+	case "markdown":
+		return formatMarkdown(report), nil
 	default:
 		return formatTable(report), nil
 	}
@@ -433,4 +435,196 @@ func formatBoolPtr(b *bool) string {
 		return output.Green("True")
 	}
 	return output.Yellow("False")
+}
+
+func formatMarkdown(report *HealthReport) string {
+	var sb strings.Builder
+
+	sb.WriteString("# MTV Health Report\n\n")
+
+	// Operator
+	sb.WriteString("## Operator Status\n\n")
+	op := report.Operator
+	if op.Installed {
+		sb.WriteString("- **MTV Operator:** Installed\n")
+		if op.Version != "" && op.Version != "unknown" {
+			sb.WriteString(fmt.Sprintf("- **Version:** %s\n", op.Version))
+		}
+		sb.WriteString(fmt.Sprintf("- **Namespace:** %s\n", op.Namespace))
+	} else if op.Error != "" {
+		sb.WriteString(fmt.Sprintf("- **MTV Operator:** %s\n", op.Error))
+	} else if op.Status == "Unknown" {
+		sb.WriteString(fmt.Sprintf("- **MTV Operator:** %s\n", op.Status))
+	} else {
+		sb.WriteString("- **MTV Operator:** Not Installed\n")
+	}
+	sb.WriteString("\n")
+
+	// Controller
+	sb.WriteString("## Forklift Controller\n\n")
+	ctrl := report.Controller
+	if !ctrl.Found {
+		if ctrl.Error != "" {
+			sb.WriteString(fmt.Sprintf("%s\n\n", ctrl.Error))
+		} else {
+			sb.WriteString("ForkliftController not found\n\n")
+		}
+	} else {
+		sb.WriteString(fmt.Sprintf("- **Name:** %s\n", ctrl.Name))
+		sb.WriteString("- **Feature Flags:**\n")
+		sb.WriteString(fmt.Sprintf("  - UI Plugin: %s\n", mdBoolPtr(ctrl.FeatureFlags.UIPlugin)))
+		sb.WriteString(fmt.Sprintf("  - Validation: %s\n", mdBoolPtr(ctrl.FeatureFlags.Validation)))
+		sb.WriteString(fmt.Sprintf("  - Volume Pop: %s\n", mdBoolPtr(ctrl.FeatureFlags.VolumePopulator)))
+		sb.WriteString(fmt.Sprintf("  - Auth Required: %s\n", mdBoolPtr(ctrl.FeatureFlags.AuthRequired)))
+		if ctrl.HasRemoteOpenShiftProvider || ctrl.FeatureFlags.OCPLiveMigration != nil {
+			liveMigStatus := mdBoolPtr(ctrl.FeatureFlags.OCPLiveMigration)
+			if ctrl.HasRemoteOpenShiftProvider && (ctrl.FeatureFlags.OCPLiveMigration == nil || !*ctrl.FeatureFlags.OCPLiveMigration) {
+				liveMigStatus = "**[not set] Remote OpenShift provider exists!**"
+			}
+			sb.WriteString(fmt.Sprintf("  - OCP Live Mig: %s\n", liveMigStatus))
+		}
+		if len(ctrl.CustomImages) > 0 {
+			sb.WriteString(fmt.Sprintf("- **Custom Images:** %d overrides\n", len(ctrl.CustomImages)))
+			for _, img := range ctrl.CustomImages {
+				sb.WriteString(fmt.Sprintf("  - %s: %s\n", img.Field, img.Image))
+			}
+		} else {
+			sb.WriteString("- **Custom Images:** None\n")
+		}
+		if ctrl.VDDKImage != "" {
+			sb.WriteString(fmt.Sprintf("- **VDDK Image:** %s\n", ctrl.VDDKImage))
+		} else if ctrl.HasVSphereProvider {
+			sb.WriteString("- **VDDK Image:** NOT SET (vSphere providers exist!)\n")
+		}
+		if ctrl.LogLevel > 0 {
+			sb.WriteString(fmt.Sprintf("- **Log Level:** %d\n", ctrl.LogLevel))
+		}
+		sb.WriteString("\n")
+	}
+
+	// Pods
+	unhealthyPods := 0
+	for _, pod := range report.Pods {
+		if !pod.Ready || pod.Status != "Running" || len(pod.Issues) > 0 {
+			unhealthyPods++
+		}
+	}
+	sb.WriteString(fmt.Sprintf("## Forklift Pods (%d total, %d unhealthy)\n\n", len(report.Pods), unhealthyPods))
+	if len(report.Pods) > 0 {
+		sb.WriteString("| NAME | STATUS | RESTARTS | ISSUES |\n")
+		sb.WriteString("|---|---|---|---|\n")
+		for _, pod := range report.Pods {
+			issues := "None"
+			if len(pod.Issues) > 0 {
+				issues = strings.Join(pod.Issues, ", ")
+			}
+			sb.WriteString(fmt.Sprintf("| %s | %s | %d | %s |\n", mdCell(pod.Name), mdCell(pod.Status), pod.Restarts, mdCell(issues)))
+		}
+		sb.WriteString("\n")
+	}
+
+	// Log Analysis
+	if len(report.LogAnalysis) > 0 {
+		sb.WriteString("## Pod Log Analysis\n\n")
+		sb.WriteString("| NAME | ERRORS | WARNINGS |\n")
+		sb.WriteString("|---|---|---|\n")
+		for _, a := range report.LogAnalysis {
+			sb.WriteString(fmt.Sprintf("| %s | %d | %d |\n", mdCell(a.Name), a.Errors, a.Warnings))
+		}
+		sb.WriteString("\n")
+	}
+
+	// Providers
+	unhealthyProviders := 0
+	for _, p := range report.Providers {
+		if !p.Ready {
+			unhealthyProviders++
+		}
+	}
+	sb.WriteString(fmt.Sprintf("## Providers (%d total, %d unhealthy)\n\n", len(report.Providers), unhealthyProviders))
+	if len(report.Providers) > 0 {
+		sb.WriteString("| NAME | NAMESPACE | TYPE | CONNECTED | INVENTORY | READY |\n")
+		sb.WriteString("|---|---|---|---|---|---|\n")
+		for _, p := range report.Providers {
+			sb.WriteString(fmt.Sprintf("| %s | %s | %s | %t | %t | %t |\n",
+				mdCell(p.Name), mdCell(p.Namespace), mdCell(p.Type), p.Connected, p.InventoryCreated, p.Ready))
+		}
+		sb.WriteString("\n")
+	}
+
+	// Plans
+	unhealthyPlans := 0
+	for _, p := range report.Plans {
+		if !p.Ready || p.Status == "Failed" {
+			unhealthyPlans++
+		}
+	}
+	sb.WriteString(fmt.Sprintf("## Plans (%d total, %d with issues)\n\n", len(report.Plans), unhealthyPlans))
+	if len(report.Plans) > 0 {
+		sb.WriteString("| NAME | NAMESPACE | STATUS | READY | VMS |\n")
+		sb.WriteString("|---|---|---|---|---|\n")
+		for _, p := range report.Plans {
+			vmInfo := fmt.Sprintf("%d", p.VMCount)
+			if p.Failed > 0 {
+				vmInfo = fmt.Sprintf("%d (F:%d)", p.VMCount, p.Failed)
+			} else if p.Succeeded > 0 {
+				vmInfo = fmt.Sprintf("%d (S:%d)", p.VMCount, p.Succeeded)
+			}
+			sb.WriteString(fmt.Sprintf("| %s | %s | %s | %t | %s |\n",
+				mdCell(p.Name), mdCell(p.Namespace), mdCell(p.Status), p.Ready, mdCell(vmInfo)))
+		}
+		sb.WriteString("\n")
+	}
+
+	// Summary
+	sb.WriteString("## Summary\n\n")
+	sb.WriteString(fmt.Sprintf("- **Overall Health:** %s\n", string(report.OverallStatus)))
+	sb.WriteString(fmt.Sprintf("- **Issues Found:** %d\n", report.Summary.TotalIssues))
+	if report.Summary.CriticalIssues > 0 {
+		sb.WriteString(fmt.Sprintf("  - Critical: %d\n", report.Summary.CriticalIssues))
+	}
+	if report.Summary.WarningIssues > 0 {
+		sb.WriteString(fmt.Sprintf("  - Warning: %d\n", report.Summary.WarningIssues))
+	}
+
+	if len(report.Issues) > 0 {
+		sb.WriteString("\n### Recommendations\n\n")
+		for _, issue := range report.Issues {
+			prefix := "INFO"
+			switch issue.Severity {
+			case SeverityCritical:
+				prefix = "CRITICAL"
+			case SeverityWarning:
+				prefix = "WARNING"
+			}
+			resource := ""
+			if issue.Resource != "" {
+				resource = issue.Resource + ": "
+			}
+			sb.WriteString(fmt.Sprintf("- **[%s]** %s%s\n", prefix, resource, issue.Message))
+			if issue.Suggestion != "" {
+				sb.WriteString(fmt.Sprintf("  - %s\n", issue.Suggestion))
+			}
+		}
+	}
+
+	sb.WriteString("\n")
+	return sb.String()
+}
+
+func mdBoolPtr(b *bool) string {
+	if b == nil {
+		return "[not set]"
+	}
+	if *b {
+		return "True"
+	}
+	return "False"
+}
+
+// mdCell escapes characters that break markdown table layout.
+func mdCell(s string) string {
+	s = strings.ReplaceAll(s, "|", `\|`)
+	s = strings.ReplaceAll(s, "\n", "<br>")
+	return s
 }

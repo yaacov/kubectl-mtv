@@ -135,6 +135,8 @@ func listPersistentVolumeClaimsOnce(ctx context.Context, kubeConfigFlags *generi
 		return output.PrintJSONWithEmpty(pvcs, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(pvcs, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(pvcs, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(pvcs, defaultHeaders, queryOpts, emptyMessage)
 	default:

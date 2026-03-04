@@ -469,8 +469,8 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" && outputFormat != "planvms" && outputFormat != "yaml" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, planvms", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" && outputFormat != "markdown" && outputFormat != "planvms" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, markdown, planvms", outputFormat)
 	}
 
 	// Handle different output formats
@@ -480,6 +480,8 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 		return output.PrintJSONWithEmpty(vms, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(vms, emptyMessage)
+	case "markdown":
+		return printVMsMarkdown(vms, queryOpts, providerType, emptyMessage)
 	case "planvms":
 		// Convert inventory VMs to plan VM structs
 		planVMs := make([]planv1beta1.VM, 0, len(vms))
@@ -577,4 +579,33 @@ func listVMsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.ConfigF
 		}
 		return tablePrinter.Print()
 	}
+}
+
+func printVMsMarkdown(vms []map[string]interface{}, queryOpts *querypkg.QueryOptions, providerType, emptyMessage string) error {
+	var defaultHeaders []output.Header
+	switch providerType {
+	case "ec2":
+		defaultHeaders = []output.Header{
+			{DisplayName: "NAME", JSONPath: "name"},
+			{DisplayName: "TYPE", JSONPath: "InstanceType"},
+			{DisplayName: "STATE", JSONPath: "State.Name"},
+			{DisplayName: "PLATFORM", JSONPath: "PlatformDetails"},
+			{DisplayName: "AZ", JSONPath: "Placement.AvailabilityZone"},
+			{DisplayName: "PUBLIC-IP", JSONPath: "PublicIpAddress"},
+			{DisplayName: "PRIVATE-IP", JSONPath: "PrivateIpAddress"},
+		}
+	default:
+		defaultHeaders = []output.Header{
+			{DisplayName: "NAME", JSONPath: "name"},
+			{DisplayName: "ID", JSONPath: "id"},
+			{DisplayName: "POWER", JSONPath: "powerStateHuman"},
+			{DisplayName: "CPU", JSONPath: "cpuCount"},
+			{DisplayName: "MEMORY", JSONPath: "memoryGB"},
+			{DisplayName: "DISK USAGE", JSONPath: "storageUsedGB"},
+			{DisplayName: "GUEST OS", JSONPath: "guestId"},
+			{DisplayName: "CONCERNS (C/W/I)", JSONPath: "concernsHuman"},
+		}
+	}
+
+	return output.PrintMarkdownWithQuery(vms, defaultHeaders, queryOpts, emptyMessage)
 }

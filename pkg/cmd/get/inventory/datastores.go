@@ -128,6 +128,8 @@ func listDatastoresOnce(ctx context.Context, kubeConfigFlags *genericclioptions.
 		return output.PrintJSONWithEmpty(datastores, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(datastores, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(datastores, defaultHeaders, queryOpts, emptyMessage)
 	default:
 		return output.PrintTableWithQuery(datastores, defaultHeaders, queryOpts, emptyMessage)
 	}

@@ -100,7 +100,7 @@ Examples:
 	}
 
 	// Add flags
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().BoolVar(&skipLogs, "skip-logs", false, "Skip pod log analysis (faster but less thorough)")
 	cmd.Flags().IntVar(&logLines, "log-lines", 100, "Number of log lines to analyze per pod")
 

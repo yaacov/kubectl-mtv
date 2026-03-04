@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/yaacov/kubectl-mtv/pkg/mcp/util"
 )
 
 // --- CoerceBooleans tests ---
@@ -391,11 +390,6 @@ func TestBuildArgs_FlagsAllNamespaces(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Use text format to avoid --output json in the result (simplifies assertions)
-			origFormat := util.GetOutputFormat()
-			util.SetOutputFormat("text")
-			defer util.SetOutputFormat(origFormat)
-
 			result := buildArgs("get/plan", tt.flags)
 
 			// Use exact element match to avoid false positives from substrings

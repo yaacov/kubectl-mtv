@@ -121,6 +121,8 @@ func listResourcePoolsOnce(ctx context.Context, kubeConfigFlags *genericclioptio
 		return output.PrintJSONWithEmpty(resourcePools, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(resourcePools, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(resourcePools, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(resourcePools, defaultHeaders, queryOpts, emptyMessage)
 	default:

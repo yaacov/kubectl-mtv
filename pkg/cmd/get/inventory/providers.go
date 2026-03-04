@@ -96,8 +96,8 @@ func listProvidersOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" && outputFormat != "markdown" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, markdown", outputFormat)
 	}
 
 	// Handle different output formats
@@ -106,41 +106,39 @@ func listProvidersOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 		emptyMessage = fmt.Sprintf("No providers found in namespace %s", namespace)
 	}
 
+	defaultHeaders := []output.Header{
+		{DisplayName: "NAME", JSONPath: "name"},
+	}
+
+	if namespace == "" {
+		hasNamespace := false
+		for _, item := range items {
+			if _, exists := item["namespace"]; exists {
+				hasNamespace = true
+				break
+			}
+		}
+		if hasNamespace {
+			defaultHeaders = append(defaultHeaders, output.Header{DisplayName: "NAMESPACE", JSONPath: "namespace"})
+		}
+	}
+
+	defaultHeaders = append(defaultHeaders,
+		output.Header{DisplayName: "TYPE", JSONPath: "type"},
+		output.Header{DisplayName: "VERSION", JSONPath: "apiVersion"},
+		output.Header{DisplayName: "PHASE", JSONPath: "object.status.phase", ColorFunc: output.ColorizeStatus},
+		output.Header{DisplayName: "VMS", JSONPath: "vmCount"},
+		output.Header{DisplayName: "HOSTS", JSONPath: "hostCount"},
+	)
+
 	switch outputFormat {
 	case "json":
 		return output.PrintJSONWithEmpty(items, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(items, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(items, defaultHeaders, queryOpts, emptyMessage)
 	default:
-		// Define headers optimized for inventory information
-		defaultHeaders := []output.Header{
-			{DisplayName: "NAME", JSONPath: "name"},
-		}
-
-		// Add NAMESPACE column when listing across all namespaces (only if namespace data is available)
-		if namespace == "" {
-			// Only add namespace column if any items have namespace info
-			hasNamespace := false
-			for _, item := range items {
-				if _, exists := item["namespace"]; exists {
-					hasNamespace = true
-					break
-				}
-			}
-			if hasNamespace {
-				defaultHeaders = append(defaultHeaders, output.Header{DisplayName: "NAMESPACE", JSONPath: "namespace"})
-			}
-		}
-
-		// Add remaining columns focused on inventory
-		defaultHeaders = append(defaultHeaders,
-			output.Header{DisplayName: "TYPE", JSONPath: "type"},
-			output.Header{DisplayName: "VERSION", JSONPath: "apiVersion"},
-			output.Header{DisplayName: "PHASE", JSONPath: "object.status.phase", ColorFunc: output.ColorizeStatus},
-			output.Header{DisplayName: "VMS", JSONPath: "vmCount"},
-			output.Header{DisplayName: "HOSTS", JSONPath: "hostCount"},
-		)
-
 		return output.PrintTableWithQuery(items, defaultHeaders, queryOpts, emptyMessage)
 	}
 }

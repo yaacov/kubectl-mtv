@@ -49,7 +49,7 @@ func NewInventoryInstanceCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glo
 	}
 	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
 	_ = cmd.MarkFlagRequired("provider")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
@@ -100,7 +100,7 @@ func NewInventoryImageCmd(kubeConfigFlags *genericclioptions.ConfigFlags, global
 			return inventory.ListImagesWithInsecure(ctx, globalConfig.GetKubeConfigFlags(), provider, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
 		},
 	}
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
@@ -150,7 +150,7 @@ func NewInventoryFlavorCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 	}
 	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
 	_ = cmd.MarkFlagRequired("provider")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
@@ -203,7 +203,7 @@ func NewInventoryProjectCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glob
 	}
 	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
 	_ = cmd.MarkFlagRequired("provider")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
@@ -256,7 +256,7 @@ func NewInventoryVolumeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 	}
 	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
 	_ = cmd.MarkFlagRequired("provider")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
@@ -309,7 +309,7 @@ func NewInventoryVolumeTypeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 	}
 	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
 	_ = cmd.MarkFlagRequired("provider")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
@@ -362,7 +362,7 @@ func NewInventorySnapshotCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glo
 	}
 	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
 	_ = cmd.MarkFlagRequired("provider")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
@@ -415,7 +415,7 @@ func NewInventorySubnetCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globa
 	}
 	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
 	_ = cmd.MarkFlagRequired("provider")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")

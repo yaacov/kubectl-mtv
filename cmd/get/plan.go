@@ -144,7 +144,7 @@ Use --query with --vms-table to filter, sort, or select columns using TSL syntax
 	}
 
 	cmd.Flags().StringVarP(&planName, "name", "M", "", "Plan name")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	cmd.Flags().BoolVar(&vms, "vms", false, "Get VMs status in the migration plan (requires plan NAME)")
 	cmd.Flags().BoolVar(&disk, "disk", false, "Get disk transfer status in the migration plan (requires plan NAME)")

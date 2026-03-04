@@ -664,10 +664,10 @@ func TestOutputFormat(t *testing.T) {
 	orig := GetOutputFormat()
 	defer SetOutputFormat(orig)
 
-	// Default is "text"
+	// Default is "markdown"
 	SetOutputFormat("")
-	if got := GetOutputFormat(); got != "text" {
-		t.Errorf("SetOutputFormat(\"\") should default to \"text\", got %q", got)
+	if got := GetOutputFormat(); got != "markdown" {
+		t.Errorf("SetOutputFormat(\"\") should default to \"markdown\", got %q", got)
 	}
 
 	// Set to json
@@ -676,9 +676,21 @@ func TestOutputFormat(t *testing.T) {
 		t.Errorf("SetOutputFormat(\"json\") = %q, want \"json\"", got)
 	}
 
-	// Set back to text
+	// Set to text
 	SetOutputFormat("text")
 	if got := GetOutputFormat(); got != "text" {
 		t.Errorf("SetOutputFormat(\"text\") = %q, want \"text\"", got)
+	}
+
+	// Set to markdown
+	SetOutputFormat("markdown")
+	if got := GetOutputFormat(); got != "markdown" {
+		t.Errorf("SetOutputFormat(\"markdown\") = %q, want \"markdown\"", got)
+	}
+
+	// Invalid value falls back to "markdown"
+	SetOutputFormat("invalid-format")
+	if got := GetOutputFormat(); got != "markdown" {
+		t.Errorf("SetOutputFormat(\"invalid-format\") should default to \"markdown\", got %q", got)
 	}
 }

@@ -101,8 +101,8 @@ func ListHooks(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" && outputFormat != "markdown" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, markdown", outputFormat)
 	}
 
 	var allItems []map[string]interface{}
@@ -126,8 +126,8 @@ func ListHooks(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 		return output.PrintJSONWithEmpty(allItems, "No hooks found.")
 	case "yaml":
 		return output.PrintYAMLWithEmpty(allItems, "No hooks found.")
-	default: // table
-		return printHookTable(allItems)
+	default:
+		return printHookOutput(allItems, outputFormat)
 	}
 }
 
@@ -157,8 +157,8 @@ func getSpecificHook(ctx context.Context, dynamicClient dynamic.Interface, names
 	return allItems, nil
 }
 
-// printHookTable prints hooks in table format
-func printHookTable(items []map[string]interface{}) error {
+// printHookOutput prints hooks in table or markdown format.
+func printHookOutput(items []map[string]interface{}, outputFormat string) error {
 	if len(items) == 0 {
 		fmt.Println("No hooks found.")
 		return nil
@@ -236,6 +236,9 @@ func printHookTable(items []map[string]interface{}) error {
 		printer.AddItem(item)
 	}
 
+	if outputFormat == "markdown" {
+		return printer.PrintMarkdown()
+	}
 	return printer.Print()
 }
 

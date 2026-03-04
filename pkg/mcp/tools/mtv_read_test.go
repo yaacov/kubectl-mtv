@@ -15,21 +15,28 @@ import (
 
 // testRegistry builds a minimal registry for testing.
 func testRegistry() *discovery.Registry {
+	outputFlag := discovery.Flag{Name: "output", Type: "string"}
 	return &discovery.Registry{
 		ReadOnly: map[string]*discovery.Command{
 			"get/plan": {
 				Path: []string{"get", "plan"}, PathString: "get plan", Description: "Get migration plans",
+				Flags: []discovery.Flag{outputFlag},
 			},
 			"get/provider": {
 				Path: []string{"get", "provider"}, PathString: "get provider", Description: "Get providers",
+				Flags: []discovery.Flag{outputFlag},
 			},
 			"get/inventory/vm": {
 				Path: []string{"get", "inventory", "vm"}, PathString: "get inventory vm", Description: "Get VMs",
+				Flags: []discovery.Flag{outputFlag},
 			},
 			"describe/plan": {
 				Path: []string{"describe", "plan"}, PathString: "describe plan", Description: "Describe plan",
 			},
-			"health": {Path: []string{"health"}, PathString: "health", Description: "Health check"},
+			"health": {
+				Path: []string{"health"}, PathString: "health", Description: "Health check",
+				Flags: []discovery.Flag{outputFlag},
+			},
 		},
 		ReadOnlyOrder: []string{"get/plan", "get/provider", "get/inventory/vm", "describe/plan", "health"},
 		ReadWrite: map[string]*discovery.Command{
@@ -118,64 +125,51 @@ func TestNormalizeCommandPath(t *testing.T) {
 // --- buildArgs tests ---
 
 func TestBuildArgs(t *testing.T) {
-	// Save and restore the output format
-	origFormat := util.GetOutputFormat()
-	defer util.SetOutputFormat(origFormat)
-
 	tests := []struct {
 		name         string
 		cmdPath      string
 		flags        map[string]any
-		outputFormat string // configured default output format
 		wantContains []string
 		wantMissing  []string
 	}{
 		{
-			name:         "simple command with default json output",
+			name:         "simple command no flags",
 			cmdPath:      "get/plan",
-			outputFormat: "json",
-			wantContains: []string{"get", "plan", "--output", "json"},
+			wantContains: []string{"get", "plan"},
 		},
 		{
 			name:         "with namespace in flags",
 			cmdPath:      "get/plan",
 			flags:        map[string]any{"namespace": "demo"},
-			outputFormat: "json",
 			wantContains: []string{"get", "plan", "--namespace", "demo"},
 		},
 		{
 			name:         "with all_namespaces in flags",
 			cmdPath:      "get/plan",
 			flags:        map[string]any{"all_namespaces": true},
-			outputFormat: "json",
 			wantContains: []string{"get", "plan", "--all-namespaces"},
 		},
 		{
 			name:         "with provider in flags",
 			cmdPath:      "get/inventory/vm",
 			flags:        map[string]any{"provider": "my-provider"},
-			outputFormat: "json",
 			wantContains: []string{"get", "inventory", "vm", "--provider", "my-provider"},
 		},
 		{
 			name:         "with inventory_url in flags",
 			cmdPath:      "get/inventory/vm",
 			flags:        map[string]any{"provider": "my-provider", "inventory_url": "http://localhost:9090"},
-			outputFormat: "json",
 			wantContains: []string{"--inventory-url", "http://localhost:9090"},
 		},
 		{
-			name:         "user output overrides default",
+			name:         "output flag passed through like any other flag",
 			cmdPath:      "get/plan",
 			flags:        map[string]any{"output": "yaml"},
-			outputFormat: "json",
 			wantContains: []string{"--output", "yaml"},
-			wantMissing:  []string{"--output json"},
 		},
 		{
-			name:         "text output format omits --output flag",
+			name:         "no output flag means no --output in args",
 			cmdPath:      "get/plan",
-			outputFormat: "text",
 			wantContains: []string{"get", "plan"},
 			wantMissing:  []string{"--output"},
 		},
@@ -183,21 +177,18 @@ func TestBuildArgs(t *testing.T) {
 			name:         "custom flags are passed through",
 			cmdPath:      "get/inventory/vm",
 			flags:        map[string]any{"provider": "my-provider", "query": "where name ~= 'prod-.*'", "extended": true},
-			outputFormat: "json",
 			wantContains: []string{"--query", "--extended"},
 		},
 		{
 			name:         "namespace extracted from flags not duplicated",
 			cmdPath:      "get/plan",
 			flags:        map[string]any{"namespace": "real-ns"},
-			outputFormat: "json",
 			wantContains: []string{"--namespace", "real-ns"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			util.SetOutputFormat(tt.outputFormat)
 			result := buildArgs(tt.cmdPath, tt.flags)
 			joined := strings.Join(result, " ")
 

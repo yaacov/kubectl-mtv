@@ -81,7 +81,7 @@ Examples:
 	}
 
 	// Add output format flag
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (json, yaml, table)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -158,7 +158,7 @@ Examples:
 	}
 
 	// Add output format flag
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (json, yaml, table)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
@@ -195,6 +195,8 @@ func formatOutput(settingValues []settings.SettingValue, format string) error {
 		return formatJSON(settingValues)
 	case "yaml":
 		return formatYAML(settingValues)
+	case "markdown":
+		return formatSettingsMarkdown(settingValues)
 	default:
 		return formatTable(settingValues)
 	}
@@ -284,4 +286,27 @@ func formatYAML(settingValues []settings.SettingValue) error {
 	}
 	fmt.Print(string(data))
 	return nil
+}
+
+func formatSettingsMarkdown(settingValues []settings.SettingValue) error {
+	tableHeaders := []output.Header{
+		{DisplayName: "CATEGORY", JSONPath: "category"},
+		{DisplayName: "SETTING", JSONPath: "setting"},
+		{DisplayName: "VALUE", JSONPath: "value"},
+		{DisplayName: "DEFAULT", JSONPath: "default"},
+	}
+	items := make([]map[string]interface{}, 0, len(settingValues))
+	for _, sv := range settingValues {
+		items = append(items, map[string]interface{}{
+			"category": string(sv.Definition.Category),
+			"setting":  sv.Name,
+			"value":    settings.FormatValue(sv),
+			"default":  settings.FormatDefault(sv.Definition),
+		})
+	}
+
+	return output.NewTablePrinter().
+		WithHeaders(tableHeaders...).
+		AddItems(items).
+		PrintMarkdown()
 }
