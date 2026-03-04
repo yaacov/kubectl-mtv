@@ -61,7 +61,7 @@ Use --query to filter results using TSL query syntax.`,
 
 	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
 	_ = cmd.MarkFlagRequired("provider")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'VM Network.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
@@ -126,7 +126,7 @@ or storage classes (OpenShift) available in the source provider.`,
 
 	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
 	_ = cmd.MarkFlagRequired("provider")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'data.*' and type = 'VMFS'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
@@ -224,7 +224,7 @@ Query Language (TSL):
 
 	cmd.Flags().StringVarP(&provider, "provider", "p", "", "Provider name")
 	_ = cmd.MarkFlagRequired("provider")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml, planvms)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml, markdown, planvms)")
 	cmd.Flags().BoolVar(&extendedOutput, "extended", false, "Show extended output")
 	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount > 4\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")

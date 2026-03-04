@@ -114,6 +114,8 @@ func listFoldersOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 		return output.PrintJSONWithEmpty(folders, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(folders, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(folders, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(folders, defaultHeaders, queryOpts, emptyMessage)
 	default:

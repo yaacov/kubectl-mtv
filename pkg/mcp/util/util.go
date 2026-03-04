@@ -99,7 +99,7 @@ func GetDryRun(ctx context.Context) bool {
 }
 
 // outputFormat stores the configured output format for MCP responses
-var outputFormat = "text"
+var outputFormat = "markdown"
 
 // maxResponseChars limits the size of text output returned to the LLM.
 // Long responses fill the context window and increase the chance of small LLMs
@@ -119,14 +119,23 @@ func GetMaxResponseChars() int {
 	return maxResponseChars
 }
 
+// validOutputFormats defines the allowed MCP output formats.
+var validOutputFormats = map[string]bool{
+	"markdown": true,
+	"text":     true,
+	"json":     true,
+}
+
 // SetOutputFormat sets the output format for MCP responses.
-// Valid values are "text" (default, table output) or "json".
+// Valid values are "markdown" (default), "text" (table output), or "json".
+// Empty or unrecognized values fall back to "markdown".
 func SetOutputFormat(format string) {
-	if format == "" {
-		outputFormat = "text"
-	} else {
-		outputFormat = format
+	if format == "" || !validOutputFormats[format] {
+		klog.Warningf("SetOutputFormat: rejected format %q, falling back to markdown", format)
+		outputFormat = "markdown"
+		return
 	}
+	outputFormat = format
 }
 
 // GetOutputFormat returns the configured output format for MCP responses.

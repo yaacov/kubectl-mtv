@@ -133,6 +133,8 @@ func listVMsTableOnce(
 		return output.PrintJSONWithEmpty(items, emptyMsg)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(items, emptyMsg)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(items, vmTableHeaders, queryOpts, emptyMsg)
 	default:
 		return output.PrintTableWithQuery(items, vmTableHeaders, queryOpts, emptyMsg)
 	}

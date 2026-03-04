@@ -64,7 +64,7 @@ the migration process, such as installing drivers or configuring the target VM.`
 	}
 
 	cmd.Flags().StringVarP(&hookName, "name", "M", "", "Hook name")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
 

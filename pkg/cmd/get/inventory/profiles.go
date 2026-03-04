@@ -79,6 +79,8 @@ func listDiskProfilesOnce(ctx context.Context, kubeConfigFlags *genericclioption
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:
@@ -156,6 +158,8 @@ func listNICProfilesOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:

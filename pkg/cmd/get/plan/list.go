@@ -87,8 +87,8 @@ func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" && outputFormat != "markdown" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, markdown", outputFormat)
 	}
 
 	// Create printer items
@@ -195,7 +195,6 @@ func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 		}
 		return jsonPrinter.Print()
 	case "yaml":
-		// Use YAML printer
 		yamlPrinter := output.NewYAMLPrinter().
 			AddItems(items)
 
@@ -205,18 +204,14 @@ func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 		return yamlPrinter.Print()
 	}
 
-	// Use Table printer (default)
 	var headers []output.Header
 
-	// Add NAME column first
 	headers = append(headers, output.Header{DisplayName: "NAME", JSONPath: "metadata.name"})
 
-	// Add NAMESPACE column after NAME when listing across all namespaces
 	if namespace == "" {
 		headers = append(headers, output.Header{DisplayName: "NAMESPACE", JSONPath: "metadata.namespace"})
 	}
 
-	// Add remaining columns
 	headers = append(headers,
 		output.Header{DisplayName: "SOURCE", JSONPath: "source"},
 		output.Header{DisplayName: "TARGET", JSONPath: "target"},
@@ -231,12 +226,21 @@ func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 
 	tablePrinter := output.NewTablePrinter().WithHeaders(headers...).AddItems(items)
 
-	if len(plans.Items) == 0 {
-		if err := tablePrinter.PrintEmpty("No plans found in namespace " + namespace); err != nil {
-			return fmt.Errorf("error printing empty table: %v", err)
+	emptyMsg := "No plans found in namespace " + namespace
+	if outputFormat == "markdown" {
+		if len(plans.Items) == 0 {
+			if err := tablePrinter.PrintEmpty(emptyMsg); err != nil {
+				return fmt.Errorf("error printing empty markdown: %v", err)
+			}
+		} else if err := tablePrinter.PrintMarkdown(); err != nil {
+			return fmt.Errorf("error printing markdown: %v", err)
 		}
 	} else {
-		if err := tablePrinter.Print(); err != nil {
+		if len(plans.Items) == 0 {
+			if err := tablePrinter.PrintEmpty(emptyMsg); err != nil {
+				return fmt.Errorf("error printing empty table: %v", err)
+			}
+		} else if err := tablePrinter.Print(); err != nil {
 			return fmt.Errorf("error printing table: %v", err)
 		}
 	}

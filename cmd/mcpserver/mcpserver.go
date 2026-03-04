@@ -81,10 +81,10 @@ Cursor IDE: Settings → MCP → Add Server (Name: kubectl-mtv, Command: kubectl
 Manual Claude config: Add to claude_desktop_config.json:
   "kubectl-mtv": {"command": "kubectl", "args": ["mtv", "mcp-server"]}`,
 		RunE: func(cobraCmd *cobra.Command, args []string) error {
-			// Validate output format - only "json" and "text" are supported in MCP mode
-			validFormats := map[string]bool{"json": true, "text": true}
+			// Validate output format
+			validFormats := map[string]bool{"json": true, "text": true, "markdown": true}
 			if !validFormats[outputFormat] {
-				return fmt.Errorf("invalid --output-format value %q: must be one of: json, text", outputFormat)
+				return fmt.Errorf("invalid --output-format value %q: must be one of: json, text, markdown", outputFormat)
 			}
 
 			// Set the output format for MCP responses
@@ -227,7 +227,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 	mcpCmd.Flags().StringVar(&host, "host", "127.0.0.1", "Host address to bind to for SSE mode")
 	mcpCmd.Flags().StringVar(&certFile, "cert-file", "", "Path to TLS certificate file (enables TLS when used with --key-file)")
 	mcpCmd.Flags().StringVar(&keyFile, "key-file", "", "Path to TLS private key file (enables TLS when used with --cert-file)")
-	mcpCmd.Flags().StringVar(&outputFormat, "output-format", "text", "Default output format for commands: text (table) or json")
+	mcpCmd.Flags().StringVar(&outputFormat, "output-format", "markdown", "Default output format for commands: markdown, text (table), or json")
 	mcpCmd.Flags().StringVar(&kubeServer, "server", "", "Kubernetes API server URL (passed to kubectl via --server flag)")
 	mcpCmd.Flags().StringVar(&kubeToken, "token", "", "Kubernetes authentication token (passed to kubectl via --token flag)")
 	mcpCmd.Flags().BoolVar(&insecureSkipTLS, "insecure-skip-tls-verify", false, "Skip TLS certificate verification for Kubernetes API connections")

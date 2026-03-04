@@ -122,6 +122,35 @@ func HandleMTVRead(registry *discovery.Registry) func(context.Context, *mcp.Call
 			ctx = util.WithDryRun(ctx, true)
 		}
 
+		// Apply default output format for commands that support --output.
+		// If the user didn't specify one, use the MCP server default.
+		cmd := registry.ReadOnly[cmdPath]
+		if commandHasFlag(cmd, "output") {
+			if input.Flags == nil {
+				input.Flags = make(map[string]any)
+			}
+
+			valOutput, hasOutput := input.Flags["output"]
+			valO, hasO := input.Flags["o"]
+			outputProvided := (hasOutput && fmt.Sprintf("%v", valOutput) != "") ||
+				(hasO && fmt.Sprintf("%v", valO) != "")
+
+			if !outputProvided {
+				delete(input.Flags, "output")
+				delete(input.Flags, "o")
+				format := util.GetOutputFormat()
+				if format != "text" {
+					input.Flags["output"] = format
+				}
+			}
+
+			// Canonicalize: keep only "output" when both keys exist so
+			// appendNormalizedFlags emits a single flag.
+			if _, has := input.Flags["output"]; has {
+				delete(input.Flags, "o")
+			}
+		}
+
 		// Build command arguments (all params passed via flags)
 		args := buildArgs(cmdPath, input.Flags)
 
@@ -216,6 +245,19 @@ func normalizeCommandPath(cmd string) string {
 	return strings.Join(parts, "/")
 }
 
+// commandHasFlag reports whether a discovered command declares a flag with the given name.
+func commandHasFlag(cmd *discovery.Command, flagName string) bool {
+	if cmd == nil {
+		return false
+	}
+	for _, f := range cmd.Flags {
+		if f.Name == flagName {
+			return true
+		}
+	}
+	return false
+}
+
 // buildArgs builds the command-line arguments for kubectl-mtv.
 // All parameters (namespace, all_namespaces, inventory_url, output, name, provider, etc.)
 // are extracted from the flags map — there are no separate top-level fields.
@@ -264,30 +306,11 @@ func buildArgs(cmdPath string, flags map[string]any) []string {
 		args = append(args, "--inventory-url", inventoryURL)
 	}
 
-	// Add output format - prefer user-specified, then configured default
-	var userOutput string
-	if flags != nil {
-		if v, ok := flags["output"]; ok {
-			userOutput = fmt.Sprintf("%v", v)
-		} else if v, ok := flags["o"]; ok {
-			userOutput = fmt.Sprintf("%v", v)
-		}
-	}
-	if userOutput != "" {
-		args = append(args, "--output", userOutput)
-	} else {
-		format := util.GetOutputFormat()
-		if format != "text" {
-			args = append(args, "--output", format)
-		}
-	}
-
-	// Skip set for already handled flags (namespace, output, inventory-url variants)
+	// Skip set for already handled flags
 	skipFlags := map[string]bool{
 		"namespace": true, "n": true,
 		"all_namespaces": true, "A": true,
 		"inventory_url": true, "inventory-url": true, "i": true,
-		"output": true, "o": true,
 		// --watch starts an interactive TUI that hangs the MCP subprocess
 		"watch": true, "w": true,
 	}

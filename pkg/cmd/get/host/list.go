@@ -109,8 +109,8 @@ func ListHosts(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" && outputFormat != "markdown" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, markdown", outputFormat)
 	}
 
 	var allItems []map[string]interface{}
@@ -134,8 +134,8 @@ func ListHosts(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 		return output.PrintJSONWithEmpty(allItems, "No hosts found.")
 	case "yaml":
 		return output.PrintYAMLWithEmpty(allItems, "No hosts found.")
-	default: // table
-		return printHostTable(allItems)
+	default:
+		return printHostOutput(allItems, outputFormat)
 	}
 }
 
@@ -165,8 +165,8 @@ func getSpecificHost(ctx context.Context, dynamicClient dynamic.Interface, names
 	return allItems, nil
 }
 
-// printHostTable prints hosts in table format
-func printHostTable(items []map[string]interface{}) error {
+// printHostOutput prints hosts in table or markdown format.
+func printHostOutput(items []map[string]interface{}, outputFormat string) error {
 	if len(items) == 0 {
 		fmt.Println("No hosts found.")
 		return nil
@@ -223,6 +223,9 @@ func printHostTable(items []map[string]interface{}) error {
 		printer.AddItem(item)
 	}
 
+	if outputFormat == "markdown" {
+		return printer.PrintMarkdown()
+	}
 	return printer.Print()
 }
 

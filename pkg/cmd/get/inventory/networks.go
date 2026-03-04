@@ -169,8 +169,8 @@ func listNetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" && outputFormat != "markdown" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, markdown", outputFormat)
 	}
 
 	// Handle different output formats
@@ -180,6 +180,8 @@ func listNetworksOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 		return output.PrintJSONWithEmpty(networks, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(networks, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(networks, defaultHeaders, queryOpts, emptyMessage)
 	default:
 		return output.PrintTableWithQuery(networks, defaultHeaders, queryOpts, emptyMessage)
 	}

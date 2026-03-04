@@ -61,7 +61,7 @@ for oVirt migrations. They store host-specific credentials and configuration.`,
 	}
 
 	cmd.Flags().StringVarP(&hostName, "name", "M", "", "Host name")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (table, json, yaml)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
 

@@ -81,6 +81,8 @@ func listInstancesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:
@@ -160,6 +162,8 @@ func listImagesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Conf
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:
@@ -240,6 +244,8 @@ func listFlavorsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:
@@ -316,6 +322,8 @@ func listProjectsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Co
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:
@@ -396,6 +404,8 @@ func listVolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:
@@ -471,6 +481,8 @@ func listVolumeTypesOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:
@@ -550,6 +562,8 @@ func listSnapshotsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.C
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:
@@ -628,6 +642,8 @@ func listSubnetsOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 		return output.PrintJSONWithEmpty(data, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(data, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(data, defaultHeaders, queryOpts, emptyMessage)
 	default:

@@ -83,24 +83,26 @@ func listNamespacesOnce(ctx context.Context, kubeConfigFlags *genericclioptions.
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" && outputFormat != "markdown" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, markdown", outputFormat)
 	}
 
 	// Handle different output formats
 	emptyMessage := fmt.Sprintf("No namespaces found for provider %s", providerName)
+	defaultHeaders := []output.Header{
+		{DisplayName: "NAME", JSONPath: "name"},
+		{DisplayName: "ID", JSONPath: "id"},
+		{DisplayName: "PROVIDER", JSONPath: "provider"},
+	}
+
 	switch outputFormat {
 	case "json":
 		return output.PrintJSONWithEmpty(namespaces, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(namespaces, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(namespaces, defaultHeaders, queryOpts, emptyMessage)
 	default:
-		// Define default headers
-		defaultHeaders := []output.Header{
-			{DisplayName: "NAME", JSONPath: "name"},
-			{DisplayName: "ID", JSONPath: "id"},
-			{DisplayName: "PROVIDER", JSONPath: "provider"},
-		}
 		return output.PrintTableWithQuery(namespaces, defaultHeaders, queryOpts, emptyMessage)
 	}
 }

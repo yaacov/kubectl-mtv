@@ -142,8 +142,8 @@ func listStorageOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" && outputFormat != "markdown" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, markdown", outputFormat)
 	}
 
 	// Handle different output formats
@@ -153,6 +153,8 @@ func listStorageOnce(ctx context.Context, kubeConfigFlags *genericclioptions.Con
 		return output.PrintJSONWithEmpty(storages, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(storages, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(storages, defaultHeaders, queryOpts, emptyMessage)
 	default:
 		return output.PrintTableWithQuery(storages, defaultHeaders, queryOpts, emptyMessage)
 	}

@@ -163,8 +163,8 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 
 	// Format validation
 	outputFormat = strings.ToLower(outputFormat)
-	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" {
-		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml", outputFormat)
+	if outputFormat != "table" && outputFormat != "json" && outputFormat != "yaml" && outputFormat != "markdown" {
+		return fmt.Errorf("unsupported output format: %s. Supported formats: table, json, yaml, markdown", outputFormat)
 	}
 
 	// If baseURL is empty, try to discover it from an OpenShift Route
@@ -337,18 +337,14 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 		}
 		return yamlPrinter.Print()
 	default:
-		// Use Table printer (default)
 		var headers []output.Header
 
-		// Add NAME column first
 		headers = append(headers, output.Header{DisplayName: "NAME", JSONPath: "metadata.name"})
 
-		// Add NAMESPACE column after NAME when listing across all namespaces
 		if namespace == "" {
 			headers = append(headers, output.Header{DisplayName: "NAMESPACE", JSONPath: "metadata.namespace"})
 		}
 
-		// Add common columns
 		headers = append(headers,
 			output.Header{DisplayName: "TYPE", JSONPath: "spec.type"},
 			output.Header{DisplayName: "URL", JSONPath: "spec.url"},
@@ -358,7 +354,6 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 			output.Header{DisplayName: "READY", JSONPath: "conditionStatuses.ReadyStatus", ColorFunc: output.ColorizeConditionStatus},
 		)
 
-		// Determine which provider types are present
 		providerTypes := make(map[string]bool)
 		for _, item := range items {
 			if spec, ok := item["spec"].(map[string]interface{}); ok {
@@ -368,7 +363,6 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 			}
 		}
 
-		// Add dynamic columns based on provider types present
 		headers = append(headers, getDynamicInventoryColumns(providerTypes)...)
 
 		tablePrinter := output.NewTablePrinter().WithHeaders(headers...).AddItems(items)
@@ -376,6 +370,10 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 		if len(providers.Items) == 0 {
 			if err := tablePrinter.PrintEmpty("No providers found in namespace " + namespace); err != nil {
 				return fmt.Errorf("error printing empty table: %v", err)
+			}
+		} else if outputFormat == "markdown" {
+			if err := tablePrinter.PrintMarkdown(); err != nil {
+				return fmt.Errorf("error printing markdown: %v", err)
 			}
 		} else {
 			if err := tablePrinter.Print(); err != nil {

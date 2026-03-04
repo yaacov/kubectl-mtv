@@ -20,7 +20,7 @@ async def test_health_report(mcp_session):
 
     output = result.get("output", "")
     assert result.get("return_value") == 0, f"Health check failed: {result}"
-    assert "HEALTH REPORT" in output, f"Expected 'HEALTH REPORT' in output: {output[:200]}"
+    assert "health report" in output.lower(), f"Expected 'Health Report' in output: {output[:200]}"
     assert VSPHERE_PROVIDER_NAME in output or OCP_PROVIDER_NAME in output, (
         "Health report should mention test providers"
     )

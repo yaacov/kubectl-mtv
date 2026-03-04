@@ -58,7 +58,7 @@ This is useful for CI/CD pipelines, MCP servers, or when the cluster is unavaila
 	}
 
 	cmd.Flags().BoolVar(&clientOnly, "client", false, "Print only the client version (skip cluster connectivity)")
-	cmd.Flags().VarP(outputFormatFlag, "output", "o", "Output format (json, yaml, table)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 
 	// Add completion for output format flag
 	if err := cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

@@ -122,6 +122,8 @@ func listDataVolumesOnce(ctx context.Context, kubeConfigFlags *genericclioptions
 		return output.PrintJSONWithEmpty(dataVolumes, emptyMessage)
 	case "yaml":
 		return output.PrintYAMLWithEmpty(dataVolumes, emptyMessage)
+	case "markdown":
+		return output.PrintMarkdownWithQuery(dataVolumes, defaultHeaders, queryOpts, emptyMessage)
 	case "table":
 		return output.PrintTableWithQuery(dataVolumes, defaultHeaders, queryOpts, emptyMessage)
 	default:
