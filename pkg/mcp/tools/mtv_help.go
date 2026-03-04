@@ -31,7 +31,6 @@ Commands: any from mtv_read/mtv_write, e.g.:
   "get plan", "get provider", "get inventory vm"
   "describe plan", "create provider", "create plan"
   "start plan", "patch plan", "delete plan"
-  "health logs"
 Topics:
   "tsl" - VM query language with field list per provider (vSphere, oVirt, OpenStack, EC2)
   "karl" - VM placement affinity/anti-affinity rules (e.g. "REQUIRE tag:zone=us-east")

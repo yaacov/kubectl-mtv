@@ -160,7 +160,7 @@ func (r *Registry) GenerateServerInstructions() string {
 
 	sb.WriteString("MTV (Migration Toolkit for Virtualization), also known as Forklift, migrates virtual machines from VMware vSphere, oVirt (RHV), OpenStack, and Amazon EC2 into OpenShift Virtualization (KubeVirt).\n")
 	sb.WriteString("\nThis server provides three tools:\n")
-	sb.WriteString("  mtv_read  - Query resources (plans, providers, inventory, mappings, health, logs, settings)\n")
+	sb.WriteString("  mtv_read  - Query resources (plans, providers, inventory, mappings, health, settings)\n")
 	sb.WriteString("  mtv_write - Create, modify, or delete resources (providers, plans, mappings, hooks)\n")
 	sb.WriteString("  mtv_help  - Get detailed flags, syntax, and examples for any command\n")
 	sb.WriteString("\nWorkflow:\n")

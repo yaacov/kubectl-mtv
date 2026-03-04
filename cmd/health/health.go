@@ -111,8 +111,5 @@ Examples:
 		panic(err)
 	}
 
-	// Add subcommands
-	cmd.AddCommand(NewLogsCmd(kubeConfigFlags))
-
 	return cmd
 }
