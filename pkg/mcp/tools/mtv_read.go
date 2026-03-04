@@ -275,24 +275,10 @@ func buildArgs(cmdPath string, flags map[string]any) []string {
 	}
 	if userOutput != "" {
 		args = append(args, "--output", userOutput)
-	} else if cmdPath != "health/logs" {
+	} else {
 		format := util.GetOutputFormat()
 		if format != "text" {
 			args = append(args, "--output", format)
-		}
-	}
-
-	// health/logs uses --format instead of --output for its output format.
-	// Default "pretty" is colorized human output; inject "json" for the LLM.
-	if cmdPath == "health/logs" {
-		var userFormat string
-		if flags != nil {
-			if v, ok := flags["format"]; ok {
-				userFormat = fmt.Sprintf("%v", v)
-			}
-		}
-		if userFormat == "" {
-			args = append(args, "--format", "json")
 		}
 	}
 
