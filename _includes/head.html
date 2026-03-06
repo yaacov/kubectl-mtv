@@ -1,0 +1,86 @@
+{%- comment -%}
+  Override of just-the-docs head.html.
+  Moves theme detection + light CSS injection immediately after the dark CSS link,
+  BEFORE any external JS, to eliminate the dark→light flicker on page navigation.
+{%- endcomment -%}
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+
+  <!-- FOW fix: :where() zero-specificity fallback colors applied before any CSS loads -->
+  <style id="jtd-fow-fix">
+    :where(html)         { background: #181b2e; }
+    :where(body)         { background: #181b2e; color: #e2e4e8; }
+    :where(.side-bar)    { background: #151d33; color: #e2e4e8; }
+    :where(.main-header) { background: #181b2e; }
+    :where(a)            { color: #4fc3f7; }
+    :where(.site-title)  { color: #e8f4fd; }
+    :where(h1, h2, h3, h4, h5, h6) { color: #e8f4fd; }
+    :where(.search-input) { background: #0f3460; color: #e2e4e8; border-color: #2a3a5c; }
+    :where(code)         { color: #a5d6a7; }
+  </style>
+
+  <link rel="stylesheet" href="{{ '/assets/css/just-the-docs-default.css' | relative_url }}" id="jtd-dark-css">
+  <link rel="stylesheet" href="{{ '/assets/css/just-the-docs-forklift-light.css' | relative_url }}" id="jtd-light-css">
+
+  <!-- Both stylesheets are render-blocking: the browser fetches them in parallel and
+       won't paint until both are loaded AND this synchronous script finishes.
+       The script disables the unused one, so the first paint is always correct. -->
+  <script>
+  (function() {
+    var light = localStorage.getItem('jtd-theme') === 'forklift-light';
+    if (light) {
+      document.getElementById('jtd-dark-css').disabled = true;
+      var f = document.getElementById('jtd-fow-fix');
+      if (f) f.textContent =
+        ':where(html){background:#f5f7fa}' +
+        ':where(body){background:#f5f7fa;color:#2c3e50}' +
+        ':where(.side-bar){background:#e8ecf1;color:#2c3e50}' +
+        ':where(.main-header){background:#f5f7fa}' +
+        ':where(a){color:#0277bd}' +
+        ':where(.site-title){color:#1a2a3a}' +
+        ':where(h1,h2,h3,h4,h5,h6){color:#1a2a3a}' +
+        ':where(.search-input){background:#e0e7ee;color:#2c3e50;border-color:#c5cdd6}' +
+        ':where(code){color:#2e7d32}';
+    } else {
+      document.getElementById('jtd-light-css').disabled = true;
+    }
+  })();
+  </script>
+
+  <link rel="stylesheet" href="{{ '/assets/css/just-the-docs-head-nav.css' | relative_url }}" id="jtd-head-nav-stylesheet">
+
+  <style id="jtd-nav-activation">
+  {% include css/activation.scss.liquid %}
+  </style>
+
+  {% if site.ga_tracking != nil %}
+    {% assign ga_tracking_ids = site.ga_tracking | split: "," %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_tracking_ids.first }}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      {% for ga_property in ga_tracking_ids %}
+        gtag('config', '{{ ga_property }}'{% unless site.ga_tracking_anonymize_ip == nil %}, { 'anonymize_ip': true }{% endunless %});
+      {% endfor %}
+    </script>
+  {% endif %}
+
+  {% if site.search_enabled != false %}
+    <script src="{{ '/assets/js/vendor/lunr.min.js' | relative_url }}"></script>
+  {% endif %}
+
+  <script src="{{ '/assets/js/just-the-docs.js' | relative_url }}"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  {% include_cached favicon.html %}
+
+  {% seo %}
+
+  {% include head_custom.html %}
+
+</head>

@@ -18,6 +18,13 @@ body {
   background: $body-background-color !important;
 }
 
+// Override the dark gradient that head-nav.css applies to all nav links.
+// head-nav.css is compiled from the default (dark) scheme and loads after theme CSS,
+// so without !important it would briefly flash dark colors in light mode.
+.site-nav ul li a {
+  background-image: none !important;
+}
+
 .nav-list-item .nav-list-link:hover,
 .nav-list-item .nav-list-link.active {
   background-image: none !important;
@@ -58,6 +65,10 @@ body {
   margin-bottom: 0 !important;
   border-bottom: none !important;
   box-shadow: none !important;
+
+  &:hover {
+    background-image: none !important;
+  }
 }
 
 .site-nav {
