@@ -9,6 +9,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/describe/mapping"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewMappingCmd creates the mapping description command with subcommands
@@ -22,21 +23,19 @@ Shows detailed configuration of mappings including source/target pairs,
 provider references, and status conditions.`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// If no subcommand is specified, show help
 			return cmd.Help()
 		},
 	}
 
-	// Add subcommands for network and storage
 	cmd.AddCommand(newDescribeNetworkMappingCmd(globalConfig))
 	cmd.AddCommand(newDescribeStorageMappingCmd(globalConfig))
 
 	return cmd
 }
 
-// newDescribeNetworkMappingCmd creates the describe network mapping subcommand
 func newDescribeNetworkMappingCmd(globalConfig get.GlobalConfigGetter) *cobra.Command {
 	var name string
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 
 	cmd := &cobra.Command{
 		Use:   "network",
@@ -49,28 +48,29 @@ Shows the source and target network pairs, provider references, and status.`,
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Validate required --name flag
 			if name == "" {
 				return fmt.Errorf("--name is required")
 			}
-
-			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(globalConfig.GetKubeConfigFlags())
-			return mapping.Describe(globalConfig.GetKubeConfigFlags(), "network", name, namespace, globalConfig.GetUseUTC())
+			return mapping.Describe(globalConfig.GetKubeConfigFlags(), "network", name, namespace, globalConfig.GetUseUTC(), outputFormatFlag.GetValue())
 		},
 	}
 
 	cmd.Flags().StringVarP(&name, "name", "M", "", "Network mapping name")
 	_ = cmd.MarkFlagRequired("name")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 
 	_ = cmd.RegisterFlagCompletionFunc("name", completion.MappingNameCompletion(globalConfig.GetKubeConfigFlags(), "network"))
+	_ = cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	})
 
 	return cmd
 }
 
-// newDescribeStorageMappingCmd creates the describe storage mapping subcommand
 func newDescribeStorageMappingCmd(globalConfig get.GlobalConfigGetter) *cobra.Command {
 	var name string
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 
 	cmd := &cobra.Command{
 		Use:   "storage",
@@ -83,21 +83,22 @@ Shows the source and target storage pairs, volume modes, access modes, and statu
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Validate required --name flag
 			if name == "" {
 				return fmt.Errorf("--name is required")
 			}
-
-			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(globalConfig.GetKubeConfigFlags())
-			return mapping.Describe(globalConfig.GetKubeConfigFlags(), "storage", name, namespace, globalConfig.GetUseUTC())
+			return mapping.Describe(globalConfig.GetKubeConfigFlags(), "storage", name, namespace, globalConfig.GetUseUTC(), outputFormatFlag.GetValue())
 		},
 	}
 
 	cmd.Flags().StringVarP(&name, "name", "M", "", "Storage mapping name")
 	_ = cmd.MarkFlagRequired("name")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 
 	_ = cmd.RegisterFlagCompletionFunc("name", completion.MappingNameCompletion(globalConfig.GetKubeConfigFlags(), "storage"))
+	_ = cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	})
 
 	return cmd
 }

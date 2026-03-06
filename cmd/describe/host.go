@@ -10,11 +10,13 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/describe/host"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewHostCmd creates the host description command
 func NewHostCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig get.GlobalConfigGetter) *cobra.Command {
 	var name string
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 
 	cmd := &cobra.Command{
 		Use:   "host",
@@ -27,24 +29,24 @@ Shows host configuration, IP address, provider reference, and status conditions.
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Validate required --name flag
 			if name == "" {
 				return fmt.Errorf("--name is required")
 			}
 
-			// Get the global configuration
-
-			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(globalConfig.GetKubeConfigFlags())
 			inventoryInsecureSkipTLS := globalConfig.GetInventoryInsecureSkipTLS()
-			return host.Describe(cmd.Context(), globalConfig.GetKubeConfigFlags(), name, namespace, globalConfig.GetUseUTC(), inventoryInsecureSkipTLS)
+			return host.Describe(cmd.Context(), globalConfig.GetKubeConfigFlags(), name, namespace, globalConfig.GetUseUTC(), inventoryInsecureSkipTLS, outputFormatFlag.GetValue())
 		},
 	}
 
 	cmd.Flags().StringVarP(&name, "name", "M", "", "Host name")
 	_ = cmd.MarkFlagRequired("name")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 
 	_ = cmd.RegisterFlagCompletionFunc("name", completion.HostResourceNameCompletion(kubeConfigFlags))
+	_ = cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	})
 
 	return cmd
 }
