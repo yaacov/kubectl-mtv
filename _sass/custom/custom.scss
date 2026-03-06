@@ -1,3 +1,7 @@
+// ---------------------------------------------------------------------------
+// Layout
+// ---------------------------------------------------------------------------
+
 .main-content {
   max-width: 1000px !important;
 
@@ -11,11 +15,7 @@
 }
 
 body {
-  background: linear-gradient(
-    to right,
-    $sidebar-color calc((100vw - 1280px) / 2 + 280px),
-    $body-background-color calc((100vw - 1280px) / 2 + 280px)
-  ) !important;
+  background: $body-background-color !important;
 }
 
 .nav-list-item .nav-list-link:hover,
@@ -24,11 +24,6 @@ body {
   background-color: $feedback-color !important;
 }
 
-@media (max-width: 66.5rem) {
-  body {
-    background: $body-background-color !important;
-  }
-}
 
 @media (min-width: 66.5rem) {
   .side-bar {
@@ -45,5 +40,227 @@ body {
 
   .main-content-wrap {
     max-width: 1000px !important;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Site title / sidebar header
+// ---------------------------------------------------------------------------
+
+.site-header {
+  height: auto !important;
+  max-height: none !important;
+  border-bottom: none !important;
+}
+
+.site-title {
+  padding: 1.25rem 1rem !important;
+  margin-bottom: 0 !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+.site-nav {
+  padding-top: 0.5rem !important;
+  border-top: none !important;
+}
+
+// ---------------------------------------------------------------------------
+// Tables (content tables only, not rouge code tables)
+// ---------------------------------------------------------------------------
+
+.main-content {
+  table:not(.rouge-table) {
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid $border-color;
+    border-radius: 6px;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  table:not(.rouge-table) th {
+    background-color: rgba($link-color, 0.12);
+    color: $body-heading-color;
+    font-weight: 600;
+    border-bottom: 2px solid $border-color;
+  }
+
+  table:not(.rouge-table) th,
+  table:not(.rouge-table) td {
+    border-color: $border-color;
+  }
+
+  table:not(.rouge-table) tr:nth-child(even) {
+    background-color: rgba($link-color, 0.04);
+  }
+
+  table:not(.rouge-table) tr:nth-child(odd) {
+    background-color: transparent;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Blockquotes / callouts
+// ---------------------------------------------------------------------------
+
+.main-content blockquote {
+  border-left: 4px solid $link-color;
+  background-color: rgba($link-color, 0.06);
+  padding: 0.75rem 1rem;
+  border-radius: 0 6px 6px 0;
+  color: $body-text-color;
+}
+
+// ---------------------------------------------------------------------------
+// Headings
+// ---------------------------------------------------------------------------
+
+.main-content {
+  h2 {
+    padding-bottom: 0.3rem;
+    margin-top: 2.5rem;
+    border-bottom: 1px solid $border-color;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Previous / Next chapter navigation
+// ---------------------------------------------------------------------------
+
+.main-content > p:last-of-type {
+  $nav-text: null;
+  // Target the prev/next paragraph only when it contains those keywords
+}
+
+// ---------------------------------------------------------------------------
+// Code blocks
+// ---------------------------------------------------------------------------
+
+.main-content {
+  .highlight {
+    border-radius: 8px;
+    border: 1px solid $border-color;
+    overflow: hidden;
+  }
+
+  pre.highlight,
+  div.highlight {
+    border-radius: 8px;
+  }
+
+  pre.highlight {
+    padding: 0 !important;
+    margin-bottom: 0;
+  }
+
+  pre.highlight > code {
+    padding: 0 !important;
+    display: block;
+  }
+
+  code {
+    line-height: 1.6;
+  }
+
+  // The .table-wrapper inside code blocks must not add spacing
+  pre.highlight .table-wrapper {
+    margin: 0 !important;
+    padding: 0;
+    box-shadow: none;
+    border: none;
+    overflow-x: auto;
+  }
+
+  .rouge-table {
+    border: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+
+    td {
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+      vertical-align: top;
+    }
+
+    .gutter {
+      border-right: 1px solid $border-color;
+      padding-right: 0.5rem;
+
+      pre {
+        opacity: 0.5;
+        margin: 0;
+        padding: 0;
+      }
+    }
+
+    .code {
+      padding-left: 0.75rem;
+
+      pre {
+        margin: 0;
+        padding: 0;
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Horizontal rules
+// ---------------------------------------------------------------------------
+
+.main-content hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    $border-color,
+    rgba($link-color, 0.3),
+    $border-color
+  );
+  margin: 2rem 0;
+}
+
+// ---------------------------------------------------------------------------
+// Inline code
+// ---------------------------------------------------------------------------
+
+$inline-code-color: if($body-background-color == #181b2e, #a5d6a7, #2e7d32);
+
+.main-content :not(pre) > code:not(.highlight),
+.main-content :not(.highlight) > code:not(.highlight) {
+  background: none;
+  border: none;
+  padding: 0;
+  color: $inline-code-color;
+  font-size: 1em;
+}
+
+// Ensure code inside highlight blocks keeps default styling
+.main-content .highlight code,
+.main-content pre.highlight code {
+  color: inherit;
+  font-size: inherit;
+}
+
+// ---------------------------------------------------------------------------
+// Scrollbar (WebKit)
+// ---------------------------------------------------------------------------
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: $body-background-color;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $border-color;
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba($link-color, 0.4);
   }
 }
