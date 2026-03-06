@@ -49,7 +49,7 @@ COPY --from=builder --chmod=755 /build/kubectl-mtv /usr/local/bin/kubectl-mtv
 # SSE server settings
 ENV MCP_HOST="0.0.0.0" \
     MCP_PORT="8080" \
-    MCP_OUTPUT_FORMAT="text" \
+    MCP_OUTPUT_FORMAT="markdown" \
     MCP_MAX_RESPONSE_CHARS="0" \
     MCP_READ_ONLY="false" \
     MCP_VERBOSE="2"

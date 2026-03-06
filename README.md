@@ -218,7 +218,7 @@ The server accepts the following environment variables:
 | `MCP_KUBE_INSECURE` | | Set to `true` to skip TLS verification |
 | `MCP_CERT_FILE` | | Path to TLS certificate (enables HTTPS) |
 | `MCP_KEY_FILE` | | Path to TLS private key |
-| `MCP_OUTPUT_FORMAT` | `text` | Default output format |
+| `MCP_OUTPUT_FORMAT` | `markdown` | Default output format |
 | `MCP_MAX_RESPONSE_CHARS` | `0` | Max response size (0 = unlimited) |
 | `MCP_READ_ONLY` | `false` | Set to `true` to disable write operations |
 

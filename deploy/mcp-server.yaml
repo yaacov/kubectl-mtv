@@ -78,7 +78,7 @@ spec:
             - name: MCP_PORT
               value: "8080"
             - name: MCP_OUTPUT_FORMAT
-              value: "text"
+              value: "markdown"
             - name: MCP_MAX_RESPONSE_CHARS
               value: "0"
             - name: MCP_KUBE_INSECURE
