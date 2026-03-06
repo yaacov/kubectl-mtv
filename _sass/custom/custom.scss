@@ -15,11 +15,7 @@
 }
 
 body {
-  background: linear-gradient(
-    to right,
-    $sidebar-color calc((100vw - 1280px) / 2 + 280px),
-    $body-background-color calc((100vw - 1280px) / 2 + 280px)
-  ) !important;
+  background: $body-background-color !important;
 }
 
 .nav-list-item .nav-list-link:hover,
@@ -28,11 +24,6 @@ body {
   background-color: $feedback-color !important;
 }
 
-@media (max-width: 66.5rem) {
-  body {
-    background: $body-background-color !important;
-  }
-}
 
 @media (min-width: 66.5rem) {
   .side-bar {
@@ -234,12 +225,14 @@ body {
 // Inline code
 // ---------------------------------------------------------------------------
 
+$inline-code-color: if($body-background-color == #181b2e, #a5d6a7, #2e7d32);
+
 .main-content :not(pre) > code:not(.highlight),
 .main-content :not(.highlight) > code:not(.highlight) {
   background: none;
   border: none;
   padding: 0;
-  color: #a5d6a7;
+  color: $inline-code-color;
   font-size: 1em;
 }
 

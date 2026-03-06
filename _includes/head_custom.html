@@ -1,0 +1,25 @@
+<!-- Inline critical background colors to prevent Flash of White (FOW) on GitHub Pages -->
+<style id="jtd-fow-fix">
+  html         { background: #181b2e; }
+  body         { background: #181b2e; }
+  .side-bar    { background: #151d33; }
+  .main-header { background: #181b2e; }
+</style>
+
+<!-- Early theme restore: add light stylesheet before first paint if needed -->
+<script>
+(function() {
+  var saved = localStorage.getItem('jtd-theme');
+  if (saved === 'forklift-light') {
+    var fix = document.getElementById('jtd-fow-fix');
+    if (fix) {
+      fix.textContent =
+        'html { background: #f5f7fa; }' +
+        'body { background: #f5f7fa; }' +
+        '.side-bar { background: #e8ecf1; }' +
+        '.main-header { background: #f5f7fa; }';
+    }
+    document.write('<link rel="stylesheet" href="\/assets\/css\/just-the-docs-forklift-light.css">');
+  }
+})();
+</script>
