@@ -11,6 +11,7 @@ import (
 	vm "github.com/yaacov/kubectl-mtv/pkg/cmd/describe/vm"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewPlanCmd creates the plan description command
@@ -19,6 +20,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig get
 	var withVMs bool
 	var vmName string
 	var watch bool
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 
 	cmd := &cobra.Command{
 		Use:   "plan",
@@ -53,16 +55,23 @@ Use --vm to see detailed status of a specific VM in the plan.`,
 				return fmt.Errorf("--with-vms and --vm flags are mutually exclusive")
 			}
 
+			outputFormat := outputFormatFlag.GetValue()
+
+			// --watch only works with table output
+			if watch && outputFormat != "table" {
+				return fmt.Errorf("--watch and --output %s are mutually exclusive; --watch only works with table output", outputFormat)
+			}
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(globalConfig.GetKubeConfigFlags())
 
 			// If --vm flag is provided, switch to VM description behavior
 			if vmName != "" {
-				return vm.DescribeVM(globalConfig.GetKubeConfigFlags(), name, namespace, vmName, watch, globalConfig.GetUseUTC())
+				return vm.DescribeVM(globalConfig.GetKubeConfigFlags(), name, namespace, vmName, watch, globalConfig.GetUseUTC(), outputFormat)
 			}
 
 			// Default behavior: describe plan
-			return plan.Describe(globalConfig.GetKubeConfigFlags(), name, namespace, withVMs, globalConfig.GetUseUTC())
+			return plan.Describe(globalConfig.GetKubeConfigFlags(), name, namespace, withVMs, globalConfig.GetUseUTC(), outputFormat)
 		},
 	}
 
@@ -71,8 +80,12 @@ Use --vm to see detailed status of a specific VM in the plan.`,
 	cmd.Flags().BoolVar(&withVMs, "with-vms", false, "Include list of VMs in the plan specification")
 	cmd.Flags().StringVar(&vmName, "vm", "", "VM name to describe (switches to VM description mode)")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch VM status with live updates (only when --vm is used)")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 
 	_ = cmd.RegisterFlagCompletionFunc("name", completion.PlanNameCompletion(kubeConfigFlags))
+	_ = cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	})
 
 	return cmd
 }

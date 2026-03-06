@@ -10,11 +10,13 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/describe/hook"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // NewHookCmd creates the hook description command
 func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig get.GlobalConfigGetter) *cobra.Command {
 	var name string
+	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 
 	cmd := &cobra.Command{
 		Use:   "hook",
@@ -28,23 +30,23 @@ service account, deadline, and status conditions.`,
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Validate required --name flag
 			if name == "" {
 				return fmt.Errorf("--name is required")
 			}
 
-			// Get the global configuration
-
-			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(globalConfig.GetKubeConfigFlags())
-			return hook.Describe(globalConfig.GetKubeConfigFlags(), name, namespace, globalConfig.GetUseUTC())
+			return hook.Describe(globalConfig.GetKubeConfigFlags(), name, namespace, globalConfig.GetUseUTC(), outputFormatFlag.GetValue())
 		},
 	}
 
 	cmd.Flags().StringVarP(&name, "name", "M", "", "Hook name")
 	_ = cmd.MarkFlagRequired("name")
+	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
 
 	_ = cmd.RegisterFlagCompletionFunc("name", completion.HookResourceNameCompletion(kubeConfigFlags))
+	_ = cmd.RegisterFlagCompletionFunc("output", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return outputFormatFlag.GetValidValues(), cobra.ShellCompDirectiveNoFileComp
+	})
 
 	return cmd
 }
