@@ -8,7 +8,7 @@ url: ""
 
 # Theme
 theme: just-the-docs
-color_scheme: forklift
+color_scheme: forklift-light
 
 # Search
 search_enabled: true

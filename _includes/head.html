@@ -1,50 +1,51 @@
 {%- comment -%}
   Override of just-the-docs head.html.
-  Moves theme detection + light CSS injection immediately after the dark CSS link,
-  BEFORE any external JS, to eliminate the dark→light flicker on page navigation.
+  Default theme is light (forklift-light). Dark (forklift) is the alternate.
+  Both CSS files are static render-blocking links; an inline script disables the
+  unused one before the first paint.
 {%- endcomment -%}
 
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=Edge">
 
-  <!-- FOW fix: :where() zero-specificity fallback colors applied before any CSS loads -->
+  <!-- FOW fix: light-theme fallback colors (matches default CSS) so the first
+       paint is correct even before stylesheets finish loading. -->
   <style id="jtd-fow-fix">
-    :where(html)         { background: #181b2e; }
-    :where(body)         { background: #181b2e; color: #e2e4e8; }
-    :where(.side-bar)    { background: #151d33; color: #e2e4e8; }
-    :where(.main-header) { background: #181b2e; }
-    :where(a)            { color: #4fc3f7; }
-    :where(.site-title)  { color: #e8f4fd; }
-    :where(h1, h2, h3, h4, h5, h6) { color: #e8f4fd; }
-    :where(.search-input) { background: #0f3460; color: #e2e4e8; border-color: #2a3a5c; }
-    :where(code)         { color: #a5d6a7; }
+    :where(html)         { background: #f5f7fa; }
+    :where(body)         { background: #f5f7fa; color: #2c3e50; }
+    :where(.side-bar)    { background: #e8ecf1; color: #2c3e50; }
+    :where(.main-header) { background: #f5f7fa; }
+    :where(a)            { color: #0277bd; }
+    :where(.site-title)  { color: #1a2a3a; }
+    :where(h1, h2, h3, h4, h5, h6) { color: #1a2a3a; }
+    :where(.search-input) { background: #e0e7ee; color: #2c3e50; border-color: #c5cdd6; }
+    :where(code)         { color: #2e7d32; }
   </style>
 
-  <link rel="stylesheet" href="{{ '/assets/css/just-the-docs-default.css' | relative_url }}" id="jtd-dark-css">
-  <link rel="stylesheet" href="{{ '/assets/css/just-the-docs-forklift-light.css' | relative_url }}" id="jtd-light-css">
+  <link rel="stylesheet" href="{{ '/assets/css/just-the-docs-default.css' | relative_url }}" id="jtd-light-css">
+  <link rel="stylesheet" href="{{ '/assets/css/just-the-docs-forklift.css' | relative_url }}" id="jtd-dark-css">
 
-  <!-- Both stylesheets are render-blocking: the browser fetches them in parallel and
-       won't paint until both are loaded AND this synchronous script finishes.
-       The script disables the unused one, so the first paint is always correct. -->
+  <!-- Both stylesheets are render-blocking. The script disables the unused one
+       synchronously before any paint occurs. -->
   <script>
   (function() {
-    var light = localStorage.getItem('jtd-theme') === 'forklift-light';
-    if (light) {
-      document.getElementById('jtd-dark-css').disabled = true;
+    var dark = localStorage.getItem('jtd-theme') === 'forklift';
+    if (dark) {
+      document.getElementById('jtd-light-css').disabled = true;
       var f = document.getElementById('jtd-fow-fix');
       if (f) f.textContent =
-        ':where(html){background:#f5f7fa}' +
-        ':where(body){background:#f5f7fa;color:#2c3e50}' +
-        ':where(.side-bar){background:#e8ecf1;color:#2c3e50}' +
-        ':where(.main-header){background:#f5f7fa}' +
-        ':where(a){color:#0277bd}' +
-        ':where(.site-title){color:#1a2a3a}' +
-        ':where(h1,h2,h3,h4,h5,h6){color:#1a2a3a}' +
-        ':where(.search-input){background:#e0e7ee;color:#2c3e50;border-color:#c5cdd6}' +
-        ':where(code){color:#2e7d32}';
+        ':where(html){background:#181b2e}' +
+        ':where(body){background:#181b2e;color:#e2e4e8}' +
+        ':where(.side-bar){background:#151d33;color:#e2e4e8}' +
+        ':where(.main-header){background:#181b2e}' +
+        ':where(a){color:#4fc3f7}' +
+        ':where(.site-title){color:#e8f4fd}' +
+        ':where(h1,h2,h3,h4,h5,h6){color:#e8f4fd}' +
+        ':where(.search-input){background:#0f3460;color:#e2e4e8;border-color:#2a3a5c}' +
+        ':where(code){color:#a5d6a7}';
     } else {
-      document.getElementById('jtd-light-css').disabled = true;
+      document.getElementById('jtd-dark-css').disabled = true;
     }
   })();
   </script>
