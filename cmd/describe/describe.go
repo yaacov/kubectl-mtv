@@ -20,6 +20,10 @@ func NewDescribeCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig
 	planCmd.Aliases = []string{"plans"}
 	cmd.AddCommand(planCmd)
 
+	providerCmd := NewProviderCmd(kubeConfigFlags, globalConfig)
+	providerCmd.Aliases = []string{"providers"}
+	cmd.AddCommand(providerCmd)
+
 	hostCmd := NewHostCmd(kubeConfigFlags, globalConfig)
 	hostCmd.Aliases = []string{"hosts"}
 	cmd.AddCommand(hostCmd)
