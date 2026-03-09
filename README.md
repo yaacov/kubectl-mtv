@@ -20,7 +20,7 @@ kubectl krew install mtv
 # https://github.com/yaacov/kubectl-mtv/releases
 ```
 
-See [Installation Guide](guide/02-installation-and-prerequisites.md) for more options.
+See [Installation Guide](guide/02-installation-and-prerequisites.md) for more options including [shell completion](guide/02-installation-and-prerequisites.md#shell-completion) setup.
 
 ## MCP Support
 

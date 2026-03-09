@@ -232,6 +232,63 @@ kubectl mtv
 
 Expected output should show the version information and available commands.
 
+### Shell Completion
+
+Enable tab completion for commands, flags, and resource names. Setup depends on
+how you invoke the tool.
+
+#### As a kubectl plugin (`kubectl mtv <TAB>`)
+
+kubectl 1.26+ delegates completion to plugins, but it expects a helper executable
+named `kubectl_complete-mtv` (note the **underscore**) to be in your `PATH`.
+Create it once:
+
+```bash
+cat > "$(dirname "$(which kubectl-mtv)")/kubectl_complete-mtv" << 'SCRIPT'
+#!/usr/bin/env bash
+kubectl-mtv __complete "$@"
+SCRIPT
+chmod +x "$(dirname "$(which kubectl-mtv)")/kubectl_complete-mtv"
+```
+
+This assumes kubectl shell completion is already set up (see `kubectl completion --help` if needed).
+
+#### As a standalone binary (`kubectl-mtv <TAB>`)
+
+If you invoke the binary directly as `kubectl-mtv`, install its own completion
+script.
+
+**Bash:**
+
+```bash
+d="$(pkg-config --variable=completionsdir bash-completion 2>/dev/null || echo "${BASH_COMPLETION_USER_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/bash-completion}/completions")" && mkdir -p "$d" && kubectl-mtv completion bash > "$d/kubectl-mtv"
+```
+
+Or source it manually in the current session:
+
+```bash
+source <(kubectl-mtv completion bash)
+```
+
+**Zsh:**
+
+```bash
+d="${fpath[1]:-${XDG_DATA_HOME:-$HOME/.local/share}/zsh/completions}" && mkdir -p "$d" && kubectl-mtv completion zsh > "$d/_kubectl-mtv"
+```
+
+If completions don't appear, ensure the directory is in your `fpath` and run `compinit`:
+
+```bash
+echo 'fpath=(~/.local/share/zsh/completions $fpath)' >> ~/.zshrc
+echo 'autoload -Uz compinit && compinit' >> ~/.zshrc
+```
+
+**Fish:**
+
+```bash
+kubectl-mtv completion fish > ~/.config/fish/completions/kubectl-mtv.fish
+```
+
 ### Kubeconfig Configuration
 
 `kubectl-mtv` uses the same kubeconfig as `kubectl`. Ensure your kubeconfig is properly configured:
