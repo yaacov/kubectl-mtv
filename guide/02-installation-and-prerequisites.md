@@ -237,21 +237,21 @@ Expected output should show the version information and available commands.
 Enable tab completion for commands, flags, and resource names. Setup depends on
 how you invoke the tool.
 
-#### As a kubectl plugin (`kubectl mtv <TAB>`)
+#### As a kubectl / oc plugin (`kubectl mtv <TAB>` or `oc mtv <TAB>`)
 
-kubectl 1.26+ delegates completion to plugins, but it expects a helper executable
-named `kubectl_complete-mtv` (note the **underscore**) to be in your `PATH`.
-Create it once:
+kubectl 1.26+ and oc 4.x delegate completion to plugins, but they expect a helper
+executable named `kubectl_complete-mtv` or `oc_complete-mtv` (note the
+**underscore**) to be in your `PATH`. Create them once:
 
 ```bash
-cat > "$(dirname "$(which kubectl-mtv)")/kubectl_complete-mtv" << 'SCRIPT'
+d="$(dirname "$(which kubectl-mtv)")"
+cat > "$d/kubectl_complete-mtv" << 'SCRIPT'
 #!/usr/bin/env bash
 kubectl-mtv __complete "$@"
 SCRIPT
-chmod +x "$(dirname "$(which kubectl-mtv)")/kubectl_complete-mtv"
+chmod +x "$d/kubectl_complete-mtv"
+ln -sf "$d/kubectl_complete-mtv" "$d/oc_complete-mtv"
 ```
-
-This assumes kubectl shell completion is already set up (see `kubectl completion --help` if needed).
 
 #### As a standalone binary (`kubectl-mtv <TAB>`)
 
