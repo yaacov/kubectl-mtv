@@ -54,7 +54,7 @@ async def test_inventory_vms_query(mcp_session):
             "provider": VSPHERE_PROVIDER_NAME,
             "namespace": TEST_NAMESPACE,
             "output": "json",
-            "query": "where name ~= 'mtv-rhel8-.*'",
+            "query": "where name ~= '^mtv-rhel8-.*'",
         },
     })
 
