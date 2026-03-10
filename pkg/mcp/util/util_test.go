@@ -10,7 +10,7 @@ import (
 
 func TestResolveEnvVar(t *testing.T) {
 	// Set test environment variables
-	os.Setenv("TEST_HOST", "https://10.6.46.250")
+	os.Setenv("TEST_HOST", "https://vcenter.example.com")
 	os.Setenv("TEST_PORT", "443")
 	os.Setenv("TEST_USER", "admin")
 	defer func() {
@@ -28,12 +28,12 @@ func TestResolveEnvVar(t *testing.T) {
 		{
 			name:  "whole value env var reference",
 			input: "${TEST_HOST}",
-			want:  "https://10.6.46.250",
+			want:  "https://vcenter.example.com",
 		},
 		{
 			name:  "embedded env var with path suffix",
 			input: "${TEST_HOST}/sdk",
-			want:  "https://10.6.46.250/sdk",
+			want:  "https://vcenter.example.com/sdk",
 		},
 		{
 			name:  "embedded env var with prefix and suffix",
@@ -43,7 +43,7 @@ func TestResolveEnvVar(t *testing.T) {
 		{
 			name:  "multiple env var references",
 			input: "${TEST_HOST}:${TEST_PORT}/api",
-			want:  "https://10.6.46.250:443/api",
+			want:  "https://vcenter.example.com:443/api",
 		},
 		{
 			name:  "literal string no env vars",

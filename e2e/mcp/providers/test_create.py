@@ -44,6 +44,7 @@ async def test_create_vsphere_provider(mcp_session):
             "password": GOVC_PASSWORD,
             "namespace": TEST_NAMESPACE,
             "provider-insecure-skip-tls": True,
+            "sdk-endpoint": "vcenter",
         },
     })
     assert result.get("return_value") == 0, f"Unexpected result: {result}"
@@ -60,7 +61,7 @@ async def test_wait_providers_ready(mcp_session):
         ],
         "jsonpath={.status.phase}=Ready",
         namespace=TEST_NAMESPACE,
-        timeout=120,
+        timeout=300,
     )
     print("\n  ✓ Both providers are Ready")
 
@@ -78,7 +79,7 @@ async def test_wait_inventory_ready(mcp_session):
         f"providers.forklift.konveyor.io/{VSPHERE_PROVIDER_NAME}",
         "condition=InventoryCreated",
         namespace=TEST_NAMESPACE,
-        timeout=180,
+        timeout=300,
     )
 
     # 2. Verify the inventory service is actually serving VM requests
@@ -89,7 +90,7 @@ async def test_wait_inventory_ready(mcp_session):
             "--namespace", TEST_NAMESPACE,
             "--output", "json",
         ],
-        timeout=180,
+        timeout=300,
         interval=10,
         description="vSphere VM inventory to respond",
     )
@@ -103,8 +104,22 @@ async def test_wait_inventory_ready(mcp_session):
             "--namespace", TEST_NAMESPACE,
             "--output", "json",
         ],
-        timeout=180,
+        timeout=300,
         interval=10,
         description="vSphere host inventory to respond",
     )
     print("  ✓ vSphere host inventory is accessible")
+
+    # 4. Verify datastore inventory is also available (needed by create plan)
+    _retry_command(
+        _mtv_base_args() + [
+            "get", "inventory", "datastore",
+            "--provider", VSPHERE_PROVIDER_NAME,
+            "--namespace", TEST_NAMESPACE,
+            "--output", "json",
+        ],
+        timeout=300,
+        interval=10,
+        description="vSphere datastore inventory to respond",
+    )
+    print("  ✓ vSphere datastore inventory is accessible")
