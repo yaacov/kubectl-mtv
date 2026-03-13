@@ -465,19 +465,28 @@ kubectl mtv create plan --name vm-specific-hooks \
 
 ### Hook Management via Plan Patching
 
-Hooks can be added or modified after plan creation:
+Hooks can be added or modified after plan creation using the `patch planvm` command:
 
 ```bash
-# Add hook to specific VM in existing plan (requires plan patching - see Chapter 15)
-kubectl patch plan existing-plan --type='merge' -p='
-spec:
-  vms:
-  - name: additional-vm
-    hooks:
-    - step: PreHook
-      hook:
-        name: new-preparation-hook
-        namespace: migration-hooks'
+# Add a pre-migration hook to a specific VM
+kubectl mtv patch planvm --plan-name existing-plan \
+  --vm-name additional-vm \
+  --add-pre-hook new-preparation-hook
+
+# Add a post-migration hook to a specific VM
+kubectl mtv patch planvm --plan-name existing-plan \
+  --vm-name additional-vm \
+  --add-post-hook health-check-post
+
+# Remove a specific hook from a VM
+kubectl mtv patch planvm --plan-name existing-plan \
+  --vm-name additional-vm \
+  --remove-hook new-preparation-hook
+
+# Clear all hooks from a VM
+kubectl mtv patch planvm --plan-name existing-plan \
+  --vm-name additional-vm \
+  --clear-hooks
 ```
 
 ## Advanced Hook Development

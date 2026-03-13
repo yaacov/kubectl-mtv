@@ -726,15 +726,18 @@ kubectl mtv get plan --name enterprise-production --watch
 ### Plan Modification
 
 ```bash
-# Plans are immutable after creation, but you can:
+# Use plan patching to modify existing plans (see Chapter 18 for full details)
+kubectl mtv patch plan --plan-name enterprise-production \
+  --migration-type warm \
+  --target-namespace production-workloads
 
-# 1. Create modified copy
-kubectl get plan original-plan -o yaml > modified-plan.yaml
-# Edit modified-plan.yaml
-kubectl apply -f modified-plan.yaml
+# Modify per-VM settings such as hooks
+kubectl mtv patch planvm --plan-name enterprise-production \
+  --vm-name web-server-01 \
+  --target-name web-prod-01
 
-# 2. Use plan patching (covered in Chapter 18)
-kubectl mtv patch plan --plan-name enterprise-production --archived=true
+# Archive a completed plan
+kubectl mtv archive plan --name enterprise-production
 ```
 
 ## Troubleshooting Plan Creation
