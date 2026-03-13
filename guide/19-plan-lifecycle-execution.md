@@ -711,8 +711,9 @@ kubectl mtv get plan --name problem-plan --output jsonpath='{.spec.vms[*].name}'
 # Check if VMs are in cancelable state
 kubectl mtv describe plan --name problem-plan
 
-# Force cancellation through kubectl if needed
-kubectl patch plan problem-plan --type='merge' -p='{"spec":{"vms":[]}}'
+# Cancel all VMs in the plan
+kubectl mtv cancel plan --name problem-plan \
+  --vms "vm1,vm2,vm3"
 ```
 
 ## Next Steps

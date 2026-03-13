@@ -168,10 +168,7 @@ First, enable the copy offload feature in the Forklift controller:
 
 ```bash
 # Enable the copy offload feature flag
-kubectl patch forkliftcontrollers.forklift.konveyor.io forklift-controller \
-  --type merge \
-  -p '{"spec": {"feature_copy_offload": "true"}}' \
-  -n openshift-mtv
+kubectl mtv settings set --setting feature_copy_offload --value true
 
 # Set the volume-populator image (if needed)
 kubectl set env -n openshift-mtv deployment forklift-volume-populator-controller \
@@ -517,15 +514,8 @@ Optimize for concurrent operations:
 
 ```bash
 # Configure the Forklift controller for optimal throughput
-kubectl patch forkliftcontroller forklift-controller \
-  -n konveyor-forklift \
-  --type merge \
-  --patch '{
-    "spec": {
-      "controller_max_vm_inflight": 20,
-      "controller_precopy_interval": 60
-    }
-  }'
+kubectl mtv settings set --setting controller_max_vm_inflight --value 20
+kubectl mtv settings set --setting controller_precopy_interval --value 60
 ```
 
 #### 3. Storage Array Specific Optimizations

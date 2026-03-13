@@ -564,7 +564,7 @@ kubectl create secret generic shared-creds \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-#### Solution 2: Create New Secret and Switch
+#### Solution 2: Recreate Provider with New Secret
 
 ```bash
 # Create new secret
@@ -572,10 +572,12 @@ kubectl create secret generic new-vsphere-creds \
   --from-literal=user=new-username \
   --from-literal=password=new-password
 
-# Update provider to use new secret (this requires recreating the provider or manual editing)
-kubectl get provider vsphere-prod -o yaml > provider-backup.yaml
-# Edit the YAML to reference the new secret, then:
-kubectl apply -f provider-backup.yaml
+# Delete the old provider and recreate it pointing to the new secret
+kubectl mtv delete provider --name vsphere-prod
+
+kubectl mtv create provider --name vsphere-prod --type vsphere \
+  --url https://vcenter.example.com/sdk \
+  --secret new-vsphere-creds
 ```
 
 ### Verification and Monitoring

@@ -320,14 +320,12 @@ kubectl mtv create vddk-image \
   --push \
   --set-controller-image
 
-# Option 2: Manually patch the ForkliftController
-kubectl patch forkliftcontroller forklift-controller -n openshift-mtv \
-  --type merge \
-  -p '{"spec":{"vddk_image":"quay.io/company/vddk:8.0.1"}}'
+# Option 2: Set the global VDDK image via settings
+kubectl mtv settings set --setting vddk_image \
+  --value quay.io/company/vddk:8.0.1
 
 # Verify the configuration
-kubectl get forkliftcontroller forklift-controller -n openshift-mtv \
-  -o jsonpath='{.spec.vddk_image}'
+kubectl mtv settings get --setting vddk_image
 ```
 
 ## Setting the MTV_VDDK_INIT_IMAGE Environment Variable
@@ -554,8 +552,7 @@ kubectl mtv create provider --name vsphere-production --type vsphere \
 kubectl mtv describe provider --name vsphere-production | grep -i vddk
 
 # Step 6: Verify ForkliftController configuration
-kubectl get forkliftcontroller forklift-controller -n openshift-mtv \
-  -o jsonpath='{.spec.vddk_image}'
+kubectl mtv settings get --setting vddk_image
 ```
 
 ### Example 2: Multi-Architecture Deployment
