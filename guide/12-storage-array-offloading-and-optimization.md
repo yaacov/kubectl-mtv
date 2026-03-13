@@ -142,22 +142,18 @@ Uses SSH to directly execute vmkfstools commands on ESXi hosts with restricted c
 
 ### Configuring Clone Method
 
-The clone method is configured in the Provider settings using the `esxiCloneMethod` key:
+The clone method is configured in the Provider settings using the `esxiCloneMethod` key.
+Set it when creating a new provider or patch an existing one:
 
-```yaml
-apiVersion: forklift.konveyor.io/v1beta1
-kind: Provider
-metadata:
-  name: my-vsphere-provider
-  namespace: openshift-mtv
-spec:
-  type: vsphere
-  url: https://vcenter.company.com
-  secret:
-    name: vsphere-secret
-    namespace: openshift-mtv
-  settings:
-    esxiCloneMethod: "ssh"  # Options: "vib" (default) or "ssh"
+```bash
+# Set the clone method on an existing provider
+kubectl mtv patch provider --name my-vsphere-provider --esxi-clone-method ssh
+
+# Or specify it during provider creation
+kubectl mtv create provider --name my-vsphere-provider --type vsphere \
+  --url https://vcenter.company.com/sdk \
+  --secret vsphere-secret \
+  --esxi-clone-method ssh   # Options: "vib" (default) or "ssh"
 ```
 
 ## Configuration and Setup
@@ -171,8 +167,8 @@ First, enable the copy offload feature in the Forklift controller:
 kubectl mtv settings set --setting feature_copy_offload --value true
 
 # Set the volume-populator image (if needed)
-kubectl set env -n openshift-mtv deployment forklift-volume-populator-controller \
-  --all VSPHERE_XCOPY_VOLUME_POPULATOR_IMAGE=quay.io/kubev2v/vsphere-xcopy-volume-populator
+kubectl mtv settings set --setting populator_vsphere_xcopy_volume_image_fqin \
+  --value quay.io/kubev2v/vsphere-xcopy-volume-populator
 ```
 
 ### Step 2: Configure vSphere User Privileges

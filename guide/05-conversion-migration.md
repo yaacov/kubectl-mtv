@@ -132,20 +132,10 @@ kubectl mtv create plan --name vendor-conversion \
 
 ### Storage Mapping Considerations
 
-**Simplified Mapping:**
-Since disk provisioning is handled externally, storage mappings can be omitted or simplified:
+Since disk provisioning is handled externally, storage mappings can be omitted.
+Create a plan with only a network mapping and no storage mapping:
 
-```yaml
-map:
-  network:
-    name: conversion-network-mapping
-    namespace: openshift-mtv
-  storage: {}  # Empty storage mapping since PVCs are pre-created
-```
-
-**Alternative Approach:**
 ```bash
-# Create plan without explicit storage mapping
 kubectl mtv create plan --name conversion-simple \
   --source vsphere-prod \
   --migration-type conversion \
@@ -357,36 +347,17 @@ kubectl mtv get plan --name vendor-conversion-example --watch
 
 ### Advanced Configuration Example
 
-```yaml
-# conversion-plan.yaml
-apiVersion: forklift.konveyor.io/v1beta1
-kind: Plan
-metadata:
-  name: advanced-conversion-plan
-  namespace: openshift-mtv
-spec:
-  type: conversion
-  description: "Conversion migration with vendor-provided storage"
-  targetNamespace: migrated-workloads
-  provider:
-    source:
-      name: vsphere-production
-      namespace: openshift-mtv
-    destination:
-      name: openshift-target
-      namespace: openshift-mtv
-  map:
-    network:
-      name: production-network-mapping
-      namespace: openshift-mtv
-    storage: {}  # Empty - PVCs pre-created by vendor
-  vms:
-  - id: vm-178
-    name: production-database
-  - id: vm-179  
-    name: production-webserver
-  preserveStaticIPs: true
-  targetPowerState: on
+```bash
+kubectl mtv create plan --name advanced-conversion-plan \
+  --source vsphere-production \
+  --destination openshift-target \
+  --migration-type conversion \
+  --description "Conversion migration with vendor-provided storage" \
+  --target-namespace migrated-workloads \
+  --network-mapping production-network-mapping \
+  --preserve-static-ips \
+  --target-power-state on \
+  --vms "production-database,production-webserver"
 ```
 
 ## Next Steps
