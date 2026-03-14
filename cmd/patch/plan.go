@@ -383,6 +383,7 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	}
 
 	_ = cmd.RegisterFlagCompletionFunc("plan-name", completion.PlanNameCompletion(kubeConfigFlags))
+	_ = cmd.RegisterFlagCompletionFunc("vm-name", completion.PlanVMNameCompletion(kubeConfigFlags))
 
 	return cmd
 }
