@@ -573,7 +573,11 @@ Affinity Syntax (KARL):
 	cmd.Flags().StringVar(&enableNestedVirtualization, "enable-nested-virtualization", "auto", "Enable nested virtualization on target VMs (true/false/auto)")
 	cmd.Flags().BoolVar(&planSpec.XfsCompatibility, "xfs-compatibility", false, "Use XFS-compatible virt-v2v image for this plan")
 
-	// Add completion for storage enhancement flags
+	_ = cmd.RegisterFlagCompletionFunc("source", completion.ProviderNameCompletion(kubeConfigFlags))
+	_ = cmd.RegisterFlagCompletionFunc("target", completion.ProviderNameCompletionByType(kubeConfigFlags, "openshift"))
+	_ = cmd.RegisterFlagCompletionFunc("network-mapping", completion.MappingNameCompletion(kubeConfigFlags, "network"))
+	_ = cmd.RegisterFlagCompletionFunc("storage-mapping", completion.MappingNameCompletion(kubeConfigFlags, "storage"))
+
 	if err := cmd.RegisterFlagCompletionFunc("default-volume-mode", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"Filesystem", "Block"}, cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {

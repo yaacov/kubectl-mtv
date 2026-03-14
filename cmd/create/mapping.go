@@ -6,6 +6,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/mapping"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/completion"
 )
 
 // NewMappingCmd creates the mapping creation command with subcommands
@@ -75,6 +76,9 @@ Pair formats:
 	cmd.Flags().StringVarP(&sourceProvider, "source", "S", "", "Source provider name")
 	cmd.Flags().StringVarP(&targetProvider, "target", "T", "", "Target provider name")
 	cmd.Flags().StringVar(&networkPairs, "network-pairs", "", "Network mapping pairs in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated)")
+
+	_ = cmd.RegisterFlagCompletionFunc("source", completion.ProviderNameCompletion(kubeConfigFlags))
+	_ = cmd.RegisterFlagCompletionFunc("target", completion.ProviderNameCompletion(kubeConfigFlags))
 
 	if err := cmd.MarkFlagRequired("name"); err != nil {
 		panic(err)
@@ -182,7 +186,9 @@ plugin configuration for optimized data transfer.`,
 	cmd.Flags().StringVar(&offloadCACert, "offload-cacert", "", "CA certificate for offload secret (use @filename to load from file)")
 	cmd.Flags().BoolVar(&offloadInsecureSkipTLS, "offload-insecure-skip-tls", false, "Skip TLS verification for offload connections")
 
-	// Add completion for volume mode flag
+	_ = cmd.RegisterFlagCompletionFunc("source", completion.ProviderNameCompletion(kubeConfigFlags))
+	_ = cmd.RegisterFlagCompletionFunc("target", completion.ProviderNameCompletion(kubeConfigFlags))
+
 	if err := cmd.RegisterFlagCompletionFunc("default-volume-mode", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"Filesystem", "Block"}, cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
