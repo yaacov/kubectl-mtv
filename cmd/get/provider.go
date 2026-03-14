@@ -18,6 +18,7 @@ import (
 func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
+	var query string
 
 	var providerName string
 	cmd := &cobra.Command{
@@ -64,12 +65,13 @@ environments for VM migrations. Lists all providers or retrieves details for a s
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return provider.List(ctx, kubeConfigFlags, namespace, inventoryURL, watch, outputFormatFlag.GetValue(), providerName, inventoryInsecureSkipTLS)
+			return provider.List(ctx, kubeConfigFlags, namespace, inventoryURL, watch, outputFormatFlag.GetValue(), providerName, inventoryInsecureSkipTLS, query)
 		},
 	}
 
 	cmd.Flags().StringVarP(&providerName, "name", "M", "", "Provider name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
 

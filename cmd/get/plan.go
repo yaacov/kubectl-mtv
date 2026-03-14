@@ -35,7 +35,8 @@ Use --vms to see the migration status of individual VMs within a plan.
 Use --disk to see the disk transfer status with individual disk details.
 Use both --vms and --disk together to see VMs with their disk details.
 Use --vms-table to see all VMs across plans in a flat table with source/target inventory details.
-Use --query with --vms-table to filter, sort, or select columns using TSL syntax.`,
+Use --query with --vms-table to filter, sort, or select columns using TSL syntax.
+Use --query without --vms-table to filter the plans list using TSL syntax.`,
 		Example: `  # List all plans in current namespace
   kubectl-mtv get plans
 
@@ -139,7 +140,7 @@ Use --query with --vms-table to filter, sort, or select columns using TSL syntax
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return plan.List(ctx, kubeConfigFlags, namespace, watch, outputFormatFlag.GetValue(), planName, globalConfig.GetUseUTC())
+			return plan.List(ctx, kubeConfigFlags, namespace, watch, outputFormatFlag.GetValue(), planName, globalConfig.GetUseUTC(), query)
 		},
 	}
 
@@ -149,7 +150,7 @@ Use --query with --vms-table to filter, sort, or select columns using TSL syntax
 	cmd.Flags().BoolVar(&vms, "vms", false, "Get VMs status in the migration plan (requires plan NAME)")
 	cmd.Flags().BoolVar(&disk, "disk", false, "Get disk transfer status in the migration plan (requires plan NAME)")
 	cmd.Flags().BoolVar(&vmsTable, "vms-table", false, "Show all VMs across plans in a flat table with source/target inventory details")
-	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (only with --vms-table)")
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax")
 	help.MarkMCPHidden(cmd, "watch", "vms-table")
 
 	// Add completion for name and output format flags

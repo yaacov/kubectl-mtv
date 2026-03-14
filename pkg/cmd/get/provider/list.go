@@ -14,6 +14,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/providerutil"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/output"
+	querypkg "github.com/yaacov/kubectl-mtv/pkg/util/query"
 	"github.com/yaacov/kubectl-mtv/pkg/util/watch"
 )
 
@@ -140,7 +141,7 @@ func getSpecificProvider(ctx context.Context, dynamicClient dynamic.Interface, n
 }
 
 // ListProviders lists providers without watch functionality
-func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string, insecureSkipTLS bool) error {
+func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, outputFormat string, providerName string, insecureSkipTLS bool, query string) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -315,6 +316,18 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 		items = append(items, item)
 	}
 
+	// Apply query filter
+	if query != "" {
+		queryOpts, err := querypkg.ParseQueryString(query)
+		if err != nil {
+			return fmt.Errorf("failed to parse query: %v", err)
+		}
+		items, err = querypkg.ApplyQuery(items, queryOpts)
+		if err != nil {
+			return fmt.Errorf("error applying query: %v", err)
+		}
+	}
+
 	// Handle different output formats
 	switch outputFormat {
 	case "json":
@@ -323,7 +336,7 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 			WithPrettyPrint(true).
 			AddItems(items)
 
-		if len(providers.Items) == 0 {
+		if len(items) == 0 {
 			return jsonPrinter.PrintEmpty("No providers found in namespace " + namespace)
 		}
 		return jsonPrinter.Print()
@@ -332,7 +345,7 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 		yamlPrinter := output.NewYAMLPrinter().
 			AddItems(items)
 
-		if len(providers.Items) == 0 {
+		if len(items) == 0 {
 			return yamlPrinter.PrintEmpty("No providers found in namespace " + namespace)
 		}
 		return yamlPrinter.Print()
@@ -367,7 +380,7 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 
 		tablePrinter := output.NewTablePrinter().WithHeaders(headers...).AddItems(items)
 
-		if len(providers.Items) == 0 {
+		if len(items) == 0 {
 			if err := tablePrinter.PrintEmpty("No providers found in namespace " + namespace); err != nil {
 				return fmt.Errorf("error printing empty table: %v", err)
 			}
@@ -386,8 +399,8 @@ func ListProviders(ctx context.Context, configFlags *genericclioptions.ConfigFla
 }
 
 // List lists providers with optional watch mode
-func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, watchMode bool, outputFormat string, providerName string, insecureSkipTLS bool) error {
+func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, baseURL string, watchMode bool, outputFormat string, providerName string, insecureSkipTLS bool, query string) error {
 	return watch.WrapWithWatch(watchMode, outputFormat, func() error {
-		return ListProviders(ctx, configFlags, namespace, baseURL, outputFormat, providerName, insecureSkipTLS)
+		return ListProviders(ctx, configFlags, namespace, baseURL, outputFormat, providerName, insecureSkipTLS, query)
 	}, watch.DefaultInterval)
 }

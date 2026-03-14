@@ -17,6 +17,7 @@ import (
 func NewMappingCmd(globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watchFlag bool
+	var query string
 	var mappingName string
 
 	cmd := &cobra.Command{
@@ -61,12 +62,13 @@ mapping type.`,
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return mapping.List(ctx, globalConfig.GetKubeConfigFlags(), "all", namespace, watchFlag, outputFormatFlag.GetValue(), mappingName, globalConfig.GetUseUTC())
+			return mapping.List(ctx, globalConfig.GetKubeConfigFlags(), "all", namespace, watchFlag, outputFormatFlag.GetValue(), mappingName, globalConfig.GetUseUTC(), query)
 		},
 	}
 
 	cmd.Flags().StringVarP(&mappingName, "name", "M", "", "Mapping name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watchFlag, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
 
@@ -87,6 +89,7 @@ mapping type.`,
 func newGetNetworkMappingCmd(globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
+	var query string
 	var mappingName string
 
 	cmd := &cobra.Command{
@@ -124,12 +127,13 @@ definitions (NADs) or pod networking.`,
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return mapping.List(ctx, globalConfig.GetKubeConfigFlags(), "network", namespace, watch, outputFormatFlag.GetValue(), mappingName, globalConfig.GetUseUTC())
+			return mapping.List(ctx, globalConfig.GetKubeConfigFlags(), "network", namespace, watch, outputFormatFlag.GetValue(), mappingName, globalConfig.GetUseUTC(), query)
 		},
 	}
 
 	cmd.Flags().StringVarP(&mappingName, "name", "M", "", "Mapping name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
 
@@ -152,6 +156,7 @@ definitions (NADs) or pod networking.`,
 func newGetStorageMappingCmd(globalConfig GlobalConfigGetter) *cobra.Command {
 	outputFormatFlag := flags.NewOutputFormatTypeFlag()
 	var watch bool
+	var query string
 	var mappingName string
 
 	cmd := &cobra.Command{
@@ -189,12 +194,13 @@ storage classes with optional volume mode and access mode settings.`,
 			}
 			logOutputFormat(outputFormatFlag.GetValue())
 
-			return mapping.List(ctx, globalConfig.GetKubeConfigFlags(), "storage", namespace, watch, outputFormatFlag.GetValue(), mappingName, globalConfig.GetUseUTC())
+			return mapping.List(ctx, globalConfig.GetKubeConfigFlags(), "storage", namespace, watch, outputFormatFlag.GetValue(), mappingName, globalConfig.GetUseUTC(), query)
 		},
 	}
 
 	cmd.Flags().StringVarP(&mappingName, "name", "M", "", "Mapping name")
 	cmd.Flags().VarP(outputFormatFlag, "output", "o", flags.OutputFormatHelp)
+	cmd.Flags().StringVarP(&query, "query", "q", "", "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")")
 	cmd.Flags().BoolVarP(&watch, "watch", "w", false, "Watch for changes")
 	help.MarkMCPHidden(cmd, "watch")
 
