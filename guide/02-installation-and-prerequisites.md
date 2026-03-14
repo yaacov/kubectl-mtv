@@ -21,7 +21,7 @@ Before installing `kubectl-mtv`, ensure your environment meets the following req
 - **kubectl**: Latest stable version installed and configured to access your cluster
 - **Cluster Access**: Appropriate RBAC permissions to access MTV/Forklift resources
 
-### Development Prerequisites (Method 3 Only)
+### Development Prerequisites (Method 4 Only)
 
 If building from source, you'll need:
 
@@ -31,102 +31,86 @@ If building from source, you'll need:
 
 ## Installation Methods
 
-### Method 1: Krew Plugin Manager (Recommended)
+### Method 1: Quick Install Script (Recommended)
 
-[Krew](https://sigs.k8s.io/krew) is the recommended way to install kubectl plugins, providing easy installation and updates.
-
-#### Step 1: Install Krew (if not already installed)
+Download the latest release, verify its checksum, install the binary and shell completion helpers:
 
 ```bash
-# Install Krew
-(
-  set -x; cd "$(mktemp -d)" &&
-  OS="$(uname | tr '[:upper:]' '[:lower:]')" &&
-  ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')" &&
-  KREW="krew-${OS}_${ARCH}" &&
-  curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz" &&
-  tar zxvf "${KREW}.tar.gz" &&
-  ./"${KREW}" install krew
-)
-
-# Add Krew to your PATH
-export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"
+curl -sSL https://raw.githubusercontent.com/yaacov/kubectl-mtv/main/install.sh | bash
 ```
 
-Add the PATH export to your shell profile (`.bashrc`, `.zshrc`, etc.) for persistence:
+By default the script installs to `~/.local/bin`. Override with environment variables:
 
 ```bash
-echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
+# Install a specific version
+curl -sSL https://raw.githubusercontent.com/yaacov/kubectl-mtv/main/install.sh | VERSION=v0.1.0 bash
+
+# Install to a different directory
+curl -sSL https://raw.githubusercontent.com/yaacov/kubectl-mtv/main/install.sh | INSTALL_DIR=/usr/local/bin bash
 ```
 
-#### Step 2: Install kubectl-mtv via Krew
+**Note**: System directories like `/usr/local/bin` may require elevated permissions. Either prefix the command with `sudo` or use a user-writable directory such as `INSTALL_DIR=$HOME/bin`.
+
+The script installs three files:
+
+| File | Purpose |
+|------|---------|
+| `kubectl-mtv` | Main binary (kubectl plugin) |
+| `kubectl_complete-mtv` | Shell completion helper for `kubectl mtv` |
+| `oc_complete-mtv` | Shell completion helper for `oc mtv` |
+
+If the install directory is not in your `PATH`, the script prints instructions for adding it.
+
+### Method 2: Krew Plugin Manager
+
+[Krew](https://sigs.k8s.io/krew) is the kubectl plugin manager. If you already use Krew, you can install kubectl-mtv through it. See the [Krew installation guide](https://krew.sigs.k8s.io/docs/user-guide/setup/install/) if you don't have Krew yet.
 
 ```bash
-# Install the mtv plugin
 kubectl krew install mtv
 
 # Verify installation
 kubectl mtv --help
 ```
 
-**Note**: Available for multiple platforms including Linux (amd64, arm64), macOS (amd64, arm64), and Windows (amd64) through Krew.
+**Note**: Available for Linux (amd64, arm64), macOS (amd64, arm64), and Windows (amd64). Krew does not set up shell completion helpers automatically; see the [Shell Completion](#shell-completion) section below.
 
-### Method 2: Downloading Release Binaries
+### Method 3: Downloading Release Binaries
 
-Download pre-built binaries directly from the GitHub releases page.
+Download pre-built binaries directly from the [GitHub Releases](https://github.com/yaacov/kubectl-mtv/releases) page. Archives are available for:
 
-#### Automated Download Script
+| OS | Architecture | Archive |
+|----|-------------|---------|
+| Linux | amd64 | `kubectl-mtv-VERSION-linux-amd64.tar.gz` |
+| Linux | arm64 | `kubectl-mtv-VERSION-linux-arm64.tar.gz` |
+| macOS | amd64 | `kubectl-mtv-VERSION-darwin-amd64.tar.gz` |
+| macOS | arm64 | `kubectl-mtv-VERSION-darwin-arm64.tar.gz` |
+| Windows | amd64 | `kubectl-mtv-VERSION-windows-amd64.zip` |
+
+Extract and install:
+
+**Linux / macOS:**
 
 ```bash
-# Set variables
-REPO=yaacov/kubectl-mtv
-ASSET=kubectl-mtv.tar.gz
+VERSION=v0.1.0   # replace with desired version
+OS=darwin         # linux or darwin
+ARCH=arm64        # amd64 or arm64
 
-# Get latest version
-LATEST_VER=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep -m1 '"tag_name"' | cut -d'"' -f4)
-
-# Download and extract
-curl -L -o $ASSET https://github.com/$REPO/releases/download/$LATEST_VER/$ASSET
-tar -xzf $ASSET
-
-# Make executable and move to PATH
-chmod +x kubectl-mtv
-sudo mv kubectl-mtv /usr/local/bin/
-
-# Verify installation
-kubectl mtv --help
+tar -xzf kubectl-mtv-${VERSION}-${OS}-${ARCH}.tar.gz
+install -m 0755 kubectl-mtv-${OS}-${ARCH} ~/.local/bin/kubectl-mtv
 ```
 
-#### Manual Download Process
+**Windows (PowerShell):**
 
-1. Visit the [Releases page](https://github.com/yaacov/kubectl-mtv/releases)
-2. Download the appropriate archive for your platform:
-   - Linux amd64: `kubectl-mtv-VERSION-linux-amd64.tar.gz`
-   - Linux arm64: `kubectl-mtv-VERSION-linux-arm64.tar.gz`
-   - macOS amd64: `kubectl-mtv-VERSION-darwin-amd64.tar.gz`
-   - macOS arm64: `kubectl-mtv-VERSION-darwin-arm64.tar.gz`
-   - Windows amd64: `kubectl-mtv-VERSION-windows-amd64.zip`
+```powershell
+$VERSION = "v0.1.0"   # replace with desired version
+$ARCH = "amd64"
 
-3. Extract the archive:
-   ```bash
-   # For tar.gz files
-   tar -xzf kubectl-mtv-VERSION-PLATFORM.tar.gz
-   
-   # For zip files (Windows)
-   unzip kubectl-mtv-VERSION-windows-amd64.zip
-   ```
+Expand-Archive "kubectl-mtv-${VERSION}-windows-${ARCH}.zip" -DestinationPath .
+New-Item -ItemType Directory -Force "$HOME\.local\bin" | Out-Null
+Move-Item "kubectl-mtv-windows-${ARCH}.exe" "$HOME\.local\bin\kubectl-mtv.exe"
+```
 
-4. Move the binary to a directory in your PATH:
-   ```bash
-   # Linux/macOS
-   sudo mv kubectl-mtv /usr/local/bin/
-   
-   # Or to user bin directory
-   mv kubectl-mtv ~/.local/bin/
-   ```
-
-### Method 3: Building from Source
+### Method 4: Building from Source
 
 For development, customization, or platforms without pre-built binaries.
 
@@ -534,6 +518,18 @@ EOF
 kubectl get secret mtv-operator-token -n migration-ops \
   -o go-template='{% raw %}{{ .data.token | base64decode }}{% endraw %}'
 ```
+
+## Uninstall
+
+Remove the three installed files:
+
+```bash
+rm -f ~/.local/bin/kubectl-mtv
+rm -f ~/.local/bin/kubectl_complete-mtv
+rm -f ~/.local/bin/oc_complete-mtv
+```
+
+If you installed to a different directory, replace `~/.local/bin` with that path.
 
 ## Troubleshooting Installation
 
