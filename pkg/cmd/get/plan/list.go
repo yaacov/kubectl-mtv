@@ -14,6 +14,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/plan/status"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/output"
+	querypkg "github.com/yaacov/kubectl-mtv/pkg/util/query"
 	"github.com/yaacov/kubectl-mtv/pkg/util/watch"
 )
 
@@ -64,7 +65,7 @@ func getSpecificPlan(ctx context.Context, dynamicClient dynamic.Interface, names
 }
 
 // ListPlans lists migration plans without watch functionality
-func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, outputFormat string, planName string, useUTC bool) error {
+func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, outputFormat string, planName string, useUTC bool, query string) error {
 	c, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -182,6 +183,18 @@ func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 		items = append(items, item)
 	}
 
+	// Apply query filter
+	if query != "" {
+		queryOpts, err := querypkg.ParseQueryString(query)
+		if err != nil {
+			return fmt.Errorf("failed to parse query: %v", err)
+		}
+		items, err = querypkg.ApplyQuery(items, queryOpts)
+		if err != nil {
+			return fmt.Errorf("error applying query: %v", err)
+		}
+	}
+
 	// Handle different output formats
 	switch outputFormat {
 	case "json":
@@ -190,7 +203,7 @@ func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 			WithPrettyPrint(true).
 			AddItems(items)
 
-		if len(plans.Items) == 0 {
+		if len(items) == 0 {
 			return jsonPrinter.PrintEmpty("No plans found in namespace " + namespace)
 		}
 		return jsonPrinter.Print()
@@ -198,7 +211,7 @@ func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 		yamlPrinter := output.NewYAMLPrinter().
 			AddItems(items)
 
-		if len(plans.Items) == 0 {
+		if len(items) == 0 {
 			return yamlPrinter.PrintEmpty("No plans found in namespace " + namespace)
 		}
 		return yamlPrinter.Print()
@@ -228,7 +241,7 @@ func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 
 	emptyMsg := "No plans found in namespace " + namespace
 	if outputFormat == "markdown" {
-		if len(plans.Items) == 0 {
+		if len(items) == 0 {
 			if err := tablePrinter.PrintEmpty(emptyMsg); err != nil {
 				return fmt.Errorf("error printing empty markdown: %v", err)
 			}
@@ -236,7 +249,7 @@ func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 			return fmt.Errorf("error printing markdown: %v", err)
 		}
 	} else {
-		if len(plans.Items) == 0 {
+		if len(items) == 0 {
 			if err := tablePrinter.PrintEmpty(emptyMsg); err != nil {
 				return fmt.Errorf("error printing empty table: %v", err)
 			}
@@ -249,8 +262,8 @@ func ListPlans(ctx context.Context, configFlags *genericclioptions.ConfigFlags, 
 }
 
 // List lists migration plans with optional watch mode
-func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool, outputFormat string, planName string, useUTC bool) error {
+func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, namespace string, watchMode bool, outputFormat string, planName string, useUTC bool, query string) error {
 	return watch.WrapWithWatch(watchMode, outputFormat, func() error {
-		return ListPlans(ctx, configFlags, namespace, outputFormat, planName, useUTC)
+		return ListPlans(ctx, configFlags, namespace, outputFormat, planName, useUTC, query)
 	}, watch.DefaultInterval)
 }

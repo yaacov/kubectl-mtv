@@ -12,6 +12,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
 	"github.com/yaacov/kubectl-mtv/pkg/util/output"
+	querypkg "github.com/yaacov/kubectl-mtv/pkg/util/query"
 	"github.com/yaacov/kubectl-mtv/pkg/util/watch"
 )
 
@@ -78,8 +79,8 @@ func createMappingItem(mapping unstructured.Unstructured, mappingType string, us
 }
 
 // ListMappings lists network and storage mappings without watch functionality
-func ListMappings(ctx context.Context, configFlags *genericclioptions.ConfigFlags, mappingType, namespace, outputFormat string, mappingName string, useUTC bool) error {
-	return listMappings(ctx, configFlags, mappingType, namespace, outputFormat, mappingName, useUTC)
+func ListMappings(ctx context.Context, configFlags *genericclioptions.ConfigFlags, mappingType, namespace, outputFormat string, mappingName string, useUTC bool, query string) error {
+	return listMappings(ctx, configFlags, mappingType, namespace, outputFormat, mappingName, useUTC, query)
 }
 
 // getNetworkMappings retrieves all network mappings from the given namespace
@@ -243,7 +244,7 @@ func getAllMappings(ctx context.Context, dynamicClient dynamic.Interface, namesp
 }
 
 // listMappings lists network and storage mappings
-func listMappings(ctx context.Context, configFlags *genericclioptions.ConfigFlags, mappingType, namespace, outputFormat string, mappingName string, useUTC bool) error {
+func listMappings(ctx context.Context, configFlags *genericclioptions.ConfigFlags, mappingType, namespace, outputFormat string, mappingName string, useUTC bool, query string) error {
 	dynamicClient, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return fmt.Errorf("failed to get client: %v", err)
@@ -287,6 +288,18 @@ func listMappings(ctx context.Context, configFlags *genericclioptions.ConfigFlag
 	// Handle error if no items found
 	if err != nil {
 		return err
+	}
+
+	// Apply query filter
+	if query != "" {
+		queryOpts, err := querypkg.ParseQueryString(query)
+		if err != nil {
+			return fmt.Errorf("failed to parse query: %v", err)
+		}
+		allItems, err = querypkg.ApplyQuery(allItems, queryOpts)
+		if err != nil {
+			return fmt.Errorf("error applying query: %v", err)
+		}
 	}
 
 	// Handle output based on format
@@ -343,8 +356,8 @@ func listMappings(ctx context.Context, configFlags *genericclioptions.ConfigFlag
 }
 
 // List lists network and storage mappings with optional watch mode
-func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, mappingType, namespace string, watchMode bool, outputFormat string, mappingName string, useUTC bool) error {
+func List(ctx context.Context, configFlags *genericclioptions.ConfigFlags, mappingType, namespace string, watchMode bool, outputFormat string, mappingName string, useUTC bool, query string) error {
 	return watch.WrapWithWatch(watchMode, outputFormat, func() error {
-		return ListMappings(ctx, configFlags, mappingType, namespace, outputFormat, mappingName, useUTC)
+		return ListMappings(ctx, configFlags, mappingType, namespace, outputFormat, mappingName, useUTC, query)
 	}, watch.DefaultInterval)
 }
