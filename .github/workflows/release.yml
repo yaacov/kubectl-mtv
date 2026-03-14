@@ -35,7 +35,8 @@ jobs:
         if: steps.check_assets.outputs.assets_exist != 'true'
         uses: actions/setup-go@v6
         with:
-          go-version: '1.24'
+          go-version-file: go.mod
+          check-latest: true
 
       - name: Build kubectl-mtv multi-platform binaries and archives
         if: steps.check_assets.outputs.assets_exist != 'true'
