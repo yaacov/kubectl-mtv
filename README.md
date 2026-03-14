@@ -12,15 +12,29 @@ kubectl-mtv helps migrate VMs from vSphere, oVirt, OpenStack, EC2, and OVA to Ku
 
 ## Installation
 
-```bash
-# Using krew
-kubectl krew install mtv
+Install the latest release (Linux / macOS):
 
-# Or download from releases
-# https://github.com/yaacov/kubectl-mtv/releases
+```bash
+curl -sSL https://raw.githubusercontent.com/yaacov/kubectl-mtv/main/install.sh | bash
 ```
 
-See [Installation Guide](guide/02-installation-and-prerequisites.md) for more options including [shell completion](guide/02-installation-and-prerequisites.md#shell-completion) setup.
+This downloads the binary, verifies its checksum, and sets up shell completion. Installs to `~/.local/bin` by default.
+
+Or build from source:
+
+```bash
+make build
+mkdir -p ~/.local/bin
+cp kubectl-mtv ~/.local/bin/kubectl-mtv
+```
+
+Once installed, kubectl discovers it as a plugin:
+
+```bash
+kubectl mtv --help
+```
+
+For more options (krew, manual download, shell completion, uninstall), see the [Installation Guide](guide/02-installation-and-prerequisites.md).
 
 ## MCP Support
 
