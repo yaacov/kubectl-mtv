@@ -36,6 +36,8 @@ kubectl mtv --help
 
 For more options (krew, manual download, shell completion, uninstall), see the [Installation Guide](guide/02-installation-and-prerequisites.md).
 
+[![asciicast](https://asciinema.org/a/uQWEl16tfen7TJAi.svg)](https://asciinema.org/a/uQWEl16tfen7TJAi)
+
 ## MCP Support
 
 kubectl-mtv includes a built-in MCP (Model Context Protocol) server for AI agents that support MCP add‑ons, such as Cursor IDE and Claude Desktop.
