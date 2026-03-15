@@ -42,9 +42,13 @@ mapping type.`,
 
   # List only storage mappings
   kubectl-mtv get mapping storage`,
-		Args:         cobra.NoArgs,
+		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := flags.ResolveNameArg(&mappingName, args); err != nil {
+				return err
+			}
+
 			ctx := cmd.Context()
 			if !watchFlag {
 				var cancel context.CancelFunc
@@ -107,9 +111,13 @@ definitions (NADs) or pod networking.`,
 
   # Watch network mapping changes
   kubectl-mtv get mapping network --watch`,
-		Args:         cobra.NoArgs,
+		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := flags.ResolveNameArg(&mappingName, args); err != nil {
+				return err
+			}
+
 			ctx := cmd.Context()
 			if !watch {
 				var cancel context.CancelFunc
@@ -174,9 +182,13 @@ storage classes with optional volume mode and access mode settings.`,
 
   # Watch storage mapping changes
   kubectl-mtv get mapping storage --watch`,
-		Args:         cobra.NoArgs,
+		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := flags.ResolveNameArg(&mappingName, args); err != nil {
+				return err
+			}
+
 			ctx := cmd.Context()
 			if !watch {
 				var cancel context.CancelFunc

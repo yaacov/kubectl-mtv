@@ -233,6 +233,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
 
 26. **[Command Reference](guide/26-command-reference)**
     *   **Global Flags** (verbose, all-namespaces, kubeconfig, context, namespace).
+    *   **Positional Name Shorthand** — use `kubectl mtv get plan my-plan` instead of `--name my-plan`.
     *   **Resource Management Commands** (get, describe, delete with all subcommands).
     *   **Inventory Commands** (get inventory vm/network/storage/host/namespace with TSL query syntax).
     *   **Creation Commands** (create provider/plan/mapping/host/hook/vddk-image with all flags).

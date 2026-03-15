@@ -37,9 +37,13 @@ the migration process, such as installing drivers or configuring the target VM.`
 
   # Watch hook status changes
   kubectl-mtv get hooks --watch`,
-		Args:         cobra.NoArgs,
+		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := flags.ResolveNameArg(&hookName, args); err != nil {
+				return err
+			}
+
 			ctx := cmd.Context()
 			if !watch {
 				var cancel context.CancelFunc

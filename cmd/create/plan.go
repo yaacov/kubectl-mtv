@@ -188,9 +188,16 @@ Affinity Syntax (KARL):
     --vms "where name ~= 'test-.*'" \
     --default-target-network default \
     --default-target-storage-class standard`,
-		Args:         cobra.NoArgs,
+		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := flags.ResolveNameArg(&name, args); err != nil {
+				return err
+			}
+			if name == "" {
+				return fmt.Errorf("--name is required")
+			}
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -523,7 +530,7 @@ Affinity Syntax (KARL):
 	cmd.Flags().StringVar(&offloadCACert, "offload-cacert", "", "CA certificate for offload secret (use @filename to load from file)")
 	cmd.Flags().BoolVar(&offloadInsecureSkipTLS, "offload-insecure-skip-tls", false, "Skip TLS verification for offload connections")
 
-	_ = cmd.MarkFlagRequired("name")
+	flags.MarkRequiredForMCP(cmd, "name")
 	_ = cmd.MarkFlagRequired("source")
 	cmd.Flags().StringVar(&vmNamesQuaryOrFile, "vms", "", "List of VM names (comma-separated), path to YAML/JSON file (prefix with @), or query string (prefix with 'where ')")
 	_ = cmd.MarkFlagRequired("vms")
