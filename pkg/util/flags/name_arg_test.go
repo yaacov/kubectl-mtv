@@ -8,11 +8,11 @@ import (
 
 func TestResolveNameArg(t *testing.T) {
 	tests := []struct {
-		name      string
-		flagVal   string
-		args      []string
-		wantName  string
-		wantErr   bool
+		name     string
+		flagVal  string
+		args     []string
+		wantName string
+		wantErr  bool
 	}{
 		{
 			name:     "no args and no flag",

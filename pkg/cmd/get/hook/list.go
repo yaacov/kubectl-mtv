@@ -208,7 +208,7 @@ func printHookOutput(items []map[string]interface{}, outputFormat string) error 
 	printer := output.NewTablePrinter()
 
 	// Create headers using Header struct
-	var tableHeaders []output.Header
+	var tableHeaders []output.Column
 	headerMappings := map[string]string{
 		"NAME":            "name",
 		"IMAGE":           "image",
@@ -223,9 +223,9 @@ func printHookOutput(items []map[string]interface{}, outputFormat string) error 
 		"STATUS": output.ColorizeStatus,
 	}
 	for _, header := range headers {
-		h := output.Header{
-			DisplayName: header,
-			JSONPath:    headerMappings[header],
+		h := output.Column{
+			Title: header,
+			Key:   headerMappings[header],
 		}
 		if cf, ok := colorFuncs[header]; ok {
 			h.ColorFunc = cf
@@ -233,7 +233,7 @@ func printHookOutput(items []map[string]interface{}, outputFormat string) error 
 		tableHeaders = append(tableHeaders, h)
 	}
 
-	printer.WithHeaders(tableHeaders...)
+	printer.WithColumns(tableHeaders...)
 
 	// Convert data to map format for the table printer
 	for _, row := range data {

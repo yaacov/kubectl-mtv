@@ -209,11 +209,11 @@ func printHostOutput(items []map[string]interface{}, outputFormat string) error 
 	colorFuncs := map[string]func(string) string{
 		"STATUS": output.ColorizeStatus,
 	}
-	var tableHeaders []output.Header
+	var tableHeaders []output.Column
 	for _, header := range headers {
-		h := output.Header{
-			DisplayName: header,
-			JSONPath:    strings.ToLower(strings.ReplaceAll(header, " ", "")),
+		h := output.Column{
+			Title: header,
+			Key:   strings.ToLower(strings.ReplaceAll(header, " ", "")),
 		}
 		if cf, ok := colorFuncs[header]; ok {
 			h.ColorFunc = cf
@@ -221,7 +221,7 @@ func printHostOutput(items []map[string]interface{}, outputFormat string) error 
 		tableHeaders = append(tableHeaders, h)
 	}
 
-	printer.WithHeaders(tableHeaders...)
+	printer.WithColumns(tableHeaders...)
 
 	// Convert data to map format for the table printer
 	for _, row := range data {
