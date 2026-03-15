@@ -23,6 +23,30 @@ These flags are available for all `kubectl-mtv` commands:
 | `--namespace` | `-n` | string | | If present, the namespace scope for this CLI request |
 | `--no-color` | | bool | `$NO_COLOR` | Disable colored output (also respects NO_COLOR env var) |
 
+## Positional Name Shorthand
+
+All commands that accept `--name` (`-M`) also accept the resource name as the
+first positional argument. The two forms are mutually exclusive — use one or the
+other, not both.
+
+```bash
+# These pairs are equivalent:
+kubectl mtv get plan --name my-migration
+kubectl mtv get plan my-migration
+
+kubectl mtv describe provider --name vsphere-prod
+kubectl mtv describe provider vsphere-prod
+
+kubectl mtv delete plan --name old-plan
+kubectl mtv delete plan old-plan
+
+kubectl mtv start plan --name my-migration
+kubectl mtv start plan my-migration
+```
+
+This shorthand works with every verb: `get`, `describe`, `create`, `delete`,
+`patch`, `start`, `cancel`, `cutover`, `archive`, and `unarchive`.
+
 ## Resource Management Commands
 
 ### get - Retrieve Resources

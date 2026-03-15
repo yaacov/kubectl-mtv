@@ -39,9 +39,13 @@ environments for VM migrations. Lists all providers or retrieves details for a s
 
   # Watch provider status changes
   kubectl-mtv get providers --watch`,
-		Args:         cobra.NoArgs,
+		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := flags.ResolveNameArg(&providerName, args); err != nil {
+				return err
+			}
+
 			ctx := cmd.Context()
 			if !watch {
 				var cancel context.CancelFunc

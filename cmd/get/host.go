@@ -36,9 +36,13 @@ for oVirt migrations. They store host-specific credentials and configuration.`,
 
   # Watch host status changes
   kubectl-mtv get hosts --watch`,
-		Args:         cobra.NoArgs,
+		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := flags.ResolveNameArg(&hostName, args); err != nil {
+				return err
+			}
+
 			ctx := cmd.Context()
 			if !watch {
 				var cancel context.CancelFunc

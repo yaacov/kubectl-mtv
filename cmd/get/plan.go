@@ -69,9 +69,13 @@ Use --query without --vms-table to filter the plans list using TSL syntax.`,
 
   # Export VMs table as JSON
   kubectl-mtv get plans --vms-table --output json`,
-		Args:         cobra.NoArgs,
+		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := flags.ResolveNameArg(&planName, args); err != nil {
+				return err
+			}
+
 			ctx := cmd.Context()
 			if !watch {
 				var cancel context.CancelFunc
