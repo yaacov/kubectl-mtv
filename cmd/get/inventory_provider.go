@@ -52,7 +52,7 @@ func NewInventoryProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags, glo
 			inventoryURL := globalConfig.GetInventoryURL()
 			inventoryInsecureSkipTLS := globalConfig.GetInventoryInsecureSkipTLS()
 
-			return inventory.ListProvidersWithInsecure(ctx, globalConfig.GetKubeConfigFlags(), providerName, namespace, inventoryURL, outputFormatFlag.GetValue(), query, watch, inventoryInsecureSkipTLS)
+			return inventory.List(ctx, globalConfig.GetKubeConfigFlags(), namespace, inventoryURL, watch, outputFormatFlag.GetValue(), providerName, inventoryInsecureSkipTLS, query)
 		},
 	}
 	cmd.Flags().StringVarP(&providerName, "name", "M", "", "Provider name")

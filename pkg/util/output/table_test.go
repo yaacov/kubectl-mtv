@@ -14,10 +14,10 @@ func TestPrintMarkdown_Basic(t *testing.T) {
 
 	printer := NewTablePrinter().
 		WithWriter(&buf).
-		WithHeaders(
-			Header{DisplayName: "NAME", JSONPath: "name"},
-			Header{DisplayName: "TYPE", JSONPath: "type"},
-			Header{DisplayName: "STATUS", JSONPath: "status"},
+		WithColumns(
+			Column{Title: "NAME", Key: "name"},
+			Column{Title: "TYPE", Key: "type"},
+			Column{Title: "STATUS", Key: "status"},
 		).
 		AddItems([]map[string]interface{}{
 			{"name": "provider1", "type": "vsphere", "status": "Ready"},
@@ -54,9 +54,9 @@ func TestPrintMarkdown_PipeEscaping(t *testing.T) {
 
 	printer := NewTablePrinter().
 		WithWriter(&buf).
-		WithHeaders(
-			Header{DisplayName: "NAME", JSONPath: "name"},
-			Header{DisplayName: "DESC", JSONPath: "desc"},
+		WithColumns(
+			Column{Title: "NAME", Key: "name"},
+			Column{Title: "DESC", Key: "desc"},
 		).
 		AddItems([]map[string]interface{}{
 			{"name": "test", "desc": "a|b|c"},
@@ -77,8 +77,8 @@ func TestPrintMarkdown_NoANSI(t *testing.T) {
 
 	printer := NewTablePrinter().
 		WithWriter(&buf).
-		WithHeaders(
-			Header{DisplayName: "STATUS", JSONPath: "status"},
+		WithColumns(
+			Column{Title: "STATUS", Key: "status"},
 		).
 		AddItems([]map[string]interface{}{
 			{"status": "\033[32mReady\033[0m"},
@@ -102,8 +102,8 @@ func TestPrintMarkdown_EmptyItems(t *testing.T) {
 
 	printer := NewTablePrinter().
 		WithWriter(&buf).
-		WithHeaders(
-			Header{DisplayName: "NAME", JSONPath: "name"},
+		WithColumns(
+			Column{Title: "NAME", Key: "name"},
 		)
 
 	if err := printer.PrintMarkdown(); err != nil {
@@ -117,7 +117,7 @@ func TestPrintMarkdown_EmptyItems(t *testing.T) {
 	}
 }
 
-func TestPrintMarkdown_NoHeaders(t *testing.T) {
+func TestPrintMarkdown_NoColumns(t *testing.T) {
 	var buf bytes.Buffer
 
 	printer := NewTablePrinter().WithWriter(&buf)
@@ -128,11 +128,11 @@ func TestPrintMarkdown_NoHeaders(t *testing.T) {
 
 	got := buf.String()
 	if got != "" {
-		t.Errorf("expected empty output for no headers, got:\n%s", got)
+		t.Errorf("expected empty output for no columns, got:\n%s", got)
 	}
 }
 
-func TestPrintMarkdownWithQuery_SelectHeaders(t *testing.T) {
+func TestPrintMarkdownWithQuery_SelectColumns(t *testing.T) {
 	var buf bytes.Buffer
 
 	data := []map[string]interface{}{
@@ -148,16 +148,16 @@ func TestPrintMarkdownWithQuery_SelectHeaders(t *testing.T) {
 		},
 	}
 
-	defaultHeaders := []Header{
-		{DisplayName: "NAME", JSONPath: "name"},
-		{DisplayName: "CPU", JSONPath: "cpu"},
+	defaultCols := []Column{
+		{Title: "NAME", Key: "name"},
+		{Title: "CPU", Key: "cpu"},
 	}
 
 	printer := NewTablePrinter().
 		WithWriter(&buf).
-		WithHeaders(
-			Header{DisplayName: "name", JSONPath: "name"},
-			Header{DisplayName: "cpu", JSONPath: "cpu"},
+		WithColumns(
+			Column{Title: "name", Key: "name"},
+			Column{Title: "cpu", Key: "cpu"},
 		).
 		WithSelectOptions(queryOpts.Select).
 		AddItems(data)
@@ -168,7 +168,7 @@ func TestPrintMarkdownWithQuery_SelectHeaders(t *testing.T) {
 
 	got := buf.String()
 	if !strings.Contains(got, "| name | cpu |") {
-		t.Errorf("expected SELECT-derived headers, got:\n%s", got)
+		t.Errorf("expected SELECT-derived columns, got:\n%s", got)
 	}
 	if !strings.Contains(got, "| vm1 | 4 |") {
 		t.Errorf("expected data row for vm1, got:\n%s", got)
@@ -184,7 +184,7 @@ func TestPrintMarkdownWithQuery_SelectHeaders(t *testing.T) {
 	defer r.Close()
 	os.Stdout = w
 
-	if err := PrintMarkdownWithQuery(data, defaultHeaders, queryOpts, ""); err != nil {
+	if err := PrintMarkdownWithQuery(data, defaultCols, queryOpts, ""); err != nil {
 		t.Fatalf("PrintMarkdownWithQuery returned error: %v", err)
 	}
 	w.Close()
@@ -197,7 +197,7 @@ func TestPrintMarkdownWithQuery_SelectHeaders(t *testing.T) {
 
 	wrapperGot := captured.String()
 	if !strings.Contains(wrapperGot, "| name | cpu |") {
-		t.Errorf("wrapper: expected SELECT-derived headers, got:\n%s", wrapperGot)
+		t.Errorf("wrapper: expected SELECT-derived columns, got:\n%s", wrapperGot)
 	}
 	if !strings.Contains(wrapperGot, "| vm1 | 4 |") {
 		t.Errorf("wrapper: expected data row for vm1, got:\n%s", wrapperGot)
