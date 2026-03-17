@@ -1,6 +1,7 @@
 package create
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -97,9 +98,16 @@ Credentials can be provided directly via flags or through an existing Kubernetes
     --username Administrator \
     --password 'MyPassword' \
     --smb-url '//192.168.1.100/VMShare'`,
-		Args:         cobra.NoArgs,
+		Args:         cobra.MaximumNArgs(1),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := flags.ResolveNameArg(&name, args); err != nil {
+				return err
+			}
+			if name == "" {
+				return fmt.Errorf("--name is required")
+			}
+
 			// Resolve the appropriate namespace based on context and flags
 			namespace := client.ResolveNamespace(kubeConfigFlags)
 
@@ -209,9 +217,7 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 		panic(err)
 	}
 
-	if err := cmd.MarkFlagRequired("name"); err != nil {
-		panic(err)
-	}
+	flags.MarkRequiredForMCP(cmd, "name")
 	if err := cmd.MarkFlagRequired("type"); err != nil {
 		panic(err)
 	}
