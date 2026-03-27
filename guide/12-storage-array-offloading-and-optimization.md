@@ -167,6 +167,10 @@ First, enable the copy offload feature in the Forklift controller:
 kubectl mtv settings set --setting feature_copy_offload --value true
 
 # Set the volume-populator image (if needed)
+# Forklift >= 2.12:
+kubectl mtv settings set --setting populator_vsphere_copy_offload_image_fqin \
+  --value quay.io/kubev2v/vsphere-xcopy-volume-populator
+# Forklift < 2.12:
 kubectl mtv settings set --setting populator_vsphere_xcopy_volume_image_fqin \
   --value quay.io/kubev2v/vsphere-xcopy-volume-populator
 ```
