@@ -290,17 +290,17 @@ Create providers for Amazon EC2 environments. The `--url` flag is optional; if o
 ```bash
 # Basic EC2 provider (URL auto-generated from region)
 kubectl mtv create provider --name ec2-prod --type ec2 \
-  --region us-east-1 \
-  --access-key-id AKIAIOSFODNN7EXAMPLE \
-  --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  --ec2-region us-east-1 \
+  --username AKIAIOSFODNN7EXAMPLE \
+  --password wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 # EC2 provider with target region/AZ for migrations
 kubectl mtv create provider --name ec2-prod --type ec2 \
-  --region us-east-1 \
+  --ec2-region us-east-1 \
   --target-region us-west-2 \
   --target-az us-west-2b \
-  --access-key-id AKIAIOSFODNN7EXAMPLE \
-  --secret-access-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  --username AKIAIOSFODNN7EXAMPLE \
+  --password wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
 
 **EC2 Migration Settings**:
@@ -462,7 +462,7 @@ kubectl mtv patch provider --name openstack-prod \
 
 # Update EC2 region
 kubectl mtv patch provider --name ec2-prod \
-  --region us-west-2
+  --ec2-region us-west-2
 
 # Update EC2 target region and AZ
 kubectl mtv patch provider --name ec2-prod \
@@ -473,7 +473,7 @@ kubectl mtv patch provider --name ec2-prod \
 kubectl mtv patch provider --name ec2-prod \
   --username NEW_ACCESS_KEY_ID \
   --password NEW_SECRET_ACCESS_KEY \
-  --region eu-west-1
+  --ec2-region eu-west-1
 
 # Update HyperV credentials
 kubectl mtv patch provider --name my-hyperv \
@@ -487,7 +487,7 @@ kubectl mtv patch provider --name my-hyperv \
   --smb-password NewSmbPassword
 ```
 
-**Note**: Use `--region` as a convenient alias that works for both `--provider-region-name` (OpenStack) and `--ec2-region` (EC2).
+**Note**: Use `--region` as a convenient alias for `--provider-region-name` (OpenStack). For EC2 providers, use `--ec2-region` instead.
 
 #### Update CA Certificates
 
