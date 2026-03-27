@@ -254,6 +254,28 @@ func TestGetAnySettingDefinition_NotFound(t *testing.T) {
 	}
 }
 
+// --- Backward-compat: old xcopy setting coexists with new copy-offload setting ---
+
+func TestOldXcopySettingExists(t *testing.T) {
+	def := GetSettingDefinition("populator_vsphere_xcopy_volume_image_fqin")
+	if def == nil {
+		t.Fatal("old populator_vsphere_xcopy_volume_image_fqin must remain in SupportedSettings for older Forklift servers")
+	}
+	if def.Category != CategoryImage {
+		t.Errorf("def.Category = %q, want %q", def.Category, CategoryImage)
+	}
+}
+
+func TestNewCopyOffloadSettingExists(t *testing.T) {
+	def := GetSettingDefinition("populator_vsphere_copy_offload_image_fqin")
+	if def == nil {
+		t.Fatal("new populator_vsphere_copy_offload_image_fqin must exist in SupportedSettings")
+	}
+	if def.Category != CategoryImage {
+		t.Errorf("def.Category = %q, want %q", def.Category, CategoryImage)
+	}
+}
+
 // --- CategoryOrder ---
 
 func TestCategoryOrder_ContainsExpectedCategories(t *testing.T) {

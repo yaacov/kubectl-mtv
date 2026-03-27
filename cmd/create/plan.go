@@ -579,6 +579,8 @@ Affinity Syntax (KARL):
 	cmd.Flags().StringVar(&planSpec.VirtV2vImage, "virt-v2v-image", "", "Override global virt-v2v container image for this plan")
 	cmd.Flags().StringVar(&enableNestedVirtualization, "enable-nested-virtualization", "auto", "Enable nested virtualization on target VMs (true/false/auto)")
 	cmd.Flags().BoolVar(&planSpec.XfsCompatibility, "xfs-compatibility", false, "Use XFS-compatible virt-v2v image for this plan")
+	cmd.Flags().BoolVar(&planSpec.RDMAsLun, "rdm-as-lun", false, "Map VMware RDM disks as LUN devices (SCSI passthrough) in the target VM (vSphere only)")
+	cmd.Flags().StringVar(&planSpec.ServiceAccount, "service-account", "", "ServiceAccount for migration pods in the target namespace (overrides global setting)")
 
 	_ = cmd.RegisterFlagCompletionFunc("source", completion.ProviderNameCompletion(kubeConfigFlags))
 	_ = cmd.RegisterFlagCompletionFunc("target", completion.ProviderNameCompletionByType(kubeConfigFlags, "openshift"))

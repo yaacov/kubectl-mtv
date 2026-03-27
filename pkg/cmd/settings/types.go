@@ -125,6 +125,24 @@ var SupportedSettings = map[string]SettingDefinition{
 		Description: "Custom virt-v2v container image",
 		Category:    CategoryImage,
 	},
+	"populator_vsphere_copy_offload_image_fqin": {
+		Name:        "populator_vsphere_copy_offload_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "vSphere copy offload populator image (Forklift >= 2.12)",
+		Category:    CategoryImage,
+	},
+	// TODO: Remove populator_vsphere_xcopy_volume_image_fqin once all Forklift
+	// servers older than 2.12 are out of support. New servers use
+	// populator_vsphere_copy_offload_image_fqin; the old key is kept so the CLI
+	// can still set/read the field on older ForkliftController CRs.
+	"populator_vsphere_xcopy_volume_image_fqin": {
+		Name:        "populator_vsphere_xcopy_volume_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "vSphere xcopy populator image (Forklift < 2.12, use populator_vsphere_copy_offload_image_fqin for newer)",
+		Category:    CategoryImage,
+	},
 
 	// Feature Flags
 	"controller_vsphere_incremental_backup": {
@@ -541,6 +559,13 @@ var ExtendedSettings = map[string]SettingDefinition{
 		Description: "Optional NAD name for controller pod transfer network (format: namespace/network-name)",
 		Category:    CategoryController,
 	},
+	"controller_migration_service_account": {
+		Name:        "controller_migration_service_account",
+		Type:        TypeString,
+		Default:     "",
+		Description: "Default ServiceAccount for migration pods (overridden by plan-level serviceAccount)",
+		Category:    CategoryController,
+	},
 
 	// Inventory Container Resources
 	"inventory_container_limits_cpu": {
@@ -812,13 +837,6 @@ var ExtendedSettings = map[string]SettingDefinition{
 		Type:        TypeString,
 		Default:     "",
 		Description: "OpenStack populator image",
-		Category:    CategoryImage,
-	},
-	"populator_vsphere_xcopy_volume_image_fqin": {
-		Name:        "populator_vsphere_xcopy_volume_image_fqin",
-		Type:        TypeString,
-		Default:     "",
-		Description: "vSphere xcopy populator image",
 		Category:    CategoryImage,
 	},
 	"ova_provider_server_fqin": {

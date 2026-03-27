@@ -64,6 +64,8 @@ type PatchPlanOptions struct {
 	SkipGuestConversion            bool
 	Warm                           bool
 	RunPreflightInspection         bool
+	RDMAsLun                       bool
+	ServiceAccount                 string
 
 	// Flag change tracking
 	UseCompatibilityModeChanged           bool
@@ -81,6 +83,8 @@ type PatchPlanOptions struct {
 	XfsCompatibilityChanged               bool
 	InstallLegacyDriversChanged           bool
 	EnableNestedVirtualizationChanged     bool
+	RDMAsLunChanged                       bool
+	ServiceAccountChanged                 bool
 }
 
 // PatchPlan patches an existing migration plan
@@ -485,6 +489,25 @@ func PatchPlan(opts PatchPlanOptions) error {
 		planUpdated = true
 	}
 
+	// Update RDM as LUN if flag was changed
+	if opts.RDMAsLunChanged {
+		patchSpec["rdmAsLun"] = opts.RDMAsLun
+		klog.V(2).Infof("Updated RDM as LUN to %t", opts.RDMAsLun)
+		planUpdated = true
+	}
+
+	// Update service account if flag was changed
+	if opts.ServiceAccountChanged {
+		if opts.ServiceAccount != "" {
+			patchSpec["serviceAccount"] = opts.ServiceAccount
+			klog.V(2).Infof("Updated service account to '%s'", opts.ServiceAccount)
+		} else {
+			patchSpec["serviceAccount"] = nil
+			klog.V(2).Infof("Cleared service account override")
+		}
+		planUpdated = true
+	}
+
 	// Early return if no changes were made
 	if !planUpdated {
 		fmt.Printf("plan/%s unchanged (no updates specified)\n", opts.Name)
@@ -526,7 +549,8 @@ func PatchPlan(opts PatchPlanOptions) error {
 func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, namespace string,
 	targetName, rootDisk, instanceType, pvcNameTemplate, volumeNameTemplate, networkNameTemplate, luksSecret, targetPowerState string,
 	addPreHook, addPostHook, removeHook string, clearHooks bool, deleteVmOnFailMigration bool, deleteVmOnFailMigrationChanged bool,
-	nbdeClevis bool, nbdeClevisChanged bool, enableNestedVirtualization string, enableNestedVirtualizationChanged bool) error {
+	nbdeClevis bool, nbdeClevisChanged bool, enableNestedVirtualization string, enableNestedVirtualizationChanged bool,
+	migrateSharedDisks string, migrateSharedDisksChanged bool, rdmAsLun string, rdmAsLunChanged bool) error {
 
 	klog.V(2).Infof("Patching VM '%s' in plan '%s'", vmName, planName)
 
@@ -715,6 +739,58 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 			vmUpdated = true
 		default:
 			return fmt.Errorf("invalid value for enable-nested-virtualization: %s (must be 'true', 'false', or 'auto')", enableNestedVirtualization)
+		}
+	}
+
+	// Update migrate shared disks if flag was changed (VM-level *bool)
+	if migrateSharedDisksChanged {
+		switch strings.ToLower(migrateSharedDisks) {
+		case "true":
+			err = unstructured.SetNestedField(vmCopy, true, "migrateSharedDisks")
+			if err != nil {
+				return fmt.Errorf("failed to set migrate shared disks: %v", err)
+			}
+			klog.V(2).Infof("Updated VM migrate shared disks to true")
+			vmUpdated = true
+		case "false":
+			err = unstructured.SetNestedField(vmCopy, false, "migrateSharedDisks")
+			if err != nil {
+				return fmt.Errorf("failed to set migrate shared disks: %v", err)
+			}
+			klog.V(2).Infof("Updated VM migrate shared disks to false")
+			vmUpdated = true
+		case "auto", "":
+			unstructured.RemoveNestedField(vmCopy, "migrateSharedDisks")
+			klog.V(2).Infof("Cleared VM migrate shared disks override")
+			vmUpdated = true
+		default:
+			return fmt.Errorf("invalid value for migrate-shared-disks: %s (must be 'true', 'false', or 'auto')", migrateSharedDisks)
+		}
+	}
+
+	// Update RDM as LUN if flag was changed (VM-level *bool)
+	if rdmAsLunChanged {
+		switch strings.ToLower(rdmAsLun) {
+		case "true":
+			err = unstructured.SetNestedField(vmCopy, true, "rdmAsLun")
+			if err != nil {
+				return fmt.Errorf("failed to set RDM as LUN: %v", err)
+			}
+			klog.V(2).Infof("Updated VM RDM as LUN to true")
+			vmUpdated = true
+		case "false":
+			err = unstructured.SetNestedField(vmCopy, false, "rdmAsLun")
+			if err != nil {
+				return fmt.Errorf("failed to set RDM as LUN: %v", err)
+			}
+			klog.V(2).Infof("Updated VM RDM as LUN to false")
+			vmUpdated = true
+		case "auto", "":
+			unstructured.RemoveNestedField(vmCopy, "rdmAsLun")
+			klog.V(2).Infof("Cleared VM RDM as LUN override")
+			vmUpdated = true
+		default:
+			return fmt.Errorf("invalid value for rdm-as-lun: %s (must be 'true', 'false', or 'auto')", rdmAsLun)
 		}
 	}
 
