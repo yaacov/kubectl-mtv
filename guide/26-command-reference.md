@@ -64,12 +64,12 @@ kubectl mtv get plans [flags]  # Alias
 
 **Flags:**
 - `--name, -M`: Plan name (optional, omit to list all)
-- `--output, -o`: Output format (table, json, yaml)
+- `--output, -o`: Output format (table, json, yaml, markdown)
 - `--watch, -w`: Watch for changes
 - `--vms`: Get VMs status in the migration plan (requires plan name)
 - `--disk`: Get disk transfer status in the migration plan (requires plan name)
 - `--vms-table`: Show all VMs across plans in a flat table with source/target inventory details
-- `--query, -q`: Query filter using TSL syntax (only with `--vms-table`)
+- `--query, -q`: Query filter using TSL syntax (works with plan list and `--vms-table`)
 - `--inventory-url, -i`: Base URL for the inventory service
 
 **VMs Table Examples:**
@@ -107,7 +107,8 @@ kubectl mtv get providers [flags]  # Alias
 
 **Flags:**
 - `--name, -M`: Provider name (optional, omit to list all)
-- `--output, -o`: Output format (table, json, yaml)
+- `--output, -o`: Output format (table, json, yaml, markdown)
+- `--query, -q`: Query filter using TSL syntax
 - `--watch, -w`: Watch for changes
 
 #### get mapping [--name MAPPING_NAME]
@@ -121,7 +122,8 @@ kubectl mtv get mappings [flags]  # Alias
 
 **Flags:**
 - `--name, -M`: Mapping name (optional, omit to list all)
-- `--output, -o`: Output format (table, json, yaml)
+- `--output, -o`: Output format (table, json, yaml, markdown)
+- `--query, -q`: Query filter using TSL syntax
 - `--watch, -w`: Watch for changes
 
 #### get host [--name HOST_NAME]
@@ -135,7 +137,8 @@ kubectl mtv get host --name <host-name> [flags]  # Get specific host
 
 **Flags:**
 - `--name, -M`: Host name (optional, omit to list all)
-- `--output, -o`: Output format (table, json, yaml)
+- `--output, -o`: Output format (table, json, yaml, markdown)
+- `--query, -q`: Query filter using TSL syntax
 - `--watch, -w`: Watch for changes
 
 #### get hook [--name HOOK_NAME]
@@ -149,7 +152,8 @@ kubectl mtv get hook --name <hook-name> [flags]  # Get specific hook
 
 **Flags:**
 - `--name, -M`: Hook name (optional, omit to list all)
-- `--output, -o`: Output format (table, json, yaml)
+- `--output, -o`: Output format (table, json, yaml, markdown)
+- `--query, -q`: Query filter using TSL syntax
 - `--watch, -w`: Watch for changes
 
 ### get inventory - Query Provider Inventory
@@ -167,7 +171,7 @@ kubectl mtv get inventory vms --provider <provider-name> [flags]
 **Flags:**
 - `--provider, -p`: Provider name (required)
 - `--query, -q`: [TSL](../27-tsl-tree-search-language-reference) query filter (e.g., "where powerState = 'poweredOn'")
-- `--output, -o`: Output format (table, json, yaml, planvms)
+- `--output, -o`: Output format (table, json, yaml, markdown, planvms)
 - `--watch, -w`: Watch for changes
 - `--inventory-url`: Inventory service URL override
 
@@ -227,11 +231,22 @@ Get detailed information about specific resources.
 kubectl mtv describe plan --name <plan-name> [flags]
 ```
 
+**Flags:**
+- `--name, -M`: Plan name (required)
+- `--with-vms`: Include list of VMs in the plan specification
+- `--vm`: VM name to describe (switches to VM description mode)
+- `--watch, -w`: Watch VM status with live updates (only when --vm is used)
+- `--output, -o`: Output format (table, json, yaml, markdown)
+
 #### describe provider --name PROVIDER_NAME
 
 ```bash
 kubectl mtv describe provider --name <provider-name> [flags]
 ```
+
+**Flags:**
+- `--name, -M`: Provider name (required)
+- `--output, -o`: Output format (table, json, yaml, markdown)
 
 #### describe mapping network --name NAME / describe mapping storage --name NAME
 
@@ -240,17 +255,29 @@ kubectl mtv describe mapping network --name <mapping-name> [flags]
 kubectl mtv describe mapping storage --name <mapping-name> [flags]
 ```
 
+**Flags:**
+- `--name, -M`: Mapping name (required)
+- `--output, -o`: Output format (table, json, yaml, markdown)
+
 #### describe host --name HOST_NAME
 
 ```bash
 kubectl mtv describe host --name <host-name> [flags]
 ```
 
+**Flags:**
+- `--name, -M`: Host name (required)
+- `--output, -o`: Output format (table, json, yaml, markdown)
+
 #### describe hook --name HOOK_NAME
 
 ```bash
 kubectl mtv describe hook --name <hook-name> [flags]
 ```
+
+**Flags:**
+- `--name, -M`: Hook name (required)
+- `--output, -o`: Output format (table, json, yaml, markdown)
 
 ### delete - Remove Resources
 
@@ -263,6 +290,12 @@ alias for `--name`.
 ```bash
 kubectl mtv delete plan --name <plan-name> [flags]
 ```
+
+**Flags:**
+- `--name, -M`: Plan name(s) to delete (comma-separated)
+- `--all`: Delete all migration plans in the namespace
+- `--skip-archive`: Skip archiving and delete the plan immediately
+- `--clean-all`: Archive, delete VMs on failed migration, then delete
 
 #### delete provider --name PROVIDER_NAME
 
@@ -304,7 +337,7 @@ kubectl mtv create provider --name <name> [flags]
 ```
 
 **Common Flags:**
-- `--type, -t`: Provider type (openshift, vsphere, ovirt, openstack, ova)
+- `--type, -t`: Provider type (openshift, vsphere, ovirt, openstack, ova, ec2, hyperv)
 - `--secret`: Secret containing provider credentials
 - `--url, -U`: Provider URL
 - `--username, -u`: Provider credentials username
@@ -322,6 +355,25 @@ kubectl mtv create provider --name <name> [flags]
 - `--vddk-buf-size-in-64k`: VDDK buffer size in 64K units
 - `--vddk-buf-count`: VDDK buffer count
 - `--esxi-clone-method`: ESXi clone method (vib or ssh)
+
+**OpenStack Provider Flags:**
+- `--provider-domain-name`: OpenStack domain name
+- `--provider-project-name`: OpenStack project name
+- `--provider-region-name`: OpenStack region name
+- `--region`: Alias for `--provider-region-name`
+
+**EC2 Provider Flags:**
+- `--ec2-region`: AWS region where source EC2 instances are located
+- `--target-region`: Target region for migrations (defaults to provider region)
+- `--target-az`: Target availability zone for migrations
+- `--target-access-key-id`: Target AWS account access key ID (for cross-account migrations)
+- `--target-secret-access-key`: Target AWS account secret access key (for cross-account migrations)
+- `--auto-target-credentials`: Automatically fetch target AWS credentials from cluster
+
+**HyperV Provider Flags:**
+- `--smb-url`: SMB share URL for HyperV (e.g., //server/share)
+- `--smb-user`: SMB username (defaults to HyperV username)
+- `--smb-password`: SMB password (defaults to HyperV password)
 
 **Examples:**
 ```bash
@@ -342,6 +394,25 @@ kubectl mtv create provider --name my-ovirt --type ovirt \
   --url https://ovirt-engine.example.com/ovirt-engine/api \
   --username admin@internal \
   --password oVirtPassword123
+
+# OpenStack provider
+kubectl mtv create provider --name my-openstack --type openstack \
+  --url https://keystone.example.com:5000/v3 \
+  --username admin --password secret \
+  --provider-domain-name Default \
+  --provider-project-name admin
+
+# EC2 provider
+kubectl mtv create provider --name my-ec2 --type ec2 \
+  --ec2-region us-east-1 \
+  --username AKIAIOSFODNN7EXAMPLE \
+  --password wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# HyperV provider
+kubectl mtv create provider --name my-hyperv --type hyperv \
+  --url https://192.168.1.100 \
+  --username Administrator --password secret \
+  --smb-url '//192.168.1.100/VMShare'
 ```
 
 #### create plan --name PLAN_NAME
@@ -418,9 +489,17 @@ kubectl mtv create plan --name <name> --source <provider> --vms <vm-selection> [
 - `--preserve-static-ips`: Preserve static IPs of vSphere VMs (default: true)
 - `--migrate-shared-disks`: Migrate shared disks (default: true)
 - `--skip-guest-conversion`: Skip guest conversion process
+- `--delete-guest-conversion-pod`: Delete guest conversion pod after successful migration
 - `--delete-vm-on-fail-migration`: Delete target VM when migration fails
-- `--install-legacy-drivers`: Install legacy Windows drivers (true/false, leave empty for auto-detection)
+- `--install-legacy-drivers`: Install legacy Windows drivers (true/false/auto)
 - `--use-compatibility-mode`: Use compatibility devices for bootability (default: true)
+- `--enable-nested-virtualization`: Enable nested virtualization on target VMs (true/false/auto)
+- `--xfs-compatibility`: Use XFS-compatible virt-v2v image for this plan
+- `--rdm-as-lun`: Map VMware RDM disks as LUN devices (SCSI passthrough) in the target VM (vSphere only)
+- `--run-preflight-inspection`: Run preflight inspection on VM base disks before starting disk transfer (default: true)
+- `--archived`: Whether this plan should be archived (default: false)
+- `--pvc-name-template-use-generate-name`: Use generateName instead of name for PVC name template (default: true)
+- `--service-account`: ServiceAccount for migration pods in the target namespace (overrides global setting)
 
 **Optional Hook Flags:**
 - `--pre-hook`: Pre-migration hook for all VMs
@@ -577,6 +656,8 @@ kubectl mtv create vddk-image [flags]
 - `--platform`: Target platform (amd64, arm64)
 - `--dockerfile`: Path to custom Dockerfile
 - `--push`: Push image after build
+- `--push-insecure-skip-tls`: Skip TLS verification when pushing to the registry
+- `--set-controller-image`: Configure the pushed image as global vddk_image in ForkliftController (requires --push)
 
 **Examples:**
 ```bash
@@ -589,6 +670,11 @@ kubectl mtv create vddk-image \
 kubectl mtv create vddk-image \
   --tar ~/VMware-vix-disklib-8.0.1.tar.gz \
   --tag quay.io/myorg/vddk:8.0.1 --push
+
+# Build, push, and set as global VDDK image
+kubectl mtv create vddk-image \
+  --tar ~/VMware-vix-disklib-8.0.1.tar.gz \
+  --tag quay.io/myorg/vddk:8.0.1 --push --set-controller-image
 ```
 
 ## Plan Lifecycle Commands
@@ -607,7 +693,15 @@ kubectl mtv start plan --name <plan-name> [flags]       # Start one plan
 kubectl mtv start plans --name plan1,plan2,plan3 [flags]  # Start multiple plans
 ```
 
-Start one or more migration plans.
+Start one or more migration plans. For cold migrations, the migration begins immediately.
+For warm migrations, you can optionally specify a cutover time.
+
+**Flags:**
+- `--name, -M`: Plan name(s) to start (comma-separated)
+- `--cutover, -c`: Cutover time in ISO8601 format (e.g., 2026-12-31T23:00:00Z). Defaults to 1 hour from start for warm migrations
+- `--all`: Start all migration plans in the namespace
+- `--dry-run`: Output Migration CR(s) to stdout instead of creating them
+- `--output, -o`: Output format for dry-run (json, yaml). Defaults to yaml when --dry-run is used
 
 ### cancel - Stop Migration
 
@@ -616,10 +710,14 @@ Cancel running migration plans.
 #### cancel plan --name PLAN_NAME
 
 ```bash
-kubectl mtv cancel plan --name <plan-name> [flags]
+kubectl mtv cancel plan --name <plan-name> --vms <vm-names> [flags]
 ```
 
-Cancel specific VMs in one or more running migration plans.
+Cancel specific VMs in a running migration plan while allowing other VMs to continue.
+
+**Flags:**
+- `--name, -M`: Plan name (required)
+- `--vms`: List of VM names to cancel (comma-separated) or path to file containing VM names (prefix with @) (required)
 
 ### cutover - Complete Warm Migration
 
@@ -634,6 +732,11 @@ kubectl mtv cutover plans --name plan1,plan2 [flags]    # Cutover multiple plans
 
 Complete the cutover phase for warm migration plans.
 
+**Flags:**
+- `--name, -M`: Plan name(s) to cutover (comma-separated)
+- `--cutover, -c`: Cutover time in ISO8601 format. Defaults to current time if not specified
+- `--all`: Set cutover time for all migration plans in the namespace
+
 ### archive - Archive Plans
 
 Archive completed migration plans.
@@ -647,6 +750,10 @@ kubectl mtv archive plans --name plan1,plan2 [flags]    # Archive multiple plans
 
 Archive one or more migration plans.
 
+**Flags:**
+- `--name, -M`: Plan name(s) to archive (comma-separated)
+- `--all`: Archive all migration plans in the namespace
+
 ### unarchive - Restore Plans
 
 Restore archived migration plans.
@@ -659,6 +766,10 @@ kubectl mtv unarchive plans --name plan1,plan2 [flags]  # Unarchive multiple pla
 ```
 
 Restore one or more archived migration plans.
+
+**Flags:**
+- `--name, -M`: Plan name(s) to unarchive (comma-separated)
+- `--all`: Unarchive all migration plans in the namespace
 
 ## Resource Modification Commands
 
@@ -675,19 +786,41 @@ kubectl mtv patch plan --plan-name <plan-name> [flags]
 ```
 
 **Plan-Level Flags:**
-- `--migration-type`: Update migration type
+- `--description`: Plan description
+- `--migration-type`: Update migration type (cold, warm, live, or conversion)
 - `--transfer-network`: Update transfer network
+- `--target-namespace`: Target namespace for migrated VMs
 - `--target-labels`: Update target VM labels
 - `--target-node-selector`: Update target node selector
-- `--target-affinity`: Update target affinity rules
+- `--target-affinity`: Update target affinity rules using KARL syntax
+- `--target-power-state`: Target power state for VMs after migration (on, off, auto)
 - `--convertor-labels`: Update convertor pod labels
 - `--convertor-node-selector`: Update convertor node selector
-- `--convertor-affinity`: Update convertor affinity rules
+- `--convertor-affinity`: Update convertor affinity rules using KARL syntax
 - `--conversion-temp-storage-class`: Storage class for temporary conversion PVCs
 - `--conversion-temp-storage-size`: Size of temporary conversion PVC
 - `--customization-scripts`: ConfigMap for guest conversion scripts (supports namespace/name)
 - `--virt-v2v-image`: Override virt-v2v container image for this plan
 - `--skip-zone-node-selector`: Skip zone-based node selector (EC2 only)
+- `--preserve-cluster-cpu-model`: Preserve CPU model from oVirt cluster
+- `--preserve-static-ips`: Preserve static IP configurations during migration
+- `--install-legacy-drivers`: Install legacy Windows drivers (true/false/auto)
+- `--use-compatibility-mode`: Use compatibility devices when skipGuestConversion is true
+- `--enable-nested-virtualization`: Enable nested virtualization on target VMs (true/false/auto)
+- `--xfs-compatibility`: Use XFS-compatible virt-v2v image for this plan
+- `--pvc-name-template`: Template for generating PVC names
+- `--volume-name-template`: Template for generating volume interface names
+- `--network-name-template`: Template for generating network interface names
+- `--migrate-shared-disks`: Migrate disks shared between multiple VMs
+- `--skip-guest-conversion`: Skip the guest conversion process
+- `--delete-guest-conversion-pod`: Delete guest conversion pod after successful migration
+- `--delete-vm-on-fail-migration`: Delete target VM when migration fails
+- `--run-preflight-inspection`: Run preflight inspection on VM base disks
+- `--rdm-as-lun`: Map VMware RDM disks as LUN devices (vSphere only)
+- `--service-account`: ServiceAccount for migration pods
+- `--warm`: Enable warm migration (legacy; use --migration-type=warm instead)
+- `--archived`: Whether this plan should be archived
+- `--pvc-name-template-use-generate-name`: Use generateName instead of name for PVC name template
 
 **Examples:**
 ```bash
@@ -716,6 +849,9 @@ kubectl mtv patch planvm --plan-name <plan-name> --vm-name <vm-name> [flags]
 - `--luks-secret`: Kubernetes Secret name containing LUKS disk decryption keys
 - `--nbde-clevis`: Enable passphrase-less NBDE/Clevis disk unlocking via TANG server
 - `--delete-vm-on-fail-migration`: Delete target VM when migration fails
+- `--enable-nested-virtualization`: Enable nested virtualization for this VM (true/false/auto)
+- `--migrate-shared-disks`: Migrate shared disks for this VM, overrides plan-level setting (true/false/auto)
+- `--rdm-as-lun`: Map VMware RDM disks as LUN devices for this VM, overrides plan-level setting (vSphere only, true/false/auto)
 - `--add-pre-hook`: Add a pre-migration hook to this VM
 - `--add-post-hook`: Add a post-migration hook to this VM
 - `--remove-hook`: Remove a hook from this VM by hook name
@@ -774,18 +910,39 @@ Update provider settings.
 kubectl mtv patch provider --name <provider-name> [flags]
 ```
 
-**Provider Update Flags:**
+**Common Provider Update Flags:**
 - `--url`: Update provider URL
 - `--username`: Update username
 - `--password`: Update password
 - `--provider-token`: Update authentication token
 - `--cacert`: Update CA certificate
 - `--provider-insecure-skip-tls`: Update TLS verification setting
-- `--vddk-init-image`: Update VDDK init image (vSphere)
-- `--use-vddk-aio-optimization`: Update VDDK AIO optimization (vSphere)
-- `--vddk-buf-size-in-64k`: Update VDDK buffer size (vSphere)
-- `--vddk-buf-count`: Update VDDK buffer count (vSphere)
-- `--esxi-clone-method`: Update ESXi clone method (vSphere, vib or ssh)
+
+**vSphere Provider Update Flags:**
+- `--vddk-init-image`: Update VDDK init image
+- `--use-vddk-aio-optimization`: Update VDDK AIO optimization
+- `--vddk-buf-size-in-64k`: Update VDDK buffer size
+- `--vddk-buf-count`: Update VDDK buffer count
+- `--esxi-clone-method`: Update ESXi clone method (vib or ssh)
+
+**OpenStack Provider Update Flags:**
+- `--provider-domain-name`: Update OpenStack domain name
+- `--provider-project-name`: Update OpenStack project name
+- `--provider-region-name`: Update OpenStack region name
+- `--region`: Alias for `--provider-region-name`
+
+**EC2 Provider Update Flags:**
+- `--ec2-region`: Update AWS region for source EC2 instances
+- `--target-region`: Update target region for migrations
+- `--target-az`: Update target availability zone
+- `--target-access-key-id`: Update target AWS account access key ID
+- `--target-secret-access-key`: Update target AWS account secret access key
+- `--auto-target-credentials`: Auto-fetch target AWS credentials from cluster
+
+**HyperV Provider Update Flags:**
+- `--smb-url`: Update SMB share URL
+- `--smb-user`: Update SMB username
+- `--smb-password`: Update SMB password
 
 ## AI Integration Commands
 
@@ -803,6 +960,12 @@ kubectl mtv mcp-server [flags]
 - `--host`: Host address to bind to for SSE mode (default: 127.0.0.1)
 - `--cert-file`: Path to TLS certificate file
 - `--key-file`: Path to TLS private key file
+- `--output-format`: Default output format for commands: markdown, text (table), or json (default: markdown)
+- `--server`: Kubernetes API server URL (passed to kubectl via --server flag)
+- `--token`: Kubernetes authentication token (passed to kubectl via --token flag)
+- `--insecure-skip-tls-verify`: Skip TLS certificate verification for Kubernetes API connections
+- `--max-response-chars`: Max characters for text output (0=unlimited). Helps small LLMs by truncating long responses
+- `--read-only`: Run in read-only mode (disables write operations)
 
 **Modes:**
 - **Default (Stdio)**: For direct AI assistant integration
@@ -820,6 +983,11 @@ kubectl mtv mcp-server --sse --port 8080
 kubectl mtv mcp-server --sse --port 8443 \
   --cert-file /path/to/cert.pem \
   --key-file /path/to/key.pem
+
+# Read-only mode with custom Kubernetes API
+kubectl mtv mcp-server --sse --read-only \
+  --server https://api.cluster.example.com:6443 \
+  --token sha256~abc123
 ```
 
 ## Health and Settings Commands
@@ -833,7 +1001,7 @@ kubectl mtv health [flags]
 ```
 
 **Flags:**
-- `--output, -o`: Output format (table, json, yaml)
+- `--output, -o`: Output format (table, json, yaml, markdown)
 - `--skip-logs`: Skip pod log analysis for faster execution
 - `--log-lines`: Number of log lines per pod to analyze (default: 100)
 - `--namespace, -n`: Scope providers and plans to a namespace
@@ -879,7 +1047,7 @@ kubectl mtv settings get [--setting <setting-name>] [flags]
 ```
 
 **Flags:**
-- `--output, -o`: Output format (table, json, yaml)
+- `--output, -o`: Output format (table, json, yaml, markdown)
 - `--all`: Include all settings (supported + extended)
 
 **Examples:**
@@ -948,6 +1116,10 @@ kubectl mtv version [flags]
 ```
 
 Shows the `kubectl-mtv` version, build information, and runtime details.
+
+**Flags:**
+- `--client`: Print only the client version (skip cluster connectivity)
+- `--output, -o`: Output format (table, json, yaml, markdown)
 
 ### help - Help and Reference
 
