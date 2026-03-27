@@ -268,12 +268,14 @@ image-push-arm64:
 .PHONY: image-manifest
 image-manifest:
 	-@$(CONTAINER_ENGINE) manifest rm $(IMAGE):$(IMAGE_TAG) 2>/dev/null
+	-@$(CONTAINER_ENGINE) rmi $(IMAGE):$(IMAGE_TAG) 2>/dev/null
 	$(CONTAINER_ENGINE) manifest create $(IMAGE):$(IMAGE_TAG) \
 		$(IMAGE):$(IMAGE_TAG)-amd64 \
 		$(IMAGE):$(IMAGE_TAG)-arm64
 	$(CONTAINER_ENGINE) manifest push $(IMAGE):$(IMAGE_TAG)
 	@echo "Tagging and pushing as latest..."
 	-@$(CONTAINER_ENGINE) manifest rm $(IMAGE):latest 2>/dev/null
+	-@$(CONTAINER_ENGINE) rmi $(IMAGE):latest 2>/dev/null
 	$(CONTAINER_ENGINE) manifest create $(IMAGE):latest \
 		$(IMAGE):$(IMAGE_TAG)-amd64 \
 		$(IMAGE):$(IMAGE_TAG)-arm64
