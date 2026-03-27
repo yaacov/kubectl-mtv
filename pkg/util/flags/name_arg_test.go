@@ -129,11 +129,17 @@ func TestMarkRequiredForMCP(t *testing.T) {
 	if f.Annotations == nil {
 		t.Fatal("expected annotations to be set")
 	}
-	vals, ok := f.Annotations[cobra.BashCompOneRequiredFlag]
+	vals, ok := f.Annotations[MCPRequiredFlag]
 	if !ok {
-		t.Fatal("expected BashCompOneRequiredFlag annotation")
+		t.Fatal("expected MCPRequiredFlag annotation")
 	}
 	if len(vals) != 1 || vals[0] != "true" {
 		t.Errorf("got annotation value %v, want [\"true\"]", vals)
+	}
+
+	// Verify Cobra does NOT enforce this flag as required
+	_, ok = f.Annotations[cobra.BashCompOneRequiredFlag]
+	if ok {
+		t.Error("MCPRequiredFlag must not set BashCompOneRequiredFlag (breaks positional args)")
 	}
 }
