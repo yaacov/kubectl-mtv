@@ -30,14 +30,23 @@ func ResolveNamesArg(namesFlag *[]string, args []string) error {
 	return nil
 }
 
-// MarkRequiredForMCP annotates a flag with Cobra's "required" annotation so the
-// MCP schema (help --machine) reports it as required, without letting Cobra
-// enforce it at parse time. This allows the value to arrive via a positional
-// argument while the LLM still sees the flag as required.
+// MCPRequiredFlag is a custom annotation key that marks a flag as required
+// in the MCP schema (help --machine) without triggering Cobra's built-in
+// flag validation. This lets the value arrive via a positional argument
+// while the LLM still sees the flag as required.
+const MCPRequiredFlag = "kubectl_mtv_mcp_required"
+
+// MarkRequiredForMCP annotates a flag so the MCP schema (help --machine)
+// reports it as required, without letting Cobra enforce it at parse time.
+// This allows the value to arrive via a positional argument while the LLM
+// still sees the flag as required.
 func MarkRequiredForMCP(cmd *cobra.Command, name string) {
 	f := cmd.Flags().Lookup(name)
+	if f == nil {
+		return
+	}
 	if f.Annotations == nil {
 		f.Annotations = make(map[string][]string)
 	}
-	f.Annotations[cobra.BashCompOneRequiredFlag] = []string{"true"}
+	f.Annotations[MCPRequiredFlag] = []string{"true"}
 }

@@ -176,6 +176,11 @@ test:
 	go tool cover -func=coverage.out
 	@rm coverage.out
 
+## test-e2e: Run CLI e2e smoke tests (requires OpenShift cluster with MTV)
+.PHONY: test-e2e
+test-e2e: kubectl-mtv
+	python3 tests/e2e_smoke.py
+
 ## dump-mcp-tools: Dump MCP tools/list response verbatim from kubectl-mtv MCP server
 .PHONY: dump-mcp-tools
 dump-mcp-tools: kubectl-mtv
