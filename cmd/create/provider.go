@@ -76,8 +76,11 @@ Credentials can be provided directly via flags or through an existing Kubernetes
     --username admin@internal \
     --password 'secret'
 
-  # Create an OpenShift target provider
-  kubectl-mtv create provider --name host \
+  # Create a local OpenShift host provider (auto-detects cluster API)
+  kubectl-mtv create provider --name host --type openshift
+
+  # Create a remote OpenShift target provider
+  kubectl-mtv create provider --name remote-cluster \
     --type openshift \
     --url https://api.cluster.example.com:6443 \
     --provider-token 'eyJhbGciOiJSUzI1NiIsInR5...'
