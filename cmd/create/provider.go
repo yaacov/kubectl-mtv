@@ -41,6 +41,9 @@ func NewProviderCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Comma
 	// HyperV specific flags
 	var smbUrl, smbUser, smbPassword string
 
+	var dryRun bool
+	var outputFormat string
+
 	// Check if MTV_VDDK_INIT_IMAGE environment variable is set
 	if envVddkInitImage := os.Getenv("MTV_VDDK_INIT_IMAGE"); envVddkInitImage != "" {
 		vddkInitImage = envVddkInitImage
@@ -124,6 +127,17 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 				cacert = string(fileContent)
 			}
 
+			if !dryRun && outputFormat != "" {
+				return fmt.Errorf("--output flag can only be used with --dry-run")
+			}
+			if dryRun && outputFormat != "" && outputFormat != "json" && outputFormat != "yaml" {
+				return fmt.Errorf("invalid output format for dry-run: %s. Valid formats are: json, yaml", outputFormat)
+			}
+			resolvedFormat := outputFormat
+			if dryRun && resolvedFormat == "" {
+				resolvedFormat = "yaml"
+			}
+
 			options := providerutil.ProviderOptions{
 				Name:                   name,
 				Namespace:              namespace,
@@ -152,6 +166,8 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 				SMBUrl:                 smbUrl,
 				SMBUser:                smbUser,
 				SMBPassword:            smbPassword,
+				DryRun:                 dryRun,
+				OutputFormat:           resolvedFormat,
 			}
 
 			return provider.Create(kubeConfigFlags, providerType.GetValue(), options)
@@ -198,6 +214,9 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 	cmd.Flags().StringVar(&smbUrl, "smb-url", "", "SMB share URL for HyperV (e.g., //server/share)")
 	cmd.Flags().StringVar(&smbUser, "smb-user", "", "SMB username (defaults to HyperV username)")
 	cmd.Flags().StringVar(&smbPassword, "smb-password", "", "SMB password (defaults to HyperV password)")
+
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Output Provider CR(s) to stdout instead of creating them")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "", "Output format for dry-run (json, yaml). Defaults to yaml when --dry-run is used")
 
 	// Add completion for provider type flag
 	if err := cmd.RegisterFlagCompletionFunc("type", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

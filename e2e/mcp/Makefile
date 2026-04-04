@@ -124,6 +124,11 @@ test-mappings: install
 test-inventory: install
 	$(PYTEST) $(PYTEST_ARGS) inventory/
 
+## test-dryrun: Run only dry-run and show-cli tests
+.PHONY: test-dryrun
+test-dryrun: install
+	$(PYTEST) $(PYTEST_ARGS) dryrun/
+
 ## test-health: Run only MTV health check tests
 .PHONY: test-health
 test-health: install

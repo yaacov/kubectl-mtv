@@ -85,6 +85,9 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 	var convertorNodeSelector []string
 	var convertorAffinity string
 
+	var dryRun bool
+	var outputFormat string
+
 	cmd := &cobra.Command{
 		Use:   "plan",
 		Short: "Create a migration plan",
@@ -469,6 +472,17 @@ Affinity Syntax (KARL):
 			// Set VMs in the PlanSpec
 			planSpec.VMs = vmList
 
+			if !dryRun && outputFormat != "" {
+				return fmt.Errorf("--output flag can only be used with --dry-run")
+			}
+			if dryRun && outputFormat != "" && outputFormat != "json" && outputFormat != "yaml" {
+				return fmt.Errorf("invalid output format for dry-run: %s. Valid formats are: json, yaml", outputFormat)
+			}
+			resolvedFormat := outputFormat
+			if dryRun && resolvedFormat == "" {
+				resolvedFormat = "yaml"
+			}
+
 			opts := plan.CreatePlanOptions{
 				Name:                      name,
 				Namespace:                 namespace,
@@ -498,6 +512,8 @@ Affinity Syntax (KARL):
 				OffloadStorageEndpoint: offloadStorageEndpoint,
 				OffloadCACert:          offloadCACert,
 				OffloadInsecureSkipTLS: offloadInsecureSkipTLS,
+				DryRun:                 dryRun,
+				OutputFormat:           resolvedFormat,
 			}
 
 			err := plan.Create(cmd.Context(), opts)
@@ -577,6 +593,8 @@ Affinity Syntax (KARL):
 	cmd.Flags().BoolVar(&planSpec.SkipZoneNodeSelector, "skip-zone-node-selector", false, "Skip adding zone-based node selector to migrated VMs (EC2 only)")
 	cmd.Flags().StringVar(&customizationScripts, "customization-scripts", "", "ConfigMap containing customization scripts for guest conversion. Supports 'namespace/name' or 'name'")
 	cmd.Flags().StringVar(&planSpec.VirtV2vImage, "virt-v2v-image", "", "Override global virt-v2v container image for this plan")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Output Plan CR(s) to stdout instead of creating them")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "", "Output format for dry-run (json, yaml). Defaults to yaml when --dry-run is used")
 	cmd.Flags().StringVar(&enableNestedVirtualization, "enable-nested-virtualization", "auto", "Enable nested virtualization on target VMs (true/false/auto)")
 	cmd.Flags().BoolVar(&planSpec.XfsCompatibility, "xfs-compatibility", false, "Use XFS-compatible virt-v2v image for this plan")
 	cmd.Flags().BoolVar(&planSpec.RDMAsLun, "rdm-as-lun", false, "Map VMware RDM disks as LUN devices (SCSI passthrough) in the target VM (vSphere only)")

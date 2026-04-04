@@ -19,6 +19,8 @@ func NewHookCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var serviceAccount string
 	var playbook string
 	var deadline int64
+	var dryRun bool
+	var outputFormat string
 
 	// HookSpec fields
 	var hookSpec forkliftv1beta1.HookSpec
@@ -76,11 +78,24 @@ Examples:
 				hookSpec.Deadline = deadline
 			}
 
+			if !dryRun && outputFormat != "" {
+				return fmt.Errorf("--output flag can only be used with --dry-run")
+			}
+			if dryRun && outputFormat != "" && outputFormat != "json" && outputFormat != "yaml" {
+				return fmt.Errorf("invalid output format for dry-run: %s. Valid formats are: json, yaml", outputFormat)
+			}
+			resolvedFormat := outputFormat
+			if dryRun && resolvedFormat == "" {
+				resolvedFormat = "yaml"
+			}
+
 			opts := hook.CreateHookOptions{
-				Name:        name,
-				Namespace:   namespace,
-				ConfigFlags: kubeConfigFlags,
-				HookSpec:    hookSpec,
+				Name:         name,
+				Namespace:    namespace,
+				ConfigFlags:  kubeConfigFlags,
+				HookSpec:     hookSpec,
+				DryRun:       dryRun,
+				OutputFormat: resolvedFormat,
 			}
 
 			return hook.Create(opts)
@@ -92,6 +107,8 @@ Examples:
 	cmd.Flags().StringVar(&serviceAccount, "service-account", "", "Service account to use for the hook (optional)")
 	cmd.Flags().StringVar(&playbook, "playbook", "", "Ansible playbook content, or use @filename to read from file (optional)")
 	cmd.Flags().Int64Var(&deadline, "deadline", 0, "Hook deadline in seconds (optional)")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Output Hook CR to stdout instead of creating it")
+	cmd.Flags().StringVarP(&outputFormat, "output", "o", "", "Output format for dry-run (json, yaml). Defaults to yaml when --dry-run is used")
 
 	if err := cmd.MarkFlagRequired("name"); err != nil {
 		panic(err)

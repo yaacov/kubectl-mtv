@@ -15,16 +15,19 @@ import (
 
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/output"
 )
 
 // CreateHookOptions encapsulates the parameters for creating migration hooks.
 // This includes the hook name, namespace, configuration flags, and the HookSpec
 // containing the hook's operational parameters.
 type CreateHookOptions struct {
-	Name        string
-	Namespace   string
-	ConfigFlags *genericclioptions.ConfigFlags
-	HookSpec    forkliftv1beta1.HookSpec
+	Name         string
+	Namespace    string
+	ConfigFlags  *genericclioptions.ConfigFlags
+	HookSpec     forkliftv1beta1.HookSpec
+	DryRun       bool
+	OutputFormat string
 }
 
 // Create creates a new migration hook resource.
@@ -39,7 +42,6 @@ func Create(opts CreateHookOptions) error {
 	// Process and encode the playbook if provided
 	processedSpec := opts.HookSpec
 	if opts.HookSpec.Playbook != "" {
-		// If the playbook is not already base64 encoded, encode it
 		if !isBase64Encoded(opts.HookSpec.Playbook) {
 			encoded := base64.StdEncoding.EncodeToString([]byte(opts.HookSpec.Playbook))
 			processedSpec.Playbook = encoded
@@ -47,14 +49,28 @@ func Create(opts CreateHookOptions) error {
 		}
 	}
 
+	// Build the typed Hook object
+	hookObj := &forkliftv1beta1.Hook{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      opts.Name,
+			Namespace: opts.Namespace,
+		},
+		Spec: processedSpec,
+	}
+	hookObj.Kind = "Hook"
+	hookObj.APIVersion = forkliftv1beta1.SchemeGroupVersion.String()
+
+	if opts.DryRun {
+		return output.OutputResource(hookObj, opts.OutputFormat)
+	}
+
 	// Create the hook resource
-	hookObj, err := createSingleHook(opts.ConfigFlags, opts.Namespace, opts.Name, processedSpec)
+	createdHook, err := createSingleHook(opts.ConfigFlags, opts.Namespace, hookObj)
 	if err != nil {
 		return fmt.Errorf("failed to create hook %s: %v", opts.Name, err)
 	}
 
-	// Provide user feedback
-	fmt.Printf("hook/%s created\n", hookObj.Name)
+	fmt.Printf("hook/%s created\n", createdHook.Name)
 	klog.V(2).Infof("Created hook '%s' in namespace '%s'", opts.Name, opts.Namespace)
 
 	return nil
@@ -90,22 +106,8 @@ func isBase64Encoded(s string) bool {
 	return err == nil && len(s)%4 == 0
 }
 
-// createSingleHook creates a single Hook resource in Kubernetes.
-// It constructs the Hook object with the provided specification and creates it using the dynamic client.
-func createSingleHook(configFlags *genericclioptions.ConfigFlags, namespace, name string, spec forkliftv1beta1.HookSpec) (*forkliftv1beta1.Hook, error) {
-	// Create Hook resource
-	hookObj := &forkliftv1beta1.Hook{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: spec,
-	}
-
-	// Set the API version and kind
-	hookObj.Kind = "Hook"
-	hookObj.APIVersion = forkliftv1beta1.SchemeGroupVersion.String()
-
+// createSingleHook creates a single Hook resource in Kubernetes using the dynamic client.
+func createSingleHook(configFlags *genericclioptions.ConfigFlags, namespace string, hookObj *forkliftv1beta1.Hook) (*forkliftv1beta1.Hook, error) {
 	// Convert to unstructured for dynamic client
 	unstructuredHook, err := runtime.DefaultUnstructuredConverter.ToUnstructured(hookObj)
 	if err != nil {
@@ -127,7 +129,7 @@ func createSingleHook(configFlags *genericclioptions.ConfigFlags, namespace, nam
 
 	if err != nil {
 		if errors.IsAlreadyExists(err) {
-			return nil, fmt.Errorf("hook '%s' already exists in namespace '%s'", name, namespace)
+			return nil, fmt.Errorf("hook '%s' already exists in namespace '%s'", hookObj.Name, namespace)
 		}
 		return nil, fmt.Errorf("failed to create hook: %v", err)
 	}

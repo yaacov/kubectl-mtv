@@ -14,7 +14,7 @@ import (
 type testInput struct {
 	Command       string         `json:"command" jsonschema:"test command"`
 	AllNamespaces bool           `json:"all_namespaces,omitempty" jsonschema:"Query all namespaces"`
-	DryRun        bool           `json:"dry_run,omitempty" jsonschema:"Dry run mode"`
+	ShowCLI       bool           `json:"show_cli,omitempty" jsonschema:"Show CLI mode"`
 	Previous      bool           `json:"previous,omitempty" jsonschema:"Previous container"`
 	Name          string         `json:"name,omitempty" jsonschema:"Resource name"`
 	Flags         map[string]any `json:"flags,omitempty" jsonschema:"Additional flags"`
@@ -22,7 +22,7 @@ type testInput struct {
 
 func TestCoerceBooleans_ProperBooleans(t *testing.T) {
 	// Proper JSON booleans should pass through unchanged
-	data := json.RawMessage(`{"command":"get plan","all_namespaces":true,"dry_run":false}`)
+	data := json.RawMessage(`{"command":"get plan","all_namespaces":true,"show_cli":false}`)
 	result := CoerceBooleans[testInput](data)
 
 	var m map[string]any
@@ -32,8 +32,8 @@ func TestCoerceBooleans_ProperBooleans(t *testing.T) {
 	if m["all_namespaces"] != true {
 		t.Errorf("all_namespaces = %v, want true", m["all_namespaces"])
 	}
-	if m["dry_run"] != false {
-		t.Errorf("dry_run = %v, want false", m["dry_run"])
+	if m["show_cli"] != false {
+		t.Errorf("show_cli = %v, want false", m["show_cli"])
 	}
 }
 
@@ -75,15 +75,15 @@ func TestCoerceBooleans_StringFalse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data := json.RawMessage(`{"command":"get plan","dry_run":` + tt.value + `}`)
+			data := json.RawMessage(`{"command":"get plan","show_cli":` + tt.value + `}`)
 			result := CoerceBooleans[testInput](data)
 
 			var m map[string]any
 			if err := json.Unmarshal(result, &m); err != nil {
 				t.Fatalf("Failed to unmarshal result: %v", err)
 			}
-			if m["dry_run"] != false {
-				t.Errorf("dry_run = %v (%T), want false (bool)", m["dry_run"], m["dry_run"])
+			if m["show_cli"] != false {
+				t.Errorf("show_cli = %v (%T), want false (bool)", m["show_cli"], m["show_cli"])
 			}
 		})
 	}
@@ -91,7 +91,7 @@ func TestCoerceBooleans_StringFalse(t *testing.T) {
 
 func TestCoerceBooleans_MixedCorrectAndString(t *testing.T) {
 	// Mix of proper booleans and string booleans
-	data := json.RawMessage(`{"command":"get plan","all_namespaces":true,"dry_run":"True","previous":"false"}`)
+	data := json.RawMessage(`{"command":"get plan","all_namespaces":true,"show_cli":"True","previous":"false"}`)
 	result := CoerceBooleans[testInput](data)
 
 	var m map[string]any
@@ -101,8 +101,8 @@ func TestCoerceBooleans_MixedCorrectAndString(t *testing.T) {
 	if m["all_namespaces"] != true {
 		t.Errorf("all_namespaces = %v, want true", m["all_namespaces"])
 	}
-	if m["dry_run"] != true {
-		t.Errorf("dry_run = %v, want true (coerced from \"True\")", m["dry_run"])
+	if m["show_cli"] != true {
+		t.Errorf("show_cli = %v, want true (coerced from \"True\")", m["show_cli"])
 	}
 	if m["previous"] != false {
 		t.Errorf("previous = %v, want false (coerced from \"false\")", m["previous"])
@@ -178,7 +178,7 @@ func TestCoerceBooleans_NonStructField(t *testing.T) {
 
 func TestCoerceBooleans_UnmarshalAfterCoerce(t *testing.T) {
 	// Verify that coerced data can be successfully unmarshaled into the typed struct
-	data := json.RawMessage(`{"command":"get plan","all_namespaces":"True","dry_run":"false"}`)
+	data := json.RawMessage(`{"command":"get plan","all_namespaces":"True","show_cli":"false"}`)
 	result := CoerceBooleans[testInput](data)
 
 	var input testInput
@@ -191,36 +191,36 @@ func TestCoerceBooleans_UnmarshalAfterCoerce(t *testing.T) {
 	if !input.AllNamespaces {
 		t.Error("AllNamespaces should be true after coercion from \"True\"")
 	}
-	if input.DryRun {
-		t.Error("DryRun should be false after coercion from \"false\"")
+	if input.ShowCLI {
+		t.Error("ShowCLI should be false after coercion from \"false\"")
 	}
 }
 
 // --- CoerceBooleans with real tool input types ---
 
 func TestCoerceBooleans_MTVReadInput(t *testing.T) {
-	data := json.RawMessage(`{"command":"get plan","dry_run":"FALSE"}`)
+	data := json.RawMessage(`{"command":"get plan","show_cli":"FALSE"}`)
 	result := CoerceBooleans[MTVReadInput](data)
 
 	var input MTVReadInput
 	if err := json.Unmarshal(result, &input); err != nil {
 		t.Fatalf("Failed to unmarshal: %v", err)
 	}
-	if input.DryRun {
-		t.Error("DryRun should be false")
+	if input.ShowCLI {
+		t.Error("ShowCLI should be false")
 	}
 }
 
 func TestCoerceBooleans_MTVWriteInput(t *testing.T) {
-	data := json.RawMessage(`{"command":"create plan","dry_run":"True"}`)
+	data := json.RawMessage(`{"command":"create plan","show_cli":"True"}`)
 	result := CoerceBooleans[MTVWriteInput](data)
 
 	var input MTVWriteInput
 	if err := json.Unmarshal(result, &input); err != nil {
 		t.Fatalf("Failed to unmarshal: %v", err)
 	}
-	if !input.DryRun {
-		t.Error("DryRun should be true")
+	if !input.ShowCLI {
+		t.Error("ShowCLI should be true")
 	}
 }
 
