@@ -169,9 +169,9 @@ func TestHandleMTVWrite_ValidationErrors(t *testing.T) {
 	}
 }
 
-// --- Handler DryRun tests ---
+// --- Handler ShowCLI tests ---
 
-func TestHandleMTVWrite_DryRun(t *testing.T) {
+func TestHandleMTVWrite_ShowCLI(t *testing.T) {
 	registry := &discovery.Registry{
 		ReadOnly: map[string]*discovery.Command{
 			"get/plan": {Path: []string{"get", "plan"}, PathString: "get plan", Description: "Get plans"},
@@ -207,7 +207,7 @@ func TestHandleMTVWrite_DryRun(t *testing.T) {
 					"type": "vsphere",
 					"url":  "https://vcenter.example.com",
 				},
-				DryRun: true,
+				ShowCLI: true,
 			},
 			wantContains: []string{"kubectl-mtv", "create", "provider", "--name", "my-vsphere", "--type", "vsphere", "--url"},
 		},
@@ -216,7 +216,7 @@ func TestHandleMTVWrite_DryRun(t *testing.T) {
 			input: MTVWriteInput{
 				Command: "delete plan",
 				Flags:   map[string]any{"name": "old-plan", "namespace": "demo"},
-				DryRun:  true,
+				ShowCLI: true,
 			},
 			wantContains: []string{"kubectl-mtv", "delete", "plan", "old-plan", "--namespace", "demo"},
 		},
@@ -225,7 +225,7 @@ func TestHandleMTVWrite_DryRun(t *testing.T) {
 			input: MTVWriteInput{
 				Command: "start plan",
 				Flags:   map[string]any{"name": "my-plan"},
-				DryRun:  true,
+				ShowCLI: true,
 			},
 			wantContains: []string{"kubectl-mtv", "start", "plan", "my-plan"},
 		},
@@ -243,10 +243,10 @@ func TestHandleMTVWrite_DryRun(t *testing.T) {
 				t.Fatalf("expected map[string]interface{}, got %T", data)
 			}
 
-			// In dry-run mode, the CLI command is in "output" (command field is stripped)
+			// In show-CLI mode, the CLI command is in "output" (command field is stripped)
 			output, ok := dataMap["output"].(string)
 			if !ok {
-				t.Fatal("response should have 'output' string field in dry-run mode")
+				t.Fatal("response should have 'output' string field in show-CLI mode")
 			}
 
 			for _, want := range tt.wantContains {

@@ -16,7 +16,7 @@ type MTVReadInput struct {
 
 	Flags map[string]any `json:"flags,omitempty" jsonschema:"All parameters including positional args and options (e.g. name: \"my-plan\", provider: \"my-vsphere\", output: \"json\", namespace: \"ns\", query: \"where cpuCount > 4\")"`
 
-	DryRun bool `json:"dry_run,omitempty" jsonschema:"If true, does not execute. Returns the equivalent CLI command in the output field instead"`
+	ShowCLI bool `json:"show_cli,omitempty" jsonschema:"If true, does not execute. Returns the equivalent CLI command in the output field instead"`
 
 	Fields []string `json:"fields,omitempty" jsonschema:"Limit JSON to these top-level keys only (e.g. [name, id, concerns])"`
 }
@@ -117,9 +117,9 @@ func HandleMTVRead(registry *discovery.Registry) func(context.Context, *mcp.Call
 			return nil, nil, fmt.Errorf("unknown command '%s'. Available read commands: %s", input.Command, strings.Join(available, ", "))
 		}
 
-		// Enable dry run mode if requested
-		if input.DryRun {
-			ctx = util.WithDryRun(ctx, true)
+		// Enable show-CLI mode if requested
+		if input.ShowCLI {
+			ctx = util.WithShowCLI(ctx, true)
 		}
 
 		// Apply default output format for commands that support --output.

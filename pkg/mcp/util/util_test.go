@@ -404,24 +404,24 @@ func TestWithKubeServer(t *testing.T) {
 	}
 }
 
-func TestWithDryRun(t *testing.T) {
+func TestWithShowCLI(t *testing.T) {
 	ctx := context.Background()
 
 	// Default is false
-	if GetDryRun(ctx) {
-		t.Error("fresh context should not have dry run enabled")
+	if GetShowCLI(ctx) {
+		t.Error("fresh context should not have show-CLI enabled")
 	}
 
-	// Enable dry run
-	ctx = WithDryRun(ctx, true)
-	if !GetDryRun(ctx) {
-		t.Error("dry run should be enabled after setting true")
+	// Enable show-CLI
+	ctx = WithShowCLI(ctx, true)
+	if !GetShowCLI(ctx) {
+		t.Error("show-CLI should be enabled after setting true")
 	}
 
-	// Disable dry run
-	ctx = WithDryRun(ctx, false)
-	if GetDryRun(ctx) {
-		t.Error("dry run should be disabled after setting false")
+	// Disable show-CLI
+	ctx = WithShowCLI(ctx, false)
+	if GetShowCLI(ctx) {
+		t.Error("show-CLI should be disabled after setting false")
 	}
 }
 
@@ -439,9 +439,9 @@ func TestGetKubeServer_NilContext(t *testing.T) {
 	}
 }
 
-func TestGetDryRun_NilContext(t *testing.T) {
-	if GetDryRun(nil) { //nolint:staticcheck // intentionally testing nil context behavior
-		t.Error("nil context should return false for dry run")
+func TestGetShowCLI_NilContext(t *testing.T) {
+	if GetShowCLI(nil) { //nolint:staticcheck // intentionally testing nil context behavior
+		t.Error("nil context should return false for show-CLI")
 	}
 }
 
@@ -574,8 +574,8 @@ func TestRunKubectlMTVCommand_DefaultCredsFallback(t *testing.T) {
 	SetDefaultKubeServer("https://cli-default.example.com:6443")
 	SetDefaultKubeToken("cli-default-token")
 
-	// Use dry run mode to capture the command without executing
-	ctx := WithDryRun(context.Background(), true)
+	// Use show-CLI mode to capture the command without executing
+	ctx := WithShowCLI(context.Background(), true)
 
 	result, err := RunKubectlMTVCommand(ctx, []string{"get", "plan"})
 	if err != nil {
@@ -611,7 +611,7 @@ func TestRunKubectlMTVCommand_ContextOverridesDefaults(t *testing.T) {
 	ctx := context.Background()
 	ctx = WithKubeServer(ctx, "https://header-override.example.com:6443")
 	ctx = WithKubeToken(ctx, "header-override-token")
-	ctx = WithDryRun(ctx, true)
+	ctx = WithShowCLI(ctx, true)
 
 	result, err := RunKubectlMTVCommand(ctx, []string{"get", "plan"})
 	if err != nil {
@@ -640,8 +640,8 @@ func TestRunKubectlMTVCommand_NoCredsWhenNoneSet(t *testing.T) {
 	SetDefaultKubeServer("")
 	SetDefaultKubeToken("")
 
-	// Use dry run mode with no context credentials
-	ctx := WithDryRun(context.Background(), true)
+	// Use show-CLI mode with no context credentials
+	ctx := WithShowCLI(context.Background(), true)
 
 	result, err := RunKubectlMTVCommand(ctx, []string{"get", "plan"})
 	if err != nil {

@@ -33,6 +33,7 @@ import (
 	vsphereMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/get/inventory"
 	"github.com/yaacov/kubectl-mtv/pkg/util/client"
+	"github.com/yaacov/kubectl-mtv/pkg/util/output"
 )
 
 // StorageMapperInterface defines the interface that all provider-specific storage mappers must implement
@@ -60,6 +61,8 @@ type StorageMapperOptions struct {
 	InventoryInsecureSkipTLS  bool
 	PlanVMNames               []string
 	DefaultTargetStorageClass string
+	DryRun                    bool
+	OutputFormat              string
 }
 
 // CreateStorageMap creates a storage map using the new fetcher-based architecture
@@ -120,13 +123,23 @@ func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (string, e
 		return "", fmt.Errorf("failed to create storage pairs: %v", err)
 	}
 
+	if opts.DryRun {
+		storageMap, storageMapName, err := buildStorageMapObject(opts, storagePairs)
+		if err != nil {
+			return "", err
+		}
+		if err := output.OutputResource(storageMap, opts.OutputFormat); err != nil {
+			return "", err
+		}
+		return storageMapName, nil
+	}
+
 	// Create the storage map using the existing infrastructure
 	return createStorageMap(opts, storagePairs)
 }
 
-// createStorageMap helper function to create the actual storage map resource
-func createStorageMap(opts StorageMapperOptions, storagePairs []forkliftv1beta1.StoragePair) (string, error) {
-	// If no storage pairs, create a dummy pair
+// buildStorageMapObject builds a typed StorageMap (no API call).
+func buildStorageMapObject(opts StorageMapperOptions, storagePairs []forkliftv1beta1.StoragePair) (*forkliftv1beta1.StorageMap, string, error) {
 	if len(storagePairs) == 0 {
 		klog.V(4).Infof("DEBUG: No storage pairs found, creating dummy pair")
 		storagePairs = []forkliftv1beta1.StoragePair{
@@ -141,10 +154,8 @@ func createStorageMap(opts StorageMapperOptions, storagePairs []forkliftv1beta1.
 		}
 	}
 
-	// Create the storage map name
 	storageMapName := opts.Name + "-storage-map"
 
-	// Create StorageMap object
 	storageMap := &forkliftv1beta1.StorageMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      storageMapName,
@@ -170,6 +181,15 @@ func createStorageMap(opts StorageMapperOptions, storagePairs []forkliftv1beta1.
 	}
 	storageMap.Kind = "StorageMap"
 	storageMap.APIVersion = forkliftv1beta1.SchemeGroupVersion.String()
+	return storageMap, storageMapName, nil
+}
+
+// createStorageMap helper function to create the actual storage map resource
+func createStorageMap(opts StorageMapperOptions, storagePairs []forkliftv1beta1.StoragePair) (string, error) {
+	storageMap, storageMapName, err := buildStorageMapObject(opts, storagePairs)
+	if err != nil {
+		return "", err
+	}
 
 	// Convert to Unstructured
 	unstructuredMap, err := runtime.DefaultUnstructuredConverter.ToUnstructured(storageMap)

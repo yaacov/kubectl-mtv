@@ -431,9 +431,9 @@ func TestHandleMTVRead_ValidationErrors(t *testing.T) {
 	}
 }
 
-// --- Handler DryRun tests ---
+// --- Handler ShowCLI tests ---
 
-func TestHandleMTVRead_DryRun(t *testing.T) {
+func TestHandleMTVRead_ShowCLI(t *testing.T) {
 	registry := testRegistry()
 	handler := HandleMTVRead(registry)
 	ctx := context.Background()
@@ -454,7 +454,7 @@ func TestHandleMTVRead_DryRun(t *testing.T) {
 			input: MTVReadInput{
 				Command: "get plan",
 				Flags:   map[string]any{"namespace": "demo"},
-				DryRun:  true,
+				ShowCLI: true,
 			},
 			wantContains: []string{"kubectl-mtv", "get", "plan", "--namespace", "demo", "--output", "json"},
 		},
@@ -463,7 +463,7 @@ func TestHandleMTVRead_DryRun(t *testing.T) {
 			input: MTVReadInput{
 				Command: "get plan",
 				Flags:   map[string]any{"all_namespaces": true},
-				DryRun:  true,
+				ShowCLI: true,
 			},
 			wantContains: []string{"kubectl-mtv", "get", "plan", "--all-namespaces"},
 		},
@@ -472,7 +472,7 @@ func TestHandleMTVRead_DryRun(t *testing.T) {
 			input: MTVReadInput{
 				Command: "get inventory vm",
 				Flags:   map[string]any{"provider": "my-vsphere"},
-				DryRun:  true,
+				ShowCLI: true,
 			},
 			wantContains: []string{"kubectl-mtv", "get", "inventory", "vm", "--provider", "my-vsphere"},
 		},
@@ -481,7 +481,7 @@ func TestHandleMTVRead_DryRun(t *testing.T) {
 			input: MTVReadInput{
 				Command: "describe plan",
 				Flags:   map[string]any{"name": "my-plan", "namespace": "test-ns"},
-				DryRun:  true,
+				ShowCLI: true,
 			},
 			wantContains: []string{"kubectl-mtv", "describe", "plan", "--name", "my-plan", "--namespace", "test-ns"},
 		},
@@ -489,7 +489,7 @@ func TestHandleMTVRead_DryRun(t *testing.T) {
 			name: "health check",
 			input: MTVReadInput{
 				Command: "health",
-				DryRun:  true,
+				ShowCLI: true,
 			},
 			wantContains: []string{"kubectl-mtv", "health"},
 		},
@@ -498,7 +498,7 @@ func TestHandleMTVRead_DryRun(t *testing.T) {
 			input: MTVReadInput{
 				Command: "get inventory vm",
 				Flags:   map[string]any{"provider": "my-provider", "inventory_url": "http://localhost:9090"},
-				DryRun:  true,
+				ShowCLI: true,
 			},
 			wantContains: []string{"--inventory-url", "http://localhost:9090"},
 		},
@@ -507,7 +507,7 @@ func TestHandleMTVRead_DryRun(t *testing.T) {
 			input: MTVReadInput{
 				Command: "get inventory vm",
 				Flags:   map[string]any{"provider": "my-provider", "extended": true},
-				DryRun:  true,
+				ShowCLI: true,
 			},
 			wantContains: []string{"--extended"},
 		},
@@ -525,10 +525,10 @@ func TestHandleMTVRead_DryRun(t *testing.T) {
 				t.Fatalf("expected map[string]interface{}, got %T", data)
 			}
 
-			// In dry-run mode, the CLI command is in "output" (command field is stripped)
+			// In show-CLI mode, the CLI command is in "output" (command field is stripped)
 			output, ok := dataMap["output"].(string)
 			if !ok {
-				t.Fatal("response should have 'output' string field in dry-run mode")
+				t.Fatal("response should have 'output' string field in show-CLI mode")
 			}
 
 			// "command" field should NOT be present (stripped to prevent CLI mimicry)
