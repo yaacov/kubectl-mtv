@@ -141,17 +141,7 @@ func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (string, e
 // buildStorageMapObject builds a typed StorageMap (no API call).
 func buildStorageMapObject(opts StorageMapperOptions, storagePairs []forkliftv1beta1.StoragePair) (*forkliftv1beta1.StorageMap, string, error) {
 	if len(storagePairs) == 0 {
-		klog.V(4).Infof("DEBUG: No storage pairs found, creating dummy pair")
-		storagePairs = []forkliftv1beta1.StoragePair{
-			{
-				Source: ref.Ref{
-					Type: "default", // Use "default" type for dummy entry
-				},
-				Destination: forkliftv1beta1.DestinationStorage{
-					// Empty StorageClass means system default
-				},
-			},
-		}
+		klog.V(4).Infof("DEBUG: No storage pairs found, StorageMap will have an empty map")
 	}
 
 	storageMapName := opts.Name + "-storage-map"
