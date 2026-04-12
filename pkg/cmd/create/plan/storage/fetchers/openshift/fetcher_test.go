@@ -120,6 +120,29 @@ func TestBuildTargetStorageList_Priority(t *testing.T) {
 	}
 }
 
+func TestBuildTargetStorageList_AnnotationKeysWithDots(t *testing.T) {
+	// Ensures that annotation keys containing dots (like storageclass.kubernetes.io/is-default-class)
+	// are correctly read when accessed through the inventory JSON structure.
+	// This test validates that buildTargetStorageList handles the same annotation keys
+	// that FetchSourceStorages uses to discover the default storage class.
+	storageArray := []interface{}{
+		scItem("non-default-sc", map[string]interface{}{
+			"storageclass.kubernetes.io/is-default-class": "false",
+		}),
+		scItem("default-sc", map[string]interface{}{
+			"storageclass.kubernetes.io/is-default-class": "true",
+		}),
+	}
+
+	result, err := buildTargetStorageList(storageArray)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result[0].StorageClass != "default-sc" {
+		t.Errorf("expected first SC 'default-sc', got '%s'", result[0].StorageClass)
+	}
+}
+
 func TestBuildTargetStorageList_NoDuplicateDefault(t *testing.T) {
 	storageArray := []interface{}{
 		scItem("default-sc", map[string]interface{}{
