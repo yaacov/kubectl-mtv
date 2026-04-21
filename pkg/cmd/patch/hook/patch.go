@@ -22,13 +22,13 @@ type PatchHookOptions struct {
 	Name        string
 	Namespace   string
 
-	Image          string
-	ImageChanged   bool
-	ServiceAccount string
-	SAChanged      bool
-	Playbook       string
+	Image           string
+	ImageChanged    bool
+	ServiceAccount  string
+	SAChanged       bool
+	Playbook        string
 	PlaybookChanged bool
-	Deadline       int64
+	Deadline        int64
 	DeadlineChanged bool
 
 	AAPJobTemplateID        int

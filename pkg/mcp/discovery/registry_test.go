@@ -762,7 +762,7 @@ func TestFormatCommandHelp_RealCreateProvider(t *testing.T) {
 	}
 
 	// All examples should be present (no cap)
-	allExamples := convertCLIToMCPExamples(cmd, len(cmd.Examples))
+	allExamples := convertCLIToMCPExamples(cmd, len(cmd.Examples), true)
 	for _, ex := range allExamples {
 		if !strings.Contains(result, ex) {
 			t.Errorf("missing example in help text: %s", ex)
@@ -770,4 +770,217 @@ func TestFormatCommandHelp_RealCreateProvider(t *testing.T) {
 	}
 
 	t.Logf("FormatCommandHelp output (%d chars):\n%s", len(result), result)
+}
+
+func TestCliHasNamespaceFlag(t *testing.T) {
+	tests := []struct {
+		name     string
+		cliCmd   string
+		expected bool
+	}{
+		{"long flag", "kubectl-mtv get plan --namespace ns1", true},
+		{"short flag", "kubectl-mtv get plan -n ns1", true},
+		{"short flag equals", "kubectl-mtv get plan -n=ns1", true},
+		{"all namespaces", "kubectl-mtv get plan --all-namespaces", true},
+		{"all namespaces short", "kubectl-mtv get plan -A", true},
+		{"equals syntax", "kubectl-mtv get plan --namespace=ns1", true},
+		{"no namespace", "kubectl-mtv get plan --name my-plan", false},
+		{"empty", "", false},
+		{"namespace in value", "kubectl-mtv get plan --name namespace-test", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := cliHasNamespaceFlag(tt.cliCmd)
+			if result != tt.expected {
+				t.Errorf("cliHasNamespaceFlag(%q) = %v, want %v", tt.cliCmd, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestConvertCLIToMCPExamples_InjectNamespace(t *testing.T) {
+	cmd := &Command{
+		PathString: "get plan",
+		Examples: []Example{
+			{Description: "List all plans", Command: "kubectl-mtv get plans"},
+		},
+	}
+
+	without := convertCLIToMCPExamples(cmd, 1, false)
+	if len(without) != 1 {
+		t.Fatalf("expected 1 example, got %d", len(without))
+	}
+	if strings.Contains(without[0], "namespace:") {
+		t.Errorf("injectNamespace=false should not add namespace, got: %s", without[0])
+	}
+
+	with := convertCLIToMCPExamples(cmd, 1, true)
+	if len(with) != 1 {
+		t.Fatalf("expected 1 example, got %d", len(with))
+	}
+	if !strings.Contains(with[0], `namespace: "<namespace>"`) {
+		t.Errorf("injectNamespace=true should add namespace, got: %s", with[0])
+	}
+}
+
+func TestConvertCLIToMCPExamples_PreservesExistingNamespace(t *testing.T) {
+	cmd := &Command{
+		PathString: "get plan",
+		Examples: []Example{
+			{Description: "List plans in ns1", Command: "kubectl-mtv get plan --namespace ns1"},
+		},
+	}
+
+	result := convertCLIToMCPExamples(cmd, 1, true)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 example, got %d", len(result))
+	}
+	if !strings.Contains(result[0], `namespace: "ns1"`) {
+		t.Errorf("should preserve original namespace, got: %s", result[0])
+	}
+	if strings.Contains(result[0], "<namespace>") {
+		t.Errorf("should not inject placeholder when namespace already present, got: %s", result[0])
+	}
+}
+
+func TestConvertCLIToMCPExamples_SkipForVDDK(t *testing.T) {
+	cmd := &Command{
+		PathString: "create vddk-image",
+		Path:       []string{"create", "vddk-image"},
+		Examples: []Example{
+			{Description: "Build VDDK", Command: "kubectl-mtv create vddk-image --tar foo.tar.gz --tag quay.io/org/vddk:1.0"},
+		},
+	}
+
+	inject := !noNamespaceCommands[cmd.PathKey()]
+	result := convertCLIToMCPExamples(cmd, 1, inject)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 example, got %d", len(result))
+	}
+	if strings.Contains(result[0], "namespace") {
+		t.Errorf("vddk-image should not have namespace injected, got: %s", result[0])
+	}
+}
+
+func TestConvertCLIToMCPExamples_NoFlagsGetsNamespace(t *testing.T) {
+	cmd := &Command{
+		PathString: "get hook",
+		Examples: []Example{
+			{Description: "List all hooks", Command: "kubectl-mtv get hooks"},
+		},
+	}
+
+	result := convertCLIToMCPExamples(cmd, 1, true)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 example, got %d", len(result))
+	}
+	expected := `{command: "get hook", flags: {namespace: "<namespace>"}}`
+	if result[0] != expected {
+		t.Errorf("got:  %s\nwant: %s", result[0], expected)
+	}
+}
+
+func TestConvertCLIToMCPExamples_NamespaceAlphabeticalOrder(t *testing.T) {
+	cmd := &Command{
+		PathString: "get inventory vm",
+		Examples: []Example{
+			{Description: "Filter VMs", Command: `kubectl-mtv get inventory vms --provider vsphere-prod --query "where cpuCount > 4"`},
+		},
+	}
+
+	result := convertCLIToMCPExamples(cmd, 1, true)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 example, got %d", len(result))
+	}
+	// namespace should come between "n..." and "p..." alphabetically
+	if !strings.Contains(result[0], `namespace: "<namespace>", provider:`) {
+		t.Errorf("namespace should appear in alphabetical order among flags, got: %s", result[0])
+	}
+}
+
+func TestFormatCLIAsMCP_ShortFlagCanonicalization(t *testing.T) {
+	tests := []struct {
+		name     string
+		cli      string
+		path     string
+		contains string
+		absent   string
+	}{
+		{
+			name:     "-n becomes namespace",
+			cli:      "kubectl-mtv get plan -n ns1",
+			path:     "get plan",
+			contains: `namespace: "ns1"`,
+			absent:   `n: "ns1"`,
+		},
+		{
+			name:     "-n=val becomes namespace",
+			cli:      "kubectl-mtv get plan -n=ns1",
+			path:     "get plan",
+			contains: `namespace: "ns1"`,
+			absent:   `n: "ns1"`,
+		},
+		{
+			name:     "-A becomes all_namespaces",
+			cli:      "kubectl-mtv get plan -A",
+			path:     "get plan",
+			contains: `all_namespaces: true`,
+			absent:   `A: true`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatCLIAsMCP(tt.cli, tt.path)
+			if !strings.Contains(result, tt.contains) {
+				t.Errorf("expected %q in output, got: %s", tt.contains, result)
+			}
+			if strings.Contains(result, tt.absent) {
+				t.Errorf("should not contain %q, got: %s", tt.absent, result)
+			}
+		})
+	}
+}
+
+func TestRegistry_RealHelpMachine_ExamplesHaveNamespace(t *testing.T) {
+	registry := loadRealRegistry(t)
+
+	for _, desc := range []struct {
+		name   string
+		output string
+	}{
+		{"ReadOnly", registry.GenerateReadOnlyDescription()},
+		{"ReadWrite", registry.GenerateReadWriteDescription()},
+	} {
+		t.Run(desc.name, func(t *testing.T) {
+			inExamples := false
+			for _, line := range strings.Split(desc.output, "\n") {
+				trimmed := strings.TrimSpace(line)
+				if trimmed == "Examples:" {
+					inExamples = true
+					continue
+				}
+				if inExamples && strings.HasPrefix(trimmed, "{command:") {
+					isExempt := false
+					for cmd := range noNamespaceCommands {
+						cmdPath := strings.ReplaceAll(cmd, "/", " ")
+						if strings.Contains(trimmed, `command: "`+cmdPath+`"`) {
+							isExempt = true
+							break
+						}
+					}
+					if !isExempt && !strings.Contains(trimmed, "namespace:") && !strings.Contains(trimmed, "all_namespaces:") {
+						t.Errorf("example missing namespace/all_namespaces: %s", trimmed)
+					}
+				}
+				if inExamples && trimmed == "" {
+					break
+				}
+			}
+			if !inExamples {
+				t.Error("no Examples: section found in description")
+			}
+		})
+	}
 }
