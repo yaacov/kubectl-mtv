@@ -1,36 +1,6 @@
 # Ansible Automation Platform (AAP) API Token Setup
 
-This document describes how to install the AWX CLI, retrieve the AAP URL, and create an API token for use with kubectl-mtv.
-
-## Installing AWX CLI
-
-The AWX CLI (`awxkit`) is the official command-line tool for interacting with Ansible AWX and AAP.
-
-### Install via pip (Development)
-
-```bash
-pip3 install --user awxkit
-```
-
-### Install via dnf (Fedora)
-
-```bash
-sudo dnf install python3-pip
-pip3 install --user awxkit
-```
-
-### Install via brew (macOS)
-
-```bash
-brew install python3
-pip3 install awxkit
-```
-
-### Verify Installation
-
-```bash
-awx --version
-```
+This document describes how to retrieve the AAP URL and create an API token for use with kubectl-mtv using `curl`.
 
 ## Retrieving AAP URL from Cluster
 
@@ -54,7 +24,7 @@ AAP_URL="https://$(kubectl get route awx -n awx -o jsonpath='{.spec.host}')"
 echo "AAP URL: ${AAP_URL}"
 ```
 
-## Creating an API Token with AWX CLI
+## Creating an API Token with curl
 
 ### Step 1: Get Admin Password
 
@@ -65,38 +35,21 @@ AAP_PASSWORD=$(kubectl get secret awx-admin-password -n awx -o jsonpath='{.data.
 # The password is now stored in AAP_PASSWORD — do not echo it to the terminal.
 ```
 
-### Step 2: Configure Environment
-
-Set up environment variables for the AWX CLI:
+### Step 2: Set the AAP URL
 
 ```bash
-# Get the AAP URL from the cluster route
 export AAP_URL="https://$(kubectl get route awx -n awx -o jsonpath='{.spec.host}')"
-
-# Configure AWX CLI environment
-export TOWER_HOST="${AAP_URL}"
-export TOWER_USERNAME="admin"
-export TOWER_PASSWORD="${AAP_PASSWORD}"
-export TOWER_VERIFY_SSL=false
 ```
 
-### Step 3: Login to AAP
-
-```bash
-awx login
-```
-
-Expected output:
-```text
-Successfully authenticated as admin
-```
-
-### Step 4: Create API Token
+### Step 3: Create API Token
 
 Create a new API token with write scope:
 
 ```bash
-awx tokens create --scope write --description "kubectl-mtv token"
+curl -sk -X POST "${AAP_URL}/api/v2/tokens/" \
+  -u "admin:${AAP_PASSWORD}" \
+  -H "Content-Type: application/json" \
+  -d '{"scope": "write", "description": "kubectl-mtv token"}'
 ```
 
 The output will include the token. **Save it immediately as it's only shown once.**
@@ -111,7 +64,7 @@ Example output:
 }
 ```
 
-### Step 5: Save the Token
+### Step 4: Save the Token
 
 Copy the token value from the output and write it to a temporary file with restricted permissions:
 
@@ -123,10 +76,12 @@ printf '%s' '<paste-your-token-here>' > /tmp/aap-token.txt
 
 ## Verifying the Token
 
-Test that the token works:
+Test that the token works by querying the AAP API:
 
 ```bash
-awx config
+AAP_TOKEN=$(cat /tmp/aap-token.txt)
+curl -sk -H "Authorization: Bearer ${AAP_TOKEN}" \
+  "${AAP_URL}/api/v2/me/"
 ```
 
 ## Configuring AAP in MTV
@@ -221,18 +176,20 @@ kubectl get hook my-aap-hook -n konveyor-forklift -o yaml
 
 ## Testing AAP Integration
 
-### Test with AWX CLI
+### Test with curl
 
-List inventories using the AWX CLI:
+List inventories:
 
 ```bash
-awx inventory list
+curl -sk -H "Authorization: Bearer ${AAP_TOKEN}" \
+  "${AAP_URL}/api/v2/inventories/"
 ```
 
-List job templates using AWX CLI:
+List job templates:
 
 ```bash
-awx job_template list
+curl -sk -H "Authorization: Bearer ${AAP_TOKEN}" \
+  "${AAP_URL}/api/v2/job_templates/"
 ```
 
 ## Security Notes
