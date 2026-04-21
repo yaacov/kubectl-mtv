@@ -43,35 +43,14 @@ export AAP_URL="https://$(kubectl get route awx -n awx -o jsonpath='{.spec.host}
 
 ### Step 3: Create API Token
 
-Create a new API token with write scope:
+Create a new API token with write scope and capture it into an environment variable:
 
 ```bash
-curl -sk -X POST "${AAP_URL}/api/v2/tokens/" \
+AAP_TOKEN=$(curl -sk -X POST "${AAP_URL}/api/v2/tokens/" \
   -u "admin:${AAP_PASSWORD}" \
   -H "Content-Type: application/json" \
-  -d '{"scope": "write", "description": "kubectl-mtv token"}'
-```
-
-The output will include the token. **Save it immediately as it's only shown once.**
-
-Example output:
-```json
-{
-  "id": 2,
-  "token": "aBcDeFgHiJkLmNoPqRsTuVwXyZ123456",
-  "scope": "write",
-  "description": "kubectl-mtv token"
-}
-```
-
-### Step 4: Save the Token
-
-Copy the token value from the output and write it to a temporary file with restricted permissions:
-
-```bash
-# Write token to a file readable only by you (never echo tokens to the terminal)
-umask 077
-printf '%s' '<paste-your-token-here>' > /tmp/aap-token.txt
+  -d '{"scope": "write", "description": "kubectl-mtv token"}' \
+  | jq -r '.token')
 ```
 
 ## Verifying the Token
@@ -79,7 +58,6 @@ printf '%s' '<paste-your-token-here>' > /tmp/aap-token.txt
 Test that the token works by querying the AAP API:
 
 ```bash
-AAP_TOKEN=$(cat /tmp/aap-token.txt)
 curl -sk -H "Authorization: Bearer ${AAP_TOKEN}" \
   "${AAP_URL}/api/v2/me/"
 ```
@@ -92,10 +70,8 @@ Create a Kubernetes secret with the AAP token:
 
 ```bash
 kubectl create secret generic aap-token \
-  --from-file=token=/tmp/aap-token.txt \
+  --from-literal=token="${AAP_TOKEN}" \
   -n konveyor-forklift
-# Clean up the temporary file
-rm -f /tmp/aap-token.txt
 ```
 
 ### Step 2: Configure MTV Settings
