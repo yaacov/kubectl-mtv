@@ -298,6 +298,7 @@ func TestCategoryOrder_ContainsExpectedCategories(t *testing.T) {
 		CategoryOVAProxy:    true,
 		CategoryConfigMaps:  true,
 		CategoryAdvanced:    true,
+		CategoryAAP:         true,
 	}
 
 	for _, cat := range CategoryOrder {

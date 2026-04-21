@@ -19,27 +19,22 @@ import (
 )
 
 // CreateHookOptions encapsulates the parameters for creating migration hooks.
-// This includes the hook name, namespace, configuration flags, and the HookSpec
-// containing the hook's operational parameters.
 type CreateHookOptions struct {
-	Name         string
-	Namespace    string
-	ConfigFlags  *genericclioptions.ConfigFlags
-	HookSpec     forkliftv1beta1.HookSpec
-	DryRun       bool
-	OutputFormat string
+	Name             string
+	Namespace        string
+	ConfigFlags      *genericclioptions.ConfigFlags
+	HookSpec         forkliftv1beta1.HookSpec
+	DryRun           bool
+	OutputFormat     string
+	AAPJobTemplateID int
 }
 
 // Create creates a new migration hook resource.
-// It validates the input parameters, encodes the playbook if provided,
-// creates the hook resource in Kubernetes, and provides user feedback.
 func Create(opts CreateHookOptions) error {
-	// Validate the hook specification
-	if err := validateHookSpec(opts.HookSpec); err != nil {
+	if err := validateHookOptions(opts); err != nil {
 		return fmt.Errorf("invalid hook specification: %v", err)
 	}
 
-	// Process and encode the playbook if provided
 	processedSpec := opts.HookSpec
 	if opts.HookSpec.Playbook != "" {
 		if !isBase64Encoded(opts.HookSpec.Playbook) {
@@ -65,28 +60,36 @@ func Create(opts CreateHookOptions) error {
 	}
 
 	// Create the hook resource
-	createdHook, err := createSingleHook(opts.ConfigFlags, opts.Namespace, hookObj)
+	createdHook, err := createSingleHook(opts.ConfigFlags, opts.Namespace, hookObj, opts.AAPJobTemplateID)
 	if err != nil {
 		return fmt.Errorf("failed to create hook %s: %v", opts.Name, err)
 	}
 
-	fmt.Printf("hook/%s created\n", createdHook.Name)
+	fmt.Printf("hook/%s created\n", createdHook.GetName())
 	klog.V(2).Infof("Created hook '%s' in namespace '%s'", opts.Name, opts.Namespace)
 
 	return nil
 }
 
-// validateHookSpec validates the hook specification parameters.
-// It ensures that required fields are present and have valid values.
-func validateHookSpec(spec forkliftv1beta1.HookSpec) error {
-	// Image should not be empty (default is set at command level)
-	if spec.Image == "" {
-		return fmt.Errorf("image cannot be empty")
+func validateHookOptions(opts CreateHookOptions) error {
+	if opts.AAPJobTemplateID < 0 {
+		return fmt.Errorf("AAPJobTemplateID cannot be negative")
 	}
 
-	// Validate deadline if provided
-	if spec.Deadline < 0 {
-		return fmt.Errorf("deadline must be non-negative, got: %d", spec.Deadline)
+	isAAP := opts.AAPJobTemplateID > 0
+
+	if isAAP {
+		if opts.HookSpec.Image != "" || opts.HookSpec.Playbook != "" {
+			return fmt.Errorf("AAP hooks cannot have image or playbook set")
+		}
+	} else {
+		if opts.HookSpec.Image == "" {
+			return fmt.Errorf("image cannot be empty for local hooks")
+		}
+	}
+
+	if opts.HookSpec.Deadline < 0 {
+		return fmt.Errorf("deadline must be non-negative, got: %d", opts.HookSpec.Deadline)
 	}
 
 	return nil
@@ -107,21 +110,27 @@ func isBase64Encoded(s string) bool {
 }
 
 // createSingleHook creates a single Hook resource in Kubernetes using the dynamic client.
-func createSingleHook(configFlags *genericclioptions.ConfigFlags, namespace string, hookObj *forkliftv1beta1.Hook) (*forkliftv1beta1.Hook, error) {
+func createSingleHook(configFlags *genericclioptions.ConfigFlags, namespace string, hookObj *forkliftv1beta1.Hook, aapJobTemplateID int) (*unstructured.Unstructured, error) {
 	// Convert to unstructured for dynamic client
 	unstructuredHook, err := runtime.DefaultUnstructuredConverter.ToUnstructured(hookObj)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert hook to unstructured: %v", err)
 	}
 
-	// Get dynamic client
+	if aapJobTemplateID > 0 {
+		if err := unstructured.SetNestedField(unstructuredHook, map[string]interface{}{
+			"jobTemplateId": int64(aapJobTemplateID),
+		}, "spec", "aap"); err != nil {
+			return nil, fmt.Errorf("failed to set AAP config: %v", err)
+		}
+	}
+
 	dynamicClient, err := client.GetDynamicClient(configFlags)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dynamic client: %v", err)
 	}
 
-	// Create the hook resource
-	createdHookUnstructured, err := dynamicClient.Resource(client.HooksGVR).Namespace(namespace).Create(
+	created, err := dynamicClient.Resource(client.HooksGVR).Namespace(namespace).Create(
 		context.Background(),
 		&unstructured.Unstructured{Object: unstructuredHook},
 		metav1.CreateOptions{},
@@ -134,12 +143,5 @@ func createSingleHook(configFlags *genericclioptions.ConfigFlags, namespace stri
 		return nil, fmt.Errorf("failed to create hook: %v", err)
 	}
 
-	// Convert back to typed object for return
-	var createdHook forkliftv1beta1.Hook
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(createdHookUnstructured.Object, &createdHook)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert created hook back to typed object: %v", err)
-	}
-
-	return &createdHook, nil
+	return created, nil
 }
