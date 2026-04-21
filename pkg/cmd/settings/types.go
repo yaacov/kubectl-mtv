@@ -55,6 +55,8 @@ const (
 	CategoryConfigMaps SettingCategory = "configmaps"
 	// CategoryAdvanced represents advanced/misc settings.
 	CategoryAdvanced SettingCategory = "advanced"
+	// CategoryAAP represents Ansible Automation Platform settings.
+	CategoryAAP SettingCategory = "aap"
 )
 
 // SettingDefinition defines metadata for a ForkliftController setting.
@@ -105,6 +107,7 @@ var CategoryOrder = []SettingCategory{
 	CategoryOVAProxy,
 	CategoryConfigMaps,
 	CategoryAdvanced,
+	CategoryAAP,
 }
 
 // SupportedSettings contains all supported ForkliftController settings.
@@ -480,6 +483,29 @@ var SupportedSettings = map[string]SettingDefinition{
 		Default:     "512Mi",
 		Description: "HyperV provider server memory request",
 		Category:    CategoryHyperV,
+	},
+
+	// Ansible Automation Platform (AAP)
+	"aap_url": {
+		Name:        "aap_url",
+		Type:        TypeString,
+		Default:     "",
+		Description: "Ansible Automation Platform base URL (e.g. https://aap.example.com)",
+		Category:    CategoryAAP,
+	},
+	"aap_token_secret_name": {
+		Name:        "aap_token_secret_name",
+		Type:        TypeString,
+		Default:     "",
+		Description: "Name of the Secret containing the AAP API Bearer token (data key: token)",
+		Category:    CategoryAAP,
+	},
+	"aap_timeout": {
+		Name:        "aap_timeout",
+		Type:        TypeInt,
+		Default:     0,
+		Description: "Default timeout in seconds for AAP HTTP calls and job polling when Hook spec.deadline is 0",
+		Category:    CategoryAAP,
 	},
 }
 
