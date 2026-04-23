@@ -14,8 +14,8 @@ source "$SCRIPT_DIR/lib.sh"
 load_env "$MCP_DIR"
 
 # Configuration
-MCP_SSE_HOST="${MCP_SSE_HOST:-127.0.0.1}"
-MCP_SSE_PORT="${MCP_SSE_PORT:-18443}"
+MCP_HTTP_HOST="${MCP_HTTP_HOST:-127.0.0.1}"
+MCP_HTTP_PORT="${MCP_HTTP_PORT:-18443}"
 MTV_BINARY="${MTV_BINARY:-$MCP_DIR/../../kubectl-mtv}"
 SERVER_PID_FILE="$MCP_DIR/.server.pid"
 SERVER_LOG_FILE="$MCP_DIR/.server.log"
@@ -45,15 +45,15 @@ fi
 # Start server
 echo "Starting MCP server (binary mode)..."
 info "Binary: $MTV_BINARY"
-info "Host:   $MCP_SSE_HOST"
-info "Port:   $MCP_SSE_PORT"
+info "Host:   $MCP_HTTP_HOST"
+info "Port:   $MCP_HTTP_PORT"
 info "API:    $KUBE_API_URL"
 
 # Start server in background with no ambient credentials
 KUBECONFIG=/dev/null "$MTV_BINARY" mcp-server \
-    --sse \
-    --port "$MCP_SSE_PORT" \
-    --host "$MCP_SSE_HOST" \
+    --http \
+    --port "$MCP_HTTP_PORT" \
+    --host "$MCP_HTTP_HOST" \
     --server "$KUBE_API_URL" \
     --insecure-skip-tls-verify \
     > "$SERVER_LOG_FILE" 2>&1 &
@@ -71,7 +71,7 @@ if ! is_process_running "$SERVER_PID"; then
 fi
 
 # Wait for server to start listening
-if ! wait_for_server "$MCP_SSE_HOST" "$MCP_SSE_PORT" 30 "Server"; then
+if ! wait_for_server "$MCP_HTTP_HOST" "$MCP_HTTP_PORT" 30 "Server"; then
     error "Server is running but not accepting connections"
     info "Check log: $SERVER_LOG_FILE"
     kill "$SERVER_PID" 2>/dev/null || true
@@ -81,5 +81,5 @@ fi
 
 success "Server started successfully (PID $SERVER_PID)"
 info "Log: $SERVER_LOG_FILE"
-info "URL: http://$MCP_SSE_HOST:$MCP_SSE_PORT/sse"
+info "URL: http://$MCP_HTTP_HOST:$MCP_HTTP_PORT/mcp"
 exit 0

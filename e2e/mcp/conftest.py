@@ -1,7 +1,7 @@
 """
 Root conftest -- shared fixtures, helpers, and constants for MCP E2E tests.
 
-Tests assume a running MCP server is available at MCP_SSE_URL.
+Tests assume a running MCP server is available at MCP_HTTP_URL.
 
 Server lifecycle management (start/stop) is handled separately via make
 targets, allowing flexible deployment:
@@ -22,10 +22,11 @@ import subprocess
 import time
 import urllib.parse
 
+import httpx
 import pytest
 import pytest_asyncio
 from mcp import ClientSession
-from mcp.client.sse import sse_client
+from mcp.client.streamable_http import streamable_http_client
 
 # ---------------------------------------------------------------------------
 # Environment -- load .env file if present, otherwise use system env vars
@@ -73,11 +74,11 @@ VSPHERE_URL: str = _raw_govc
 # ---------------------------------------------------------------------------
 # MCP server settings -- tests connect to a running server
 # ---------------------------------------------------------------------------
-MCP_SSE_HOST: str = os.environ.get("MCP_SSE_HOST", "127.0.0.1")
-MCP_SSE_PORT: str = os.environ.get("MCP_SSE_PORT", "18443")
-MCP_SSE_URL: str = os.environ.get(
-    "MCP_SSE_URL",
-    f"http://{MCP_SSE_HOST}:{MCP_SSE_PORT}/sse"
+MCP_HTTP_HOST: str = os.environ.get("MCP_HTTP_HOST", "127.0.0.1")
+MCP_HTTP_PORT: str = os.environ.get("MCP_HTTP_PORT", "18443")
+MCP_HTTP_URL: str = os.environ.get(
+    "MCP_HTTP_URL",
+    f"http://{MCP_HTTP_HOST}:{MCP_HTTP_PORT}/mcp"
 )
 
 # Server management settings (used by make targets, not by tests)
@@ -160,7 +161,7 @@ async def call_tool(
     *,
     verbose: int | None = None,
 ) -> dict:
-    """Call an MCP tool via the SSE session and return the parsed response.
+    """Call an MCP tool via the session and return the parsed response.
 
     The kubectl-mtv MCP server returns a JSON envelope::
 
@@ -351,12 +352,12 @@ def _delete_namespace(name: str) -> None:
 # Helper: verify MCP server is reachable
 # ---------------------------------------------------------------------------
 def _verify_server_reachable() -> None:
-    """Verify the MCP SSE server is reachable at the configured URL.
+    """Verify the MCP HTTP server is reachable at the configured URL.
     
     Raises:
         RuntimeError: If the server is not reachable.
     """
-    parsed = urllib.parse.urlparse(MCP_SSE_URL)
+    parsed = urllib.parse.urlparse(MCP_HTTP_URL)
     host = parsed.hostname or "127.0.0.1"
     port = parsed.port or 80
     
@@ -364,11 +365,11 @@ def _verify_server_reachable() -> None:
         s.settimeout(5)
         if s.connect_ex((host, port)) != 0:
             raise RuntimeError(
-                f"MCP server is not reachable at {MCP_SSE_URL}\n"
+                f"MCP server is not reachable at {MCP_HTTP_URL}\n"
                 f"Please start the server first:\n"
                 f"  make server-start          # Start binary mode server\n"
                 f"  make server-start-image    # Start container mode server\n"
-                f"Or use an existing server by setting MCP_SSE_URL"
+                f"Or use an existing server by setting MCP_HTTP_URL"
             )
 
 
@@ -386,28 +387,33 @@ def mcp_server_process():
       - make server-stop
     """
     _verify_server_reachable()
-    print(f"\n[Connected] MCP server at {MCP_SSE_URL}")
+    print(f"\n[Connected] MCP server at {MCP_HTTP_URL}")
     yield None  # No process to manage
     # No teardown - server lifecycle is managed externally
 
 
 # ---------------------------------------------------------------------------
-# Fixture: MCP client session over SSE (session-scoped)
+# Fixture: MCP client session over Streamable HTTP (session-scoped)
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Helper: suppress harmless teardown race in streamable_http_client
 # ---------------------------------------------------------------------------
 @contextlib.asynccontextmanager
-async def _safe_sse_client(*args, **kwargs):
-    """Wrap ``sse_client`` and suppress the harmless anyio cancel-scope error.
+async def _safe_streamable_client(*args, **kwargs):
+    """Wrap ``streamable_http_client`` and suppress the anyio cancel-scope error.
 
     During pytest-asyncio session-scoped fixture teardown the event loop
-    may finalize the ``sse_client`` context manager in a different task
-    than the one that created it, causing::
+    may finalize the context manager in a different task than the one that
+    created it, causing::
 
         RuntimeError: Attempted to exit cancel scope in a different task …
 
     This wrapper catches that specific error so the test run exits cleanly.
     """
     try:
-        async with sse_client(*args, **kwargs) as streams:
+        async with streamable_http_client(*args, **kwargs) as streams:
             yield streams
     except RuntimeError as exc:
         if "cancel scope" in str(exc):
@@ -423,25 +429,30 @@ async def _safe_sse_client(*args, **kwargs):
 # ---------------------------------------------------------------------------
 @contextlib.asynccontextmanager
 async def _make_mcp_session(headers=None):
-    """Create an MCP SSE session with arbitrary headers.
+    """Create an MCP session via Streamable HTTP with arbitrary headers.
 
     Used by the ``mcp_session`` fixture (with the real token) and by
     auth tests (with a bad or missing token).
     """
-    async with _safe_sse_client(
-        MCP_SSE_URL, headers=headers, timeout=30, sse_read_timeout=120,
-    ) as (read_stream, write_stream):
-        async with ClientSession(read_stream, write_stream) as session:
-            await session.initialize()
-            yield session
+    async with httpx.AsyncClient(
+        headers=headers or {},
+        timeout=httpx.Timeout(30, read=120),
+    ) as http_client:
+        async with _safe_streamable_client(
+            url=MCP_HTTP_URL,
+            http_client=http_client,
+        ) as (read_stream, write_stream, _get_session_id):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+                yield session
 
 
 @pytest_asyncio.fixture(loop_scope="session", scope="session")
 async def mcp_session(mcp_server_process):
-    """Connect to the running MCP SSE server and yield a ClientSession.
+    """Connect to the running MCP HTTP server and yield a ClientSession.
 
     Authentication is sent via the ``Authorization: Bearer`` header on
-    every HTTP request — the server itself holds no token.
+    every HTTP request — providing fresh per-request auth.
     """
     headers = {"Authorization": f"Bearer {KUBE_TOKEN}"}
     async with _make_mcp_session(headers=headers) as session:

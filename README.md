@@ -253,7 +253,7 @@ make test-e2e-mcp-image MCP_IMAGE=quay.io/yaacov/kubectl-mtv-mcp-server
 make test-e2e-mcp
 
 # Run e2e tests against an already running server
-MCP_SSE_URL=http://localhost:8080/sse make test-e2e-mcp-external
+MCP_HTTP_URL=http://localhost:8080/mcp make test-e2e-mcp-external
 ```
 
 You can also set `MCP_IMAGE` in `e2e/mcp/.env` (see `e2e/mcp/env.example`) and

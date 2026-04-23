@@ -117,7 +117,7 @@ Support for custom automation through migration hooks:
 Advanced AI assistant integration for enhanced user experience. This is a kubectl-mtv-specific feature not available in standard Forklift:
 
 - **AI Assistant Access** - Provide Claude, Cursor IDE, and other MCP-compatible tools access to migration resources
-- **Multiple Server Modes** - Support for both stdio and SSE (Server-Sent Events) communication
+- **Multiple Server Modes** - Support for both stdio and HTTP (Streamable HTTP) communication
 - **Natural Language Queries** - Enable AI assistants to interpret and execute migration commands
 - **Intelligent Assistance** - AI-powered recommendations and troubleshooting support
 

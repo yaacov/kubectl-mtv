@@ -88,30 +88,27 @@ func HandleMTVRead(registry *discovery.Registry) func(context.Context, *mcp.Call
 
 ## Tool Registration
 
-In `cmd/mcpserver/mcpserver.go` `createMCPServerWithHeaderCapture()`:
+In `cmd/mcpserver/mcpserver.go` `createMCPServer()`:
 
 ```go
 // Read tools (always registered)
-tools.AddToolWithCoercion(server, tools.GetMTVReadTool(registry),
-    wrapWithHeaders(tools.HandleMTVRead(registry), capturedHeaders))
-mcp.AddTool(server, tools.GetMTVHelpTool(),
-    wrapWithHeaders(tools.HandleMTVHelp, capturedHeaders))
+tools.AddToolWithCoercion(server, tools.GetMTVReadTool(registry), tools.HandleMTVRead(registry))
+mcp.AddTool(server, tools.GetMTVHelpTool(), tools.HandleMTVHelp)
 
 // Write tool (skipped in read-only mode)
 if !readOnlyMode {
-    tools.AddToolWithCoercion(server, tools.GetMTVWriteTool(registry),
-        wrapWithHeaders(tools.HandleMTVWrite(registry), capturedHeaders))
+    tools.AddToolWithCoercion(server, tools.GetMTVWriteTool(registry), tools.HandleMTVWrite(registry))
 }
 ```
 
 - `AddToolWithCoercion` handles boolean coercion (string "true"/"false" -> bool). Use for tools with boolean flags.
 - `mcp.AddTool` is standard registration. Use when no coercion needed.
-- `wrapWithHeaders` injects HTTP auth headers for SSE mode.
+- In HTTP mode, the SDK populates `req.Extra.Header` per-request (no wrapper needed).
 
 ## Adding a New MCP Tool
 
 1. Create `pkg/mcp/tools/mtv_newtool.go` with input struct, `GetTool()`, and `HandleTool()`.
-2. Register in `cmd/mcpserver/mcpserver.go` `createMCPServerWithHeaderCapture()`.
+2. Register in `cmd/mcpserver/mcpserver.go` `createMCPServer()`.
 3. Add tests in `pkg/mcp/tools/mtv_newtool_test.go`.
 
 ## Key Utilities

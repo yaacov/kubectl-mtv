@@ -113,7 +113,7 @@ Dynamic tests (describe, get by name) discover resources at runtime and skip gra
 
 ## E2E MCP Tests (Python/pytest)
 
-Located in `e2e/mcp/`. These test the MCP server end-to-end via SSE.
+Located in `e2e/mcp/`. These test the MCP server end-to-end via Streamable HTTP.
 
 ### Structure
 
@@ -134,7 +134,7 @@ e2e/mcp/
 
 ### Key Fixtures (`conftest.py`)
 
-- `mcp_session` (session) -- SSE `ClientSession` with K8s auth
+- `mcp_session` (session) -- Streamable HTTP `ClientSession` using `MCP_HTTP_URL` with K8s auth
 - `mcp_server_process` (session) -- verifies server reachability
 - `cleanup_test_resources` (session, autouse) -- deletes test resources after suite
 
@@ -151,7 +151,7 @@ result = await call_tool(mcp_session, "mtv_read", {
 
 Required: `GOVC_URL`, `GOVC_USERNAME`, `GOVC_PASSWORD`, `KUBE_API_URL`, `KUBE_TOKEN`, `ESXI_HOST_NAME`, `COLD_VMS`, `WARM_VMS`, `NETWORK_PAIRS`, `STORAGE_PAIRS`.
 
-Optional: `MCP_SSE_URL` (default `http://127.0.0.1:18443/sse`).
+Optional: `MCP_HTTP_URL` (default `http://127.0.0.1:18443/mcp`).
 
 ### Running
 

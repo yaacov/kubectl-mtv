@@ -212,7 +212,7 @@ endif
 .PHONY: test-e2e-mcp-external
 test-e2e-mcp-external:
 	@echo "Running MCP e2e tests against external server..."
-	@echo "Make sure MCP_SSE_HOST/MCP_SSE_PORT or MCP_SSE_URL are configured in e2e/mcp/.env"
+	@echo "Make sure MCP_HTTP_HOST/MCP_HTTP_PORT or MCP_HTTP_URL are configured in e2e/mcp/.env"
 	cd e2e/mcp && $(MAKE) test
 
 ## test-cleanup: Clean up test namespaces
@@ -299,7 +299,7 @@ deploy-route:
 	@echo "Creating route to expose MCP server..."
 	oc apply -f deploy/mcp-route.yaml
 	@echo "Route created. Access URL:"
-	@oc get route kubectl-mtv-mcp-server -n openshift-mtv -o jsonpath='https://{.spec.host}/sse{"\n"}' 2>/dev/null || echo "  (route not ready yet)"
+	@oc get route kubectl-mtv-mcp-server -n openshift-mtv -o jsonpath='https://{.spec.host}/mcp{"\n"}' 2>/dev/null || echo "  (route not ready yet)"
 
 ## undeploy-route: Remove the external route for the MCP server
 .PHONY: undeploy-route

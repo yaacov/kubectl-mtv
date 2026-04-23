@@ -14,10 +14,10 @@ source "$SCRIPT_DIR/lib.sh"
 load_env "$MCP_DIR"
 
 # Configuration
-MCP_SSE_HOST="${MCP_SSE_HOST:-127.0.0.1}"
-MCP_SSE_PORT="${MCP_SSE_PORT:-18443}"
+MCP_HTTP_HOST="${MCP_HTTP_HOST:-127.0.0.1}"
+MCP_HTTP_PORT="${MCP_HTTP_PORT:-18443}"
 MCP_IMAGE="${MCP_IMAGE:-}"
-CONTAINER_NAME="mcp-e2e-${MCP_SSE_PORT}"
+CONTAINER_NAME="mcp-e2e-${MCP_HTTP_PORT}"
 
 # Validate required variables
 require_env KUBE_API_URL MCP_IMAGE
@@ -45,13 +45,13 @@ fi
 echo "Starting MCP server (container mode)..."
 info "Image:    $MCP_IMAGE"
 info "Engine:   $ENGINE"
-info "Host:     $MCP_SSE_HOST"
-info "Port:     $MCP_SSE_PORT"
+info "Host:     $MCP_HTTP_HOST"
+info "Port:     $MCP_HTTP_PORT"
 info "API:      $KUBE_API_URL"
 
 $ENGINE run -d \
     --name "$CONTAINER_NAME" \
-    -p "${MCP_SSE_HOST}:${MCP_SSE_PORT}:8080" \
+    -p "${MCP_HTTP_HOST}:${MCP_HTTP_PORT}:8080" \
     -e "MCP_KUBE_SERVER=${KUBE_API_URL}" \
     -e "MCP_KUBE_INSECURE=true" \
     -e "MCP_PORT=8080" \
@@ -68,13 +68,13 @@ if ! $ENGINE ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$
 fi
 
 # Wait for container to start listening
-if ! wait_for_server "$MCP_SSE_HOST" "$MCP_SSE_PORT" 30 "Container"; then
+if ! wait_for_server "$MCP_HTTP_HOST" "$MCP_HTTP_PORT" 30 "Container"; then
     error "Container is running but not accepting connections"
     info "Check logs: $ENGINE logs $CONTAINER_NAME"
     exit 1
 fi
 
 success "Container started successfully: $CONTAINER_NAME"
-info "URL:  http://$MCP_SSE_HOST:$MCP_SSE_PORT/sse"
+info "URL:  http://$MCP_HTTP_HOST:$MCP_HTTP_PORT/mcp"
 info "Logs: $ENGINE logs -f $CONTAINER_NAME"
 exit 0

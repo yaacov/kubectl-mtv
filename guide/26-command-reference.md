@@ -955,9 +955,9 @@ kubectl mtv mcp-server [flags]
 ```
 
 **Flags:**
-- `--sse`: Run in SSE (Server-Sent Events) mode over HTTP
-- `--port`: Port to listen on for SSE mode (default: 8080)
-- `--host`: Host address to bind to for SSE mode (default: 127.0.0.1)
+- `--http`: Run in HTTP mode using Streamable HTTP transport
+- `--port`: Port to listen on for HTTP mode (default: 8080)
+- `--host`: Host address to bind to for HTTP mode (default: 127.0.0.1)
 - `--cert-file`: Path to TLS certificate file
 - `--key-file`: Path to TLS private key file
 - `--output-format`: Default output format for commands: markdown, text (table), or json (default: markdown)
@@ -969,7 +969,7 @@ kubectl mtv mcp-server [flags]
 
 **Modes:**
 - **Default (Stdio)**: For direct AI assistant integration
-- **SSE Mode**: HTTP server mode with optional TLS
+- **HTTP Mode**: Streamable HTTP server with optional TLS and per-request auth
 
 **Examples:**
 ```bash
@@ -977,15 +977,15 @@ kubectl mtv mcp-server [flags]
 kubectl mtv mcp-server
 
 # HTTP server mode
-kubectl mtv mcp-server --sse --port 8080
+kubectl mtv mcp-server --http --port 8080
 
 # HTTPS server mode with TLS
-kubectl mtv mcp-server --sse --port 8443 \
+kubectl mtv mcp-server --http --port 8443 \
   --cert-file /path/to/cert.pem \
   --key-file /path/to/key.pem
 
 # Read-only mode with custom Kubernetes API
-kubectl mtv mcp-server --sse --read-only \
+kubectl mtv mcp-server --http --read-only \
   --server https://api.cluster.example.com:6443 \
   --token sha256~abc123
 ```

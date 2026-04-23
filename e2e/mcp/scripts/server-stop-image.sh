@@ -14,8 +14,8 @@ source "$SCRIPT_DIR/lib.sh"
 load_env "$MCP_DIR"
 
 # Configuration
-MCP_SSE_PORT="${MCP_SSE_PORT:-18443}"
-CONTAINER_NAME="mcp-e2e-${MCP_SSE_PORT}"
+MCP_HTTP_PORT="${MCP_HTTP_PORT:-18443}"
+CONTAINER_NAME="mcp-e2e-${MCP_HTTP_PORT}"
 
 # Detect container engine
 if ! ENGINE=$(detect_container_engine); then

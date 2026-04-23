@@ -68,7 +68,7 @@ If you have a server running elsewhere (e.g., in production, different machine):
 
 ```bash
 # Run tests against remote server
-MCP_SSE_URL=http://remote-host:8080/sse make test
+MCP_HTTP_URL=http://remote-host:8080/mcp make test
 ```
 
 ## Server Management
@@ -180,9 +180,9 @@ STORAGE_PAIRS=datastore-1:storageclass-1
 
 ```bash
 # Server Connection
-MCP_SSE_HOST=127.0.0.1               # Server bind address
-MCP_SSE_PORT=18443                   # Server port
-MCP_SSE_URL=http://...               # Full URL (overrides host/port)
+MCP_HTTP_HOST=127.0.0.1              # Server bind address
+MCP_HTTP_PORT=18443                  # Server port
+MCP_HTTP_URL=http://...              # Full URL (overrides host/port)
 
 # Server Management
 MTV_BINARY=../../kubectl-mtv         # Binary location
@@ -202,7 +202,7 @@ Runs the local `kubectl-mtv` binary:
 
 ```bash
 make server-start
-# Server: ../../kubectl-mtv mcp-server --sse --port 18443
+# Server: ../../kubectl-mtv mcp-server --http --port 18443
 ```
 
 **Use when:**
@@ -228,7 +228,7 @@ make server-start-image MCP_IMAGE=quay.io/yaacov/kubectl-mtv-mcp-server:latest
 Connects to an already-running server:
 
 ```bash
-MCP_SSE_URL=http://remote-host:8080/sse make test
+MCP_HTTP_URL=http://remote-host:8080/mcp make test
 ```
 
 **Use when:**
@@ -246,7 +246,7 @@ lsof -i :18443
 netstat -tulpn | grep 18443
 
 # Try a different port
-export MCP_SSE_PORT=19443
+export MCP_HTTP_PORT=19443
 make server-start
 ```
 
