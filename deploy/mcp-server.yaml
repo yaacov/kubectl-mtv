@@ -1,6 +1,6 @@
 # kubectl-mtv MCP Server — OpenShift Deployment
 #
-# Deploys the MCP server Deployment + Service in SSE mode on an OpenShift cluster.
+# Deploys the MCP server Deployment + Service in HTTP mode on an OpenShift cluster.
 # Lightspeed integration is handled separately (see deploy/olsconfig-patch.yaml).
 #
 # Quick start:
@@ -14,7 +14,7 @@
 #
 #   1. User interacts with Lightspeed in the OpenShift console.
 #   2. Lightspeed sends "Authorization: Bearer <user-token>" to the MCP server.
-#   3. The MCP server extracts the token from the header.
+#   3. The MCP server extracts the token from the HTTP POST headers (per-request).
 #   4. kubectl-mtv is called with --server https://kubernetes.default.svc --token <user-token>.
 #   5. The Kubernetes API authenticates and authorizes using that user's identity.
 #
@@ -25,7 +25,7 @@
 #   The Service uses plain HTTP communication.
 #   The Route provides TLS termination at the edge (ingress router).
 #
-# SSE endpoint: http://kubectl-mtv-mcp-server.openshift-mtv.svc:8080/sse
+# Streamable HTTP endpoint: http://kubectl-mtv-mcp-server.openshift-mtv.svc:8080/mcp
 # ---
 
 apiVersion: v1

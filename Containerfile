@@ -46,7 +46,7 @@ ARG TARGETARCH=amd64
 COPY --from=builder --chmod=755 /build/kubectl-mtv /usr/local/bin/kubectl-mtv
 
 # --- Environment variables ---
-# SSE server settings
+# HTTP server settings
 ENV MCP_HOST="0.0.0.0" \
     MCP_PORT="8080" \
     MCP_OUTPUT_FORMAT="markdown" \
@@ -58,7 +58,7 @@ ENV MCP_HOST="0.0.0.0" \
 ENV MCP_CERT_FILE="" \
     MCP_KEY_FILE=""
 
-# Kubernetes authentication (optional - override via HTTP headers in SSE mode)
+# Kubernetes authentication (optional - override via HTTP headers per-request)
 ENV MCP_KUBE_SERVER="" \
     MCP_KUBE_TOKEN="" \
     MCP_KUBE_INSECURE=""
@@ -69,7 +69,7 @@ WORKDIR /home/mtv
 EXPOSE 8080
 
 ENTRYPOINT ["/bin/sh", "-c", "\
-  exec kubectl-mtv mcp-server --sse \
+  exec kubectl-mtv mcp-server --http \
     --host \"${MCP_HOST}\" \
     --port \"${MCP_PORT}\" \
     --output-format \"${MCP_OUTPUT_FORMAT}\" \
@@ -85,7 +85,7 @@ ENTRYPOINT ["/bin/sh", "-c", "\
 # Labels at the end for better readability
 LABEL name="kubectl-mtv-mcp-server" \
       summary="kubectl-mtv MCP server for AI-assisted VM migrations" \
-      description="MCP (Model Context Protocol) server exposing kubectl-mtv migration toolkit for AI assistants. Runs in SSE mode over HTTP." \
+      description="MCP (Model Context Protocol) server exposing kubectl-mtv migration toolkit for AI assistants. Runs in HTTP mode using Streamable HTTP transport." \
       io.k8s.display-name="kubectl-mtv MCP Server" \
-      io.k8s.description="MCP server for kubectl-mtv providing AI-assisted VM migration capabilities via SSE transport." \
+      io.k8s.description="MCP server for kubectl-mtv providing AI-assisted VM migration capabilities via Streamable HTTP transport." \
       maintainer="Yaacov Zamir <kobi.zamir@gmail.com>"

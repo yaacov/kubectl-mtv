@@ -206,8 +206,8 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
 
 22. **[Model Context Protocol (MCP) Server Integration](guide/22-model-context-protocol-mcp-server-integration)**
     *   Overview: Providing AI assistants (Claude, Cursor IDE) access to migration resources.
-    *   Server Modes (Stdio Mode vs. SSE Mode).
-    *   Command Line Options (`--sse`, `--host`, `--port`).
+    *   Server Modes (Stdio Mode vs. HTTP Mode).
+    *   Command Line Options (`--http`, `--host`, `--port`).
     *   **How-To: Integrating with AI Assistants** (Claude Desktop, Cursor IDE).
 
 23. **[Integration with KubeVirt Tools](guide/23-integration-with-kubevirt-tools)**
@@ -240,7 +240,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
     *   **Plan Lifecycle Commands** (start, cancel, cutover, archive, unarchive).
     *   **Modification Commands** (patch plan/planvm/mapping/provider).
     *   **Health and Settings Commands** (health checks, settings get/set/unset).
-    *   **AI Integration Commands** (mcp-server with stdio and SSE modes).
+    *   **AI Integration Commands** (mcp-server with stdio and HTTP modes).
     *   **Utility Commands** (version, help with machine-readable output and help topics).
     *   **Query Language Reference** (TSL operators, functions, examples).
     *   **KARL Syntax Reference** (affinity rules, topology keys, examples).

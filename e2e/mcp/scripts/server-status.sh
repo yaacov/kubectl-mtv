@@ -14,10 +14,10 @@ source "$SCRIPT_DIR/lib.sh"
 load_env "$MCP_DIR"
 
 # Configuration
-MCP_SSE_HOST="${MCP_SSE_HOST:-127.0.0.1}"
-MCP_SSE_PORT="${MCP_SSE_PORT:-18443}"
+MCP_HTTP_HOST="${MCP_HTTP_HOST:-127.0.0.1}"
+MCP_HTTP_PORT="${MCP_HTTP_PORT:-18443}"
 SERVER_PID_FILE="$MCP_DIR/.server.pid"
-CONTAINER_NAME="mcp-e2e-${MCP_SSE_PORT}"
+CONTAINER_NAME="mcp-e2e-${MCP_HTTP_PORT}"
 
 RUNNING=0
 
@@ -28,7 +28,7 @@ if [ -f "$SERVER_PID_FILE" ]; then
         success "Binary server running"
         info "PID:  $PID"
         info "Log:  $MCP_DIR/.server.log"
-        info "URL:  http://$MCP_SSE_HOST:$MCP_SSE_PORT/sse"
+        info "URL:  http://$MCP_HTTP_HOST:$MCP_HTTP_PORT/mcp"
         RUNNING=1
     else
         error "Binary server not running (stale PID file)"
@@ -43,7 +43,7 @@ if ENGINE=$(detect_container_engine); then
         success "Container server running"
         info "Name:   $CONTAINER_NAME"
         info "Status: $STATUS"
-        info "URL:    http://$MCP_SSE_HOST:$MCP_SSE_PORT/sse"
+        info "URL:    http://$MCP_HTTP_HOST:$MCP_HTTP_PORT/mcp"
         info "Logs:   $ENGINE logs -f $CONTAINER_NAME"
         RUNNING=1
     fi
@@ -61,10 +61,10 @@ fi
 # Check if server is actually listening
 echo ""
 echo "Connectivity check..."
-if check_port_listening "$MCP_SSE_HOST" "$MCP_SSE_PORT"; then
-    success "Server is listening on $MCP_SSE_HOST:$MCP_SSE_PORT"
+if check_port_listening "$MCP_HTTP_HOST" "$MCP_HTTP_PORT"; then
+    success "Server is listening on $MCP_HTTP_HOST:$MCP_HTTP_PORT"
 else
-    error "Server is not listening on $MCP_SSE_HOST:$MCP_SSE_PORT"
+    error "Server is not listening on $MCP_HTTP_HOST:$MCP_HTTP_PORT"
     exit 1
 fi
 

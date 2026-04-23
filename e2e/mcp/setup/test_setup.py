@@ -6,8 +6,8 @@ import pytest
 
 from conftest import (
     KUBE_API_URL,
-    MCP_SSE_PORT,
-    MCP_SSE_URL,
+    MCP_HTTP_PORT,
+    MCP_HTTP_URL,
     TEST_NAMESPACE,
     _create_namespace,
     _delete_namespace,
@@ -19,12 +19,12 @@ from conftest import (
 
 @pytest.mark.order(1)
 async def test_mcp_server_running(mcp_session):
-    """Verify the MCP SSE server is up and the client session is connected."""
+    """Verify the MCP HTTP server is up and the client session is connected."""
     result = await call_tool(mcp_session, "mtv_help", {"command": "get plan"})
     assert result, "MCP server returned empty response to mtv_help"
 
-    print(f"\n  MCP SSE server responding on port {MCP_SSE_PORT}")
-    print(f"  Client connected to {MCP_SSE_URL}")
+    print(f"\n  MCP HTTP server responding on port {MCP_HTTP_PORT}")
+    print(f"  Client connected to {MCP_HTTP_URL}")
 
 
 @pytest.mark.order(2)

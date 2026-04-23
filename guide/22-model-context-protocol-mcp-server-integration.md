@@ -25,7 +25,7 @@ The MCP server integrates with various AI platforms:
 - **Claude Desktop**: Direct integration via configuration file or CLI
 - **Cursor IDE**: Built-in MCP support for development workflows  
 - **Custom Tools**: Any MCP-compatible client using the MCP SDK
-- **Web Applications**: HTTP-based integrations via SSE mode
+- **Web Applications**: HTTP-based integrations via Streamable HTTP mode
 
 ### Security Model
 
@@ -64,49 +64,50 @@ Starting kubectl-mtv MCP server in stdio mode
 Server is ready and listening for MCP protocol messages on stdin/stdout
 ```
 
-### SSE Mode (HTTP Server)
+### HTTP Mode (Streamable HTTP)
 
-Server-Sent Events (SSE) mode runs an HTTP server providing MCP access over HTTP. This enables web-based integrations and remote access scenarios.
+HTTP mode runs an HTTP server using the Streamable HTTP transport defined by the MCP specification. This enables web-based integrations and remote access scenarios with true per-request authentication.
 
-#### Basic SSE Setup
+#### Basic HTTP Setup
 
 ```bash
-# Start MCP server in SSE mode
-kubectl mtv mcp-server --sse --host 127.0.0.1 --port 8080
+# Start MCP server in HTTP mode
+kubectl mtv mcp-server --http --host 127.0.0.1 --port 8080
 ```
 
-#### Advanced SSE Configuration
+#### Advanced HTTP Configuration
 
 ```bash
-# SSE mode with custom host and port
-kubectl mtv mcp-server --sse --host 0.0.0.0 --port 9090
+# HTTP mode with custom host and port
+kubectl mtv mcp-server --http --host 0.0.0.0 --port 9090
 
-# SSE mode with TLS encryption
-kubectl mtv mcp-server --sse \
+# HTTP mode with TLS encryption
+kubectl mtv mcp-server --http \
   --host 0.0.0.0 \
   --port 8443 \
   --cert-file /path/to/server.crt \
   --key-file /path/to/server.key
 ```
 
-#### SSE Mode Characteristics
+#### HTTP Mode Characteristics
 
-- **Communication**: HTTP/HTTPS with Server-Sent Events
-- **Security**: Optional TLS encryption, bearer token authentication
+- **Communication**: HTTP/HTTPS with Streamable HTTP transport (MCP spec 2025-03-26)
+- **Security**: Optional TLS encryption, per-request bearer token authentication
 - **Performance**: Network-based with HTTP overhead
 - **Use Cases**: Web applications, remote access, multi-user scenarios
-- **Endpoints**: `/sse` endpoint for MCP protocol communication
+- **Endpoint**: `/mcp` endpoint for MCP protocol communication
+- **Authentication**: Each HTTP POST carries its own headers, enabling token rotation
 
-#### SSE Mode HTTP Headers
+#### HTTP Mode HTTP Headers
 
-In SSE mode, the following HTTP headers are supported for Kubernetes authentication:
+In HTTP mode, the following HTTP headers are supported for per-request Kubernetes authentication:
 
 | Header | Description |
 |--------|-------------|
 | `Authorization: Bearer <token>` | Kubernetes authentication token (passed to kubectl via `--token` flag) |
 | `X-Kubernetes-Server: <url>` | Kubernetes API server URL (passed to kubectl via `--server` flag) |
 
-If headers are not provided, the server falls back to the default kubeconfig behavior.
+Each POST request carries its own headers, providing true per-request authentication. If headers are not provided, the server falls back to the default kubeconfig behavior.
 
 ## Command Line Options
 
@@ -116,9 +117,9 @@ All MCP server flags are verified from the implementation:
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
-| `--sse` | boolean | `false` | Run in SSE (Server-Sent Events) mode over HTTP |
-| `--host` | string | `127.0.0.1` | Host address to bind to for SSE mode |
-| `--port` | string | `8080` | Port to listen on for SSE mode |
+| `--http` | boolean | `false` | Run in HTTP mode using Streamable HTTP transport |
+| `--host` | string | `127.0.0.1` | Host address to bind to for HTTP mode |
+| `--port` | string | `8080` | Port to listen on for HTTP mode |
 | `--cert-file` | string | `""` | Path to TLS certificate file (enables TLS when used with --key-file) |
 | `--key-file` | string | `""` | Path to TLS private key file (enables TLS when used with --cert-file) |
 | `--output-format` | string | `text` | Default output format for commands: `text` (table) or `json` |
@@ -135,12 +136,12 @@ All MCP server flags are verified from the implementation:
 kubectl mtv mcp-server
 
 # Development with HTTP access
-kubectl mtv mcp-server --sse --host 127.0.0.1 --port 8080
+kubectl mtv mcp-server --http --host 127.0.0.1 --port 8080
 ```
 
 #### Remote Cluster Authentication
 
-Use `--server` and `--token` to connect to a remote cluster without relying on a local kubeconfig. These flags work in both stdio and SSE modes:
+Use `--server` and `--token` to connect to a remote cluster without relying on a local kubeconfig. These flags work in both stdio and HTTP modes:
 
 ```bash
 # Stdio mode with explicit credentials (e.g., for AI assistant integration)
@@ -148,26 +149,26 @@ kubectl mtv mcp-server \
   --server https://api.prod-cluster.example.com:6443 \
   --token "$SERVICE_ACCOUNT_TOKEN"
 
-# SSE mode with explicit credentials
-kubectl mtv mcp-server --sse \
+# HTTP mode with explicit credentials
+kubectl mtv mcp-server --http \
   --server https://api.prod-cluster.example.com:6443 \
   --token "$SERVICE_ACCOUNT_TOKEN"
 ```
 
-**Credential Precedence**: HTTP headers (per-request, SSE only) > CLI flags (`--server`/`--token`) > kubeconfig (implicit).
+**Credential Precedence**: HTTP headers (per-request) > CLI flags (`--server`/`--token`) > kubeconfig (implicit).
 
 #### Production Mode
 
 ```bash
 # Production with TLS encryption
-kubectl mtv mcp-server --sse \
+kubectl mtv mcp-server --http \
   --host 0.0.0.0 \
   --port 443 \
   --cert-file /etc/ssl/certs/mcp-server.crt \
   --key-file /etc/ssl/private/mcp-server.key
 
 # Production with TLS and explicit cluster credentials
-kubectl mtv mcp-server --sse \
+kubectl mtv mcp-server --http \
   --host 0.0.0.0 \
   --port 443 \
   --cert-file /etc/ssl/certs/mcp-server.crt \
@@ -176,7 +177,7 @@ kubectl mtv mcp-server --sse \
   --token "$SERVICE_ACCOUNT_TOKEN"
 
 # Production with custom port and security
-kubectl mtv mcp-server --sse \
+kubectl mtv mcp-server --http \
   --host 10.0.0.100 \
   --port 9443 \
   --cert-file /secure/certificates/server.crt \
@@ -186,17 +187,16 @@ kubectl mtv mcp-server --sse \
 #### Testing and Integration
 
 ```bash
-# Test connectivity
-curl -N http://127.0.0.1:8080/sse
+# Test connectivity (POST to the /mcp endpoint)
+curl -X POST http://127.0.0.1:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"initialize","id":1,"params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
 
 # Test with authentication token
-curl -N -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8080/sse
-
-# Test with token and specific API server
-curl -N \
+curl -X POST http://127.0.0.1:8080/mcp \
+  -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
-  -H "X-Kubernetes-Server: https://api.example.com:6443" \
-  http://127.0.0.1:8080/sse
+  -d '{"jsonrpc":"2.0","method":"initialize","id":1,"params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
 
 # Validate TLS configuration
 openssl s_client -connect 127.0.0.1:8443 -servername mcp-server
@@ -392,49 +392,60 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-#### Python MCP Client (SSE Mode)
+#### Python MCP Client (HTTP Mode)
 
 ```python
 #!/usr/bin/env python3
 """
-HTTP-based MCP client for kubectl-mtv integration
+HTTP-based MCP client for kubectl-mtv integration using Streamable HTTP
 """
 
 import asyncio
 import json
 import os
-from mcp import SSEClient, ClientSession
+
+import httpx
+from mcp import ClientSession
+from mcp.client.streamable_http import streamable_http_client
 
 async def main():
     # Get authentication credentials
     token = os.getenv("KUBERNETES_TOKEN")
-    server = os.getenv("KUBERNETES_SERVER")  # Optional: API server URL
-    
-    # Build headers for authentication
+    server = os.getenv("KUBERNETES_SERVER")
+
+    # Build headers for per-request authentication
     headers = {}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     if server:
         headers["X-Kubernetes-Server"] = server
-    
-    # Create SSE client
-    client = SSEClient(
-        url="http://127.0.0.1:8080/sse",
-        headers=headers if headers else None
-    )
-    
-    async with client:
-        session = await client.create_session()
-        
-        # Monitor migration plans
-        result = await session.call_tool(
-            "get_plans",
-            arguments={"watch": True}
-        )
-        
-        print("Migration plans:", json.dumps(result.content, indent=2))
 
-# Run the client
+    # Create HTTP client with auth headers
+    async with httpx.AsyncClient(
+        headers=headers,
+        timeout=httpx.Timeout(30, read=300),
+    ) as http_client:
+        async with streamable_http_client(
+            url="http://127.0.0.1:8080/mcp",
+            http_client=http_client,
+        ) as (read_stream, write_stream, _get_session_id):
+            async with ClientSession(read_stream, write_stream) as session:
+                await session.initialize()
+
+                # List available tools
+                tools = await session.list_tools()
+                print("Available tools:", [t.name for t in tools.tools])
+
+                # Monitor migration plans
+                result = await session.call_tool(
+                    "mtv_read",
+                    arguments={
+                        "command": "get plan",
+                        "flags": {"namespace": "migrations"},
+                    },
+                )
+                print("Migration plans:", result)
+
 if __name__ == "__main__":
     asyncio.run(main())
 ```
@@ -442,8 +453,9 @@ if __name__ == "__main__":
 #### JavaScript/TypeScript Integration
 
 ```typescript
-// MCP client for web applications
-import { SSEClient, ClientSession } from '@modelcontextprotocol/sdk';
+// MCP client for web applications using Streamable HTTP
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
 interface KubeCredentials {
     token?: string;
@@ -451,75 +463,66 @@ interface KubeCredentials {
 }
 
 class MigrationDashboard {
-    private client: SSEClient;
-    private session: ClientSession | null = null;
+    private client: Client;
+    private serverUrl: string;
+    private creds?: KubeCredentials;
 
     constructor(serverUrl: string, creds?: KubeCredentials) {
-        // Build headers for Kubernetes authentication
-        const headers: Record<string, string> = {};
-        if (creds?.token) {
-            headers['Authorization'] = `Bearer ${creds.token}`;
-        }
-        if (creds?.server) {
-            headers['X-Kubernetes-Server'] = creds.server;
-        }
-        
-        this.client = new SSEClient({
-            url: serverUrl,
-            headers: Object.keys(headers).length > 0 ? headers : undefined
+        this.serverUrl = serverUrl;
+        this.creds = creds;
+        this.client = new Client({
+            name: 'migration-dashboard',
+            version: '1.0.0',
         });
     }
 
     async connect(): Promise<void> {
-        await this.client.connect();
-        this.session = await this.client.createSession();
+        // Build headers for Kubernetes authentication
+        const headers: Record<string, string> = {};
+        if (this.creds?.token) {
+            headers['Authorization'] = `Bearer ${this.creds.token}`;
+        }
+        if (this.creds?.server) {
+            headers['X-Kubernetes-Server'] = this.creds.server;
+        }
+
+        const transport = new StreamableHTTPClientTransport(
+            new URL(this.serverUrl),
+            { requestInit: { headers } }
+        );
+        await this.client.connect(transport);
     }
 
-    async getProviders(): Promise<any[]> {
-        if (!this.session) throw new Error("Not connected");
-        
-        const result = await this.session.callTool(
-            "get_providers",
-            { namespace: "migrations" }
-        );
-        
-        return result.content;
+    async getProviders(): Promise<any> {
+        return await this.client.callTool({
+            name: 'mtv_read',
+            arguments: {
+                command: 'get provider',
+                flags: { namespace: 'migrations' },
+            },
+        });
     }
 
     async createPlan(planConfig: any): Promise<any> {
-        if (!this.session) throw new Error("Not connected");
-        
-        const result = await this.session.callTool(
-            "create_plan",
-            planConfig
-        );
-        
-        return result.content;
-    }
-
-    async monitorMigration(planName: string): Promise<void> {
-        if (!this.session) throw new Error("Not connected");
-        
-        // Watch migration progress
-        await this.session.callTool(
-            "watch_plan",
-            { name: planName, namespace: "migrations" }
-        );
+        return await this.client.callTool({
+            name: 'mtv_write',
+            arguments: planConfig,
+        });
     }
 }
 
 // Usage
 const dashboard = new MigrationDashboard(
-    "https://mcp-server.company.com:8443/sse",
+    'https://mcp-server.company.com:8443/mcp',
     {
         token: process.env.KUBERNETES_TOKEN,
-        server: process.env.KUBERNETES_SERVER  // Optional: for remote cluster access
+        server: process.env.KUBERNETES_SERVER,
     }
 );
 
 await dashboard.connect();
 const providers = await dashboard.getProviders();
-console.log("Available providers:", providers);
+console.log('Available providers:', providers);
 ```
 
 ## AI-Assisted Migration Workflows
@@ -656,54 +659,65 @@ kubectl auth whoami
 kubectl mtv mcp-server
 ```
 
-### Token-Based Authentication (SSE Mode)
+### Token-Based Authentication (HTTP Mode)
+
+In HTTP mode, each POST request carries its own authentication headers, providing true per-request auth. This means token rotation works seamlessly -- there is no stale token problem.
 
 ```bash
 # Generate service account token
 kubectl create serviceaccount mcp-user -n migrations
 kubectl create token mcp-user -n migrations --duration=24h
 
-# Use token with HTTP client
-curl -N -H "Authorization: Bearer $TOKEN" \
-  http://127.0.0.1:8080/sse
+# Test with curl (POST to /mcp endpoint)
+curl -X POST http://127.0.0.1:8080/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 
-# Use token with specific API server (for remote cluster access)
-curl -N \
+# Test with token and specific API server
+curl -X POST http://127.0.0.1:8080/mcp \
+  -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -H "X-Kubernetes-Server: https://api.example.com:6443" \
-  http://127.0.0.1:8080/sse
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 ```
 
 #### Header Authentication Details
 
-The SSE mode supports two HTTP headers for Kubernetes authentication:
+The HTTP mode supports two HTTP headers for Kubernetes authentication:
 
 **Authorization Header**
 ```bash
 # Extract token from service account
 TOKEN=$(kubectl create token mcp-user -n migrations)
 
-# Use with curl
-curl -N -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8080/sse
+# Use with curl (each request carries its own token)
+curl -X POST http://127.0.0.1:8080/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 
 # Use with service account token from pod
-curl -N \
+curl -X POST http://127.0.0.1:8080/mcp \
+  -H "Content-Type: application/json" \
   -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
-  http://127.0.0.1:8080/sse
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 ```
 
 **X-Kubernetes-Server Header**
 ```bash
 # Connect to a specific Kubernetes API server
-curl -N \
+curl -X POST http://127.0.0.1:8080/mcp \
+  -H "Content-Type: application/json" \
   -H "X-Kubernetes-Server: https://kubernetes.default.svc" \
-  http://127.0.0.1:8080/sse
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 
 # Combine with authentication for remote cluster access
-curl -N \
+curl -X POST http://127.0.0.1:8080/mcp \
+  -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -H "X-Kubernetes-Server: https://remote-cluster.example.com:6443" \
-  http://127.0.0.1:8080/sse
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 ```
 
 **Fallback Behavior**
@@ -777,8 +791,10 @@ ps aux | grep "kubectl.*mtv.*mcp-server"
 # Test stdio communication
 echo '{"method": "ping"}' | kubectl mtv mcp-server
 
-# Test SSE endpoint
-curl -v http://127.0.0.1:8080/sse
+# Test HTTP endpoint
+curl -X POST http://127.0.0.1:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"initialize","id":1,"params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
 ```
 
 #### Authentication Issues
@@ -804,7 +820,7 @@ top -p $(pgrep -f "kubectl.*mtv.*mcp-server")
 # Increase verbosity for debugging
 kubectl mtv mcp-server -v=3
 
-# Check for network issues (SSE mode)
+# Check for network issues (HTTP mode)
 netstat -tlnp | grep 8080
 ```
 
@@ -866,7 +882,7 @@ Configure these in your LLM hosting platform or client application:
 ### Security Best Practices
 
 1. **Use Least Privilege**: Configure RBAC with minimal required permissions
-2. **Enable TLS**: Use certificate-based encryption for SSE mode
+2. **Enable TLS**: Use certificate-based encryption for HTTP mode
 3. **Monitor Access**: Log and audit MCP server usage
 4. **Rotate Tokens**: Regularly rotate service account tokens
 5. **Network Security**: Restrict MCP server network access

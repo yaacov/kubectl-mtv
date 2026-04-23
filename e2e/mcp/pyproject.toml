@@ -8,7 +8,8 @@ dependencies = [
     "pytest-asyncio>=0.26",
     "pytest-order>=1.2",
     "python-dotenv>=1.0",
-    "mcp>=1.0",
+    "mcp>=1.24.0",
+    "httpx>=0.27",
     "pyyaml>=6.0",
 ]
 
