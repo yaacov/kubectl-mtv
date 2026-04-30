@@ -175,6 +175,10 @@ func GetDefaultKubeToken() string {
 // When true, --insecure-skip-tls-verify is prepended to every subprocess invocation.
 var defaultInsecureSkipTLS bool
 
+// defaultKubeCACert stores the path to a custom CA certificate file for Kubernetes API TLS.
+// When set, --certificate-authority is prepended to every subprocess invocation.
+var defaultKubeCACert string
+
 // defaultVerbosity stores the verbosity level set via the global --verbose flag.
 // When > 0, --verbose N is prepended to every subprocess invocation so that
 // tool-spawned commands inherit the same debug/trace level as the MCP server.
@@ -188,6 +192,16 @@ func SetDefaultInsecureSkipTLS(skip bool) {
 // GetDefaultInsecureSkipTLS returns whether TLS verification should be skipped.
 func GetDefaultInsecureSkipTLS() bool {
 	return defaultInsecureSkipTLS
+}
+
+// SetDefaultKubeCACert sets the default CA certificate path from CLI flags.
+func SetDefaultKubeCACert(path string) {
+	defaultKubeCACert = path
+}
+
+// GetDefaultKubeCACert returns the default CA certificate path set via CLI flags.
+func GetDefaultKubeCACert() string {
+	return defaultKubeCACert
 }
 
 // SetDefaultVerbosity sets the verbosity level from the global --verbose flag.
@@ -238,6 +252,12 @@ func RunKubectlMTVCommand(ctx context.Context, args []string) (string, error) {
 	// Prepend --insecure-skip-tls-verify when configured (before server/token)
 	if defaultInsecureSkipTLS {
 		args = append([]string{"--insecure-skip-tls-verify"}, args...)
+	}
+
+	// Prepend --certificate-authority when a custom CA cert path is configured
+	if defaultKubeCACert != "" {
+		klog.V(2).Infof("[auth] using --certificate-authority from CLI flag: %s", defaultKubeCACert)
+		args = append([]string{"--certificate-authority", defaultKubeCACert}, args...)
 	}
 
 	// Check context first (HTTP headers), then fall back to CLI defaults for --server flag

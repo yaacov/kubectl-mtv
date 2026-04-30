@@ -657,6 +657,45 @@ func TestRunKubectlMTVCommand_NoCredsWhenNoneSet(t *testing.T) {
 	}
 }
 
+func TestRunKubectlMTVCommand_CACertFlagAppearsWhenSet(t *testing.T) {
+	origCACert := GetDefaultKubeCACert()
+	defer SetDefaultKubeCACert(origCACert)
+
+	SetDefaultKubeCACert("/tmp/custom-ca.crt")
+
+	ctx := WithShowCLI(context.Background(), true)
+
+	result, err := RunKubectlMTVCommand(ctx, []string{"get", "plan"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(result, "--certificate-authority") {
+		t.Errorf("expected --certificate-authority flag in command, got: %s", result)
+	}
+	if !strings.Contains(result, "/tmp/custom-ca.crt") {
+		t.Errorf("expected CA cert path in command, got: %s", result)
+	}
+}
+
+func TestRunKubectlMTVCommand_CACertFlagAbsentWhenNotSet(t *testing.T) {
+	origCACert := GetDefaultKubeCACert()
+	defer SetDefaultKubeCACert(origCACert)
+
+	SetDefaultKubeCACert("")
+
+	ctx := WithShowCLI(context.Background(), true)
+
+	result, err := RunKubectlMTVCommand(ctx, []string{"get", "plan"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if strings.Contains(result, "--certificate-authority") {
+		t.Errorf("--certificate-authority flag should NOT appear when no CA cert set, got: %s", result)
+	}
+}
+
 // --- Output format tests ---
 
 func TestOutputFormat(t *testing.T) {

@@ -31,6 +31,7 @@ var (
 	kubeServer       string
 	kubeToken        string
 	insecureSkipTLS  bool
+	kubeCACert       string
 	maxResponseChars int
 	readOnly         bool
 )
@@ -58,8 +59,10 @@ Security:
   --key-file:    Path to TLS private key file (enables TLS when both cert and key provided)
 
 Kubernetes Authentication:
-  --server:  Kubernetes API server URL (passed to kubectl via --server flag)
-  --token:   Kubernetes authentication token (passed to kubectl via --token flag)
+  --server:                 Kubernetes API server URL (passed to kubectl via --server flag)
+  --token:                  Kubernetes authentication token (passed to kubectl via --token flag)
+  --certificate-authority:  Path to a CA certificate file for Kubernetes API TLS verification
+  --insecure-skip-tls-verify: Skip TLS certificate verification (insecure)
 
   These flags set default credentials for all requests. They work in both stdio and HTTP modes.
 
@@ -101,6 +104,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 			util.SetDefaultKubeServer(kubeServer)
 			util.SetDefaultKubeToken(kubeToken)
 			util.SetDefaultInsecureSkipTLS(insecureSkipTLS)
+			util.SetDefaultKubeCACert(kubeCACert)
 
 			// Propagate verbosity from the inherited global --verbose flag
 			// so tool subprocesses produce matching debug output
@@ -236,6 +240,7 @@ Manual Claude config: Add to claude_desktop_config.json:
 	mcpCmd.Flags().StringVar(&kubeServer, "server", "", "Kubernetes API server URL (passed to kubectl via --server flag)")
 	mcpCmd.Flags().StringVar(&kubeToken, "token", "", "Kubernetes authentication token (passed to kubectl via --token flag)")
 	mcpCmd.Flags().BoolVar(&insecureSkipTLS, "insecure-skip-tls-verify", false, "Skip TLS certificate verification for Kubernetes API connections")
+	mcpCmd.Flags().StringVar(&kubeCACert, "certificate-authority", "", "Path to a CA certificate file for Kubernetes API TLS verification")
 	mcpCmd.Flags().IntVar(&maxResponseChars, "max-response-chars", 0, "Max characters for text output (0=unlimited). Helps small LLMs by truncating long responses")
 	mcpCmd.Flags().BoolVar(&readOnly, "read-only", false, "Run in read-only mode (disables write operations)")
 
