@@ -11,7 +11,7 @@ require (
 	github.com/charmbracelet/x/ansi v0.11.6
 	github.com/google/jsonschema-go v0.4.2
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-	github.com/kubev2v/forklift v0.0.0-20260327145126-7320affe4d23
+	github.com/kubev2v/forklift v0.0.0-20260506104734-32422188aa5b
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10

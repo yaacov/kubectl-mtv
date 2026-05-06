@@ -49,6 +49,8 @@ const (
 	CategoryValidation SettingCategory = "validation"
 	// CategoryCLIDownload represents CLI download service resource settings.
 	CategoryCLIDownload SettingCategory = "cli-download"
+	// CategoryMCP represents MCP server settings.
+	CategoryMCP SettingCategory = "mcp-server"
 	// CategoryOVAProxy represents OVA proxy resource settings.
 	CategoryOVAProxy SettingCategory = "ova-proxy"
 	// CategoryConfigMaps represents ConfigMap name settings.
@@ -104,6 +106,7 @@ var CategoryOrder = []SettingCategory{
 	CategoryUIPlugin,
 	CategoryValidation,
 	CategoryCLIDownload,
+	CategoryMCP,
 	CategoryOVAProxy,
 	CategoryConfigMaps,
 	CategoryAdvanced,
@@ -200,8 +203,15 @@ var SupportedSettings = map[string]SettingDefinition{
 	"feature_ova_appliance_management": {
 		Name:        "feature_ova_appliance_management",
 		Type:        TypeBool,
-		Default:     false,
+		Default:     true,
 		Description: "Enable appliance management for OVF-based providers",
+		Category:    CategoryFeature,
+	},
+	"feature_vsphere_vmware_driver_removal": {
+		Name:        "feature_vsphere_vmware_driver_removal",
+		Type:        TypeBool,
+		Default:     false,
+		Description: "Enable VMware driver removal during vSphere migrations",
 		Category:    CategoryFeature,
 	},
 
@@ -260,6 +270,13 @@ var SupportedSettings = map[string]SettingDefinition{
 		Type:        TypeInt,
 		Default:     10,
 		Description: "Maximum cleanup retry attempts",
+		Category:    CategoryPerformance,
+	},
+	"controller_blocker_grace_period_minutes": {
+		Name:        "controller_blocker_grace_period_minutes",
+		Type:        TypeInt,
+		Default:     5,
+		Description: "Grace period in minutes before blocking conditions stop a migration",
 		Category:    CategoryPerformance,
 	},
 	"controller_snapshot_removal_check_retries": {
@@ -506,6 +523,22 @@ var SupportedSettings = map[string]SettingDefinition{
 		Default:     0,
 		Description: "Default timeout in seconds for AAP HTTP calls and job polling when Hook spec.deadline is 0",
 		Category:    CategoryAAP,
+	},
+
+	// MCP Server (Lightspeed)
+	"mcp_server_lightspeed_integration": {
+		Name:        "mcp_server_lightspeed_integration",
+		Type:        TypeString,
+		Default:     "true",
+		Description: "Register MCP server with OpenShift Lightspeed",
+		Category:    CategoryMCP,
+	},
+	"mcp_server_lightspeed_set_mcp_gate": {
+		Name:        "mcp_server_lightspeed_set_mcp_gate",
+		Type:        TypeString,
+		Default:     "false",
+		Description: "Add MCPServer to OLSConfig featureGates when registering with Lightspeed",
+		Category:    CategoryMCP,
 	},
 }
 
@@ -982,6 +1015,50 @@ var ExtendedSettings = map[string]SettingDefinition{
 		Default:     "30s",
 		Description: "Metrics scrape interval",
 		Category:    CategoryAdvanced,
+	},
+	"profiler_volume_path": {
+		Name:        "profiler_volume_path",
+		Type:        TypeString,
+		Default:     "/var/cache/profiler",
+		Description: "Volume path for profiler data",
+		Category:    CategoryAdvanced,
+	},
+
+	// MCP Server
+	"mcp_server_output_format": {
+		Name:        "mcp_server_output_format",
+		Type:        TypeString,
+		Default:     "markdown",
+		Description: "MCP server output format",
+		Category:    CategoryMCP,
+	},
+	"mcp_server_max_response_chars": {
+		Name:        "mcp_server_max_response_chars",
+		Type:        TypeString,
+		Default:     "0",
+		Description: "Maximum response characters for MCP server (0 = unlimited)",
+		Category:    CategoryMCP,
+	},
+	"mcp_server_kube_insecure": {
+		Name:        "mcp_server_kube_insecure",
+		Type:        TypeString,
+		Default:     "true",
+		Description: "Skip TLS verification for in-cluster Kubernetes API",
+		Category:    CategoryMCP,
+	},
+	"mcp_server_read_only": {
+		Name:        "mcp_server_read_only",
+		Type:        TypeString,
+		Default:     "false",
+		Description: "Run MCP server in read-only mode",
+		Category:    CategoryMCP,
+	},
+	"mcp_server_verbose": {
+		Name:        "mcp_server_verbose",
+		Type:        TypeString,
+		Default:     "2",
+		Description: "MCP server verbosity level",
+		Category:    CategoryMCP,
 	},
 }
 

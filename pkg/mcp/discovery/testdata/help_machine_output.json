@@ -1171,7 +1171,7 @@
         {
           "name": "target-az",
           "type": "string",
-          "description": "Target availability zone for migrations (required - EBS volumes are AZ-specific)",
+          "description": "Target availability zone for migrations (auto-detected from worker nodes if omitted)",
           "required": false
         },
         {
@@ -4993,7 +4993,7 @@
         {
           "name": "target-az",
           "type": "string",
-          "description": "Target availability zone for migrations (required - EBS volumes are AZ-specific)",
+          "description": "Target availability zone for migrations (auto-detected from worker nodes if omitted)",
           "required": false
         },
         {

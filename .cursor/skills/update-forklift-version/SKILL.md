@@ -111,7 +111,58 @@ Key things to watch:
 - New `MigrationType` constants
 - Changes to `ProviderSpec.Settings` keys
 
-## 5. Run Full Test Suite
+## 5. Check Inventory API Changes
+
+The inventory service is consumed via REST (`pkg/util/client/inventory.go`), not via
+vendored Go types.  JSON responses are decoded into `map[string]interface{}`, so
+upstream changes will **not** cause compile errors but can silently break output.
+
+### Upstream Source of Truth
+
+Inventory REST endpoints are defined in the upstream Forklift repo under:
+
+```text
+https://github.com/kubev2v/forklift/tree/main/pkg/controller/provider/web
+```
+
+Each provider type has a sub-package (e.g. `vsphere/`, `ovirt/`, `openstack/`,
+`ec2/`) that registers collection handlers.
+
+### What to Compare
+
+| Check | Action |
+|-------|--------|
+| **New collection endpoint** | Add `Get<Resource>` / `Get<Resource>ByID` methods to `pkg/cmd/get/inventory/client.go`, create a new list file in `pkg/cmd/get/inventory/`, wire the subcommand in `cmd/get/inventory_<provider>.go` |
+| **New provider type needing inventory** | Add a new `cmd/get/inventory_<provider>.go`, extend provider-type switch lists in `pkg/cmd/get/inventory/vms.go` (`FetchVMsByQueryWithInsecure` and `listVMsOnce`) |
+| **Renamed/removed collection** | Update the string path in the corresponding `Get<Resource>` method in `client.go` |
+| **Changed JSON field names** | Update `augmentVMInfo`, `vmColumns`, and any code that extracts fields from `map[string]interface{}` in `pkg/cmd/get/inventory/` |
+| **New JSON fields worth displaying** | Add columns to `vmColumns()` in `vms.go` or equivalent column definitions in other list files |
+| **Changed detail levels or query params** | Update `GetResourceCollection` detail param in `client.go` or fetch helpers in `pkg/util/client/inventory.go` |
+| **New global (non-provider) endpoint** | Add a fetch function in `pkg/util/client/inventory.go` (see `FetchAAPJobTemplatesWithInsecure` as a pattern) |
+
+### How to Discover Changes
+
+Compare the upstream handler tree against our `ProviderClient` methods:
+
+```bash
+# List all collection path strings in our client
+grep -oP 'GetResourceCollection\(ctx, "\K[^"]+' pkg/cmd/get/inventory/client.go | sort
+
+# Then compare with the upstream web handler directories/files for each provider
+```
+
+### Files at a Glance
+
+| File | Role |
+|------|------|
+| `pkg/util/client/inventory.go` | Low-level HTTP client, global endpoints |
+| `pkg/cmd/get/inventory/client.go` | `ProviderClient` with typed `Get<Resource>` methods |
+| `pkg/cmd/get/inventory/vms.go` | VM list logic, `augmentVMInfo`, `vmColumns`, provider-type switches |
+| `pkg/cmd/get/inventory/*.go` | Per-resource list functions (hosts, networks, storage, etc.) |
+| `cmd/get/inventory_*.go` | Cobra subcommand wiring per provider |
+| `pkg/cmd/get/inventory/ec2_helpers.go` | EC2 envelope normalization |
+
+## 6. Run Full Test Suite
 
 ```bash
 go test ./... -count=1

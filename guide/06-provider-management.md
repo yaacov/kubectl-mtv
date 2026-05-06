@@ -305,7 +305,7 @@ kubectl mtv create provider --name ec2-prod --type ec2 \
 
 **EC2 Migration Settings**:
 - `--target-region`: Target region for migrations (defaults to provider region)
-- `--target-az`: Target availability zone (defaults to `target-region` + `a`)
+- `--target-az`: Target availability zone (auto-detected from worker nodes if omitted, falls back to `target-region` + `a`)
 
 **Note**: Migration host creation and VDDK settings are not applicable to EC2 providers.
 
