@@ -365,7 +365,7 @@ kubectl mtv create provider --name <name> [flags]
 **EC2 Provider Flags:**
 - `--ec2-region`: AWS region where source EC2 instances are located
 - `--target-region`: Target region for migrations (defaults to provider region)
-- `--target-az`: Target availability zone for migrations
+- `--target-az`: Target availability zone for migrations (auto-detected from worker nodes if omitted)
 - `--target-access-key-id`: Target AWS account access key ID (for cross-account migrations)
 - `--target-secret-access-key`: Target AWS account secret access key (for cross-account migrations)
 - `--auto-target-credentials`: Automatically fetch target AWS credentials from cluster
@@ -934,7 +934,7 @@ kubectl mtv patch provider --name <provider-name> [flags]
 **EC2 Provider Update Flags:**
 - `--ec2-region`: Update AWS region for source EC2 instances
 - `--target-region`: Update target region for migrations
-- `--target-az`: Update target availability zone
+- `--target-az`: Update target availability zone (auto-detected from worker nodes on create if omitted)
 - `--target-access-key-id`: Update target AWS account access key ID
 - `--target-secret-access-key`: Update target AWS account secret access key
 - `--auto-target-credentials`: Auto-fetch target AWS credentials from cluster

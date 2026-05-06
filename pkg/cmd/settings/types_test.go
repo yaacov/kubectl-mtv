@@ -295,6 +295,7 @@ func TestCategoryOrder_ContainsExpectedCategories(t *testing.T) {
 		CategoryUIPlugin:    true,
 		CategoryValidation:  true,
 		CategoryCLIDownload: true,
+		CategoryMCP:         true,
 		CategoryOVAProxy:    true,
 		CategoryConfigMaps:  true,
 		CategoryAdvanced:    true,
