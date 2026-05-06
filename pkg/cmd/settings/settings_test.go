@@ -252,8 +252,8 @@ func TestValidateAndConvertValue_BoolTrue(t *testing.T) {
 		if err != nil {
 			t.Errorf("validateAndConvertValue(%q) error: %v", v, err)
 		}
-		if result != true {
-			t.Errorf("validateAndConvertValue(%q) = %v, want true", v, result)
+		if result != "true" {
+			t.Errorf("validateAndConvertValue(%q) = %v, want \"true\"", v, result)
 		}
 	}
 }
@@ -266,8 +266,8 @@ func TestValidateAndConvertValue_BoolFalse(t *testing.T) {
 		if err != nil {
 			t.Errorf("validateAndConvertValue(%q) error: %v", v, err)
 		}
-		if result != false {
-			t.Errorf("validateAndConvertValue(%q) = %v, want false", v, result)
+		if result != "false" {
+			t.Errorf("validateAndConvertValue(%q) = %v, want \"false\"", v, result)
 		}
 	}
 }
@@ -289,8 +289,8 @@ func TestValidateAndConvertValue_Int(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result != 42 {
-		t.Errorf("expected 42, got %v", result)
+	if result != "42" {
+		t.Errorf("expected \"42\", got %v", result)
 	}
 }
 
