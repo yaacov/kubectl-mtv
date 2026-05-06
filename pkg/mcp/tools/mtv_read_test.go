@@ -869,6 +869,7 @@ func TestBuildCLIErrorResult_NonZeroExit(t *testing.T) {
 	result := buildCLIErrorResult(data)
 	if result == nil {
 		t.Fatal("non-zero return_value should produce an error result")
+		return
 	}
 	if !result.IsError {
 		t.Error("result.IsError should be true")
@@ -900,6 +901,7 @@ func TestBuildCLIErrorResult_NoStderr(t *testing.T) {
 	result := buildCLIErrorResult(data)
 	if result == nil {
 		t.Fatal("non-zero return_value should produce an error result")
+		return
 	}
 	if !result.IsError {
 		t.Error("result.IsError should be true")
@@ -920,6 +922,7 @@ func TestBuildCLIErrorResult_StderrOnly(t *testing.T) {
 	result := buildCLIErrorResult(data)
 	if result == nil {
 		t.Fatal("non-zero return_value should produce an error result")
+		return
 	}
 
 	text := result.Content[0].(*mcp.TextContent)
@@ -952,6 +955,7 @@ func TestEnrichErrorWithHelp(t *testing.T) {
 	errResult := buildCLIErrorResult(data)
 	if errResult == nil {
 		t.Fatal("expected error result")
+		return
 	}
 
 	enrichErrorWithHelp(errResult, cmd)

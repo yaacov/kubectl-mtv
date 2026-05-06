@@ -599,6 +599,7 @@ func TestRegistry_RealHelpMachine_CreateProviderFlags(t *testing.T) {
 	cmd := registry.ReadWrite["create/provider"]
 	if cmd == nil {
 		t.Fatal("create/provider command not found in registry")
+		return
 	}
 
 	// Should have a reasonable number of flags
@@ -617,6 +618,7 @@ func TestRegistry_RealHelpMachine_CreateProviderFlags(t *testing.T) {
 
 	if typeFlag == nil {
 		t.Fatal("create provider should have a --type flag")
+		return
 	}
 	if !typeFlag.Required {
 		t.Error("--type flag should be marked as required")

@@ -231,6 +231,7 @@ func TestGetAnySettingDefinition_Supported(t *testing.T) {
 	def := GetAnySettingDefinition("vddk_image")
 	if def == nil {
 		t.Fatal("GetAnySettingDefinition(supported) = nil")
+		return
 	}
 	if def.Name != "vddk_image" {
 		t.Errorf("def.Name = %q, want %q", def.Name, "vddk_image")
@@ -241,6 +242,7 @@ func TestGetAnySettingDefinition_Extended(t *testing.T) {
 	def := GetAnySettingDefinition("feature_ui_plugin")
 	if def == nil {
 		t.Fatal("GetAnySettingDefinition(extended) = nil")
+		return
 	}
 	if def.Name != "feature_ui_plugin" {
 		t.Errorf("def.Name = %q, want %q", def.Name, "feature_ui_plugin")
@@ -260,6 +262,7 @@ func TestOldXcopySettingExists(t *testing.T) {
 	def := GetSettingDefinition("populator_vsphere_xcopy_volume_image_fqin")
 	if def == nil {
 		t.Fatal("old populator_vsphere_xcopy_volume_image_fqin must remain in SupportedSettings for older Forklift servers")
+		return
 	}
 	if def.Category != CategoryImage {
 		t.Errorf("def.Category = %q, want %q", def.Category, CategoryImage)
@@ -270,6 +273,7 @@ func TestNewCopyOffloadSettingExists(t *testing.T) {
 	def := GetSettingDefinition("populator_vsphere_copy_offload_image_fqin")
 	if def == nil {
 		t.Fatal("new populator_vsphere_copy_offload_image_fqin must exist in SupportedSettings")
+		return
 	}
 	if def.Category != CategoryImage {
 		t.Errorf("def.Category = %q, want %q", def.Category, CategoryImage)
