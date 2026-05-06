@@ -135,18 +135,7 @@ var SupportedSettings = map[string]SettingDefinition{
 		Name:        "populator_vsphere_copy_offload_image_fqin",
 		Type:        TypeString,
 		Default:     "",
-		Description: "vSphere copy offload populator image (Forklift >= 2.12)",
-		Category:    CategoryImage,
-	},
-	// TODO: Remove populator_vsphere_xcopy_volume_image_fqin once all Forklift
-	// servers older than 2.12 are out of support. New servers use
-	// populator_vsphere_copy_offload_image_fqin; the old key is kept so the CLI
-	// can still set/read the field on older ForkliftController CRs.
-	"populator_vsphere_xcopy_volume_image_fqin": {
-		Name:        "populator_vsphere_xcopy_volume_image_fqin",
-		Type:        TypeString,
-		Default:     "",
-		Description: "vSphere xcopy populator image (Forklift < 2.12, use populator_vsphere_copy_offload_image_fqin for newer)",
+		Description: "vSphere copy offload populator image",
 		Category:    CategoryImage,
 	},
 
@@ -212,6 +201,20 @@ var SupportedSettings = map[string]SettingDefinition{
 		Type:        TypeBool,
 		Default:     false,
 		Description: "Enable VMware driver removal during vSphere migrations",
+		Category:    CategoryFeature,
+	},
+	"feature_windows_registry_network_config": {
+		Name:        "feature_windows_registry_network_config",
+		Type:        TypeBool,
+		Default:     false,
+		Description: "Enable Windows registry-based network configuration",
+		Category:    CategoryFeature,
+	},
+	"feature_mcp_server": {
+		Name:        "feature_mcp_server",
+		Type:        TypeBool,
+		Default:     false,
+		Description: "Enable MCP server deployment for AI assistant integration",
 		Category:    CategoryFeature,
 	},
 
@@ -519,8 +522,8 @@ var SupportedSettings = map[string]SettingDefinition{
 	},
 	"aap_timeout": {
 		Name:        "aap_timeout",
-		Type:        TypeInt,
-		Default:     0,
+		Type:        TypeString,
+		Default:     "",
 		Description: "Default timeout in seconds for AAP HTTP calls and job polling when Hook spec.deadline is 0",
 		Category:    CategoryAAP,
 	},
@@ -528,15 +531,15 @@ var SupportedSettings = map[string]SettingDefinition{
 	// MCP Server (Lightspeed)
 	"mcp_server_lightspeed_integration": {
 		Name:        "mcp_server_lightspeed_integration",
-		Type:        TypeString,
-		Default:     "true",
+		Type:        TypeBool,
+		Default:     true,
 		Description: "Register MCP server with OpenShift Lightspeed",
 		Category:    CategoryMCP,
 	},
 	"mcp_server_lightspeed_set_mcp_gate": {
 		Name:        "mcp_server_lightspeed_set_mcp_gate",
-		Type:        TypeString,
-		Default:     "false",
+		Type:        TypeBool,
+		Default:     false,
 		Description: "Add MCPServer to OLSConfig featureGates when registering with Lightspeed",
 		Category:    CategoryMCP,
 	},
@@ -1022,6 +1025,36 @@ var ExtendedSettings = map[string]SettingDefinition{
 		Default:     "/var/cache/profiler",
 		Description: "Volume path for profiler data",
 		Category:    CategoryAdvanced,
+	},
+
+	// MCP Server Container Resources
+	"mcp_server_container_limits_cpu": {
+		Name:        "mcp_server_container_limits_cpu",
+		Type:        TypeString,
+		Default:     "1000m",
+		Description: "MCP server container CPU limit",
+		Category:    CategoryMCP,
+	},
+	"mcp_server_container_limits_memory": {
+		Name:        "mcp_server_container_limits_memory",
+		Type:        TypeString,
+		Default:     "512Mi",
+		Description: "MCP server container memory limit",
+		Category:    CategoryMCP,
+	},
+	"mcp_server_container_requests_cpu": {
+		Name:        "mcp_server_container_requests_cpu",
+		Type:        TypeString,
+		Default:     "100m",
+		Description: "MCP server container CPU request",
+		Category:    CategoryMCP,
+	},
+	"mcp_server_container_requests_memory": {
+		Name:        "mcp_server_container_requests_memory",
+		Type:        TypeString,
+		Default:     "256Mi",
+		Description: "MCP server container memory request",
+		Category:    CategoryMCP,
 	},
 
 	// MCP Server
