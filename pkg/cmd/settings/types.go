@@ -584,6 +584,13 @@ var ExtendedSettings = map[string]SettingDefinition{
 		Description: "Enable kubectl-mtv CLI download service",
 		Category:    CategoryFeature,
 	},
+	"feature_use_conversion_cr": {
+		Name:        "feature_use_conversion_cr",
+		Type:        TypeBool,
+		Default:     true,
+		Description: "Enable Conversion CR-based guest conversion workflow",
+		Category:    CategoryFeature,
+	},
 
 	// Controller Deployment Resources
 	"controller_container_limits_cpu": {
@@ -612,13 +619,6 @@ var ExtendedSettings = map[string]SettingDefinition{
 		Type:        TypeString,
 		Default:     "350Mi",
 		Description: "Controller container memory request",
-		Category:    CategoryController,
-	},
-	"controller_transfer_network": {
-		Name:        "controller_transfer_network",
-		Type:        TypeString,
-		Default:     "",
-		Description: "Optional NAD name for controller pod transfer network (format: namespace/network-name)",
 		Category:    CategoryController,
 	},
 	"controller_migration_service_account": {
@@ -850,6 +850,13 @@ var ExtendedSettings = map[string]SettingDefinition{
 		Type:        TypeString,
 		Default:     "",
 		Description: "Controller pod image",
+		Category:    CategoryImage,
+	},
+	"deep_inspection_image_fqin": {
+		Name:        "deep_inspection_image_fqin",
+		Type:        TypeString,
+		Default:     "",
+		Description: "Deep inspection container image for warm migration preflight checks",
 		Category:    CategoryImage,
 	},
 	"api_image_fqin": {
