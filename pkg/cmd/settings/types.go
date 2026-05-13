@@ -527,6 +527,20 @@ var SupportedSettings = map[string]SettingDefinition{
 		Description: "Default timeout in seconds for AAP HTTP calls and job polling when Hook spec.deadline is 0",
 		Category:    CategoryAAP,
 	},
+	"aap_insecure_skip_verify": {
+		Name:        "aap_insecure_skip_verify",
+		Type:        TypeBool,
+		Default:     false,
+		Description: "Skip TLS certificate verification when connecting to AAP",
+		Category:    CategoryAAP,
+	},
+	"aap_ca_secret_name": {
+		Name:        "aap_ca_secret_name",
+		Type:        TypeString,
+		Default:     "",
+		Description: "Name of the Secret containing a custom CA certificate for AAP TLS (data key: ca.crt)",
+		Category:    CategoryAAP,
+	},
 
 	// MCP Server (Lightspeed)
 	"mcp_server_lightspeed_integration": {
