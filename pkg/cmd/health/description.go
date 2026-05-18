@@ -121,7 +121,6 @@ func (r *HealthReport) buildPodsSection(b *describe.Builder) {
 
 	headers := []describe.TableColumn{
 		{Display: "NAME", Key: "name"},
-		{Display: "IMAGE", Key: "image"},
 		{Display: "STATUS", Key: "status", ColorFunc: output.ColorizeStatus},
 		{Display: "RESTARTS", Key: "restarts"},
 		{Display: "ISSUES", Key: "issues"},
@@ -133,9 +132,19 @@ func (r *HealthReport) buildPodsSection(b *describe.Builder) {
 		if len(pod.Issues) > 0 {
 			issues = strings.Join(pod.Issues, ", ")
 		}
+		indentedImages := strings.Join(
+			func() []string {
+				lines := strings.Split(pod.Image, "\n")
+				out := make([]string, len(lines))
+				for i, l := range lines {
+					out[i] = "  " + l
+				}
+				return out
+			}(),
+			"\n",
+		)
 		rows = append(rows, map[string]string{
-			"name":     pod.Name,
-			"image":    pod.Image,
+			"name":     pod.Name + "\n" + indentedImages,
 			"status":   pod.Status,
 			"restarts": fmt.Sprintf("%d", pod.Restarts),
 			"issues":   issues,
