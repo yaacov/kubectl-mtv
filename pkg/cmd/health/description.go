@@ -84,7 +84,7 @@ func (r *HealthReport) buildControllerSection(b *describe.Builder) {
 	if len(ctrl.CustomImages) > 0 {
 		b.Field("Custom Images", fmt.Sprintf("%d overrides", len(ctrl.CustomImages)))
 		for _, img := range ctrl.CustomImages {
-			b.FieldC(img.Field, img.Image, output.Blue)
+			b.FieldC(img.Field, img.Image, output.ColorizeImage)
 		}
 	} else {
 		b.Field("Custom Images", "None")
@@ -137,7 +137,7 @@ func (r *HealthReport) buildPodsSection(b *describe.Builder) {
 				lines := strings.Split(pod.Image, "\n")
 				out := make([]string, len(lines))
 				for i, l := range lines {
-					out[i] = "  " + l
+					out[i] = "  " + output.ColorizeImage(l)
 				}
 				return out
 			}(),
