@@ -5,7 +5,30 @@ description: Step-by-step guide for updating the kubev2v/forklift Go dependency 
 
 # Updating the Forklift Dependency
 
-## 1. Fetch the Latest Version
+This is a three-step workflow with user checkpoints between each step.
+Do NOT commit at any point -- the user will commit manually when ready.
+
+1. **Plan the version update** -- check what version is available, present a plan.
+2. **Ask** the user to approve, then run `go get`, `go mod tidy`, `go mod vendor`, `go build`.
+3. **Plan the code updates** -- always check settings against upstream defaults; check CRDs/inventory only if the vendor diff has changes.
+
+---
+
+## Step 1: Plan the Version Update
+
+Check the current version and the latest available:
+
+```bash
+grep 'kubev2v/forklift' go.mod
+GOFLAGS=-mod=mod GOPROXY=https://proxy.golang.org,direct \
+  go list -m -json github.com/kubev2v/forklift@latest
+```
+
+Present the version bump to the user (current -> latest) and ask for approval before proceeding.
+
+---
+
+## Step 2: Fetch and Vendor (after user approval)
 
 ```bash
 GOFLAGS=-mod=mod GOPROXY=https://proxy.golang.org,direct \
@@ -15,15 +38,61 @@ go mod vendor
 go build ./...
 ```
 
-Verify the build succeeds before proceeding.
+Verify the build succeeds. If it fails, report the errors and stop.
 
-## 2. Check ForkliftController Settings
+---
+
+## Step 3: Plan the Code Updates
+
+This step has two parts that run independently:
+
+### 3a. Always: Check Settings Against Upstream Defaults
+
+Settings live in the Ansible defaults file, NOT in the vendored Go code. They can
+change even when the vendor diff is empty. Always perform this check.
+
+1. Fetch the upstream defaults:
+
+```text
+https://raw.githubusercontent.com/kubev2v/forklift/main/operator/roles/forkliftcontroller/defaults/main.yml
+```
+
+2. Extract all setting keys from the file (lines matching `key: value` patterns).
+
+3. Compare against every key in `SupportedSettings` and `ExtendedSettings` in
+   `pkg/cmd/settings/types.go`. Report:
+   - New settings upstream that are missing from our maps
+   - Settings in our maps that no longer exist upstream
+   - Default value mismatches
+
+4. Present findings to the user before making any changes.
+
+### 3b. Conditionally: Check CRDs and Inventory (only if vendor changed)
+
+Diff the vendor changes:
+
+```bash
+git diff --name-only -- vendor/github.com/kubev2v/forklift/
+git diff -- vendor/github.com/kubev2v/forklift/pkg/apis/
+```
+
+If there are no vendor changes, skip the CRD and inventory sections below.
+
+If there are changes, create a plan covering the relevant CRD/inventory sections
+in the Code Adaptation Reference. Present the plan to the user before making any
+code changes.
+
+---
+
+## Code Adaptation Reference
+
+### Check ForkliftController Settings
 
 Settings are defined in `pkg/cmd/settings/types.go` in two maps:
 - `SupportedSettings` -- commonly configured settings
 - `ExtendedSettings` -- advanced/less-common settings
 
-### Upstream Source of Truth
+#### Upstream Source of Truth
 
 Fetch the Ansible defaults file (canonical defaults for all settings):
 
@@ -31,7 +100,7 @@ Fetch the Ansible defaults file (canonical defaults for all settings):
 https://raw.githubusercontent.com/kubev2v/forklift/main/operator/roles/forkliftcontroller/defaults/main.yml
 ```
 
-### What to Compare
+#### What to Compare
 
 For every setting in our maps, compare against the upstream file:
 
@@ -42,7 +111,7 @@ For every setting in our maps, compare against the upstream file:
 | **New setting upstream** | Add to `SupportedSettings` (user-facing) or `ExtendedSettings` (advanced) with correct type, default, description, and category |
 | **New category needed** | Add to `SettingCategory` constants and `CategoryOrder` slice in `types.go` |
 
-### Verification
+#### Verification
 
 Run `go test ./pkg/cmd/settings/...` -- the test suite checks:
 - Name/key consistency
@@ -50,7 +119,7 @@ Run `go test ./pkg/cmd/settings/...` -- the test suite checks:
 - All categories in CategoryOrder are covered
 - Sorting within categories
 
-## 3. Check Plan CRD Changes
+### Check Plan CRD Changes
 
 The Plan CRD types live in the vendor at:
 
@@ -59,7 +128,7 @@ vendor/github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan.go     # PlanS
 vendor/github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan/vm.go  # plan.VM struct
 ```
 
-### Files to Update for New PlanSpec Fields
+#### Files to Update for New PlanSpec Fields
 
 | File | What to update |
 |------|---------------|
@@ -69,7 +138,7 @@ vendor/github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan/vm.go  # plan.
 | `pkg/cmd/describe/plan/describe.go` | Display new field in `buildSpecSection` |
 | MCP help generator | If the flag should be visible to AI assistants |
 
-### Files to Update for New VM Struct Fields
+#### Files to Update for New VM Struct Fields
 
 | File | What to update |
 |------|---------------|
@@ -77,14 +146,14 @@ vendor/github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1/plan/vm.go  # plan.
 | `pkg/cmd/patch/plan/plan.go` (`PatchPlanVM`) | Handle new VM field in patch |
 | `pkg/cmd/describe/plan/describe.go` (`buildVMsSection`) | Display new VM field |
 
-### Boolean Fields with kubebuilder Defaults
+#### Boolean Fields with kubebuilder Defaults
 
 When a PlanSpec bool has `+kubebuilder:default:=true`, the API server auto-sets it.
 If the CLI needs to explicitly set it to `false`, a post-create patch is required
 (see existing pattern in `pkg/cmd/create/plan/plan.go` for `MigrateSharedDisks`,
 `PreserveStaticIPs`, `UseCompatibilityMode`, etc.).
 
-### Pointer Bool Fields (*bool)
+#### Pointer Bool Fields (*bool)
 
 Fields like `InstallLegacyDrivers` and `EnableNestedVirtualization` use `*bool`
 so they can be nil (auto-detect), true, or false. The CLI flag should be a
@@ -93,7 +162,7 @@ Use `"auto"` as the default in `create` commands. In `patch` commands use `""`
 as the default (meaning "don't change") and add a `Changed` flag so that
 `--flag auto` can explicitly clear the field back to nil.
 
-## 4. Check Other CRD Changes
+### Check Other CRD Changes
 
 Also review for changes in:
 
@@ -111,13 +180,13 @@ Key things to watch:
 - New `MigrationType` constants
 - Changes to `ProviderSpec.Settings` keys
 
-## 5. Check Inventory API Changes
+### Check Inventory API Changes
 
 The inventory service is consumed via REST (`pkg/util/client/inventory.go`), not via
 vendored Go types.  JSON responses are decoded into `map[string]interface{}`, so
 upstream changes will **not** cause compile errors but can silently break output.
 
-### Upstream Source of Truth
+#### Upstream Source of Truth
 
 Inventory REST endpoints are defined in the upstream Forklift repo under:
 
@@ -128,7 +197,7 @@ https://github.com/kubev2v/forklift/tree/main/pkg/controller/provider/web
 Each provider type has a sub-package (e.g. `vsphere/`, `ovirt/`, `openstack/`,
 `ec2/`) that registers collection handlers.
 
-### What to Compare
+#### What to Compare
 
 | Check | Action |
 |-------|--------|
@@ -140,7 +209,7 @@ Each provider type has a sub-package (e.g. `vsphere/`, `ovirt/`, `openstack/`,
 | **Changed detail levels or query params** | Update `GetResourceCollection` detail param in `client.go` or fetch helpers in `pkg/util/client/inventory.go` |
 | **New global (non-provider) endpoint** | Add a fetch function in `pkg/util/client/inventory.go` (see `FetchAAPJobTemplatesWithInsecure` as a pattern) |
 
-### How to Discover Changes
+#### How to Discover Changes
 
 Compare the upstream handler tree against our `ProviderClient` methods:
 
@@ -151,7 +220,7 @@ grep -oP 'GetResourceCollection\(ctx, "\K[^"]+' pkg/cmd/get/inventory/client.go 
 # Then compare with the upstream web handler directories/files for each provider
 ```
 
-### Files at a Glance
+#### Files at a Glance
 
 | File | Role |
 |------|------|
@@ -162,16 +231,14 @@ grep -oP 'GetResourceCollection\(ctx, "\K[^"]+' pkg/cmd/get/inventory/client.go 
 | `cmd/get/inventory_*.go` | Cobra subcommand wiring per provider |
 | `pkg/cmd/get/inventory/ec2_helpers.go` | EC2 envelope normalization |
 
-## 6. Run Full Test Suite
+### Run Full Test Suite
 
 ```bash
 go test ./... -count=1
 go build ./...
 ```
 
-## Quick Diff Checklist
-
-After vendoring the new version, a fast way to spot changes:
+### Quick Diff Checklist
 
 ```bash
 # See what files changed in the vendored forklift package
