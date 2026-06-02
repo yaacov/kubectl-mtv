@@ -66,7 +66,7 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var archived bool
 	var pvcNameTemplateUseGenerateName bool
 	var deleteGuestConversionPod bool
-	var deleteVmOnFailMigration bool
+	var deleteVmOnFailMigration string
 	var skipGuestConversion bool
 	var warm bool
 	var runPreflightInspection bool
@@ -255,7 +255,7 @@ Affinity Syntax (KARL):
 	cmd.Flags().BoolVar(&archived, "archived", false, "Whether this plan should be archived")
 	cmd.Flags().BoolVar(&pvcNameTemplateUseGenerateName, "pvc-name-template-use-generate-name", true, "Use generateName instead of name for PVC name template")
 	cmd.Flags().BoolVar(&deleteGuestConversionPod, "delete-guest-conversion-pod", false, "Delete guest conversion pod after successful migration")
-	cmd.Flags().BoolVar(&deleteVmOnFailMigration, "delete-vm-on-fail-migration", false, "Delete target VM when migration fails")
+	cmd.Flags().StringVar(&deleteVmOnFailMigration, "delete-vm-on-fail-migration", "", "Delete target VM when migration fails (true/false)")
 	cmd.Flags().BoolVar(&skipGuestConversion, "skip-guest-conversion", false, "Skip the guest conversion process (raw disk copy mode)")
 	cmd.Flags().BoolVar(&warm, "warm", false, "Enable warm migration (use --migration-type=warm instead)")
 	cmd.Flags().BoolVar(&runPreflightInspection, "run-preflight-inspection", true, "Run preflight inspection on VM base disks before starting disk transfer")
@@ -280,6 +280,12 @@ Affinity Syntax (KARL):
 
 	if err := cmd.RegisterFlagCompletionFunc("enable-nested-virtualization", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"true", "false", "auto"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	if err := cmd.RegisterFlagCompletionFunc("delete-vm-on-fail-migration", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"true", "false"}, cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
 		panic(err)
 	}
@@ -319,7 +325,7 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	var clearHooks bool
 
 	// Additional VM flags
-	var deleteVmOnFailMigration bool
+	var deleteVmOnFailMigration string
 	var deleteVmOnFailMigrationChanged bool
 	var nbdeClevis bool
 	var nbdeClevisChanged bool
@@ -385,7 +391,7 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	cmd.Flags().BoolVar(&clearHooks, "clear-hooks", false, "Remove all hooks from this VM")
 
 	// Additional VM flags
-	cmd.Flags().BoolVar(&deleteVmOnFailMigration, "delete-vm-on-fail-migration", false, "Delete target VM when migration fails (overrides plan-level setting)")
+	cmd.Flags().StringVar(&deleteVmOnFailMigration, "delete-vm-on-fail-migration", "", "Delete target VM when migration fails (true/false, overrides plan-level setting)")
 	cmd.Flags().BoolVar(&nbdeClevis, "nbde-clevis", false, "Enable passphrase-less NBDE/Clevis disk unlocking via TANG server (takes precedence over --luks-secret)")
 	cmd.Flags().StringVar(&enableNestedVirtualization, "enable-nested-virtualization", "", "Enable nested virtualization for this VM (true/false/auto)")
 	cmd.Flags().StringVar(&migrateSharedDisks, "migrate-shared-disks", "", "Migrate shared disks for this VM, overrides plan-level setting (true/false/auto)")
@@ -425,6 +431,12 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 
 	if err := cmd.RegisterFlagCompletionFunc("rdm-as-lun", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"true", "false", "auto"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	if err := cmd.RegisterFlagCompletionFunc("delete-vm-on-fail-migration", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"true", "false"}, cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
 		panic(err)
 	}
