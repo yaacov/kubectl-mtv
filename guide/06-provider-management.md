@@ -436,7 +436,7 @@ kubectl mtv patch provider --name vsphere-prod \
 # Update URL and disable TLS verification
 kubectl mtv patch provider --name vsphere-test \
   --url https://test-vcenter.internal/sdk \
-  --provider-insecure-skip-tls
+  --provider-insecure-skip-tls true
 
 # Update token for OpenShift provider
 kubectl mtv patch provider --name remote-openshift \
@@ -514,7 +514,7 @@ kubectl mtv patch provider --name vsphere-prod \
 
 # Enable VDDK AIO optimization
 kubectl mtv patch provider --name vsphere-prod \
-  --use-vddk-aio-optimization
+  --use-vddk-aio-optimization true
 
 # Update VDDK buffer settings
 kubectl mtv patch provider --name vsphere-prod \
@@ -523,7 +523,7 @@ kubectl mtv patch provider --name vsphere-prod \
 
 # Disable VDDK AIO optimization
 kubectl mtv patch provider --name vsphere-prod \
-  --use-vddk-aio-optimization=false
+  --use-vddk-aio-optimization false
 ```
 
 #### Update ESXi Clone Method (vSphere Only)
@@ -775,7 +775,7 @@ kubectl mtv patch provider --name vsphere-prod \
 
 # Temporarily disable TLS for testing
 kubectl mtv patch provider --name vsphere-test \
-  --provider-insecure-skip-tls
+  --provider-insecure-skip-tls true
 ```
 
 ### Provider Status and Health

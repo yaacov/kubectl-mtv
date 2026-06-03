@@ -617,7 +617,7 @@ kubectl mtv create plan --name comprehensive-migration \
   --source vsphere-prod \
   --target-namespace production \
   --migration-type warm \
-  --preserve-static-ips \
+  --preserve-static-ips true \
   --vms @enterprise-vms.yaml
 ```
 

@@ -217,24 +217,24 @@ func TestAppendNormalizedFlags(t *testing.T) {
 		wantMissing  []string
 	}{
 		{
-			name:         "bool true becomes presence flag",
+			name:         "bool true becomes explicit true",
 			flags:        map[string]any{"extended": true},
-			wantContains: []string{"--extended"},
+			wantContains: []string{"--extended", "true"},
 		},
 		{
 			name:         "bool false becomes explicit false",
 			flags:        map[string]any{"migrate-shared-disks": false},
-			wantContains: []string{"--migrate-shared-disks=false"},
+			wantContains: []string{"--migrate-shared-disks", "false"},
 		},
 		{
 			name:         "string true treated as bool",
 			flags:        map[string]any{"watch": "true"},
-			wantContains: []string{"--watch"},
+			wantContains: []string{"--watch", "true"},
 		},
 		{
 			name:         "string false treated as bool",
 			flags:        map[string]any{"watch": "false"},
-			wantContains: []string{"--watch=false"},
+			wantContains: []string{"--watch", "false"},
 		},
 		{
 			name:         "string value",
@@ -278,7 +278,7 @@ func TestAppendNormalizedFlags(t *testing.T) {
 		{
 			name:         "underscores converted to hyphens",
 			flags:        map[string]any{"migrate_shared_disks": false},
-			wantContains: []string{"--migrate-shared-disks=false"},
+			wantContains: []string{"--migrate-shared-disks", "false"},
 			wantMissing:  []string{"migrate_shared_disks"},
 		},
 		{

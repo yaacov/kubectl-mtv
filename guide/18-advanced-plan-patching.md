@@ -148,28 +148,28 @@ Control various aspects of the migration process:
 ```bash
 # Enable static IP preservation for vSphere VMs
 kubectl mtv patch plan --plan-name vsphere-production \
-  --preserve-static-ips=true
+  --preserve-static-ips true
 
 # Configure shared disk migration
 kubectl mtv patch plan --plan-name cluster-workloads \
-  --migrate-shared-disks=true
+  --migrate-shared-disks true
 
 # Enable compatibility mode for older systems
 kubectl mtv patch plan --plan-name legacy-systems \
-  --use-compatibility-mode=true
+  --use-compatibility-mode true
 
 # Configure cleanup behavior
 kubectl mtv patch plan --plan-name test-migration \
-  --delete-guest-conversion-pod=true \
-  --delete-vm-on-fail-migration=true
+  --delete-guest-conversion-pod true \
+  --delete-vm-on-fail-migration true
 
 # Skip guest conversion for specific use cases
 kubectl mtv patch plan --plan-name raw-disk-migration \
-  --skip-guest-conversion=true
+  --skip-guest-conversion true
 
 # Disable preflight inspection for faster warm migrations
 kubectl mtv patch plan --plan-name urgent-migration \
-  --run-preflight-inspection=false
+  --run-preflight-inspection false
 ```
 
 ### Conversion and Guest Conversion Configuration
@@ -192,7 +192,7 @@ kubectl mtv patch plan --plan-name custom-v2v-migration \
 
 # Skip zone node selector for EC2 migrations (EC2 only)
 kubectl mtv patch plan --plan-name ec2-migration \
-  --skip-zone-node-selector=true
+  --skip-zone-node-selector true
 ```
 
 ### Comprehensive Plan Update Example
@@ -211,11 +211,11 @@ kubectl mtv patch plan --plan-name enterprise-migration \
   --convertor-labels "migration=production,performance=optimized" \
   --convertor-node-selector "node-type=high-io,network=10gbe" \
   --convertor-affinity "REQUIRE nodes(storage-tier=premium) on node" \
-  --preserve-static-ips=true \
-  --preserve-cluster-cpu-model=true \
+  --preserve-static-ips true \
+  --preserve-cluster-cpu-model true \
   --pvc-name-template "prod-{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.DiskIndex}}{% endraw %}" \
-  --delete-guest-conversion-pod=true \
-  --run-preflight-inspection=true
+  --delete-guest-conversion-pod true \
+  --run-preflight-inspection true
 ```
 
 ## How-To: Patching Individual VMs
@@ -271,11 +271,11 @@ kubectl mtv patch planvm --plan-name secure-migration --vm-name encrypted-databa
 
 # Enable NBDE/Clevis passphrase-less disk unlocking via TANG server
 kubectl mtv patch planvm --plan-name secure-migration --vm-name nbde-encrypted-vm \
-  --nbde-clevis=true
+  --nbde-clevis true
 
 # Override plan-level deletion policy for specific VM
 kubectl mtv patch planvm --plan-name test-migration --vm-name experimental-vm \
-  --delete-vm-on-fail-migration=true
+  --delete-vm-on-fail-migration true
 ```
 
 ### Adding and Managing Hooks
@@ -330,7 +330,7 @@ kubectl mtv patch planvm --plan-name enterprise-migration --vm-name critical-dat
   --volume-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-storage-{% raw %}{{.VolumeIndex}}{% endraw %}" \
   --network-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-net-{% raw %}{{.NetworkIndex}}{% endraw %}" \
   --luks-secret database-encryption-secret \
-  --delete-vm-on-fail-migration=false \
+  --delete-vm-on-fail-migration false \
   --add-pre-hook database-cluster-quiesce \
   --add-post-hook database-cluster-validate
 ```
@@ -348,7 +348,7 @@ kubectl mtv create plan --name evolving-migration \
 # Evolve to warm migration after testing
 kubectl mtv patch plan --plan-name evolving-migration \
   --migration-type warm \
-  --run-preflight-inspection=true
+  --run-preflight-inspection true
 
 # Add convertor optimization for warm migration
 kubectl mtv patch plan --plan-name evolving-migration \
@@ -423,8 +423,8 @@ kubectl mtv patch plan --plan-name dev-migration \
   --target-namespace development \
   --target-labels "environment=dev,auto-shutdown=true" \
   --target-power-state off \
-  --delete-vm-on-fail-migration=true \
-  --delete-guest-conversion-pod=true
+  --delete-vm-on-fail-migration true \
+  --delete-guest-conversion-pod true
 
 # Production environment configuration  
 kubectl mtv patch plan --plan-name prod-migration \
@@ -432,9 +432,9 @@ kubectl mtv patch plan --plan-name prod-migration \
   --target-labels "environment=prod,backup=required,monitoring=critical" \
   --target-node-selector "node-role.kubernetes.io/production=true" \
   --target-affinity "REQUIRE nodes(reliability-tier=high) on node" \
-  --preserve-static-ips=true \
-  --preserve-cluster-cpu-model=true \
-  --delete-vm-on-fail-migration=false
+  --preserve-static-ips true \
+  --preserve-cluster-cpu-model true \
+  --delete-vm-on-fail-migration false
 ```
 
 ## Patching with Provider Updates
