@@ -407,7 +407,7 @@ kubectl mtv create plan --name auto-power \
 kubectl mtv create plan --name linux-migration \
   --source vsphere-prod \
   --skip-guest-conversion \
-  --use-compatibility-mode \
+  --use-compatibility-mode true \
   --vms "where guestOS ~= '.*linux.*'"
 
 # Enable guest conversion with cleanup
@@ -429,13 +429,13 @@ kubectl mtv create plan --name legacy-windows \
 # Preserve static IPs (vSphere only)
 kubectl mtv create plan --name preserve-ips \
   --source vsphere-prod \
-  --preserve-static-ips \
+  --preserve-static-ips true \
   --vms "database-01,web-lb-01"
 
 # Disable IP preservation
 kubectl mtv create plan --name new-ips \
   --source vsphere-prod \
-  --preserve-static-ips=false \
+  --preserve-static-ips false \
   --vms "test-vm-01,dev-vm-01"
 ```
 
@@ -466,13 +466,13 @@ kubectl mtv create plan --name convertor-affinity \
 # Include shared disks in migration
 kubectl mtv create plan --name shared-disks \
   --source vsphere-prod \
-  --migrate-shared-disks \
+  --migrate-shared-disks true \
   --vms "cluster-vm-01,cluster-vm-02"
 
 # Exclude shared disks
 kubectl mtv create plan --name no-shared-disks \
   --source vsphere-prod \
-  --migrate-shared-disks=false \
+  --migrate-shared-disks false \
   --vms "standalone-vm-01"
 ```
 
@@ -483,14 +483,14 @@ kubectl mtv create plan --name no-shared-disks \
 kubectl mtv create plan --name warm-with-preflight \
   --source vsphere-prod \
   --migration-type warm \
-  --run-preflight-inspection \
+  --run-preflight-inspection true \
   --vms "critical-database-01"
 
 # Disable preflight for faster warm start
 kubectl mtv create plan --name warm-no-preflight \
   --source vsphere-prod \
   --migration-type warm \
-  --run-preflight-inspection=false \
+  --run-preflight-inspection false \
   --vms "test-warm-vm-01"
 ```
 

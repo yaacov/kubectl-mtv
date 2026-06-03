@@ -355,7 +355,7 @@ kubectl mtv create plan --name advanced-conversion-plan \
   --description "Conversion migration with vendor-provided storage" \
   --target-namespace migrated-workloads \
   --network-mapping production-network-mapping \
-  --preserve-static-ips \
+  --preserve-static-ips true \
   --target-power-state on \
   --vms "production-database,production-webserver"
 ```

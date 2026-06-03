@@ -874,7 +874,7 @@ kubectl mtv patch planvm --plan-name my-migration --vm-name vm-db-01 \
 
 # Enable NBDE/Clevis for encrypted VM
 kubectl mtv patch planvm --plan-name my-migration --vm-name vm-encrypted \
-  --nbde-clevis=true
+  --nbde-clevis true
 ```
 
 #### patch mapping --name MAPPING_NAME

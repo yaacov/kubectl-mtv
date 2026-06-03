@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // --- helpers ---
@@ -407,6 +409,36 @@ func TestFlagToSchema_BoolTrue(t *testing.T) {
 	schema := flagToSchema(f)
 	if def, ok := schema.Default.(bool); !ok || def != true {
 		t.Errorf("expected default true, got %v", schema.Default)
+	}
+}
+
+func TestFlagToSchema_ExplicitBoolTrue(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	var val bool
+	flags.ExplicitBoolVar(cmd.Flags(), &val, "migrate-shared-disks", true, "Migrate shared disks (true/false)")
+	f := cmd.Flags().Lookup("migrate-shared-disks")
+
+	schema := flagToSchema(f)
+	if schema.Type != "bool" {
+		t.Errorf("expected type 'bool', got %q", schema.Type)
+	}
+	if def, ok := schema.Default.(bool); !ok || def != true {
+		t.Errorf("expected default true, got %v (type %T)", schema.Default, schema.Default)
+	}
+}
+
+func TestFlagToSchema_ExplicitBoolFalse(t *testing.T) {
+	cmd := &cobra.Command{Use: "test"}
+	var val bool
+	flags.ExplicitBoolVar(cmd.Flags(), &val, "skip-guest-conversion", false, "Skip guest conversion (true/false)")
+	f := cmd.Flags().Lookup("skip-guest-conversion")
+
+	schema := flagToSchema(f)
+	if schema.Type != "bool" {
+		t.Errorf("expected type 'bool', got %q", schema.Type)
+	}
+	if def, ok := schema.Default.(bool); !ok || def != false {
+		t.Errorf("expected default false, got %v (type %T)", schema.Default, schema.Default)
 	}
 }
 
