@@ -331,7 +331,7 @@ func buildArgs(cmdPath string, flags map[string]any) []string {
 
 // appendNormalizedFlags appends flags from a map[string]any to the args slice.
 // It handles different value types:
-//   - bool true/false: passes --flag true or --flag false (space-separated)
+//   - bool true/false: passes --flag=true or --flag=false (equals form, safe for both BoolVar and ExplicitBool)
 //   - string "true"/"false": treated as boolean
 //   - string/number: converted to string form
 //
@@ -357,15 +357,15 @@ func appendNormalizedFlags(args []string, flags map[string]any, skipFlags map[st
 		switch v := value.(type) {
 		case bool:
 			if v {
-				args = append(args, prefix+name, "true")
+				args = append(args, prefix+name+"=true")
 			} else {
-				args = append(args, prefix+name, "false")
+				args = append(args, prefix+name+"=false")
 			}
 		case string:
 			if v == "true" {
-				args = append(args, prefix+name, "true")
+				args = append(args, prefix+name+"=true")
 			} else if v == "false" {
-				args = append(args, prefix+name, "false")
+				args = append(args, prefix+name+"=false")
 			} else if v != "" {
 				args = append(args, prefix+name, v)
 			}
