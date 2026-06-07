@@ -85,7 +85,7 @@ func TestBuildWriteArgs(t *testing.T) {
 				"url":                        "https://vcenter.example.com",
 				"provider-insecure-skip-tls": true,
 			},
-			wantContains: []string{"create", "provider", "--name", "my-provider", "--type", "vsphere", "--url", "--provider-insecure-skip-tls"},
+			wantContains: []string{"create", "provider", "--name", "my-provider", "--type", "vsphere", "--url", "--provider-insecure-skip-tls=true"},
 		},
 		{
 			name:         "does not auto-add output format",
