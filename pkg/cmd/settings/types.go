@@ -213,7 +213,7 @@ var SupportedSettings = map[string]SettingDefinition{
 	"feature_windows_wait_for_reboot": {
 		Name:        "feature_windows_wait_for_reboot",
 		Type:        TypeBool,
-		Default:     false,
+		Default:     true,
 		Description: "Enable Windows reboot wait during guest conversion",
 		Category:    CategoryFeature,
 	},
