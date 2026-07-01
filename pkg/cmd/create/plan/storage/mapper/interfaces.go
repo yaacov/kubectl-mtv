@@ -19,6 +19,9 @@ type StorageMappingOptions struct {
 	DefaultOffloadSecret         string
 	DefaultOffloadVendor         string
 	DefaultOffloadMigrationHosts string
+	// TargetStorageProvisioners maps target StorageClass name to its provisioner (CSI driver).
+	// Used by mappers to select compatible StorageClasses for the source provider type.
+	TargetStorageProvisioners map[string]string
 }
 
 // StorageMapper defines the interface for storage mapping operations

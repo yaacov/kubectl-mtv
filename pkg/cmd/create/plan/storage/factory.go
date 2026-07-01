@@ -119,15 +119,28 @@ func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (storageMa
 
 	// Fetch target storages
 	var targetStorages []forkliftv1beta1.DestinationStorage
+	var targetProvisioners map[string]string
 	if opts.DefaultTargetStorageClass == "" {
 		klog.V(4).Infof("DEBUG: Fetching target storages from target provider: %s", opts.TargetProvider)
-		targetStorages, err = targetFetcher.FetchTargetStorages(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace, opts.InventoryURL, opts.InventoryInsecureSkipTLS)
+		// Use provisioner-aware fetch when possible (OpenShift target)
+		if osFetcher, ok := targetFetcher.(*openshiftFetcher.OpenShiftStorageFetcher); ok {
+			targetStorages, targetProvisioners, err = osFetcher.FetchTargetStoragesWithProvisioners(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace, opts.InventoryURL, opts.InventoryInsecureSkipTLS)
+		} else {
+			targetStorages, err = targetFetcher.FetchTargetStorages(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace, opts.InventoryURL, opts.InventoryInsecureSkipTLS)
+		}
 		if err != nil {
 			return "", "", fmt.Errorf("failed to fetch target storages: %v", err)
 		}
 		klog.V(4).Infof("DEBUG: Fetched %d target storages", len(targetStorages))
 	} else {
-		klog.V(4).Infof("DEBUG: Skipping target storage fetch due to DefaultTargetStorageClass='%s'", opts.DefaultTargetStorageClass)
+		klog.V(4).Infof("DEBUG: DefaultTargetStorageClass='%s', fetching provisioners only for validation", opts.DefaultTargetStorageClass)
+		// Still fetch provisioners so the mapper can validate the user-specified SC
+		if osFetcher, ok := targetFetcher.(*openshiftFetcher.OpenShiftStorageFetcher); ok {
+			_, targetProvisioners, err = osFetcher.FetchTargetStoragesWithProvisioners(ctx, opts.ConfigFlags, opts.TargetProvider, targetProviderNamespace, opts.InventoryURL, opts.InventoryInsecureSkipTLS)
+			if err != nil {
+				return "", "", fmt.Errorf("failed to fetch target storage provisioners: %v", err)
+			}
+		}
 	}
 
 	// Get provider-specific storage mapper
@@ -186,6 +199,7 @@ func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (storageMa
 		DefaultOffloadSecret:         opts.DefaultOffloadSecret,
 		DefaultOffloadVendor:         opts.DefaultOffloadVendor,
 		DefaultOffloadMigrationHosts: opts.DefaultOffloadMigrationHosts,
+		TargetStorageProvisioners:    targetProvisioners,
 	}
 	storagePairs, err := storageMapper.CreateStoragePairs(sourceStorages, targetStorages, mappingOpts)
 	if err != nil {
