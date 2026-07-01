@@ -7,7 +7,6 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/azure"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/ec2"
-	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/generic"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/hyperv"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/openshift"
@@ -15,6 +14,7 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/ova"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/providerutil"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/provider/vsphere"
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 	"github.com/yaacov/kubectl-mtv/pkg/util/output"
 
 	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"

@@ -45,14 +45,14 @@ func ApplyOffloadToPairs(pairs []forkliftv1beta1.StoragePair, opts StorageMappin
 					SecretRef:            opts.DefaultOffloadSecret,
 					StorageVendorProduct: forkliftv1beta1.StorageVendorProduct(opts.DefaultOffloadVendor),
 				}
-			if opts.DefaultOffloadMigrationHosts != "" {
-				for _, h := range strings.Split(opts.DefaultOffloadMigrationHosts, "+") {
-					h = strings.TrimSpace(h)
-					if h != "" {
-						xcopyConfig.DedicatedMigrationHosts = append(xcopyConfig.DedicatedMigrationHosts, h)
+				if opts.DefaultOffloadMigrationHosts != "" {
+					for _, h := range strings.Split(opts.DefaultOffloadMigrationHosts, "+") {
+						h = strings.TrimSpace(h)
+						if h != "" {
+							xcopyConfig.DedicatedMigrationHosts = append(xcopyConfig.DedicatedMigrationHosts, h)
+						}
 					}
 				}
-			}
 				pairs[i].OffloadPlugin = &forkliftv1beta1.OffloadPlugin{
 					VSphereXcopyPluginConfig: xcopyConfig,
 				}
