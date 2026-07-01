@@ -7,35 +7,26 @@ import (
 
 // --- GetAllSettings ---
 
-func TestGetAllSettings_MergesMaps(t *testing.T) {
+func TestGetAllSettings_ReturnsAllEntries(t *testing.T) {
 	all := GetAllSettings()
 
-	// Must include entries from both SupportedSettings and ExtendedSettings
+	// AllSettings must include all supported settings
 	for name := range SupportedSettings {
 		if _, ok := all[name]; !ok {
 			t.Errorf("GetAllSettings() missing supported setting %q", name)
 		}
 	}
-	for name := range ExtendedSettings {
-		if _, ok := all[name]; !ok {
-			t.Errorf("GetAllSettings() missing extended setting %q", name)
-		}
-	}
 
-	expected := len(SupportedSettings) + len(ExtendedSettings)
-	if len(all) != expected {
-		t.Errorf("GetAllSettings() returned %d entries, expected %d", len(all), expected)
+	// Must have more entries than just supported (extended settings exist)
+	if len(all) <= len(SupportedSettings) {
+		t.Errorf("GetAllSettings() returned %d entries, expected more than %d supported", len(all), len(SupportedSettings))
 	}
 }
 
-func TestGetAllSettings_ReturnsCopy(t *testing.T) {
-	all1 := GetAllSettings()
-	all2 := GetAllSettings()
-
-	// Mutating one should not affect the other
-	all1["__test_key__"] = SettingDefinition{Name: "test"}
-	if _, ok := all2["__test_key__"]; ok {
-		t.Error("GetAllSettings() should return a new map each time")
+func TestGetAllSettings_IsAllSettings(t *testing.T) {
+	all := GetAllSettings()
+	if len(all) != len(AllSettings) {
+		t.Errorf("GetAllSettings() size %d != AllSettings size %d", len(all), len(AllSettings))
 	}
 }
 
@@ -90,7 +81,6 @@ func TestGetSettingNames_ContainsSupportedOnly(t *testing.T) {
 func TestGetSettingNames_SortedWithinCategory(t *testing.T) {
 	names := GetSettingNames()
 
-	// Group names by category and check sorting within each group
 	byCategory := map[SettingCategory][]string{}
 	for _, n := range names {
 		def := SupportedSettings[n]
@@ -117,7 +107,6 @@ func TestGetSettingsByCategory_GroupsCorrectly(t *testing.T) {
 		t.Errorf("GetSettingsByCategory() total %d, expected %d", totalCount, len(SupportedSettings))
 	}
 
-	// Verify each setting is in the correct category
 	for cat, defs := range grouped {
 		for _, def := range defs {
 			if def.Category != cat {
@@ -130,8 +119,7 @@ func TestGetSettingsByCategory_GroupsCorrectly(t *testing.T) {
 func TestGetSettingsByCategory_HasExpectedCategories(t *testing.T) {
 	grouped := GetSettingsByCategory()
 
-	// SupportedSettings should have at least image, feature, performance, debug categories
-	expected := []SettingCategory{CategoryImage, CategoryFeature, CategoryPerformance, CategoryDebug}
+	expected := []SettingCategory{CategoryImage, CategoryFeature, CategoryPerformance}
 	for _, cat := range expected {
 		if _, ok := grouped[cat]; !ok {
 			t.Errorf("GetSettingsByCategory() missing category %q", cat)
@@ -149,14 +137,13 @@ func TestIsValidSetting_KnownSettings(t *testing.T) {
 	}
 }
 
-func TestIsValidSetting_ExtendedSettingsReturnFalse(t *testing.T) {
-	for name := range ExtendedSettings {
-		// Extended settings that are NOT in SupportedSettings should return false
+func TestIsValidSetting_ExtendedOnlyReturnFalse(t *testing.T) {
+	for name := range AllSettings {
 		if _, ok := SupportedSettings[name]; ok {
-			continue // Skip overlapping entries
+			continue
 		}
 		if IsValidSetting(name) {
-			t.Errorf("IsValidSetting(%q) = true for extended-only setting, want false", name)
+			t.Errorf("IsValidSetting(%q) = true for non-supported setting, want false", name)
 		}
 	}
 }
@@ -177,10 +164,10 @@ func TestIsValidAnySetting_SupportedSettings(t *testing.T) {
 	}
 }
 
-func TestIsValidAnySetting_ExtendedSettings(t *testing.T) {
-	for name := range ExtendedSettings {
+func TestIsValidAnySetting_AllSettings(t *testing.T) {
+	for name := range AllSettings {
 		if !IsValidAnySetting(name) {
-			t.Errorf("IsValidAnySetting(%q) = false for extended setting", name)
+			t.Errorf("IsValidAnySetting(%q) = false for known setting", name)
 		}
 	}
 }
@@ -210,11 +197,11 @@ func TestGetSettingDefinition_Found(t *testing.T) {
 	}
 }
 
-func TestGetSettingDefinition_NotFoundExtended(t *testing.T) {
-	// "feature_ui_plugin" is only in ExtendedSettings
+func TestGetSettingDefinition_NotFoundNonSupported(t *testing.T) {
+	// "feature_ui_plugin" is in AllSettings but NOT in SupportedSettingNames
 	def := GetSettingDefinition("feature_ui_plugin")
 	if def != nil {
-		t.Error("GetSettingDefinition(extended-only) should return nil")
+		t.Error("GetSettingDefinition(non-supported) should return nil")
 	}
 }
 
@@ -238,10 +225,10 @@ func TestGetAnySettingDefinition_Supported(t *testing.T) {
 	}
 }
 
-func TestGetAnySettingDefinition_Extended(t *testing.T) {
+func TestGetAnySettingDefinition_NonSupported(t *testing.T) {
 	def := GetAnySettingDefinition("feature_ui_plugin")
 	if def == nil {
-		t.Fatal("GetAnySettingDefinition(extended) = nil")
+		t.Fatal("GetAnySettingDefinition(non-supported) = nil")
 		return
 	}
 	if def.Name != "feature_ui_plugin" {
@@ -256,10 +243,10 @@ func TestGetAnySettingDefinition_NotFound(t *testing.T) {
 	}
 }
 
-func TestNewCopyOffloadSettingExists(t *testing.T) {
+func TestCopyOffloadSettingExists(t *testing.T) {
 	def := GetSettingDefinition("populator_vsphere_copy_offload_image_fqin")
 	if def == nil {
-		t.Fatal("new populator_vsphere_copy_offload_image_fqin must exist in SupportedSettings")
+		t.Fatal("populator_vsphere_copy_offload_image_fqin must exist in SupportedSettings")
 		return
 	}
 	if def.Category != CategoryImage {
@@ -320,24 +307,24 @@ func TestSupportedSettings_NameFieldConsistency(t *testing.T) {
 	}
 }
 
-func TestExtendedSettings_NameFieldConsistency(t *testing.T) {
-	for key, def := range ExtendedSettings {
+func TestAllSettings_NameFieldConsistency(t *testing.T) {
+	for key, def := range AllSettings {
 		if key != def.Name {
-			t.Errorf("ExtendedSettings key %q != def.Name %q", key, def.Name)
+			t.Errorf("AllSettings key %q != def.Name %q", key, def.Name)
 		}
 		if def.Description == "" {
-			t.Errorf("ExtendedSettings[%q] has empty Description", key)
+			t.Errorf("AllSettings[%q] has empty Description", key)
 		}
 		if def.Type != TypeString && def.Type != TypeBool && def.Type != TypeInt {
-			t.Errorf("ExtendedSettings[%q] has invalid Type %q", key, def.Type)
+			t.Errorf("AllSettings[%q] has invalid Type %q", key, def.Type)
 		}
 	}
 }
 
-func TestNoOverlapBetweenSupportedAndExtended(t *testing.T) {
-	for name := range SupportedSettings {
-		if _, ok := ExtendedSettings[name]; ok {
-			t.Errorf("setting %q exists in both SupportedSettings and ExtendedSettings", name)
+func TestSupportedSettingNames_AllExistInAllSettings(t *testing.T) {
+	for _, name := range SupportedSettingNames {
+		if _, ok := AllSettings[name]; !ok {
+			t.Errorf("SupportedSettingNames entry %q not found in AllSettings", name)
 		}
 	}
 }

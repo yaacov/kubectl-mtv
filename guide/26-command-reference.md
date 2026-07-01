@@ -156,6 +156,21 @@ kubectl mtv get hook --name <hook-name> [flags]  # Get specific hook
 - `--query, -q`: Query filter using TSL syntax
 - `--watch, -w`: Watch for changes
 
+#### get conversion [--name CONVERSION_NAME]
+
+Retrieve Conversion CR resources (requires `feature_use_conversion_cr` setting enabled).
+
+```bash
+kubectl mtv get conversions [flags]                          # List all conversions
+kubectl mtv get conversion --name <conversion-name> [flags]  # Get specific conversion
+```
+
+**Flags:**
+- `--name, -M`: Conversion name (optional, omit to list all)
+- `--output, -o`: Output format (table, json, yaml, markdown)
+- `--query, -q`: Query filter using TSL syntax (e.g., `"where phase = 'Running'"`)
+- `--watch, -w`: Watch for changes
+
 ### get inventory - Query Provider Inventory
 
 Get inventory resources from providers using the Tree Search Language (TSL) for advanced filtering.
@@ -219,6 +234,30 @@ Retrieve namespaces from provider inventory.
 kubectl mtv get inventory namespaces --provider <provider-name> [flags]
 ```
 
+#### get inventory job-template
+
+Retrieve AAP (Ansible Automation Platform) job templates from the inventory service. Requires AAP to be configured on the ForkliftController (`aap_url` and `aap_token_secret_name` settings).
+
+```bash
+kubectl mtv get inventory job-template [flags]
+```
+
+**Flags:**
+- `--query, -q`: TSL query filter (e.g., `"where name ~= 'migration.*'"`)
+- `--output, -o`: Output format (table, json, yaml, markdown)
+
+**Examples:**
+```bash
+# List all AAP job templates
+kubectl mtv get inventory job-template
+
+# Filter by name
+kubectl mtv get inventory job-template --query "where name ~= 'pre-.*'"
+
+# Output as JSON
+kubectl mtv get inventory job-template --output json
+```
+
 All inventory subcommands support the same flags as `get inventory vms`.
 
 ### describe - Detailed Resource Information
@@ -279,6 +318,18 @@ kubectl mtv describe hook --name <hook-name> [flags]
 - `--name, -M`: Hook name (required)
 - `--output, -o`: Output format (table, json, yaml, markdown)
 
+#### describe conversion --name CONVERSION_NAME
+
+Display detailed information about a Conversion resource including spec, status, phase, snapshot state, inspection results, and conditions.
+
+```bash
+kubectl mtv describe conversion --name <conversion-name> [flags]
+```
+
+**Flags:**
+- `--name, -M`: Conversion name (required)
+- `--output, -o`: Output format (table, json, yaml, markdown)
+
 ### delete - Remove Resources
 
 Delete MTV resources. To delete multiple resources at once, pass a comma-separated
@@ -337,7 +388,7 @@ kubectl mtv create provider --name <name> [flags]
 ```
 
 **Common Flags:**
-- `--type, -t`: Provider type (openshift, vsphere, ovirt, openstack, ova, ec2, hyperv)
+- `--type, -t`: Provider type (openshift, vsphere, ovirt, openstack, ova, ec2, azure, hyperv)
 - `--secret`: Secret containing provider credentials
 - `--url, -U`: Provider URL
 - `--username, -u`: Provider credentials username
@@ -369,6 +420,16 @@ kubectl mtv create provider --name <name> [flags]
 - `--target-access-key-id`: Target AWS account access key ID (for cross-account migrations)
 - `--target-secret-access-key`: Target AWS account secret access key (for cross-account migrations)
 - `--auto-target-credentials`: Automatically fetch target AWS credentials from cluster
+
+**Azure Provider Flags:**
+- `--azure-tenant-id`: Azure AD tenant ID
+- `--azure-subscription-id`: Azure subscription ID containing source VMs
+- `--azure-client-id`: Azure service principal application (client) ID
+- `--azure-client-secret`: Azure service principal secret
+- `--azure-resource-group`: Azure resource group containing source VMs (required)
+- `--azure-target-region`: Target region for cross-region migrations (optional)
+- `--azure-snapshot-sku`: Snapshot SKU (Standard_LRS, Standard_ZRS, Premium_LRS; default: Standard_ZRS)
+- `--azure-snapshot-resource-group`: Resource group for snapshots (defaults to source resource group)
 
 **HyperV Provider Flags:**
 - `--smb-url`: SMB share URL for HyperV (e.g., //server/share)
@@ -615,29 +676,44 @@ kubectl mtv create host --host-id host-12 \
 
 #### create hook --name HOOK_NAME
 
-Create migration hooks for custom automation.
+Create migration hooks for custom automation. Hooks can be local (image-based) or AAP (Ansible Automation Platform) hooks. The two types are mutually exclusive.
 
 ```bash
 kubectl mtv create hook --name <name> [flags]
 ```
 
-**Flags:**
+**Local Hook Flags:**
 - `--image`: Container image to run (default: quay.io/kubev2v/hook-runner)
 - `--playbook`: Ansible playbook content (use @filename to load from file)
 - `--service-account`: Service account for hook execution
 - `--deadline`: Hook execution deadline in seconds
 
+**AAP Hook Flags** (mutually exclusive with `--image` and `--playbook`):
+- `--aap-job-template-id`: AAP job template ID (required for AAP hooks)
+- `--aap-url`: Per-hook AAP base URL (overrides controller default)
+- `--aap-token-secret`: Per-hook AAP token Secret name (overrides controller default)
+- `--aap-timeout`: Per-hook AAP job poll timeout in seconds (overrides controller default)
+
 **Examples:**
 ```bash
-# Hook with inline playbook
+# Local hook with inline playbook
 kubectl mtv create hook --name backup-hook \
   --playbook "- hosts: localhost\n  tasks:\n  - debug: msg='Backup complete'"
 
-# Hook with playbook file
+# Local hook with playbook file
 kubectl mtv create hook --name database-backup \
   --playbook @backup-playbook.yml \
   --service-account hook-runner-sa \
   --deadline 300
+
+# AAP hook triggering job template #42
+kubectl mtv create hook --name aap-backup --aap-job-template-id 42
+
+# AAP hook with per-hook overrides
+kubectl mtv create hook --name aap-validate \
+  --aap-job-template-id 55 \
+  --aap-url "https://aap-staging.example.com" \
+  --aap-timeout 900
 ```
 
 #### create vddk-image
@@ -902,6 +978,42 @@ kubectl mtv patch mapping storage --name enterprise-storage \
   --update-pairs "premium-ds:ultra-fast-ssd;volumeMode=Block"
 ```
 
+#### patch hook --name HOOK_NAME
+
+Update an existing migration hook.
+
+```bash
+kubectl mtv patch hook --name <hook-name> [flags]
+```
+
+**Local Hook Update Flags:**
+- `--image`: Update container image URL
+- `--playbook`: Update Ansible playbook content (use @filename to load from file)
+- `--service-account`: Update service account
+- `--deadline`: Update hook deadline in seconds
+
+**AAP Hook Update Flags:**
+- `--aap-job-template-id`: Set/change AAP job template ID
+- `--aap-url`: Set/change per-hook AAP base URL
+- `--aap-token-secret`: Set/change per-hook AAP token Secret name
+- `--aap-timeout`: Set/change per-hook AAP job poll timeout in seconds
+- `--clear-aap`: Remove AAP configuration (requires `--image` or `--playbook` for resulting local hook)
+
+**Examples:**
+```bash
+# Update local hook image
+kubectl mtv patch hook --name my-hook --image my-registry/hook:v2
+
+# Switch local hook to AAP hook
+kubectl mtv patch hook --name my-hook --aap-job-template-id 42 --image ""
+
+# Switch AAP hook back to local hook
+kubectl mtv patch hook --name my-hook --clear-aap --image quay.io/kubev2v/hook-runner
+
+# Update AAP hook timeout
+kubectl mtv patch hook --name my-hook --aap-timeout 900
+```
+
 #### patch provider --name PROVIDER_NAME
 
 Update provider settings.
@@ -938,6 +1050,16 @@ kubectl mtv patch provider --name <provider-name> [flags]
 - `--target-access-key-id`: Update target AWS account access key ID
 - `--target-secret-access-key`: Update target AWS account secret access key
 - `--auto-target-credentials`: Auto-fetch target AWS credentials from cluster
+
+**Azure Provider Update Flags:**
+- `--azure-tenant-id`: Update Azure AD tenant ID
+- `--azure-subscription-id`: Update Azure subscription ID
+- `--azure-client-id`: Update service principal client ID
+- `--azure-client-secret`: Update service principal secret
+- `--azure-resource-group`: Update resource group
+- `--azure-target-region`: Update target region for cross-region migrations
+- `--azure-snapshot-sku`: Update snapshot SKU (Standard_LRS, Standard_ZRS, Premium_LRS)
+- `--azure-snapshot-resource-group`: Update snapshot resource group
 
 **HyperV Provider Update Flags:**
 - `--smb-url`: Update SMB share URL

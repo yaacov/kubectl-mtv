@@ -23,6 +23,8 @@ For complete information about the underlying migration technology, see the [off
 - **Red Hat Virtualization (oVirt/RHV)** - Complete support for oVirt and Red Hat Virtualization platforms (see [oVirt Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#rhv-prerequisites_mtv))
 - **Red Hat OpenStack Platform** - Support for OpenStack-based virtualization environments (see [OpenStack Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#openstack-prerequisites_mtv))
 - **Amazon EC2** - Support for migrating EC2 instances from AWS
+- **Microsoft Azure** - Support for migrating Azure VMs using service principal authentication
+- **Microsoft Hyper-V** - Support for migrating VMs from Hyper-V hosts via SMB share access
 - **KubeVirt/OpenShift Virtualization** - Support for migrating VMs between KubeVirt clusters or within the same cluster (see [KubeVirt Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#cnv-prerequisites_mtv))
 - **OVA Files** - Direct import and conversion of OVA (Open Virtualization Appliance) files (see [OVA Prerequisites](https://kubev2v.github.io/forklift-documentation/documentation/doc-Planning_your_migration/master.html#ova-prerequisites_mtv))
 
