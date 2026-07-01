@@ -210,11 +210,6 @@ func PatchProvider(opts PatchProviderOptions) error {
 
 	// Update Azure settings for Azure providers
 	if providerType == "azure" {
-		if opts.AzureResourceGroup != "" {
-			klog.V(2).Infof("Updating Azure resourceGroup to '%s'", opts.AzureResourceGroup)
-			currentSettings["resourceGroup"] = opts.AzureResourceGroup
-			providerUpdated = true
-		}
 		if opts.AzureTargetRegion != "" {
 			klog.V(2).Infof("Updating Azure targetRegion to '%s'", opts.AzureTargetRegion)
 			currentSettings["targetRegion"] = opts.AzureTargetRegion
@@ -465,6 +460,11 @@ func updateSecretCredentials(configFlags *genericclioptions.ConfigFlags, secret 
 		if opts.AzureClientSecret != "" {
 			secret.Data["clientSecret"] = []byte(opts.AzureClientSecret)
 			klog.V(2).Infof("Updated Azure client secret")
+			updated = true
+		}
+		if opts.AzureResourceGroup != "" {
+			secret.Data["resourceGroup"] = []byte(opts.AzureResourceGroup)
+			klog.V(2).Infof("Updated Azure resource group")
 			updated = true
 		}
 	}
