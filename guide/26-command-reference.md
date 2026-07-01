@@ -422,14 +422,14 @@ kubectl mtv create provider --name <name> [flags]
 - `--auto-target-credentials`: Automatically fetch target AWS credentials from cluster
 
 **Azure Provider Flags:**
-- `--azure-tenant-id`: Azure AD tenant ID
-- `--azure-subscription-id`: Azure subscription ID containing source VMs
-- `--azure-client-id`: Azure service principal application (client) ID
-- `--azure-client-secret`: Azure service principal secret
-- `--azure-resource-group`: Azure resource group containing source VMs (required)
-- `--azure-target-region`: Target region for cross-region migrations (optional)
-- `--azure-snapshot-sku`: Snapshot SKU (Standard_LRS, Standard_ZRS, Premium_LRS; default: Standard_ZRS)
-- `--azure-snapshot-resource-group`: Resource group for snapshots (defaults to source resource group)
+- `--azure-tenant-id`: Azure AD tenant ID (credential, stored in secret)
+- `--azure-subscription-id`: Azure subscription ID containing source VMs (credential, stored in secret)
+- `--azure-client-id`: Azure service principal application (client) ID (credential, stored in secret)
+- `--azure-client-secret`: Azure service principal secret (credential, stored in secret)
+- `--azure-resource-group`: Azure resource group containing source VMs (credential, stored in secret)
+- `--azure-target-region`: Target region for cross-region migrations (optional, stored in settings)
+- `--azure-snapshot-sku`: Snapshot SKU (Standard_LRS, Standard_ZRS, Premium_LRS; default: Standard_ZRS; stored in settings)
+- `--azure-snapshot-resource-group`: Resource group for snapshots (defaults to source resource group; stored in settings)
 
 **HyperV Provider Flags:**
 - `--smb-url`: SMB share URL for HyperV (e.g., //server/share)
@@ -1052,14 +1052,14 @@ kubectl mtv patch provider --name <provider-name> [flags]
 - `--auto-target-credentials`: Auto-fetch target AWS credentials from cluster
 
 **Azure Provider Update Flags:**
-- `--azure-tenant-id`: Update Azure AD tenant ID
-- `--azure-subscription-id`: Update Azure subscription ID
-- `--azure-client-id`: Update service principal client ID
-- `--azure-client-secret`: Update service principal secret
-- `--azure-resource-group`: Update resource group
-- `--azure-target-region`: Update target region for cross-region migrations
-- `--azure-snapshot-sku`: Update snapshot SKU (Standard_LRS, Standard_ZRS, Premium_LRS)
-- `--azure-snapshot-resource-group`: Update snapshot resource group
+- `--azure-tenant-id`: Update Azure AD tenant ID (updates secret)
+- `--azure-subscription-id`: Update Azure subscription ID (updates secret)
+- `--azure-client-id`: Update service principal client ID (updates secret)
+- `--azure-client-secret`: Update service principal secret (updates secret)
+- `--azure-resource-group`: Update resource group (updates secret)
+- `--azure-target-region`: Update target region for cross-region migrations (updates settings)
+- `--azure-snapshot-sku`: Update snapshot SKU (Standard_LRS, Standard_ZRS, Premium_LRS; updates settings)
+- `--azure-snapshot-resource-group`: Update snapshot resource group (updates settings)
 
 **HyperV Provider Update Flags:**
 - `--smb-url`: Update SMB share URL
