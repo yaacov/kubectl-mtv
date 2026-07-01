@@ -16,7 +16,7 @@ Settings are organized into categories:
 | **Category** | **Description** |
 |--------------|-----------------|
 | image | Container images (VDDK, virt-v2v, custom FQINs) |
-| feature | Feature flags (warm migration, copy offload, live migration) |
+| feature | Feature flags (warm migration, copy offload, live migration, MCP server) |
 | performance | Performance tuning (max concurrent VMs, precopy interval, timeouts) |
 | debug | Debugging (controller log level) |
 | virt-v2v | virt-v2v container resource limits and extra arguments |
@@ -24,6 +24,8 @@ Settings are organized into categories:
 | hook | Hook container resources |
 | ova | OVA provider server container resources |
 | hyperv | HyperV provider server container resources |
+| mcp-server | MCP server integration settings (Lightspeed) |
+| aap | Ansible Automation Platform connection and authentication |
 
 By default, only the curated **supported settings** are shown. Use `--all` to include the full set of **extended settings** (controller, inventory, API, UI plugin, validation, CLI download, OVA proxy, ConfigMaps, and advanced settings).
 
@@ -76,6 +78,10 @@ kubectl mtv settings unset --setting controller_max_vm_inflight
 | `feature_ocp_live_migration` | bool | false | Enable cross-cluster OpenShift live migration |
 | `feature_vmware_system_serial_number` | bool | true | Use VMware system serial number for migrated VMs |
 | `feature_ova_appliance_management` | bool | false | Enable appliance management for OVF-based providers |
+| `feature_vsphere_vmware_driver_removal` | bool | false | Enable VMware driver removal during vSphere migrations |
+| `feature_windows_registry_network_config` | bool | false | Enable Windows registry-based network configuration |
+| `feature_windows_wait_for_reboot` | bool | false | Wait for Windows VM reboot after migration |
+| `feature_mcp_server` | bool | false | Enable MCP server feature in the operator |
 
 ### Performance Tuning
 
@@ -108,6 +114,26 @@ kubectl mtv settings unset --setting controller_max_vm_inflight
 | **Setting** | **Type** | **Default** | **Description** |
 |-------------|----------|-------------|-----------------|
 | `controller_log_level` | int | 3 | Controller log verbosity (0-9) |
+
+### MCP Server
+
+| **Setting** | **Type** | **Default** | **Description** |
+|-------------|----------|-------------|-----------------|
+| `feature_mcp_server` | bool | false | Enable MCP server feature in the operator |
+| `mcp_server_lightspeed_integration` | bool | false | Enable Lightspeed integration for MCP server |
+| `mcp_server_lightspeed_set_mcp_gate` | bool | false | Set MCP gate for Lightspeed |
+
+### AAP (Ansible Automation Platform)
+
+| **Setting** | **Type** | **Default** | **Description** |
+|-------------|----------|-------------|-----------------|
+| `aap_url` | string | (empty) | Base URL for the AAP server |
+| `aap_token_secret_name` | string | (empty) | Name of the Secret containing the AAP API token |
+| `aap_timeout` | int | (unset) | Default timeout in seconds for AAP job polling |
+| `aap_insecure_skip_verify` | bool | false | Skip TLS certificate verification for AAP |
+| `aap_ca_secret_name` | string | (empty) | Name of the Secret containing a custom CA for AAP |
+
+See [Chapter 29: AAP Integration](29-aap-integration.md) for full AAP setup and usage documentation.
 
 ## Supported vs Extended Settings
 

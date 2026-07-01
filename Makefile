@@ -187,11 +187,19 @@ dump-mcp-tools: kubectl-mtv
 	@echo "Dumping MCP tools/list response (stdio mode)..."
 	@python3 scripts/dump-mcp-tools.py --stdio ./kubectl-mtv mcp-server
 
-## verify-defaults: Verify settings defaults against forklift (FORKLIFT_PATH)
+## generate-settings: Generate settings definitions from ForkliftControllerSpec
+.PHONY: generate-settings
+generate-settings:
+	@echo "Generating settings from $(FORKLIFT_PATH)..."
+	@go run ./cmd/gen-settings/main.go \
+		-input $(FORKLIFT_PATH)/pkg/apis/forklift/v1beta1/forkliftcontroller.go \
+		-output pkg/cmd/settings/types_generated.go
+
+## verify-defaults: Verify generated settings compile and tests pass
 .PHONY: verify-defaults
-verify-defaults:
-	@echo "Verifying settings defaults against forklift..."
-	@./scripts/verify-defaults.sh $(FORKLIFT_PATH)
+verify-defaults: generate-settings
+	@echo "Verifying settings..."
+	@go test ./pkg/cmd/settings/ -run TestSupportedSettingNames_AllExistInAllSettings -v
 
 ## test-e2e-mcp: Run MCP e2e tests against the latest local build
 .PHONY: test-e2e-mcp

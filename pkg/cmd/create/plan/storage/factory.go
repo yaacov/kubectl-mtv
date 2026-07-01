@@ -17,6 +17,7 @@ import (
 
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/mapping/offload"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers"
+	azureFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/azure"
 	ec2Fetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/ec2"
 	hypervFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/hyperv"
 	openshiftFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/openshift"
@@ -25,6 +26,7 @@ import (
 	ovirtFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/ovirt"
 	vsphereFetcher "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/fetchers/vsphere"
 	"github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper"
+	azureMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/azure"
 	ec2Mapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/ec2"
 	hypervMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/hyperv"
 	openshiftMapper "github.com/yaacov/kubectl-mtv/pkg/cmd/create/plan/storage/mapper/openshift"
@@ -66,11 +68,12 @@ type StorageMapperOptions struct {
 	OutputFormat              string
 
 	// Storage enhancement options
-	DefaultVolumeMode    string
-	DefaultAccessMode    string
-	DefaultOffloadPlugin string
-	DefaultOffloadSecret string
-	DefaultOffloadVendor string
+	DefaultVolumeMode            string
+	DefaultAccessMode            string
+	DefaultOffloadPlugin         string
+	DefaultOffloadSecret         string
+	DefaultOffloadVendor         string
+	DefaultOffloadMigrationHosts string
 
 	// Offload secret creation fields
 	OffloadVSphereUsername string
@@ -174,14 +177,15 @@ func CreateStorageMap(ctx context.Context, opts StorageMapperOptions) (storageMa
 
 	// Create storage pairs using provider-specific mapping logic
 	mappingOpts := mapper.StorageMappingOptions{
-		DefaultTargetStorageClass: opts.DefaultTargetStorageClass,
-		SourceProviderType:        sourceProviderType,
-		TargetProviderType:        targetProviderType,
-		DefaultVolumeMode:         opts.DefaultVolumeMode,
-		DefaultAccessMode:         opts.DefaultAccessMode,
-		DefaultOffloadPlugin:      opts.DefaultOffloadPlugin,
-		DefaultOffloadSecret:      opts.DefaultOffloadSecret,
-		DefaultOffloadVendor:      opts.DefaultOffloadVendor,
+		DefaultTargetStorageClass:    opts.DefaultTargetStorageClass,
+		SourceProviderType:           sourceProviderType,
+		TargetProviderType:           targetProviderType,
+		DefaultVolumeMode:            opts.DefaultVolumeMode,
+		DefaultAccessMode:            opts.DefaultAccessMode,
+		DefaultOffloadPlugin:         opts.DefaultOffloadPlugin,
+		DefaultOffloadSecret:         opts.DefaultOffloadSecret,
+		DefaultOffloadVendor:         opts.DefaultOffloadVendor,
+		DefaultOffloadMigrationHosts: opts.DefaultOffloadMigrationHosts,
 	}
 	storagePairs, err := storageMapper.CreateStoragePairs(sourceStorages, targetStorages, mappingOpts)
 	if err != nil {
@@ -324,6 +328,9 @@ func GetSourceStorageFetcher(ctx context.Context, configFlags *genericclioptions
 	case "hyperv":
 		klog.V(4).Infof("DEBUG: Using HyperV source storage fetcher for %s", providerName)
 		return hypervFetcher.NewHyperVStorageFetcher(), nil
+	case "azure":
+		klog.V(4).Infof("DEBUG: Using Azure source storage fetcher for %s", providerName)
+		return azureFetcher.NewAzureStorageFetcher(), nil
 	default:
 		return nil, fmt.Errorf("unsupported source provider type: %s", providerType)
 	}
@@ -372,6 +379,9 @@ func GetTargetStorageFetcher(ctx context.Context, configFlags *genericclioptions
 	case "hyperv":
 		klog.V(4).Infof("DEBUG: Using HyperV target storage fetcher for %s", providerName)
 		return hypervFetcher.NewHyperVStorageFetcher(), nil
+	case "azure":
+		klog.V(4).Infof("DEBUG: Using Azure target storage fetcher for %s", providerName)
+		return azureFetcher.NewAzureStorageFetcher(), nil
 	default:
 		return nil, fmt.Errorf("unsupported target provider type: %s", providerType)
 	}
@@ -431,6 +441,9 @@ func GetStorageMapper(ctx context.Context, configFlags *genericclioptions.Config
 	case "hyperv":
 		klog.V(4).Infof("DEBUG: Using HyperV storage mapper for source %s", sourceProviderName)
 		return hypervMapper.NewHyperVStorageMapper(), sourceProviderType, targetProviderType, nil
+	case "azure":
+		klog.V(4).Infof("DEBUG: Using Azure storage mapper for source %s", sourceProviderName)
+		return azureMapper.NewAzureStorageMapper(), sourceProviderType, targetProviderType, nil
 	default:
 		return nil, "", "", fmt.Errorf("unsupported source provider type: %s", sourceProviderType)
 	}

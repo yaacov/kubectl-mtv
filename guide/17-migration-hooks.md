@@ -5,7 +5,9 @@ parent: "V. Advanced Migration Customization and Optimization"
 nav_order: 3
 ---
 
-Migration hooks provide powerful custom automation capabilities that enable running custom code at specific points during the migration process. This chapter covers comprehensive hook development, deployment, and integration with migration workflows.
+Migration hooks provide powerful custom automation capabilities that enable running custom code at specific points during the migration process. This chapter covers local (container-based) hook development, deployment, and integration with migration workflows.
+
+For AAP (Ansible Automation Platform) hooks that trigger remote job templates instead of running local containers, see [Chapter 29: AAP Integration](29-aap-integration.md).
 
 ## Overview: Enabling Custom Automation
 
@@ -17,6 +19,17 @@ Migration hooks are Kubernetes resources that define custom automation to be exe
 - **Post-migration Hooks**: Execute after VM migration completes
 - **Custom Logic**: Handle migration-specific requirements unique to your environment
 - **Ansible-Based**: Leverage Ansible playbooks for automation logic
+
+### Hook Types
+
+Forklift supports two types of hooks:
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| **Local** | Runs a container image with an optional Ansible playbook | Self-contained automation, custom images, no external dependencies |
+| **AAP** | Triggers a job template on Ansible Automation Platform | Enterprise automation, centralized management, credential isolation |
+
+This chapter covers **local hooks**. For AAP hooks, see [Chapter 29: AAP Integration](29-aap-integration.md).
 
 ### Hook Execution Model
 
@@ -67,12 +80,25 @@ Contains current VM (workload) specific data:
 
 Hook creation supports comprehensive configuration verified from the command code:
 
+**Local hook flags:**
+
 | Parameter | Flag | Description | Default |
 |-----------|------|-------------|---------|
-| **Image** | `--image`, `-i` | Container image URL | `quay.io/kubev2v/hook-runner` |
+| **Image** | `--image` | Container image URL | `quay.io/kubev2v/hook-runner` |
 | **Playbook** | `--playbook` | Ansible playbook content or @file | None |
 | **Service Account** | `--service-account` | Kubernetes ServiceAccount | Default |
 | **Deadline** | `--deadline` | Hook timeout in seconds | No timeout |
+
+**AAP hook flags** (mutually exclusive with `--image` and `--playbook`):
+
+| Parameter | Flag | Description | Default |
+|-----------|------|-------------|---------|
+| **Job Template ID** | `--aap-job-template-id` | AAP job template ID | -- |
+| **AAP URL** | `--aap-url` | Per-hook AAP server URL override | Controller setting |
+| **AAP Token** | `--aap-token-secret` | Per-hook AAP token Secret name | Controller setting |
+| **AAP Timeout** | `--aap-timeout` | Per-hook job poll timeout (seconds) | Controller setting |
+
+See [Chapter 29: AAP Integration](29-aap-integration.md) for complete AAP hook documentation.
 
 ## How-To: Creating Hooks
 

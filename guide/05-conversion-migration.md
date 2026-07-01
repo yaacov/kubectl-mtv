@@ -360,6 +360,26 @@ kubectl mtv create plan --name advanced-conversion-plan \
   --vms "production-database,production-webserver"
 ```
 
+## Monitoring Conversion CRs
+
+When the `feature_use_conversion_cr` setting is enabled, Forklift creates Conversion custom resources to track the lifecycle of individual VM disk conversions. You can monitor these with:
+
+```bash
+# List all conversions in the namespace
+kubectl mtv get conversions
+
+# Filter conversions by phase
+kubectl mtv get conversions --query "where phase = 'Running'"
+
+# Get detailed information about a specific conversion
+kubectl mtv describe conversion --name my-conv-abc123
+
+# Watch conversions in real time
+kubectl mtv get conversions --watch
+```
+
+Conversion resources show the conversion type (inspection, in-place, or remote), disk list, current phase, and any conditions or errors.
+
 ## Next Steps
 
 After understanding conversion migration:
