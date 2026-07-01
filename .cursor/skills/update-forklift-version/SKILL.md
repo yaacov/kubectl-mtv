@@ -46,26 +46,27 @@ Verify the build succeeds. If it fails, report the errors and stop.
 
 This step has two parts that run independently:
 
-### 3a. Always: Check Settings Against Upstream Defaults
+### 3a. Always: Regenerate Settings from ForkliftControllerSpec
 
-Settings live in the Ansible defaults file, NOT in the vendored Go code. They can
-change even when the vendor diff is empty. Always perform this check.
+Settings are derived directly from the `ForkliftControllerSpec` Go struct via code
+generation. Run this after every forklift version bump:
 
-1. Fetch the upstream defaults:
-
-```text
-https://raw.githubusercontent.com/kubev2v/forklift/main/operator/roles/forkliftcontroller/defaults/main.yml
+```bash
+make generate-settings
+go test ./pkg/cmd/settings/...
 ```
 
-2. Extract all setting keys from the file (lines matching `key: value` patterns).
+This will:
+1. Parse the upstream `ForkliftControllerSpec` struct
+2. Regenerate `pkg/cmd/settings/types_generated.go` with updated fields, defaults, descriptions
+3. Run tests to verify all `SupportedSettingNames` entries still exist in the generated map
 
-3. Compare against every key in `SupportedSettings` and `ExtendedSettings` in
-   `pkg/cmd/settings/types.go`. Report:
-   - New settings upstream that are missing from our maps
-   - Settings in our maps that no longer exist upstream
-   - Default value mismatches
+If the test `TestSupportedSettingNames_AllExistInAllSettings` fails, a setting was
+removed upstream — update `SupportedSettingNames` in `pkg/cmd/settings/types.go`.
 
-4. Present findings to the user before making any changes.
+If new settings were added upstream, they appear automatically in `--all` output.
+To promote a new setting to the curated (default) view, add its JSON name to
+`SupportedSettingNames` in `pkg/cmd/settings/types.go`.
 
 ### 3b. Conditionally: Check CRDs and Inventory (only if vendor changed)
 
@@ -88,34 +89,32 @@ code changes.
 
 ### Check ForkliftController Settings
 
-Settings are defined in `pkg/cmd/settings/types.go` in two maps:
-- `SupportedSettings` -- commonly configured settings
-- `ExtendedSettings` -- advanced/less-common settings
+Settings are auto-generated from the upstream `ForkliftControllerSpec` struct:
+- `pkg/cmd/settings/types_generated.go` -- generated `AllSettings` map (DO NOT EDIT)
+- `pkg/cmd/settings/types.go` -- `SupportedSettingNames` curated list + type definitions
 
-#### Upstream Source of Truth
+#### Regeneration
 
-Fetch the Ansible defaults file (canonical defaults for all settings):
-
-```text
-https://raw.githubusercontent.com/kubev2v/forklift/main/operator/roles/forkliftcontroller/defaults/main.yml
+```bash
+make generate-settings
 ```
 
-#### What to Compare
+This parses `ForkliftControllerSpec` from the vendored forklift code and regenerates
+the `AllSettings` map with all field names, types, defaults, descriptions, and categories.
 
-For every setting in our maps, compare against the upstream file:
+#### What to Check After Regeneration
 
 | Check | Action |
 |-------|--------|
-| **Default value mismatch** | Update `Default` field in our definition |
-| **Setting removed upstream** | Search vendored code (`vendor/github.com/kubev2v/forklift/`) to confirm removal, then delete from our map |
-| **New setting upstream** | Add to `SupportedSettings` (user-facing) or `ExtendedSettings` (advanced) with correct type, default, description, and category |
-| **New category needed** | Add to `SettingCategory` constants and `CategoryOrder` slice in `types.go` |
+| **Test failure: setting removed upstream** | Remove the name from `SupportedSettingNames` in `types.go` |
+| **New setting worth promoting** | Add its JSON name to `SupportedSettingNames` in `types.go` |
+| **New category needed** | Add to `SettingCategory` constants and `CategoryOrder` in `types.go`, add mapping in `cmd/gen-settings/main.go` `sectionToCategory` |
 
 #### Verification
 
 Run `go test ./pkg/cmd/settings/...` -- the test suite checks:
-- Name/key consistency
-- No overlap between Supported and Extended
+- All `SupportedSettingNames` entries exist in `AllSettings`
+- Name/key consistency in generated map
 - All categories in CategoryOrder are covered
 - Sorting within categories
 

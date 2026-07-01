@@ -19,7 +19,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
 
 1.  **[Overview of kubectl-mtv](guide/01-overview-of-kubectl-mtv)**
     *   What is `kubectl-mtv`? (A `kubectl` plugin for migrating virtualization workloads to KubeVirt using Forklift).
-    *   Core Functionality and Supported Platforms (vSphere, oVirt, OpenStack, OVA).
+    *   Core Functionality and Supported Platforms (vSphere, oVirt, OpenStack, EC2, Azure, HyperV, OVA).
     *   Key Features (Advanced Queries, Flexible Mapping, VDDK Support, Real-time Monitoring).
     *   Relationship with Forklift/Migration Toolkit for Virtualization (MTV).
 
@@ -64,6 +64,9 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
         *   vSphere Provider (URL, Credentials, VDDK Image).
         *   oVirt/RHV Provider.
         *   OpenStack Provider.
+        *   EC2 Provider (AWS region, target region/AZ).
+        *   Azure Provider (Service Principal, Resource Group, Snapshot settings).
+        *   HyperV Provider (SMB share).
         *   OpenShift/Kubernetes (Target) Provider.
     *   **How-To: Patching Providers** (Updating settings securely).
         *   Updating URL, Credentials, and CA Certificates.
@@ -226,6 +229,8 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
     *   Overview: Managing ForkliftController configuration.
     *   Subcommands (`settings get`, `settings set`, `settings unset`).
     *   Commonly Used Settings (feature flags, performance tuning, container images, resources).
+    *   MCP Server Settings (Lightspeed integration).
+    *   AAP Settings (URL, token, timeout, TLS).
     *   Supported vs Extended Settings (`--all`).
     *   Example Workflows (view, get, set, unset, export as JSON).
 
@@ -270,3 +275,12 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
     *   Multi-Tier Application Example.
     *   Troubleshooting (Pending pods, relaxing rules, verifying generated affinity).
     *   Quick Reference Card.
+
+29. **[AAP (Ansible Automation Platform) Integration](guide/29-aap-integration)**
+    *   Overview of AAP + Forklift Integration (Architecture, Benefits).
+    *   Prerequisites (AAP server, token secret, controller settings).
+    *   Browsing AAP Job Templates (`get inventory job-template`).
+    *   Creating AAP Hooks (`create hook --aap-job-template-id`).
+    *   Per-Hook Overrides (`--aap-url`, `--aap-token-secret`, `--aap-timeout`).
+    *   Patching Hooks (Switching between local and AAP, `--clear-aap`).
+    *   AAP Settings Reference and Troubleshooting.

@@ -12,7 +12,7 @@ For detailed information about provider prerequisites and requirements, see the 
 ## Overview of Providers
 
 Providers define the connection and authentication details for virtualization platforms. Each migration requires:
-- **Source Provider**: Your current virtualization platform (vSphere, oVirt, OpenStack, KubeVirt, OVA, or HyperV)
+- **Source Provider**: Your current virtualization platform (vSphere, oVirt, OpenStack, EC2, Azure, KubeVirt, OVA, or HyperV)
 - **Target Provider**: Your destination KubeVirt cluster (typically OpenShift/Kubernetes)
 
 ### Supported Provider Types
@@ -26,6 +26,7 @@ kubectl-mtv supports the following provider types:
 | `ovirt` | oVirt/Red Hat Virtualization | Source provider for oVirt/RHV environments |
 | `openstack` | OpenStack platforms | Source provider for OpenStack environments |
 | `ec2` | Amazon EC2 | Source provider for AWS environments |
+| `azure` | Microsoft Azure | Source provider for Azure VM environments |
 | `hyperv` | Microsoft Hyper-V | Source provider for Hyper-V environments |
 | `ova` | OVA/OVF files | Source provider for VM image files |
 
@@ -326,6 +327,56 @@ kubectl mtv create provider --name datacenter-ova --type ova \
 ```
 
 
+### Azure Provider
+
+Create providers for Microsoft Azure environments. Azure providers use service principal credentials for authentication.
+
+```bash
+# Basic Azure provider
+kubectl mtv create provider --name my-azure --type azure \
+  --azure-tenant-id "12345678-abcd-1234-abcd-123456789012" \
+  --azure-subscription-id "87654321-dcba-4321-dcba-210987654321" \
+  --azure-client-id "app-client-id-here" \
+  --azure-client-secret "client-secret-value" \
+  --azure-resource-group "my-vm-resource-group"
+
+# Azure provider with target region for cross-region migrations
+kubectl mtv create provider --name my-azure --type azure \
+  --azure-tenant-id "$AZURE_TENANT_ID" \
+  --azure-subscription-id "$AZURE_SUBSCRIPTION_ID" \
+  --azure-client-id "$AZURE_CLIENT_ID" \
+  --azure-client-secret "$AZURE_CLIENT_SECRET" \
+  --azure-resource-group "source-rg" \
+  --azure-target-region "westeurope"
+
+# Azure provider with snapshot configuration
+kubectl mtv create provider --name my-azure --type azure \
+  --azure-tenant-id "$AZURE_TENANT_ID" \
+  --azure-subscription-id "$AZURE_SUBSCRIPTION_ID" \
+  --azure-client-id "$AZURE_CLIENT_ID" \
+  --azure-client-secret "$AZURE_CLIENT_SECRET" \
+  --azure-resource-group "source-rg" \
+  --azure-snapshot-sku "Premium_LRS" \
+  --azure-snapshot-resource-group "snapshots-rg"
+
+# Azure provider with existing secret
+kubectl mtv create provider --name my-azure --type azure \
+  --secret azure-creds-secret \
+  --azure-resource-group "my-vm-resource-group"
+```
+
+**Azure Provider Settings**:
+- `--azure-tenant-id`: Azure AD tenant ID (required unless using `--secret`)
+- `--azure-subscription-id`: Azure subscription containing source VMs (required unless using `--secret`)
+- `--azure-client-id`: Service principal application (client) ID (required unless using `--secret`)
+- `--azure-client-secret`: Service principal secret (required unless using `--secret`)
+- `--azure-resource-group`: Resource group containing source VMs (always required)
+- `--azure-target-region`: Target region for cross-region migrations (optional)
+- `--azure-snapshot-sku`: Snapshot SKU -- `Standard_LRS`, `Standard_ZRS`, or `Premium_LRS` (optional)
+- `--azure-snapshot-resource-group`: Resource group for snapshots (defaults to source resource group)
+
+**Note**: The `--url` flag is optional for Azure providers; if omitted it defaults to `https://management.azure.com`.
+
 ### HyperV Provider
 
 Create providers for Microsoft Hyper-V environments. HyperV providers require an SMB share URL for VM disk access.
@@ -474,6 +525,16 @@ kubectl mtv patch provider --name ec2-prod \
   --username NEW_ACCESS_KEY_ID \
   --password NEW_SECRET_ACCESS_KEY \
   --ec2-region eu-west-1
+
+# Update Azure credentials
+kubectl mtv patch provider --name my-azure \
+  --azure-client-id "new-client-id" \
+  --azure-client-secret "new-secret"
+
+# Update Azure resource group and target region
+kubectl mtv patch provider --name my-azure \
+  --azure-resource-group "new-resource-group" \
+  --azure-target-region "northeurope"
 
 # Update HyperV credentials
 kubectl mtv patch provider --name my-hyperv \
