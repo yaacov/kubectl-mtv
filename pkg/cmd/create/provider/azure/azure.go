@@ -24,14 +24,11 @@ func validateProviderOptions(options providerutil.ProviderOptions) error {
 	if options.Namespace == "" {
 		return fmt.Errorf("provider namespace is required")
 	}
-	if options.AzureResourceGroup == "" {
-		return fmt.Errorf("azure resource group is required (--azure-resource-group)")
-	}
-	if options.Secret != "" && (options.AzureTenantID != "" || options.AzureSubscriptionID != "" || options.AzureClientID != "" || options.AzureClientSecret != "") {
+	if options.Secret != "" && (options.AzureTenantID != "" || options.AzureSubscriptionID != "" || options.AzureClientID != "" || options.AzureClientSecret != "" || options.AzureResourceGroup != "") {
 		return fmt.Errorf("if a secret is provided, Azure credential flags should not be specified")
 	}
-	if options.Secret == "" && (options.AzureTenantID == "" || options.AzureSubscriptionID == "" || options.AzureClientID == "" || options.AzureClientSecret == "") {
-		return fmt.Errorf("if no secret is provided, all Azure credentials must be specified (--azure-tenant-id, --azure-subscription-id, --azure-client-id, --azure-client-secret)")
+	if options.Secret == "" && (options.AzureTenantID == "" || options.AzureSubscriptionID == "" || options.AzureClientID == "" || options.AzureClientSecret == "" || options.AzureResourceGroup == "") {
+		return fmt.Errorf("if no secret is provided, all Azure credentials must be specified (--azure-tenant-id, --azure-subscription-id, --azure-client-id, --azure-client-secret, --azure-resource-group)")
 	}
 
 	return nil
@@ -106,7 +103,6 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 	if provider.Spec.Settings == nil {
 		provider.Spec.Settings = map[string]string{}
 	}
-	provider.Spec.Settings["resourceGroup"] = options.AzureResourceGroup
 
 	if options.AzureTargetRegion != "" {
 		provider.Spec.Settings["targetRegion"] = options.AzureTargetRegion
@@ -125,7 +121,8 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 		if options.Secret == "" {
 			createdSecret = buildSecret(options.Namespace, options.Name,
 				options.AzureTenantID, options.AzureSubscriptionID,
-				options.AzureClientID, options.AzureClientSecret)
+				options.AzureClientID, options.AzureClientSecret,
+				options.AzureResourceGroup)
 			provider.Spec.Secret = corev1.ObjectReference{
 				Name:      createdSecret.Name,
 				Namespace: createdSecret.Namespace,
@@ -142,7 +139,8 @@ func CreateProvider(configFlags *genericclioptions.ConfigFlags, options provider
 	if options.Secret == "" {
 		createdSecret, err = createSecret(configFlags, options.Namespace, options.Name,
 			options.AzureTenantID, options.AzureSubscriptionID,
-			options.AzureClientID, options.AzureClientSecret)
+			options.AzureClientID, options.AzureClientSecret,
+			options.AzureResourceGroup)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create Azure secret: %v", err)
 		}

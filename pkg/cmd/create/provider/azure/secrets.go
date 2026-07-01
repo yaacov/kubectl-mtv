@@ -13,12 +13,13 @@ import (
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
-func buildSecret(namespace, providerName, tenantID, subscriptionID, clientID, clientSecret string) *corev1.Secret {
+func buildSecret(namespace, providerName, tenantID, subscriptionID, clientID, clientSecret, resourceGroup string) *corev1.Secret {
 	secretData := map[string][]byte{
 		"tenantId":       []byte(tenantID),
 		"subscriptionId": []byte(subscriptionID),
 		"clientId":       []byte(clientID),
 		"clientSecret":   []byte(clientSecret),
+		"resourceGroup":  []byte(resourceGroup),
 	}
 
 	return &corev1.Secret{
@@ -39,13 +40,13 @@ func buildSecret(namespace, providerName, tenantID, subscriptionID, clientID, cl
 	}
 }
 
-func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName, tenantID, subscriptionID, clientID, clientSecret string) (*corev1.Secret, error) {
+func createSecret(configFlags *genericclioptions.ConfigFlags, namespace, providerName, tenantID, subscriptionID, clientID, clientSecret, resourceGroup string) (*corev1.Secret, error) {
 	k8sClient, err := client.GetKubernetesClientset(configFlags)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create kubernetes client: %v", err)
 	}
 
-	secret := buildSecret(namespace, providerName, tenantID, subscriptionID, clientID, clientSecret)
+	secret := buildSecret(namespace, providerName, tenantID, subscriptionID, clientID, clientSecret, resourceGroup)
 
 	return k8sClient.CoreV1().Secrets(namespace).Create(context.Background(), secret, metav1.CreateOptions{})
 }
