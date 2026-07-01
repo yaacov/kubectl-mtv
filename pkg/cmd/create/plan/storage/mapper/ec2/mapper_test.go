@@ -26,6 +26,9 @@ func TestEC2StorageMapper_DefaultSCBranch(t *testing.T) {
 	opts := storagemapper.StorageMappingOptions{
 		DefaultTargetStorageClass: "my-custom-sc",
 		TargetProviderType:        "openshift",
+		TargetStorageProvisioners: map[string]string{
+			"my-custom-sc": EBSCSIDriver,
+		},
 	}
 
 	pairs, err := m.CreateStoragePairs(sources, targets, opts)
@@ -60,6 +63,11 @@ func TestEC2StorageMapper_AutoMatch(t *testing.T) {
 
 	opts := storagemapper.StorageMappingOptions{
 		TargetProviderType: "openshift",
+		TargetStorageProvisioners: map[string]string{
+			"ocs-storagecluster-ceph-rbd": "openshift-storage.rbd.csi.ceph.com",
+			"gp3-csi":                     EBSCSIDriver,
+			"io2":                         EBSCSIDriver,
+		},
 	}
 
 	pairs, err := m.CreateStoragePairs(sources, targets, opts)
@@ -70,11 +78,11 @@ func TestEC2StorageMapper_AutoMatch(t *testing.T) {
 		t.Fatalf("expected 2 pairs, got %d", len(pairs))
 	}
 
-	// gp3 should match gp3-csi (prefix match)
+	// gp3 should match gp3-csi (prefix match with CSI provisioner)
 	if pairs[0].Destination.StorageClass != "gp3-csi" {
 		t.Errorf("gp3: expected target 'gp3-csi', got '%s'", pairs[0].Destination.StorageClass)
 	}
-	// io2 should match io2 (exact match)
+	// io2 should match io2 (exact match with CSI provisioner)
 	if pairs[1].Destination.StorageClass != "io2" {
 		t.Errorf("io2: expected target 'io2', got '%s'", pairs[1].Destination.StorageClass)
 	}
@@ -88,7 +96,7 @@ func TestEC2StorageMapper_GapFill(t *testing.T) {
 		{Name: "st1"},
 	}
 	// Only gp3-csi matches; st1 has no EBS-pattern match.
-	// Default SC (index 0) is "ocs-storagecluster-ceph-rbd".
+	// Default SC (first EBS CSI SC) is "gp3-csi".
 	targets := []forkliftv1beta1.DestinationStorage{
 		{StorageClass: "ocs-storagecluster-ceph-rbd"},
 		{StorageClass: "gp3-csi"},
@@ -96,6 +104,10 @@ func TestEC2StorageMapper_GapFill(t *testing.T) {
 
 	opts := storagemapper.StorageMappingOptions{
 		TargetProviderType: "openshift",
+		TargetStorageProvisioners: map[string]string{
+			"ocs-storagecluster-ceph-rbd": "openshift-storage.rbd.csi.ceph.com",
+			"gp3-csi":                     EBSCSIDriver,
+		},
 	}
 
 	pairs, err := m.CreateStoragePairs(sources, targets, opts)
@@ -110,9 +122,9 @@ func TestEC2StorageMapper_GapFill(t *testing.T) {
 	if pairs[0].Destination.StorageClass != "gp3-csi" {
 		t.Errorf("gp3: expected target 'gp3-csi', got '%s'", pairs[0].Destination.StorageClass)
 	}
-	// st1 has no match -> gap-filled with default SC
-	if pairs[1].Destination.StorageClass != "ocs-storagecluster-ceph-rbd" {
-		t.Errorf("st1: expected gap-fill target 'ocs-storagecluster-ceph-rbd', got '%s'", pairs[1].Destination.StorageClass)
+	// st1 has no match -> gap-filled with EBS CSI default (gp3-csi)
+	if pairs[1].Destination.StorageClass != "gp3-csi" {
+		t.Errorf("st1: expected gap-fill target 'gp3-csi', got '%s'", pairs[1].Destination.StorageClass)
 	}
 }
 
@@ -145,6 +157,9 @@ func TestEC2StorageMapper_VolumeModes(t *testing.T) {
 
 	opts := storagemapper.StorageMappingOptions{
 		DefaultTargetStorageClass: "default-sc",
+		TargetStorageProvisioners: map[string]string{
+			"default-sc": EBSCSIDriver,
+		},
 	}
 
 	pairs, err := m.CreateStoragePairs(sources, targets, opts)
