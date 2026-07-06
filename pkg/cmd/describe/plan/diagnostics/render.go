@@ -36,10 +36,9 @@ func Render(b *describe.Builder, report *DiagnosticsReport) {
 	}
 
 	// Controller logs
-	if len(report.ControllerLogs) > 0 {
-		content := FormatControllerLogLines(report.ControllerLogs)
+	if report.ControllerLogs != nil {
 		b.SubSection("Controller Logs")
-		b.Text("", content, "")
+		renderControllerLogs(b, report.ControllerLogs)
 		b.EndSubSection()
 	}
 }
@@ -109,20 +108,37 @@ func renderPod(b *describe.Builder, pod PodDiagnostics) {
 		lines = append(lines, fmt.Sprintf("Reason: %s", pod.Reason))
 	}
 
-	summary := fmt.Sprintf("%d errors, %d warnings", pod.ErrorCount, pod.WarnCount)
-	if pod.ErrorCount > 0 {
+	if pod.V2VStage != "" {
+		stageDisplay := formatV2VStage(pod.V2VStage, pod.ProgressPct, pod.Phase)
+		lines = append(lines, fmt.Sprintf("V2V Stage: %s", stageDisplay))
+	}
+
+	lines = append(lines, formatLogAnalysis(pod.ErrorCount, pod.WarnCount, pod.ErrorLines, pod.LogTail)...)
+
+	b.Text(output.Green("Pod"), strings.Join(lines, "\n"), "")
+}
+
+func renderControllerLogs(b *describe.Builder, logs *ControllerLogAnalysis) {
+	lines := formatLogAnalysis(logs.ErrorCount, logs.WarnCount, logs.ErrorLines, logs.LogTail)
+	b.Text("", strings.Join(lines, "\n"), "")
+}
+
+func formatLogAnalysis(errorCount, warnCount int, errorLines, logTail []string) []string {
+	var lines []string
+
+	summary := fmt.Sprintf("%d errors, %d warnings", errorCount, warnCount)
+	if errorCount > 0 {
 		lines = append(lines, fmt.Sprintf("Log Analysis: %s", output.Red(summary)))
-	} else if pod.WarnCount > 0 {
+	} else if warnCount > 0 {
 		lines = append(lines, fmt.Sprintf("Log Analysis: %s", output.Yellow(summary)))
 	} else {
 		lines = append(lines, fmt.Sprintf("Log Analysis: %s", summary))
 	}
 
-	// Show error lines if any
-	if pod.ErrorCount > 0 && len(pod.ErrorLines) > 0 {
+	if errorCount > 0 && len(errorLines) > 0 {
 		lines = append(lines, "")
-		lines = append(lines, output.Red(fmt.Sprintf("Last %d error lines:", len(pod.ErrorLines))))
-		for _, l := range pod.ErrorLines {
+		lines = append(lines, output.Red(fmt.Sprintf("Last %d error lines:", len(errorLines))))
+		for _, l := range errorLines {
 			errLine := l
 			if len(errLine) > 200 {
 				errLine = errLine[:197] + "..."
@@ -131,16 +147,15 @@ func renderPod(b *describe.Builder, pod PodDiagnostics) {
 		}
 	}
 
-	// Show log tail
-	if len(pod.LogTail) > 0 {
+	if len(logTail) > 0 {
 		lines = append(lines, "")
-		lines = append(lines, output.Cyan(fmt.Sprintf("Last %d log lines:", len(pod.LogTail))))
-		for _, l := range pod.LogTail {
+		lines = append(lines, output.Cyan(fmt.Sprintf("Last %d log lines:", len(logTail))))
+		for _, l := range logTail {
 			lines = append(lines, "  "+l)
 		}
 	}
 
-	b.Text(output.Green("Pod"), strings.Join(lines, "\n"), "")
+	return lines
 }
 
 func renderEvents(b *describe.Builder, events []EventEntry) {
@@ -207,4 +222,23 @@ func formatConversion(conv *ConversionInfo) string {
 		lines = append(lines, fmt.Sprintf("Pod Name: %s", conv.PodName))
 	}
 	return strings.Join(lines, "\n")
+}
+
+func formatV2VStage(stage, progressPct, podPhase string) string {
+	label := stage
+	if progressPct != "" {
+		label = fmt.Sprintf("%s (%s%%)", stage, progressPct)
+	}
+
+	if podPhase == "Failed" || podPhase == "Evicted" {
+		return output.Red(label)
+	}
+	switch stage {
+	case "finish":
+		return output.Green(label)
+	case "disk-copy":
+		return output.Yellow(label)
+	default:
+		return label
+	}
 }

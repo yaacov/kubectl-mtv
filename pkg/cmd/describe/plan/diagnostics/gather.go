@@ -50,8 +50,8 @@ func GatherDiagnostics(ctx context.Context, configFlags *genericclioptions.Confi
 	// Config context
 	report.Config = CollectConfigContext(ctx, configFlags, dynClient, plan)
 
-	// Controller logs (filtered by plan name/UID)
-	report.ControllerLogs = CollectControllerLogs(ctx, configFlags, clientset, planName, planUID)
+	// Controller logs (filtered by plan name/UID, with error analysis)
+	report.ControllerLogs = CollectControllerLogs(ctx, configFlags, clientset, planName, planUID, logLines, showLines)
 
 	// If no migration exists, return early with just config + controller logs
 	if migration == nil {
