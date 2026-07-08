@@ -13,6 +13,12 @@ import (
 const defaultLogTailLines = 500
 const defaultShowLines = 10
 
+// MaxLogTailLines is the maximum number of log lines that can be scanned per container.
+const MaxLogTailLines = 10000
+
+// MaxShowLines is the maximum number of log lines that can be displayed per container.
+const MaxShowLines = 500
+
 // CollectPodDiagnostics lists pods matching the plan/migration labels and collects logs.
 func CollectPodDiagnostics(ctx context.Context, clientset *kubernetes.Clientset, namespace, planUID, migrationUID, vmID string, logLines, showLines int) []PodDiagnostics {
 	selector := fmt.Sprintf("plan=%s,migration=%s", planUID, migrationUID)
