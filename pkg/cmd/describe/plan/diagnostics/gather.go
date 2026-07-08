@@ -24,6 +24,12 @@ func GatherDiagnostics(ctx context.Context, configFlags *genericclioptions.Confi
 	if showLines <= 0 {
 		showLines = defaultShowLines
 	}
+	if logLines > MaxLogTailLines {
+		logLines = MaxLogTailLines
+	}
+	if showLines > MaxShowLines {
+		showLines = MaxShowLines
+	}
 
 	planUID := string(plan.GetUID())
 	planName := plan.GetName()
@@ -39,12 +45,13 @@ func GatherDiagnostics(ctx context.Context, configFlags *genericclioptions.Confi
 	localTarget := isLocalTarget(ctx, dynClient, plan)
 
 	report := &DiagnosticsReport{
-		PlanName:      planName,
-		PlanUID:       planUID,
-		MigrationName: migrationName,
-		MigrationUID:  migrationUID,
-		TargetNS:      targetNS,
-		RemoteTarget:  !localTarget,
+		PlanName:           planName,
+		PlanUID:            planUID,
+		MigrationName:      migrationName,
+		MigrationUID:       migrationUID,
+		TargetNS:           targetNS,
+		RemoteTarget:       !localTarget,
+		RequestedShowLines: showLines,
 	}
 
 	// Config context

@@ -2,16 +2,17 @@ package diagnostics
 
 // DiagnosticsReport holds the complete diagnostics for a migration plan.
 type DiagnosticsReport struct {
-	PlanName       string
-	PlanUID        string
-	MigrationName  string
-	MigrationUID   string
-	TargetNS       string
-	CutoverTime    string
-	RemoteTarget   bool
-	VMs            []VMDiagnostics
-	Config         ConfigContext
-	ControllerLogs *ControllerLogAnalysis
+	PlanName           string
+	PlanUID            string
+	MigrationName      string
+	MigrationUID       string
+	TargetNS           string
+	CutoverTime        string
+	RemoteTarget       bool
+	RequestedShowLines int
+	VMs                []VMDiagnostics
+	Config             ConfigContext
+	ControllerLogs     *ControllerLogAnalysis
 }
 
 // ControllerLogAnalysis holds error-classified log analysis for the forklift-controller.

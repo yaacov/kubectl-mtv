@@ -32,18 +32,18 @@ func Render(b *describe.Builder, report *DiagnosticsReport) {
 	// Per-VM diagnostics
 	for i := range report.VMs {
 		vm := &report.VMs[i]
-		renderVM(b, vm)
+		renderVM(b, vm, report.RequestedShowLines)
 	}
 
 	// Controller logs
 	if report.ControllerLogs != nil {
 		b.SubSection("Controller Logs")
-		renderControllerLogs(b, report.ControllerLogs)
+		renderControllerLogs(b, report.ControllerLogs, report.RequestedShowLines)
 		b.EndSubSection()
 	}
 }
 
-func renderVM(b *describe.Builder, vm *VMDiagnostics) {
+func renderVM(b *describe.Builder, vm *VMDiagnostics, requestedShowLines int) {
 	title := fmt.Sprintf("VM: %s (%s)", vm.Name, vm.ID)
 	b.SubSection(title)
 
@@ -76,7 +76,7 @@ func renderVM(b *describe.Builder, vm *VMDiagnostics) {
 	// Pods
 	if len(vm.Pods) > 0 {
 		for i := range vm.Pods {
-			renderPod(b, vm.Pods[i])
+			renderPod(b, vm.Pods[i], requestedShowLines)
 		}
 	} else {
 		b.Text(output.Yellow("Pods"), "None found (may have been cleaned up)", "")
@@ -92,7 +92,7 @@ func renderVM(b *describe.Builder, vm *VMDiagnostics) {
 	b.EndSubSection()
 }
 
-func renderPod(b *describe.Builder, pod PodDiagnostics) {
+func renderPod(b *describe.Builder, pod PodDiagnostics, requestedShowLines int) {
 	phaseColor := output.Green
 	switch pod.Phase {
 	case "Failed", "Evicted":
@@ -113,17 +113,17 @@ func renderPod(b *describe.Builder, pod PodDiagnostics) {
 		lines = append(lines, fmt.Sprintf("V2V Stage: %s", stageDisplay))
 	}
 
-	lines = append(lines, formatLogAnalysis(pod.ErrorCount, pod.WarnCount, pod.ErrorLines, pod.LogTail)...)
+	lines = append(lines, formatLogAnalysis(pod.ErrorCount, pod.WarnCount, pod.ErrorLines, pod.LogTail, requestedShowLines)...)
 
 	b.Text(output.Green("Pod"), strings.Join(lines, "\n"), "")
 }
 
-func renderControllerLogs(b *describe.Builder, logs *ControllerLogAnalysis) {
-	lines := formatLogAnalysis(logs.ErrorCount, logs.WarnCount, logs.ErrorLines, logs.LogTail)
+func renderControllerLogs(b *describe.Builder, logs *ControllerLogAnalysis, requestedShowLines int) {
+	lines := formatLogAnalysis(logs.ErrorCount, logs.WarnCount, logs.ErrorLines, logs.LogTail, requestedShowLines)
 	b.Text("", strings.Join(lines, "\n"), "")
 }
 
-func formatLogAnalysis(errorCount, warnCount int, errorLines, logTail []string) []string {
+func formatLogAnalysis(errorCount, warnCount int, errorLines, logTail []string, requestedShowLines int) []string {
 	var lines []string
 
 	summary := fmt.Sprintf("%d errors, %d warnings", errorCount, warnCount)
@@ -137,7 +137,11 @@ func formatLogAnalysis(errorCount, warnCount int, errorLines, logTail []string) 
 
 	if errorCount > 0 && len(errorLines) > 0 {
 		lines = append(lines, "")
-		lines = append(lines, output.Red(fmt.Sprintf("Last %d error lines:", len(errorLines))))
+		if len(errorLines) < requestedShowLines {
+			lines = append(lines, output.Red(fmt.Sprintf("Last %d error lines (only %d found, %d requested):", len(errorLines), len(errorLines), requestedShowLines)))
+		} else {
+			lines = append(lines, output.Red(fmt.Sprintf("Last %d error lines:", len(errorLines))))
+		}
 		for _, l := range errorLines {
 			errLine := l
 			if len(errLine) > 200 {
@@ -149,7 +153,11 @@ func formatLogAnalysis(errorCount, warnCount int, errorLines, logTail []string) 
 
 	if len(logTail) > 0 {
 		lines = append(lines, "")
-		lines = append(lines, output.Cyan(fmt.Sprintf("Last %d log lines:", len(logTail))))
+		if len(logTail) < requestedShowLines {
+			lines = append(lines, output.Cyan(fmt.Sprintf("Last %d log lines (only %d found, %d requested):", len(logTail), len(logTail), requestedShowLines)))
+		} else {
+			lines = append(lines, output.Cyan(fmt.Sprintf("Last %d log lines:", len(logTail))))
+		}
 		for _, l := range logTail {
 			lines = append(lines, "  "+l)
 		}
