@@ -111,6 +111,8 @@ kubectl-mtv supports four network mapping formats verified from the command code
 | `source:default` | Default pod networking | `'VM Network:default'` |
 | `source:ignored` | Ignore/skip network | `'Backup Network:ignored'` |
 
+> **UDN note:** In namespaces with a primary User-Defined Network (UDN), the `default` pod network target maps to the UDN. When `--preserve-static-ips` is enabled, Forklift assigns the source VM's static IPs to the default interface on the target VM. This requires the `controller_static_udn_ip_addresses` setting to be enabled (it is by default on OCP 4.20+).
+
 #### Network Mapping Examples
 
 ##### Basic Network Mapping

@@ -425,8 +425,10 @@ kubectl mtv create plan --name legacy-windows \
 
 #### Static IP Preservation
 
+Supported for vSphere and OpenStack sources. When the destination namespace has a primary User-Defined Network (UDN), static IPs are assigned to the default pod network interface via the `network.kubevirt.io/addresses` annotation on the target VM. The `controller_static_udn_ip_addresses` setting (enabled by default) must be active for UDN static IP assignment; see [Chapter 25: Settings Management](../25-settings-management) for details.
+
 ```bash
-# Preserve static IPs (vSphere only)
+# Preserve static IPs (vSphere or OpenStack)
 kubectl mtv create plan --name preserve-ips \
   --source vsphere-prod \
   --preserve-static-ips true \

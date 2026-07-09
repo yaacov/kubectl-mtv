@@ -547,7 +547,7 @@ kubectl mtv create plan --name <name> --source <provider> --vms <vm-selection> [
 
 **Optional Advanced Flags:**
 - `--preserve-cluster-cpu-model`: Preserve CPU model from oVirt cluster
-- `--preserve-static-ips`: Preserve static IPs of vSphere VMs (default: true)
+- `--preserve-static-ips`: Preserve static IPs during migration; supported for vSphere and OpenStack, including UDN namespaces (default: true)
 - `--migrate-shared-disks`: Migrate shared disks (default: true)
 - `--skip-guest-conversion`: Skip guest conversion process
 - `--delete-guest-conversion-pod`: Delete guest conversion pod after successful migration
@@ -879,7 +879,7 @@ kubectl mtv patch plan --plan-name <plan-name> [flags]
 - `--virt-v2v-image`: Override virt-v2v container image for this plan
 - `--skip-zone-node-selector`: Skip zone-based node selector (EC2 only)
 - `--preserve-cluster-cpu-model`: Preserve CPU model from oVirt cluster
-- `--preserve-static-ips`: Preserve static IP configurations during migration
+- `--preserve-static-ips`: Preserve static IPs during migration; supported for vSphere and OpenStack, including UDN namespaces
 - `--install-legacy-drivers`: Install legacy Windows drivers (true/false/auto)
 - `--use-compatibility-mode`: Use compatibility devices when skipGuestConversion is true
 - `--enable-nested-virtualization`: Enable nested virtualization on target VMs (true/false/auto)
