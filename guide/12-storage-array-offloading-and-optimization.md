@@ -200,6 +200,8 @@ kubectl create secret generic storage-array-creds \
   -n openshift-mtv
 ```
 
+Forklift reads vSphere credentials from the source provider secret. The offload secret referenced by the `StorageMap` should contain storage-array credentials in the `STORAGE_*` format shown above. When you use inline `--offload-storage-*` flags, `kubectl-mtv` generates a secret with that same schema.
+
 ### Step 4: Verify Storage Array Compatibility
 
 Before configuring offloading, ensure your environment meets the requirements:
@@ -221,9 +223,6 @@ kubectl mtv create mapping storage --name offload-flashsystem \
   --source my-vsphere-provider \
   --target my-openshift-provider \
   --storage-pairs "production-ssd:flashsystem-gold;offloadPlugin=vsphere;offloadVendor=flashsystem" \
-  --offload-vsphere-username "svc-migration@vsphere.local" \
-  --offload-vsphere-password "VCenterPassword123" \
-  --offload-vsphere-url "https://vcenter.company.com/sdk" \
   --offload-storage-username "flashsystem-admin" \
   --offload-storage-password "FlashSystemPassword123" \
   --offload-storage-endpoint "https://flashsystem.company.com:7443"
@@ -239,9 +238,6 @@ kubectl mtv create mapping storage --name multi-vendor-offload \
   --target openshift-production \
   --storage-pairs "flashsystem-tier1:premium-flash;offloadPlugin=vsphere;offloadVendor=flashsystem,ontap-tier2:standard-ssd;offloadPlugin=vsphere;offloadVendor=ontap,pure-tier0:ultra-performance;offloadPlugin=vsphere;offloadVendor=pureFlashArray" \
   --default-offload-plugin vsphere \
-  --offload-vsphere-username vcenter-migration@company.local \
-  --offload-vsphere-password $(cat /secure/vcenter-pass) \
-  --offload-vsphere-url https://vcenter.prod.company.com \
   --offload-storage-username storage-admin \
   --offload-storage-password $(cat /secure/storage-pass) \
   --offload-storage-endpoint https://storage-mgmt.company.com
@@ -342,9 +338,6 @@ kubectl mtv create mapping storage --name ibm-flashsystem \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "flashsystem-gold:flashsystem-tier1;offloadPlugin=vsphere;offloadVendor=flashsystem;volumeMode=Block;accessMode=ReadWriteOnce" \
-  --offload-vsphere-username "svc-flashsystem@vsphere.local" \
-  --offload-vsphere-password "FlashSystemVCPassword" \
-  --offload-vsphere-url "https://vcenter.prod.company.com" \
   --offload-storage-username "flashsystem-admin" \
   --offload-storage-password "FlashSystemPassword" \
   --offload-storage-endpoint "https://flashsystem.company.com:7443"
@@ -365,9 +358,6 @@ kubectl mtv create mapping storage --name netapp-ontap \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "netapp-nfs:ontap-nas;offloadPlugin=vsphere;offloadVendor=ontap;volumeMode=Filesystem,netapp-san:ontap-san;offloadPlugin=vsphere;offloadVendor=ontap;volumeMode=Block" \
-  --offload-vsphere-username "ontap-svc@vsphere.local" \
-  --offload-vsphere-password "ONTAPVCPassword" \
-  --offload-vsphere-url "https://vcenter.company.com" \
   --offload-storage-username "ontap-admin" \
   --offload-storage-password "ONTAPPassword" \
   --offload-storage-endpoint "https://ontap-cluster.company.com"
@@ -388,9 +378,6 @@ kubectl mtv create mapping storage --name pure-flasharray \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "pure-vvol:pure-block-premium;offloadPlugin=vsphere;offloadVendor=pureFlashArray;volumeMode=Block;accessMode=ReadWriteOnce" \
-  --offload-vsphere-username "pure-svc@vsphere.local" \
-  --offload-vsphere-password "PureVCPassword" \
-  --offload-vsphere-url "https://vcenter.company.com" \
   --offload-storage-username "pureuser" \
   --offload-storage-password "PureStorageAPIKey" \
   --offload-storage-endpoint "https://pure-array.company.com" \
@@ -412,9 +399,6 @@ kubectl mtv create mapping storage --name dell-powermax \
   --source vsphere-enterprise \
   --target openshift-target \
   --storage-pairs "powermax-diamond:powermax-tier0;offloadPlugin=vsphere;offloadVendor=powermax;volumeMode=Block;accessMode=ReadWriteOnce" \
-  --offload-vsphere-username "powermax-svc@vsphere.local" \
-  --offload-vsphere-password "PowerMaxVCPassword" \
-  --offload-vsphere-url "https://vcenter.enterprise.com" \
   --offload-storage-username "powermax-admin" \
   --offload-storage-password "PowerMaxPassword" \
   --offload-storage-endpoint "https://powermax.company.com:8443"
@@ -430,19 +414,17 @@ kubectl mtv create mapping storage --name dell-powermax \
 
 ### Credential Management Best Practices
 
-Storage offloading requires credentials for both vSphere and storage arrays. Follow these security best practices:
+Storage offloading uses storage-array credentials from the offload secret and vSphere credentials from the source provider secret. Follow these security best practices:
 
 #### 1. Kubernetes Secrets for Credential Storage
 
 ```bash
 # Create separate secrets for each storage array
 kubectl create secret generic flashsystem-offload-creds \
-  --from-literal=vsphere-username=svc-migration@vsphere.local \
-  --from-literal=vsphere-password=VCenterPassword \
-  --from-literal=vsphere-url=https://vcenter.company.com \
-  --from-literal=storage-username=flashsystem-admin \
-  --from-literal=storage-password=FlashSystemPassword \
-  --from-literal=storage-endpoint=https://flashsystem.company.com:7443 \
+  --from-literal=STORAGE_HOSTNAME=https://flashsystem.company.com:7443 \
+  --from-literal=STORAGE_USERNAME=flashsystem-admin \
+  --from-literal=STORAGE_PASSWORD=FlashSystemPassword \
+  --from-literal=STORAGE_SKIP_SSL_VERIFICATION=false \
   -n konveyor-forklift
 
 # Reference the secret in storage mapping
@@ -647,7 +629,7 @@ curl -k -u username:password https://storage-array.company.com/api/auth
 
 # Update credentials in secret
 kubectl patch secret storage-offload-creds \
-  --patch '{"data":{"storage-password":"'"$(echo -n 'NewPassword' | base64)"'"}}'
+  --patch '{"data":{"STORAGE_PASSWORD":"'"$(echo -n 'NewPassword' | base64)"'"}}'
 
 # Restart affected pods to pick up new credentials
 kubectl delete pods -n konveyor-forklift -l app=forklift-controller
