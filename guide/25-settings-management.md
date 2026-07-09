@@ -79,6 +79,7 @@ kubectl mtv settings unset --setting controller_max_vm_inflight
 | `feature_vmware_system_serial_number` | bool | true | Use VMware system serial number for migrated VMs |
 | `feature_ova_appliance_management` | bool | false | Enable appliance management for OVF-based providers |
 | `feature_vsphere_vmware_driver_removal` | bool | false | Enable VMware driver removal during vSphere migrations |
+| `controller_static_udn_ip_addresses` | bool | true | Assign static IPs to the default pod network interface in UDN-enabled namespaces (OCP 4.20+) |
 | `feature_windows_registry_network_config` | bool | false | Enable Windows registry-based network configuration |
 | `feature_windows_wait_for_reboot` | bool | false | Wait for Windows VM reboot after migration |
 | `feature_mcp_server` | bool | false | Enable MCP server feature in the operator |
