@@ -210,34 +210,31 @@ func TestValidateOffloadSecretFields_NoFieldsSet(t *testing.T) {
 	}
 }
 
-func TestValidateOffloadSecretFields_AllRequired(t *testing.T) {
+func TestValidateOffloadSecretFields_StorageFieldsRequired(t *testing.T) {
 	opts := StorageCreateOptions{
-		OffloadVSphereUsername: "user",
-		OffloadVSpherePassword: "pass",
-		OffloadVSphereURL:      "https://vcenter",
 		OffloadStorageUsername: "storuser",
 		OffloadStoragePassword: "storpass",
 		OffloadStorageEndpoint: "https://storage",
 	}
 	if err := validateOffloadSecretFields(opts); err != nil {
-		t.Errorf("expected nil for all required fields, got: %v", err)
+		t.Errorf("expected nil for required storage fields, got: %v", err)
 	}
 }
 
 func TestValidateOffloadSecretFields_PartialFields(t *testing.T) {
 	opts := StorageCreateOptions{
-		OffloadVSphereUsername: "user",
-		// Missing all other required fields
+		OffloadStorageUsername: "storuser",
+		// Missing the remaining storage fields.
 	}
 	err := validateOffloadSecretFields(opts)
 	if err == nil {
 		t.Error("expected error for partial fields")
 	}
-	if !strings.Contains(err.Error(), "--offload-vsphere-password") {
-		t.Errorf("expected missing password in error, got: %s", err.Error())
+	if !strings.Contains(err.Error(), "--offload-storage-password") {
+		t.Errorf("expected missing storage password in error, got: %s", err.Error())
 	}
-	if !strings.Contains(err.Error(), "--offload-storage-username") {
-		t.Errorf("expected missing storage username in error, got: %s", err.Error())
+	if !strings.Contains(err.Error(), "--offload-storage-endpoint") {
+		t.Errorf("expected missing storage endpoint in error, got: %s", err.Error())
 	}
 }
 
@@ -263,9 +260,6 @@ func TestValidateOffloadSecretFields_OnlyCACert(t *testing.T) {
 
 func TestValidateOffloadSecretFields_AllRequiredPlusOptional(t *testing.T) {
 	opts := StorageCreateOptions{
-		OffloadVSphereUsername: "user",
-		OffloadVSpherePassword: "pass",
-		OffloadVSphereURL:      "https://vcenter",
 		OffloadStorageUsername: "storuser",
 		OffloadStoragePassword: "storpass",
 		OffloadStorageEndpoint: "https://storage",
