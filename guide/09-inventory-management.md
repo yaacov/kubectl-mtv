@@ -66,6 +66,7 @@ kubectl-mtv provides access to a comprehensive inventory of resources across dif
 | `ec2-instance` | `ec2-instances` | EC2 compute instances |
 | `ec2-volume` | `ec2-volumes` | EBS volumes |
 | `ec2-network` | `ec2-networks` | VPCs and subnets |
+| `ec2-snapshot` | `ec2-snapshots` | EBS snapshots |
 | `ec2-volume-type` | `ec2-volume-types` | EBS volume types |
 
 **Note**: Generic resources (`vms`, `networks`, `storage`) also work with EC2 providers and display EC2-specific information.

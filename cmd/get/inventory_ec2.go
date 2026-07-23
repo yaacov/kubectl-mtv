@@ -123,3 +123,14 @@ func NewInventoryEC2NetworkCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 		listFunc:   inventory.ListEC2NetworksWithInsecure,
 	})
 }
+
+// NewInventoryEC2SnapshotCmd creates the get inventory snapshot command for EC2 EBS snapshots
+func NewInventoryEC2SnapshotCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig GlobalConfigGetter) *cobra.Command {
+	return newEC2InventoryCmd(kubeConfigFlags, globalConfig, ec2CommandConfig{
+		use:        "ec2-snapshot",
+		short:      "Get EC2 EBS snapshots from a provider",
+		long:       `Get EC2 EBS snapshots from an AWS provider's inventory.`,
+		logMessage: "Getting EC2 EBS snapshots from provider",
+		listFunc:   inventory.ListEC2SnapshotsWithInsecure,
+	})
+}
