@@ -94,6 +94,7 @@ EC2 (PascalCase):
   Identity:    name, InstanceType, State.Name, PlatformDetails
   Placement:   Placement.AvailabilityZone
   Network:     PublicIpAddress, PrivateIpAddress, VpcId, SubnetId
+  Snapshots:   State, VolumeId, VolumeSize, sizeHuman, Encrypted, Progress
 
 Computed Fields (added by kubectl-mtv, available for all providers):
   criticalConcerns   count of critical migration concerns
