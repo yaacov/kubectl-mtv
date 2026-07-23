@@ -1,7 +1,7 @@
 package query
 
 // ApplyQueryInterface parses the query string and applies it to the data (interface{}).
-// Accepts data as []map[string]interface{} or map[string]interface{}.
+// Accepts data as []map[string]interface{}, []interface{} (with map elements), or map[string]interface{}.
 // Returns filtered data as interface{} and error.
 func ApplyQueryInterface(data interface{}, query string) (interface{}, error) {
 	var items []map[string]interface{}
@@ -9,6 +9,13 @@ func ApplyQueryInterface(data interface{}, query string) (interface{}, error) {
 	switch v := data.(type) {
 	case []map[string]interface{}:
 		items = v
+	case []interface{}:
+		items = make([]map[string]interface{}, 0, len(v))
+		for _, elem := range v {
+			if m, ok := elem.(map[string]interface{}); ok {
+				items = append(items, m)
+			}
+		}
 	case map[string]interface{}:
 		items = []map[string]interface{}{v}
 	default:
