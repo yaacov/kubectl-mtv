@@ -1,8 +1,11 @@
 package mapping
 
 import (
+	"context"
 	"strings"
 	"testing"
+
+	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
 // --- parseProviderReference ---
@@ -181,11 +184,36 @@ func TestValidateOffloadPlugin_Invalid(t *testing.T) {
 // --- validateOffloadVendor ---
 
 func TestValidateOffloadVendor_Valid(t *testing.T) {
-	validVendors := []string{
-		"flashsystem", "vantara", "ontap", "primera3par",
-		"pureFlashArray", "powerflex", "powermax", "powerstore", "infinibox",
+	// Fixed expected set — detects omissions and unsupported additions in the allowlist.
+	expectedVendors := []string{
+		"flashsystem",
+		"vantara",
+		"ontap",
+		"primera3par",
+		"pureFlashArray",
+		"powerflex",
+		"powermax",
+		"powerstore",
+		"infinibox",
 	}
-	for _, vendor := range validVendors {
+
+	// Verify flags.OffloadVendors matches the expected set exactly.
+	if len(flags.OffloadVendors) != len(expectedVendors) {
+		t.Fatalf("OffloadVendors has %d entries, expected %d; update expectedVendors or check StorageVendorProducts()",
+			len(flags.OffloadVendors), len(expectedVendors))
+	}
+	vendorSet := make(map[string]bool, len(flags.OffloadVendors))
+	for _, v := range flags.OffloadVendors {
+		vendorSet[v] = true
+	}
+	for _, v := range expectedVendors {
+		if !vendorSet[v] {
+			t.Errorf("expected vendor %q missing from flags.OffloadVendors", v)
+		}
+	}
+
+	// Validate each expected vendor passes the validator.
+	for _, vendor := range expectedVendors {
 		if err := validateOffloadVendor(vendor); err != nil {
 			t.Errorf("validateOffloadVendor(%q) = error %v", vendor, err)
 		}
@@ -198,6 +226,29 @@ func TestValidateOffloadVendor_Invalid(t *testing.T) {
 		if err := validateOffloadVendor(vendor); err == nil {
 			t.Errorf("validateOffloadVendor(%q) = nil, want error", vendor)
 		}
+	}
+}
+
+// TestCreateStorageMapping_InvalidDefaultVendor verifies that a bogus
+// --default-offload-vendor fails before serialization (regression test).
+func TestCreateStorageMapping_InvalidDefaultVendor(t *testing.T) {
+	opts := StorageCreateOptions{
+		Name:                 "test-map",
+		Namespace:            "default",
+		SourceProvider:       "vsphere-test",
+		TargetProvider:       "host",
+		StoragePairs:         "ds1:sc1",
+		DefaultOffloadPlugin: "vsphere",
+		DefaultOffloadVendor: "bogus-vendor",
+		DryRun:               true,
+	}
+
+	err := createStorageMappingWithOptions(context.Background(), opts)
+	if err == nil {
+		t.Fatal("expected error for invalid default-offload-vendor, got nil")
+	}
+	if !strings.Contains(err.Error(), "invalid --default-offload-vendor") {
+		t.Errorf("unexpected error message: %v", err)
 	}
 }
 

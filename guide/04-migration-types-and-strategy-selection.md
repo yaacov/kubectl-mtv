@@ -480,7 +480,7 @@ Based on [Forklift performance testing](https://kubev2v.github.io/forklift-docum
 ```bash
 # Distribute VMs across multiple ESXi hosts for better performance
 kubectl mtv create plan --name distributed-cold \
-  --source-query "where esxiHost in ['host1', 'host2', 'host3']" \
+  --vms "where host in ['host1', 'host2', 'host3']" \
   --migration-type cold \
   --convertor-node-selector "performance=high"
 ```

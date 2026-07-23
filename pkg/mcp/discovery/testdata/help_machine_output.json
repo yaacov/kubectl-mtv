@@ -204,6 +204,25 @@
           "required": false
         },
         {
+          "name": "aap-timeout",
+          "type": "int64",
+          "default": 0,
+          "description": "Per-hook AAP job poll timeout in seconds (overrides controller default)",
+          "required": false
+        },
+        {
+          "name": "aap-token-secret",
+          "type": "string",
+          "description": "Per-hook AAP token Secret name (overrides controller default)",
+          "required": false
+        },
+        {
+          "name": "aap-url",
+          "type": "string",
+          "description": "Per-hook AAP base URL (overrides controller default)",
+          "required": false
+        },
+        {
           "name": "deadline",
           "type": "int64",
           "default": 0,
@@ -429,6 +448,12 @@
           "required": false
         },
         {
+          "name": "default-offload-migration-hosts",
+          "type": "string",
+          "description": "Default dedicated ESXi host IDs for XCOPY migrations (+-separated, e.g. host-10+host-11)",
+          "required": false
+        },
+        {
           "name": "default-offload-plugin",
           "type": "string",
           "description": "Default offload plugin type for all storage pairs (vsphere)",
@@ -443,7 +468,7 @@
         {
           "name": "default-offload-vendor",
           "type": "string",
-          "description": "Default offload plugin vendor for all storage pairs (flashsystem|vantara|ontap|primera3par|pureFlashArray|powerflex|powermax|powerstore|infinibox)",
+          "description": "Default offload plugin vendor for storage pairs (flashsystem|vantara|ontap|primera3par|pureFlashArray|powerflex|powermax|powerstore|infinibox)",
           "required": false
         },
         {
@@ -626,6 +651,12 @@
           "required": false
         },
         {
+          "name": "default-offload-migration-hosts",
+          "type": "string",
+          "description": "Default dedicated ESXi host IDs for XCOPY migrations (+-separated, e.g. host-10+host-11)",
+          "required": false
+        },
+        {
           "name": "default-offload-plugin",
           "type": "string",
           "description": "Default offload plugin type for storage pairs (vsphere)",
@@ -672,8 +703,8 @@
         {
           "name": "delete-vm-on-fail-migration",
           "type": "bool",
-          "default": false,
-          "description": "Delete target VM when migration fails",
+          "default": true,
+          "description": "Delete target VM when migration fails (true/false)",
           "required": false
         },
         {
@@ -707,7 +738,7 @@
           "name": "migrate-shared-disks",
           "type": "bool",
           "default": true,
-          "description": "Migrate disks shared between multiple VMs",
+          "description": "Migrate disks shared between multiple VMs (true/false)",
           "required": false
         },
         {
@@ -827,7 +858,7 @@
           "name": "preserve-static-ips",
           "type": "bool",
           "default": true,
-          "description": "Preserve static IP configurations during migration",
+          "description": "Preserve static IP configurations during migration (true/false)",
           "required": false
         },
         {
@@ -840,7 +871,7 @@
           "name": "pvc-name-template-use-generate-name",
           "type": "bool",
           "default": true,
-          "description": "Use generateName instead of name for PVC name template",
+          "description": "Use generateName instead of name for PVC name template (true/false)",
           "required": false
         },
         {
@@ -854,7 +885,7 @@
           "name": "run-preflight-inspection",
           "type": "bool",
           "default": true,
-          "description": "Run preflight inspection on VM base disks before starting disk transfer",
+          "description": "Run preflight inspection on VM base disks before starting disk transfer (true/false)",
           "required": false
         },
         {
@@ -894,6 +925,20 @@
           "name": "storage-pairs",
           "type": "string",
           "description": "Inline storage mapping pairs (auto-generated when omitted). Format: 'source:storage-class[;param=value]' (comma-separated)",
+          "required": false
+        },
+        {
+          "name": "tag-mapping-disabled",
+          "type": "bool",
+          "default": false,
+          "description": "Disable vSphere tag-to-label conversion entirely (vSphere only)",
+          "required": false
+        },
+        {
+          "name": "tag-mapping-label-tags",
+          "type": "stringSlice",
+          "default": [],
+          "description": "Only convert these vSphere tag categories to labels (comma-separated, vSphere only)",
           "required": false
         },
         {
@@ -946,7 +991,7 @@
           "name": "use-compatibility-mode",
           "type": "bool",
           "default": true,
-          "description": "Use compatibility devices (SATA bus, E1000E NIC) when skipGuestConversion is true",
+          "description": "Use compatibility devices (SATA bus, E1000E NIC) when skipGuestConversion is true (true/false)",
           "required": false
         },
         {
@@ -1014,6 +1059,10 @@
         {
           "description": "Only needed when auto-detection doesn't pick the right defaults",
           "command": "kubectl-mtv create plan --name explicit-defaults --source vsphere-prod --vms \"where name ~= 'test-.*'\" --default-target-network default --default-target-storage-class standard"
+        },
+        {
+          "description": "Disable default-true boolean flags with explicit false",
+          "command": "kubectl-mtv create plan --name no-preflight --source vsphere-prod --vms \"quick-vm\" --run-preflight-inspection false --preserve-static-ips false"
         }
       ],
       "runnable": true
@@ -1026,7 +1075,7 @@
       ],
       "path_string": "create provider",
       "description": "Create a new provider",
-      "long_description": "Create a new MTV provider to connect to a virtualization platform.\n\nProviders represent source or target environments for VM migrations. Supported types:\n  - vsphere: VMware vSphere/vCenter (requires VDDK init image for migration)\n  - ovirt: Red Hat Virtualization (oVirt/RHV)\n  - openstack: OpenStack cloud platform\n  - ova: OVA files from NFS share\n  - openshift: Target OpenShift cluster (usually named 'host')\n  - ec2: Amazon EC2 instances\n  - hyperv: Microsoft Hyper-V\n\nCredentials can be provided directly via flags or through an existing Kubernetes secret.",
+      "long_description": "Create a new MTV provider to connect to a virtualization platform.\n\nProviders represent source or target environments for VM migrations. Supported types:\n  - vsphere: VMware vSphere/vCenter (requires VDDK init image for migration)\n  - ovirt: Red Hat Virtualization (oVirt/RHV)\n  - openstack: OpenStack cloud platform\n  - ova: OVA files from NFS share\n  - openshift: Target OpenShift cluster (usually named 'host')\n  - ec2: Amazon EC2 instances\n  - hyperv: Microsoft Hyper-V\n  - azure: Microsoft Azure VMs\n\nCredentials can be provided directly via flags or through an existing Kubernetes secret.",
       "usage": "kubectl-mtv create provider [flags]",
       "aliases": [
         "providers"
@@ -1038,6 +1087,54 @@
           "type": "bool",
           "default": false,
           "description": "Automatically fetch target AWS credentials from cluster and target-az from worker nodes",
+          "required": false
+        },
+        {
+          "name": "azure-client-id",
+          "type": "string",
+          "description": "Azure service principal application (client) ID",
+          "required": false
+        },
+        {
+          "name": "azure-client-secret",
+          "type": "string",
+          "description": "Azure service principal secret",
+          "required": false
+        },
+        {
+          "name": "azure-resource-group",
+          "type": "string",
+          "description": "Azure resource group containing source VMs (required for azure type)",
+          "required": false
+        },
+        {
+          "name": "azure-snapshot-resource-group",
+          "type": "string",
+          "description": "Resource group for snapshots (defaults to source resource group)",
+          "required": false
+        },
+        {
+          "name": "azure-snapshot-sku",
+          "type": "string",
+          "description": "Snapshot SKU (Standard_LRS, Standard_ZRS, Premium_LRS; default: Standard_ZRS)",
+          "required": false
+        },
+        {
+          "name": "azure-subscription-id",
+          "type": "string",
+          "description": "Azure subscription ID containing source VMs",
+          "required": false
+        },
+        {
+          "name": "azure-target-region",
+          "type": "string",
+          "description": "Target region for cross-region migrations (optional)",
+          "required": false
+        },
+        {
+          "name": "azure-tenant-id",
+          "type": "string",
+          "description": "Azure AD tenant ID",
           "required": false
         },
         {
@@ -1190,7 +1287,7 @@
           "name": "type",
           "shorthand": "t",
           "type": "string",
-          "description": "Provider type (openshift, vsphere, ovirt, openstack, ova, ec2, hyperv)",
+          "description": "Provider type (openshift, vsphere, ovirt, openstack, ova, ec2, hyperv, azure)",
           "required": true,
           "enum": [
             "openshift",
@@ -1199,7 +1296,8 @@
             "openstack",
             "ova",
             "hyperv",
-            "ec2"
+            "ec2",
+            "azure"
           ]
         },
         {
@@ -1268,6 +1366,10 @@
         {
           "description": "Create a HyperV provider",
           "command": "kubectl-mtv create provider --name my-hyperv --type hyperv --url https://192.168.1.100 --username Administrator --password 'MyPassword' --smb-url '//192.168.1.100/VMShare'"
+        },
+        {
+          "description": "Create an Azure provider",
+          "command": "kubectl-mtv create provider --name my-azure --type azure --azure-tenant-id \"$AZURE_TENANT_ID\" --azure-subscription-id \"$AZURE_SUBSCRIPTION_ID\" --azure-client-id \"$AZURE_CLIENT_ID\" --azure-client-secret \"$AZURE_CLIENT_SECRET\" --azure-resource-group \"my-resource-group\""
         }
       ],
       "runnable": true
@@ -1714,6 +1816,51 @@
       "runnable": true
     },
     {
+      "name": "conversion",
+      "path": [
+        "describe",
+        "conversion"
+      ],
+      "path_string": "describe conversion",
+      "description": "Describe a conversion",
+      "long_description": "Display detailed information about a Conversion resource.\n\nShows conversion spec (type, VM, disks, image), status (phase, stage, message),\nsnapshot state, inspection results, and conditions.",
+      "usage": "kubectl-mtv describe conversion [flags]",
+      "aliases": [
+        "conversions"
+      ],
+      "category": "read",
+      "flags": [
+        {
+          "name": "name",
+          "shorthand": "M",
+          "type": "string",
+          "description": "Conversion name",
+          "required": true
+        },
+        {
+          "name": "output",
+          "shorthand": "o",
+          "type": "string",
+          "default": "table",
+          "description": "Output format (table, json, yaml, markdown)",
+          "required": false,
+          "enum": [
+            "table",
+            "json",
+            "yaml",
+            "markdown"
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "description": "Describe a conversion",
+          "command": "kubectl-mtv describe conversion --name my-conv-abc123"
+        }
+      ],
+      "runnable": true
+    },
+    {
       "name": "hook",
       "path": [
         "describe",
@@ -1914,13 +2061,21 @@
       ],
       "path_string": "describe plan",
       "description": "Describe a migration plan",
-      "long_description": "Display detailed information about a migration plan.\n\nShows plan configuration, status, conditions, and optionally the list of VMs.\nUse --vm to see detailed status of a specific VM in the plan.",
+      "long_description": "Display detailed information about a migration plan.\n\nShows plan configuration, status, conditions, and optionally the list of VMs.\nUse --vm to see detailed status of a specific VM in the plan.\nUse --diagnostics to include pod logs, events, and configuration context.",
       "usage": "kubectl-mtv describe plan [flags]",
       "aliases": [
         "plans"
       ],
       "category": "read",
       "flags": [
+        {
+          "name": "diagnostics",
+          "shorthand": "D",
+          "type": "bool",
+          "default": false,
+          "description": "Include diagnostics (pod logs, events, configuration context)",
+          "required": false
+        },
         {
           "name": "name",
           "shorthand": "M",
@@ -1941,6 +2096,20 @@
             "yaml",
             "markdown"
           ]
+        },
+        {
+          "name": "scan-log-lines",
+          "type": "int",
+          "default": 500,
+          "description": "Number of log lines to scan for diagnostics (max 10000)",
+          "required": false
+        },
+        {
+          "name": "show-log-lines",
+          "type": "int",
+          "default": 10,
+          "description": "Number of log lines to display in diagnostics output (max 500)",
+          "required": false
         },
         {
           "name": "vm",
@@ -1980,6 +2149,14 @@
         {
           "description": "Watch VM status with live updates",
           "command": "kubectl-mtv describe plan --name my-migration --vm web-server --watch"
+        },
+        {
+          "description": "Include diagnostics (pod logs, events, config)",
+          "command": "kubectl-mtv describe plan --name my-migration --diagnostics"
+        },
+        {
+          "description": "Show more log lines in diagnostics",
+          "command": "kubectl-mtv describe plan --name my-migration --diagnostics --show-log-lines 20"
         }
       ],
       "runnable": true
@@ -2034,6 +2211,66 @@
       "runnable": true
     },
     {
+      "name": "conversion",
+      "path": [
+        "get",
+        "conversion"
+      ],
+      "path_string": "get conversion",
+      "description": "Get conversions",
+      "long_description": "Get MTV Conversion resources from the cluster.\n\nConversion resources are created by the plan controller when feature_use_conversion_cr\nis enabled. They track the lifecycle of individual VM disk conversions including\ninspection, in-place, and remote virt-v2v operations.",
+      "usage": "kubectl-mtv get conversion [flags]",
+      "aliases": [
+        "conversions"
+      ],
+      "category": "read",
+      "flags": [
+        {
+          "name": "name",
+          "shorthand": "M",
+          "type": "string",
+          "description": "Conversion name",
+          "required": false
+        },
+        {
+          "name": "output",
+          "shorthand": "o",
+          "type": "string",
+          "default": "table",
+          "description": "Output format (table, json, yaml, markdown)",
+          "required": false,
+          "enum": [
+            "table",
+            "json",
+            "yaml",
+            "markdown"
+          ]
+        },
+        {
+          "name": "query",
+          "shorthand": "q",
+          "type": "string",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
+          "required": false
+        }
+      ],
+      "examples": [
+        {
+          "description": "List all conversions",
+          "command": "kubectl-mtv get conversions"
+        },
+        {
+          "description": "Get a specific conversion",
+          "command": "kubectl-mtv get conversion --name my-conv-abc123"
+        },
+        {
+          "description": "Filter conversions by phase",
+          "command": "kubectl-mtv get conversions --query \"where phase = 'Running'\""
+        }
+      ],
+      "runnable": true
+    },
+    {
       "name": "hook",
       "path": [
         "get",
@@ -2073,7 +2310,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2133,7 +2370,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2161,7 +2398,7 @@
       ],
       "path_string": "get inventory",
       "description": "Get inventory resources",
-      "long_description": "Get inventory resources from providers via the MTV inventory service.\n\nThe inventory service provides access to source provider resources (VMs, networks,\nstorage, hosts, etc.) without directly connecting to the provider. Resources are\ncached and can be queried using TSL (Tree Search Language) filters.\n\nAvailable resource types vary by provider:\n  - All providers: vm, network, storage\n  - vSphere/oVirt: host, datacenter, cluster, disk\n  - vSphere: datastore, folder, resourcepool\n  - oVirt: diskprofile, nicprofile\n  - OpenStack: instance, image, flavor, project, volume, volumetype, snapshot, subnet\n  - OpenShift: namespace, pvc, datavolume\n  - EC2: ec2instance, ec2volume, ec2volumetype, ec2network",
+      "long_description": "Get inventory resources from providers via the MTV inventory service.\n\nThe inventory service provides access to source provider resources (VMs, networks,\nstorage, hosts, etc.) without directly connecting to the provider. Resources are\ncached and can be queried using TSL (Tree Search Language) filters.\n\nAvailable resource types vary by provider:\n  - All providers: vm, network, storage\n  - vSphere/oVirt: host, datacenter, cluster, disk\n  - vSphere: datastore, folder, resourcepool\n  - oVirt: diskprofile, nicprofile\n  - OpenStack: instance, image, flavor, project, volume, volumetype, snapshot, subnet\n  - OpenShift: namespace, pvc, datavolume\n  - EC2: ec2instance, ec2volume, ec2volumetype, ec2network\n  - Azure: vm, network, storage",
       "usage": "kubectl-mtv get inventory",
       "category": "read",
       "flags": [],
@@ -2208,7 +2445,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2270,7 +2507,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2317,7 +2554,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2378,7 +2615,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2425,7 +2662,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2487,7 +2724,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2534,7 +2771,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2581,7 +2818,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2628,7 +2865,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2676,7 +2913,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2723,7 +2960,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2770,7 +3007,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2817,7 +3054,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2871,7 +3108,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2918,7 +3155,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -2959,7 +3196,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3006,7 +3243,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3053,7 +3290,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'VM Network.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3115,7 +3352,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3162,7 +3399,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3209,7 +3446,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3257,7 +3494,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3305,7 +3542,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3352,7 +3589,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3399,7 +3636,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'data.*' and type = 'VMFS'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3460,7 +3697,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3508,7 +3745,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'web-.*' and cpuCount \u003e 4\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3585,7 +3822,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3633,7 +3870,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3679,7 +3916,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3745,7 +3982,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3803,7 +4040,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -3870,7 +4107,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         },
         {
@@ -3969,7 +4206,7 @@
           "name": "query",
           "shorthand": "q",
           "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\")",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
           "required": false
         }
       ],
@@ -4042,7 +4279,7 @@
       ],
       "path_string": "help",
       "description": "Help about any command",
-      "long_description": "Help provides help for any command in the application.\n\nSimply type kubectl-mtv help [path to command] for full details.\n\nUse --machine to output the command schema in a machine-readable format\n(JSON or YAML) for integration with MCP servers and automation tools.\nYou can scope --machine output to a specific command or subtree by passing\nthe command path (e.g., help --machine get plan). Use --short with --machine\nto omit long descriptions and examples for a condensed view.\n\nHelp topics are also available for domain-specific languages:\n  tsl   - Tree Search Language query syntax reference\n  karl  - Kubernetes Affinity Rule Language syntax reference",
+      "long_description": "Help provides help for any command in the application.\n\nSimply type kubectl-mtv help [path to command] for full details.\n\nUse --machine to output the command schema in a machine-readable format\n(JSON or YAML) for integration with MCP servers and automation tools.\nYou can scope --machine output to a specific command or subtree by passing\nthe command path (e.g., help --machine get plan). Use --short with --machine\nto omit long descriptions and examples for a condensed view.\n\nHelp topics are also available for domain-specific languages:\n  tsl     - Tree Search Language query syntax reference\n  karl    - Kubernetes Affinity Rule Language syntax reference\n  offload - Storage copy-offload (XCOPY) configuration reference",
       "usage": "kubectl-mtv help [command] [flags]",
       "category": "admin",
       "flags": [
@@ -4058,7 +4295,7 @@
           "name": "include-global-flags",
           "type": "bool",
           "default": true,
-          "description": "Include global flags in output (with --machine)",
+          "description": "Include global flags in output (with --machine) (true/false)",
           "required": false
         },
         {
@@ -4112,6 +4349,10 @@
           "command": "kubectl-mtv help karl"
         },
         {
+          "description": "Learn about storage copy-offload configuration",
+          "command": "kubectl-mtv help offload"
+        },
+        {
           "description": "Output complete command schema as JSON",
           "command": "kubectl-mtv help --machine"
         },
@@ -4153,7 +4394,7 @@
       ],
       "path_string": "mcp-server",
       "description": "Start the MCP (Model Context Protocol) server",
-      "long_description": "Start the MCP (Model Context Protocol) server for kubectl-mtv.\n\nThis server provides AI assistants with access to kubectl-mtv resources.\nUSE WITH CAUTION: Includes write operations that can modify resources.\n\nModes:\n  Default: Stdio mode for AI assistant integration\n  --http:  HTTP server mode using Streamable HTTP transport\n\nRead-Only Mode:\n  --read-only: Disables all write operations (mtv_write tool not registered)\n               Only read operations will be available to AI assistants\n\nSecurity:\n  --cert-file:   Path to TLS certificate file (enables TLS when both cert and key provided)\n  --key-file:    Path to TLS private key file (enables TLS when both cert and key provided)\n\nKubernetes Authentication:\n  --server:  Kubernetes API server URL (passed to kubectl via --server flag)\n  --token:   Kubernetes authentication token (passed to kubectl via --token flag)\n\n  These flags set default credentials for all requests. They work in both stdio and HTTP modes.\n\nHTTP Mode Authentication (HTTP Headers):\n  In HTTP mode, the following HTTP headers are supported for per-request authentication:\n\n  Authorization: Bearer \u003ctoken\u003e\n    Kubernetes authentication token. Passed to kubectl via --token flag.\n\n  X-Kubernetes-Server: \u003curl\u003e\n    Kubernetes API server URL. Passed to kubectl via --server flag.\n\n  Precedence: HTTP headers (per-request) \u003e CLI flags (--server/--token) \u003e kubeconfig (implicit).\n\n  Each HTTP POST carries its own headers, so token rotation works seamlessly.\n\nQuick Setup for AI Assistants:\n\nClaude Desktop: claude mcp add kubectl-mtv kubectl mtv mcp-server\nCursor IDE: Settings → MCP → Add Server (Name: kubectl-mtv, Command: kubectl, Args: mtv mcp-server)\n\nManual Claude config: Add to claude_desktop_config.json:\n  \"kubectl-mtv\": {\"command\": \"kubectl\", \"args\": [\"mtv\", \"mcp-server\"]}",
+      "long_description": "Start the MCP (Model Context Protocol) server for kubectl-mtv.\n\nThis server provides AI assistants with access to kubectl-mtv resources.\nUSE WITH CAUTION: Includes write operations that can modify resources.\n\nModes:\n  Default: Stdio mode for AI assistant integration\n  --http:  HTTP server mode using Streamable HTTP transport\n\nRead-Only Mode:\n  --read-only: Disables all write operations (mtv_write tool not registered)\n               Only read operations will be available to AI assistants\n\nSecurity:\n  --cert-file:   Path to TLS certificate file (enables TLS when both cert and key provided)\n  --key-file:    Path to TLS private key file (enables TLS when both cert and key provided)\n\nKubernetes Authentication:\n  --server:                 Kubernetes API server URL (passed to kubectl via --server flag)\n  --token:                  Kubernetes authentication token (passed to kubectl via --token flag)\n  --certificate-authority:  Path to a CA certificate file for Kubernetes API TLS verification\n  --insecure-skip-tls-verify: Skip TLS certificate verification (insecure)\n\n  These flags set default credentials for all requests. They work in both stdio and HTTP modes.\n\nHTTP Mode Authentication (HTTP Headers):\n  In HTTP mode, the following HTTP headers are supported for per-request authentication:\n\n  Authorization: Bearer \u003ctoken\u003e\n    Kubernetes authentication token. Passed to kubectl via --token flag.\n\n  X-Kubernetes-Server: \u003curl\u003e\n    Kubernetes API server URL. Passed to kubectl via --server flag.\n\n  Precedence: HTTP headers (per-request) \u003e CLI flags (--server/--token) \u003e kubeconfig (implicit).\n\n  Each HTTP POST carries its own headers, so token rotation works seamlessly.\n\nQuick Setup for AI Assistants:\n\nClaude Desktop: claude mcp add kubectl-mtv kubectl mtv mcp-server\nCursor IDE: Settings → MCP → Add Server (Name: kubectl-mtv, Command: kubectl, Args: mtv mcp-server)\n\nManual Claude config: Add to claude_desktop_config.json:\n  \"kubectl-mtv\": {\"command\": \"kubectl\", \"args\": [\"mtv\", \"mcp-server\"]}",
       "usage": "kubectl-mtv mcp-server [flags]",
       "category": "admin",
       "flags": [
@@ -4161,6 +4402,12 @@
           "name": "cert-file",
           "type": "string",
           "description": "Path to TLS certificate file (enables TLS when used with --key-file)",
+          "required": false
+        },
+        {
+          "name": "certificate-authority",
+          "type": "string",
+          "description": "Path to a CA certificate file for Kubernetes API TLS verification",
           "required": false
         },
         {
@@ -4266,6 +4513,25 @@
           "type": "int",
           "default": 0,
           "description": "AAP job template ID",
+          "required": false
+        },
+        {
+          "name": "aap-timeout",
+          "type": "int64",
+          "default": 0,
+          "description": "Per-hook AAP job poll timeout in seconds (overrides controller default)",
+          "required": false
+        },
+        {
+          "name": "aap-token-secret",
+          "type": "string",
+          "description": "Per-hook AAP token Secret name (overrides controller default)",
+          "required": false
+        },
+        {
+          "name": "aap-url",
+          "type": "string",
+          "description": "Per-hook AAP base URL (overrides controller default)",
           "required": false
         },
         {
@@ -4404,6 +4670,12 @@
           "required": false
         },
         {
+          "name": "default-offload-migration-hosts",
+          "type": "string",
+          "description": "Default dedicated ESXi host IDs for XCOPY migrations (+-separated, e.g. host-10+host-11)",
+          "required": false
+        },
+        {
           "name": "default-offload-plugin",
           "type": "string",
           "description": "Default offload plugin type for new/updated storage pairs (vsphere)",
@@ -4418,7 +4690,7 @@
         {
           "name": "default-offload-vendor",
           "type": "string",
-          "description": "Default offload plugin vendor for new/updated storage pairs (flashsystem|vantara|ontap|primera3par|pureFlashArray|powerflex|powermax|powerstore|infinibox)",
+          "description": "Default offload plugin vendor for storage pairs (flashsystem|vantara|ontap|primera3par|pureFlashArray|powerflex|powermax|powerstore|infinibox)",
           "required": false
         },
         {
@@ -4478,7 +4750,7 @@
           "name": "archived",
           "type": "bool",
           "default": false,
-          "description": "Whether this plan should be archived",
+          "description": "Whether this plan should be archived (true/false)",
           "required": false
         },
         {
@@ -4523,14 +4795,13 @@
           "name": "delete-guest-conversion-pod",
           "type": "bool",
           "default": false,
-          "description": "Delete guest conversion pod after successful migration",
+          "description": "Delete guest conversion pod after successful migration (true/false)",
           "required": false
         },
         {
           "name": "delete-vm-on-fail-migration",
-          "type": "bool",
-          "default": false,
-          "description": "Delete target VM when migration fails",
+          "type": "string",
+          "description": "Delete target VM when migration fails (true/false)",
           "required": false
         },
         {
@@ -4555,7 +4826,7 @@
           "name": "migrate-shared-disks",
           "type": "bool",
           "default": true,
-          "description": "Migrate disks shared between multiple VMs",
+          "description": "Migrate disks shared between multiple VMs (true/false)",
           "required": false
         },
         {
@@ -4586,14 +4857,14 @@
           "name": "preserve-cluster-cpu-model",
           "type": "bool",
           "default": false,
-          "description": "Preserve the CPU model and flags the VM runs with in its cluster",
+          "description": "Preserve the CPU model and flags the VM runs with in its cluster (true/false)",
           "required": false
         },
         {
           "name": "preserve-static-ips",
           "type": "bool",
           "default": false,
-          "description": "Preserve static IP configurations during migration",
+          "description": "Preserve static IP configurations during migration (true/false)",
           "required": false
         },
         {
@@ -4606,21 +4877,21 @@
           "name": "pvc-name-template-use-generate-name",
           "type": "bool",
           "default": true,
-          "description": "Use generateName instead of name for PVC name template",
+          "description": "Use generateName instead of name for PVC name template (true/false)",
           "required": false
         },
         {
           "name": "rdm-as-lun",
           "type": "bool",
           "default": false,
-          "description": "Map VMware RDM disks as LUN devices (SCSI passthrough) in the target VM (vSphere only)",
+          "description": "Map VMware RDM disks as LUN devices (SCSI passthrough) in the target VM (vSphere only) (true/false)",
           "required": false
         },
         {
           "name": "run-preflight-inspection",
           "type": "bool",
           "default": true,
-          "description": "Run preflight inspection on VM base disks before starting disk transfer",
+          "description": "Run preflight inspection on VM base disks before starting disk transfer (true/false)",
           "required": false
         },
         {
@@ -4633,14 +4904,28 @@
           "name": "skip-guest-conversion",
           "type": "bool",
           "default": false,
-          "description": "Skip the guest conversion process (raw disk copy mode)",
+          "description": "Skip the guest conversion process (raw disk copy mode) (true/false)",
           "required": false
         },
         {
           "name": "skip-zone-node-selector",
           "type": "bool",
           "default": false,
-          "description": "Skip adding zone-based node selector to migrated VMs (EC2 only)",
+          "description": "Skip adding zone-based node selector to migrated VMs (EC2 only) (true/false)",
+          "required": false
+        },
+        {
+          "name": "tag-mapping-disabled",
+          "type": "bool",
+          "default": false,
+          "description": "Disable vSphere tag-to-label conversion entirely (vSphere only) (true/false)",
+          "required": false
+        },
+        {
+          "name": "tag-mapping-label-tags",
+          "type": "stringSlice",
+          "default": [],
+          "description": "Only convert these vSphere tag categories to labels (comma-separated, vSphere only)",
           "required": false
         },
         {
@@ -4685,7 +4970,7 @@
           "name": "use-compatibility-mode",
           "type": "bool",
           "default": false,
-          "description": "Use compatibility devices (SATA bus, E1000E NIC) when skipGuestConversion is true",
+          "description": "Use compatibility devices (SATA bus, E1000E NIC) when skipGuestConversion is true (true/false)",
           "required": false
         },
         {
@@ -4704,14 +4989,14 @@
           "name": "warm",
           "type": "bool",
           "default": false,
-          "description": "Enable warm migration (use --migration-type=warm instead)",
+          "description": "Enable warm migration (use --migration-type=warm instead) (true/false)",
           "required": false
         },
         {
           "name": "xfs-compatibility",
           "type": "bool",
           "default": false,
-          "description": "Use XFS-compatible virt-v2v image for this plan",
+          "description": "Use XFS-compatible virt-v2v image for this plan (true/false)",
           "required": false
         }
       ],
@@ -4725,8 +5010,12 @@
           "command": "kubectl-mtv patch plan --plan-name my-migration --transfer-network my-namespace/migration-net"
         },
         {
-          "description": "Add target labels to migrated VMs",
-          "command": "kubectl-mtv patch plan --plan-name my-migration --target-labels env=prod,team=platform"
+          "description": "Disable static IP preservation",
+          "command": "kubectl-mtv patch plan --plan-name my-migration --preserve-static-ips false"
+        },
+        {
+          "description": "Enable raw disk copy mode (skip guest conversion)",
+          "command": "kubectl-mtv patch plan --plan-name my-migration --skip-guest-conversion true"
         },
         {
           "description": "Configure convertor pod scheduling",
@@ -4771,9 +5060,8 @@
         },
         {
           "name": "delete-vm-on-fail-migration",
-          "type": "bool",
-          "default": false,
-          "description": "Delete target VM when migration fails (overrides plan-level setting)",
+          "type": "string",
+          "description": "Delete target VM when migration fails (true/false, overrides plan-level setting)",
           "required": false
         },
         {
@@ -4804,7 +5092,7 @@
           "name": "nbde-clevis",
           "type": "bool",
           "default": false,
-          "description": "Enable passphrase-less NBDE/Clevis disk unlocking via TANG server (takes precedence over --luks-secret)",
+          "description": "Enable passphrase-less NBDE/Clevis disk unlocking via TANG server (takes precedence over --luks-secret) (true/false)",
           "required": false
         },
         {
@@ -4889,7 +5177,55 @@
           "name": "auto-target-credentials",
           "type": "bool",
           "default": false,
-          "description": "Automatically fetch target AWS credentials from cluster and target-az from worker nodes",
+          "description": "Automatically fetch target AWS credentials from cluster and target-az from worker nodes (true/false)",
+          "required": false
+        },
+        {
+          "name": "azure-client-id",
+          "type": "string",
+          "description": "Azure service principal application (client) ID",
+          "required": false
+        },
+        {
+          "name": "azure-client-secret",
+          "type": "string",
+          "description": "Azure service principal secret",
+          "required": false
+        },
+        {
+          "name": "azure-resource-group",
+          "type": "string",
+          "description": "Azure resource group containing source VMs",
+          "required": false
+        },
+        {
+          "name": "azure-snapshot-resource-group",
+          "type": "string",
+          "description": "Resource group for snapshots",
+          "required": false
+        },
+        {
+          "name": "azure-snapshot-sku",
+          "type": "string",
+          "description": "Snapshot SKU (Standard_LRS, Standard_ZRS, Premium_LRS)",
+          "required": false
+        },
+        {
+          "name": "azure-subscription-id",
+          "type": "string",
+          "description": "Azure subscription ID",
+          "required": false
+        },
+        {
+          "name": "azure-target-region",
+          "type": "string",
+          "description": "Target region for cross-region migrations",
+          "required": false
+        },
+        {
+          "name": "azure-tenant-id",
+          "type": "string",
+          "description": "Azure AD tenant ID",
           "required": false
         },
         {
@@ -4938,7 +5274,7 @@
           "name": "provider-insecure-skip-tls",
           "type": "bool",
           "default": false,
-          "description": "Skip TLS verification when connecting to the provider",
+          "description": "Skip TLS verification when connecting to the provider (true/false)",
           "required": false
         },
         {
@@ -5019,7 +5355,7 @@
           "name": "use-vddk-aio-optimization",
           "type": "bool",
           "default": false,
-          "description": "Enable VDDK AIO optimization for improved disk transfer performance",
+          "description": "Enable VDDK AIO optimization for improved disk transfer performance (true/false)",
           "required": false
         },
         {
@@ -5136,21 +5472,23 @@
         "set"
       ],
       "path_string": "settings set",
-      "description": "Set a ForkliftController setting value",
-      "long_description": "Set a ForkliftController setting value.\n\nThe setting name must be one of the supported settings. Use 'kubectl mtv settings'\nto see all available settings and their current values.\n\nValue types are automatically validated:\n  - Boolean settings accept: true, false, yes, no, 1, 0\n  - Integer settings accept: numeric values\n  - String settings accept: any value\n\nExamples:\n  # Set the VDDK image for vSphere migrations\n  kubectl mtv settings set --setting vddk_image --value quay.io/myorg/vddk:8.0\n\n  # Increase maximum concurrent VM migrations\n  kubectl mtv settings set --setting controller_max_vm_inflight --value 30\n\n  # Enable OpenShift cross-cluster live migration\n  kubectl mtv settings set --setting feature_ocp_live_migration --value true\n\n  # Increase virt-v2v memory limit for large VMs\n  kubectl mtv settings set --setting virt_v2v_container_limits_memory --value 16Gi\n\n  # Set a value starting with -- (use -- to stop flag parsing)\n  kubectl mtv settings set --setting virt_v2v_extra_args --value --machine-readable",
+      "description": "Set one or more ForkliftController setting values",
+      "long_description": "Set one or more ForkliftController setting values.\n\nThe setting name must be one of the supported settings. Use 'kubectl mtv settings'\nto see all available settings and their current values.\n\nMultiple --setting/--value pairs can be specified to update several settings in a\nsingle Kubernetes patch operation, avoiding multiple reconciliation cycles.\n\nValue types are automatically validated:\n  - Boolean settings accept: true, false, yes, no, 1, 0\n  - Integer settings accept: numeric values\n  - String settings accept: any value\n\nExamples:\n  # Set the VDDK image for vSphere migrations\n  kubectl mtv settings set --setting vddk_image --value quay.io/myorg/vddk:8.0\n\n  # Increase maximum concurrent VM migrations\n  kubectl mtv settings set --setting controller_max_vm_inflight --value 30\n\n  # Enable OpenShift cross-cluster live migration\n  kubectl mtv settings set --setting feature_ocp_live_migration --value true\n\n  # Increase virt-v2v memory limit for large VMs\n  kubectl mtv settings set --setting virt_v2v_container_limits_memory --value 16Gi\n\n  # Set multiple settings at once (single reconciliation cycle)\n  kubectl mtv settings set --setting feature_mcp_server --value true \\\n                           --setting mcp_server_lightspeed_set_mcp_gate --value true\n\n  # Set a value starting with -- (use -- to stop flag parsing)\n  kubectl mtv settings set --setting virt_v2v_extra_args --value --machine-readable",
       "usage": "kubectl-mtv settings set [flags]",
       "category": "write",
       "flags": [
         {
           "name": "setting",
-          "type": "string",
-          "description": "Setting name",
+          "type": "stringArray",
+          "default": [],
+          "description": "Setting name (can be specified multiple times)",
           "required": true
         },
         {
           "name": "value",
-          "type": "string",
-          "description": "Setting value",
+          "type": "stringArray",
+          "default": [],
+          "description": "Setting value (can be specified multiple times)",
           "required": true
         }
       ],
