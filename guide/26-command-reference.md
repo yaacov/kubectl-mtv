@@ -1279,6 +1279,9 @@ kubectl mtv help tsl
 
 # Learn about the KARL affinity syntax
 kubectl mtv help karl
+
+# Learn about storage copy-offload configuration
+kubectl mtv help offload
 ```
 
 #### Machine-Readable Output

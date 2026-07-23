@@ -48,11 +48,12 @@ This step has two parts that run independently:
 
 ### 3a. Always: Regenerate Settings from ForkliftControllerSpec
 
-Settings are derived directly from the `ForkliftControllerSpec` Go struct via code
-generation. Run this after every forklift version bump:
+Settings are derived directly from the `ForkliftControllerSpec` Go struct (a CRD type
+with kubebuilder markers) via code generation. Use the **vendored** source so the
+generated settings always match the Go dependency version:
 
 ```bash
-make generate-settings
+make generate-settings FORKLIFT_PATH=vendor/github.com/kubev2v/forklift
 go test ./pkg/cmd/settings/...
 ```
 
@@ -96,11 +97,14 @@ Settings are auto-generated from the upstream `ForkliftControllerSpec` struct:
 #### Regeneration
 
 ```bash
-make generate-settings
+make generate-settings FORKLIFT_PATH=vendor/github.com/kubev2v/forklift
 ```
 
-This parses `ForkliftControllerSpec` from the vendored forklift code and regenerates
-the `AllSettings` map with all field names, types, defaults, descriptions, and categories.
+This parses the `ForkliftControllerSpec` CRD struct from the vendored forklift code
+and regenerates the `AllSettings` map with all field names, types, defaults,
+descriptions, and categories. Always use `FORKLIFT_PATH=vendor/...` to stay in sync
+with the Go dependency version (the Makefile default points to a local forklift checkout
+which may be at a different version).
 
 #### What to Check After Regeneration
 
