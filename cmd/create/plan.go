@@ -136,7 +136,8 @@ Mapping Pair Formats (when overriding auto-generated mappings):
     source:storageclass               - Basic mapping
     source:sc;volumeMode=Block        - With volume mode (Filesystem|Block)
     source:sc;accessMode=ReadWriteMany - With access mode
-    source:sc;offloadPlugin=vsphere;offloadVendor=ontap - Storage offload
+    source:sc;offloadPlugin=vsphere;offloadVendor=ontap - Storage offload (XCOPY)
+    source:sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par - CSI import offload
     Options are semicolon-separated and can be combined:
     Example: "ds1:fast-ssd,ds2:economy;volumeMode=Block;accessMode=ReadWriteOnce"
 
@@ -553,7 +554,7 @@ Affinity Syntax (KARL):
 	// Storage enhancement flags
 	cmd.Flags().StringVar(&defaultVolumeMode, "default-volume-mode", "", "Default volume mode for storage pairs (Filesystem|Block)")
 	cmd.Flags().StringVar(&defaultAccessMode, "default-access-mode", "", "Default access mode for storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany)")
-	cmd.Flags().StringVar(&defaultOffloadPlugin, "default-offload-plugin", "", "Default offload plugin type for storage pairs (vsphere)")
+	cmd.Flags().StringVar(&defaultOffloadPlugin, "default-offload-plugin", "", flags.OffloadPluginHelp)
 	cmd.Flags().StringVar(&defaultOffloadSecret, "default-offload-secret", "", "Existing offload secret name to use for storage offload")
 	cmd.Flags().StringVar(&defaultOffloadVendor, "default-offload-vendor", "", flags.OffloadVendorHelp)
 	cmd.Flags().StringVar(&defaultOffloadMigrationHosts, "default-offload-migration-hosts", "", "Default dedicated ESXi host IDs for XCOPY migrations (+-separated, e.g. host-10+host-11)")
@@ -642,7 +643,7 @@ Affinity Syntax (KARL):
 	}
 
 	if err := cmd.RegisterFlagCompletionFunc("default-offload-plugin", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"vsphere"}, cobra.ShellCompDirectiveNoFileComp
+		return flags.OffloadPlugins, cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
 		panic(err)
 	}

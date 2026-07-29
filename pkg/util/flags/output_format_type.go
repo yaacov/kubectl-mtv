@@ -42,6 +42,22 @@ func ValidateOffloadVendor(vendor string) error {
 	return fmt.Errorf("must be one of: %s", strings.Join(OffloadVendors, "|"))
 }
 
+// OffloadPlugins is the list of supported offload plugin types.
+var OffloadPlugins = []string{"vsphere", "csiVolumeImport"}
+
+// OffloadPluginHelp is the help text for --default-offload-plugin flags.
+var OffloadPluginHelp = "Default offload plugin type for storage pairs (" + strings.Join(OffloadPlugins, "|") + ")"
+
+// ValidateOffloadPlugin returns nil if the plugin is in the supported list, or an error otherwise.
+func ValidateOffloadPlugin(plugin string) error {
+	for _, p := range OffloadPlugins {
+		if plugin == p {
+			return nil
+		}
+	}
+	return fmt.Errorf("must be one of: %s", strings.Join(OffloadPlugins, "|"))
+}
+
 // OutputFormatTypeFlag implements pflag.Value interface for output format type validation
 type OutputFormatTypeFlag struct {
 	value        string
