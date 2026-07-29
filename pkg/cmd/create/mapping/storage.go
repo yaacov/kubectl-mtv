@@ -42,12 +42,7 @@ func validateAccessMode(mode string) error {
 
 // validateOffloadPlugin validates offload plugin values
 func validateOffloadPlugin(plugin string) error {
-	switch plugin {
-	case "vsphere":
-		return nil
-	default:
-		return fmt.Errorf("must be one of: vsphere")
-	}
+	return flags.ValidateOffloadPlugin(plugin)
 }
 
 // validateOffloadVendor validates offload vendor values
@@ -229,8 +224,13 @@ func parseStoragePairsInternal(pairStr, defaultNamespace string, configFlags *ge
 						}
 					}
 					offloadPluginConfig.VSphereXcopyPluginConfig = xcopyConfig
+				case "csiVolumeImport":
+					offloadPluginConfig.CsiVolumeImport = &forkliftv1beta1.CsiVolumeImport{
+						SecretRef:            offloadSecret,
+						StorageVendorProduct: forkliftv1beta1.StorageVendorProduct(offloadVendor),
+					}
 				default:
-					return nil, fmt.Errorf("unknown offload plugin '%s' for storage pair '%s': supported plugins are: vsphere", offloadPlugin, sourceName)
+					return nil, fmt.Errorf("unknown offload plugin '%s' for storage pair '%s': supported plugins are: vsphere, csiVolumeImport", offloadPlugin, sourceName)
 				}
 
 				pair.OffloadPlugin = offloadPluginConfig

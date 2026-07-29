@@ -257,9 +257,9 @@ Examples
 	},
 	{
 		Name:  "offload",
-		Short: "Storage copy-offload (XCOPY) configuration reference",
-		Content: `Storage Copy-Offload (XCOPY) Reference
-======================================
+		Short: "Storage copy-offload configuration reference",
+		Content: `Storage Copy-Offload Reference
+==============================
 
 Copy-offload delegates disk copying to the storage array instead of streaming
 data through the cluster network, dramatically improving migration speed.
@@ -267,11 +267,25 @@ data through the cluster network, dramatically improving migration speed.
 Prerequisites:
   kubectl mtv settings set --setting feature_copy_offload --value true
 
-How It Works:
+Offload Plugin Types
+--------------------
+  vsphere          Uses VAAI/XCOPY via a VolumePopulator pod to clone disks
+                   directly on the storage array.
+  csiVolumeImport  Uses the CSI driver's native import capability to migrate
+                   VVol/RDM disks. No populator pod or service account is
+                   launched — the controller creates a PVC with import
+                   annotations and the CSI driver clones the source volume.
+
+How It Works (vsphere):
   1. StorageMap entry includes an OffloadPlugin with vendor + secret
   2. Controller creates a VSphereXcopyVolumePopulator per disk
   3. Populator pod uses VAAI/XCOPY to clone directly on the array
   4. Plans with mixed VDDK/offload pairs are rejected at validation
+
+How It Works (csiVolumeImport):
+  1. StorageMap entry includes an OffloadPlugin with vendor + secret
+  2. Controller creates a PVC with CSI import annotations per disk
+  3. CSI driver clones the source array volume directly
 
 Supported Vendors
 -----------------
@@ -302,8 +316,8 @@ Secret Keys (Environment Variables)
     ONTAP_SVM                      SVM name (ontap)
     STORAGE_HTTP_TIMEOUT_SECONDS   HTTP timeout in seconds (optional)
 
-Clone Methods
--------------
+Clone Methods (vsphere only)
+----------------------------
   vib (default)   Custom VIB on ESXi hosts, no SSH needed
   ssh             SSH to ESXi hosts with restricted commands
 
@@ -369,12 +383,24 @@ Examples
       --default-offload-migration-hosts "host-10+host-11" \
       --default-offload-secret my-storage-secret
 
+  CSI Volume Import (HPE Primera/3PAR):
+    kubectl mtv create mapping storage --name csi-offload \
+      --source vsphere-prod --target host \
+      --storage-pairs "hpe-ds:hpe-sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par" \
+      --default-offload-secret hpe-creds
+
 Important Constraints
 ---------------------
+  General:
   - A plan cannot mix VDDK and offload storage pairs (all or none)
   - Source VMDK and target PVC must be on the SAME physical storage array
+  - Works with vVol, RDM, and VMFS-backed disks
+
+  vsphere (XCOPY) only:
   - ESXi hosts must have VAAI enabled
-  - Works with vVol, RDM, and VMFS-backed disks`,
+
+  csiVolumeImport only:
+  - Currently supports primera3par vendor only`,
 	},
 }
 

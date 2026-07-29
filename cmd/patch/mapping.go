@@ -122,12 +122,12 @@ func newPatchStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 
 	cmd.Flags().StringVarP(&name, "name", "M", "", "Storage mapping name")
 	flags.MarkRequiredForMCP(cmd, "name")
-	cmd.Flags().StringVar(&addPairs, "add-pairs", "", "Storage pairs to add in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)")
-	cmd.Flags().StringVar(&updatePairs, "update-pairs", "", "Storage pairs to update in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)")
+	cmd.Flags().StringVar(&addPairs, "add-pairs", "", "Storage pairs to add in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)")
+	cmd.Flags().StringVar(&updatePairs, "update-pairs", "", "Storage pairs to update in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)")
 	cmd.Flags().StringVar(&removePairs, "remove-pairs", "", "Source storage names to remove from mapping (comma-separated)")
 	cmd.Flags().StringVar(&defaultVolumeMode, "default-volume-mode", "", "Default volume mode for new/updated storage pairs (Filesystem|Block)")
 	cmd.Flags().StringVar(&defaultAccessMode, "default-access-mode", "", "Default access mode for new/updated storage pairs (ReadWriteOnce|ReadWriteMany|ReadOnlyMany)")
-	cmd.Flags().StringVar(&defaultOffloadPlugin, "default-offload-plugin", "", "Default offload plugin type for new/updated storage pairs (vsphere)")
+	cmd.Flags().StringVar(&defaultOffloadPlugin, "default-offload-plugin", "", flags.OffloadPluginHelp)
 	cmd.Flags().StringVar(&defaultOffloadSecret, "default-offload-secret", "", "Default offload plugin secret name for new/updated storage pairs")
 	cmd.Flags().StringVar(&defaultOffloadVendor, "default-offload-vendor", "", flags.OffloadVendorHelp)
 	cmd.Flags().StringVar(&defaultOffloadMigrationHosts, "default-offload-migration-hosts", "", "Default dedicated ESXi host IDs for XCOPY migrations (+-separated, e.g. host-10+host-11)")
@@ -148,7 +148,7 @@ func newPatchStorageMappingCmd(kubeConfigFlags *genericclioptions.ConfigFlags, g
 
 	// Add completion for offload plugin flag
 	if err := cmd.RegisterFlagCompletionFunc("default-offload-plugin", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		return []string{"vsphere"}, cobra.ShellCompDirectiveNoFileComp
+		return flags.OffloadPlugins, cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
 		panic(err)
 	}
