@@ -69,9 +69,9 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags, globalConfig Glo
 	// PlanSpec fields
 	var planSpec forkliftv1beta1.PlanSpec
 	var transferNetwork string
-	var installLegacyDrivers string              // "true", "false", or "auto" for nil (auto-detect)
-	var enableNestedVirtualization string        // "true", "false", or "auto" for nil (auto-detect)
-	var pvcNameTemplateUseGenerateName string    // "true", "false", or "auto" for nil (auto-detect)
+	var installLegacyDrivers string           // "true", "false", or "auto" for nil (auto-detect)
+	var enableNestedVirtualization string     // "true", "false", or "auto" for nil (auto-detect)
+	var pvcNameTemplateUseGenerateName string // "true", "false", or "auto" for nil (auto-detect)
 	migrationTypeFlag := flags.NewMigrationTypeFlag()
 	var targetLabels []string
 	var targetNodeSelector []string

@@ -240,7 +240,6 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 	cmd.Flags().StringVar(&smbPassword, "smb-password", "", "SMB password (defaults to HyperV password)")
 	cmd.Flags().StringVar(&hypervMgmtType, "hyperv-management-type", "", "HyperV management type (e.g., cluster)")
 
-
 	// Azure specific flags
 	cmd.Flags().StringVar(&azureTenantID, "azure-tenant-id", "", "Azure AD tenant ID")
 	cmd.Flags().StringVar(&azureSubscriptionID, "azure-subscription-id", "", "Azure subscription ID containing source VMs")
