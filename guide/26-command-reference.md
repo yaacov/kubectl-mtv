@@ -812,6 +812,12 @@ Complete the cutover phase for warm migration plans.
 - `--name, -M`: Plan name(s) to cutover (comma-separated)
 - `--cutover, -c`: Cutover time in ISO8601 format. Defaults to current time if not specified
 - `--all`: Set cutover time for all migration plans in the namespace
+- `--vm, --vms`: VM name(s) or ID(s) to limit the cutover to (comma-separated). Requires a single `--name`; if omitted, the cutover applies to the whole plan
+
+```bash
+# Cutover a specific VM only, other VMs in the plan are unaffected
+kubectl mtv cutover plan --name my-warm-migration --cutover 2026-12-31T23:00:00Z --vms vm-1
+```
 
 ### archive - Archive Plans
 
