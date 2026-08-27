@@ -19,7 +19,7 @@ cached and can be queried using TSL (Tree Search Language) filters.
 Available resource types vary by provider:
   - All providers: vm, network, storage
   - vSphere/oVirt: host, datacenter, cluster, disk
-  - vSphere: datastore, folder, resource-pool, vsphere-custom-field-def
+  - vSphere: datastore, folder, vsphere-custom-field-def
   - oVirt: disk-profile, nic-profile, ovirt-server-cpu
   - OpenStack: instance, image, flavor, project, volume, volume-type, snapshot, subnet, openstack-region
   - OpenShift: namespace, pvc, data-volume, openshift-instance-type, openshift-cluster-instance-type, openshift-kubevirt
@@ -109,10 +109,6 @@ Available resource types vary by provider:
 	datastoreCmd := NewInventoryDatastoreCmd(kubeConfigFlags, globalConfig)
 	datastoreCmd.Aliases = []string{"datastores"}
 	cmd.AddCommand(datastoreCmd)
-
-	resourcePoolCmd := NewInventoryResourcePoolCmd(kubeConfigFlags, globalConfig)
-	resourcePoolCmd.Aliases = []string{"resourcepools", "resource-pools"}
-	cmd.AddCommand(resourcePoolCmd)
 
 	folderCmd := NewInventoryFolderCmd(kubeConfigFlags, globalConfig)
 	folderCmd.Aliases = []string{"folders"}

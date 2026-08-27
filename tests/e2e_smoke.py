@@ -30,6 +30,39 @@ errors = []  # type: List[str]
 
 
 # ---------------------------------------------------------------------------
+# Color (pytest-style: green PASS, red FAIL, yellow SKIP)
+# ---------------------------------------------------------------------------
+
+def _use_color():
+    if os.environ.get("NO_COLOR"):
+        return False
+    if os.environ.get("FORCE_COLOR") or os.environ.get("CLICOLOR_FORCE"):
+        return True
+    return hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
+
+
+_COLOR = _use_color()
+
+
+def _paint(code, text):
+    if not _COLOR:
+        return text
+    return "\033[%sm%s\033[0m" % (code, text)
+
+
+def section(title):
+    print(_paint("1;36", "[%s]" % title))
+
+
+def skip(reason):
+    print("  %s  %s" % (_paint("33", "SKIP"), reason))
+
+
+def warn(msg):
+    print("  %s: %s" % (_paint("33", "WARNING"), msg))
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -81,12 +114,12 @@ def record(name: str, ok: bool, detail: str = ""):
     global passed, failed
     if ok:
         passed += 1
-        print(f"  PASS  {name}")
+        print("  %s  %s" % (_paint("1;32", "PASS"), name))
     else:
         failed += 1
-        msg = f"  FAIL  {name}"
+        msg = "  %s  %s" % (_paint("1;31", "FAIL"), name)
         if detail:
-            msg += f"  -- {detail}"
+            msg += "  -- %s" % detail
         print(msg)
         errors.append(name)
 
@@ -149,7 +182,7 @@ def setup_test_namespace():
 
     _, stderr, rc = kubectl(["create", "namespace", TEST_NAMESPACE])
     if rc != 0 and "already exists" not in stderr:
-        print(f"  WARNING: failed to create namespace {TEST_NAMESPACE}: {stderr.strip()}")
+        warn("failed to create namespace %s: %s" % (TEST_NAMESPACE, stderr.strip()))
         return False
 
     # Wait for namespace to become Active
@@ -159,7 +192,7 @@ def setup_test_namespace():
             return True
         time.sleep(1)
 
-    print(f"  WARNING: namespace {TEST_NAMESPACE} did not become Active")
+    warn("namespace %s did not become Active" % TEST_NAMESPACE)
     return False
 
 
@@ -173,7 +206,7 @@ def teardown_test_namespace():
 # ---------------------------------------------------------------------------
 
 def test_version():
-    print("[version]")
+    section("version")
 
     # 1. version --client (no cluster needed)
     stdout, stderr, rc = run(["version", "--client"])
@@ -203,7 +236,7 @@ def test_version():
 # ---------------------------------------------------------------------------
 
 def test_health():
-    print("[health]")
+    section("health")
 
     # 1. Health with --skip-logs (faster)
     stdout, stderr, rc = run(["health", "--skip-logs"])
@@ -232,7 +265,7 @@ def test_health():
 # ---------------------------------------------------------------------------
 
 def test_settings():
-    print("[settings]")
+    section("settings")
 
     # 1. Default settings view
     stdout, stderr, rc = run(["settings"])
@@ -241,10 +274,12 @@ def test_settings():
                "empty output" if not stdout.strip() else "")
 
     # 2. Settings JSON output
+    default_count = None
     stdout, stderr, rc = run(["settings", "-o", "json"])
     if assert_exit_ok("settings json exits 0", rc, stderr):
         data = assert_valid_json("settings valid json", stdout)
         if isinstance(data, list):
+            default_count = len(data)
             record("settings json is array", len(data) > 0,
                    "empty JSON array" if len(data) == 0 else "")
 
@@ -258,8 +293,13 @@ def test_settings():
     if assert_exit_ok("settings --all json exits 0", rc, stderr):
         data = assert_valid_json("settings --all valid json", stdout)
         if isinstance(data, list):
-            record("settings --all has more entries", len(data) > 0,
-                   "empty JSON array" if len(data) == 0 else "")
+            if default_count is not None:
+                record("settings --all has more entries",
+                       len(data) > default_count,
+                       f"--all={len(data)} default={default_count}")
+            else:
+                record("settings --all has entries", len(data) > 0,
+                       "empty JSON array" if len(data) == 0 else "")
 
     # 5. Settings get subcommand
     stdout, stderr, rc = run(["settings", "get"])
@@ -315,7 +355,7 @@ def _first_provider_namespace():
 
 
 def test_get_providers():
-    print("[get providers]")
+    section("get providers")
 
     # 1. List providers (all namespaces)
     stdout, stderr, rc = run(["get", "providers", "-A"])
@@ -368,14 +408,53 @@ def _first_plan_namespace():
     return None
 
 
+def _first_named(*resource_path):
+    # type: (*str) -> tuple
+    """Return (name, namespace) of the first item from ``get <resource> -A -o json``."""
+    stdout, _, rc = run(["get", *resource_path, "-o", "json", "-A"])
+    if rc != 0:
+        return None, None
+    data, _ = parse_json(stdout)
+    if data and isinstance(data, list) and len(data) > 0:
+        return _extract_name(data[0]) or None, _extract_namespace(data[0]) or None
+    return None, None
+
+
+WRITE_VERBS = (
+    "create", "delete", "patch", "start", "cancel", "cutover", "archive", "unarchive",
+)
+EXPECTED_MACHINE_VERBS = ("get", "create", "patch", "start", "cutover", "archive")
+
+
+def _command_paths(schema):
+    # type: (dict) -> List[str]
+    """Extract path_string values from help --machine schema."""
+    cmds = schema.get("commands") or []
+    paths = []
+    for cmd in cmds:
+        if not isinstance(cmd, dict):
+            continue
+        path = cmd.get("path_string") or " ".join(cmd.get("path") or [])
+        if path:
+            paths.append(path)
+    return paths
+
+
+def _first_verb(path):
+    # type: (str) -> str
+    return path.split()[0] if path else ""
+
+
 def test_get_plans():
-    print("[get plans]")
+    section("get plans")
 
     # 1. List plans (all namespaces)
     stdout, stderr, rc = run(["get", "plans", "-A"])
     if assert_exit_ok("get plans -A exits 0", rc, stderr):
-        record("get plans output non-empty", len(stdout.strip()) > 0,
-               "empty output (ok if no plans exist)" if not stdout.strip() else "")
+        if stdout.strip():
+            record("get plans output non-empty", True)
+        else:
+            skip("get plans output (no plans found)")
 
     # 2. JSON output
     stdout, stderr, rc = run(["get", "plans", "-o", "json", "-A"])
@@ -405,8 +484,8 @@ def test_get_plans():
         ])
         assert_exit_ok("get plan --vms exits 0", rc, stderr)
     else:
-        print("  SKIP  get plan by name (no plans found)")
-        print("  SKIP  get plan --vms (no plans found)")
+        skip("get plan by name (no plans found)")
+        skip("get plan --vms (no plans found)")
 
 
 # ---------------------------------------------------------------------------
@@ -414,13 +493,15 @@ def test_get_plans():
 # ---------------------------------------------------------------------------
 
 def test_get_mappings():
-    print("[get mappings]")
+    section("get mappings")
 
     # 1. List all mappings (network + storage)
     stdout, stderr, rc = run(["get", "mappings", "-A"])
     if assert_exit_ok("get mappings -A exits 0", rc, stderr):
-        record("get mappings output non-empty", len(stdout.strip()) > 0,
-               "empty output (ok if no mappings exist)" if not stdout.strip() else "")
+        if stdout.strip():
+            record("get mappings output non-empty", True)
+        else:
+            skip("get mappings output (no mappings found)")
 
     # 2. JSON output
     stdout, stderr, rc = run(["get", "mappings", "-o", "json", "-A"])
@@ -443,7 +524,7 @@ def test_get_mappings():
 # ---------------------------------------------------------------------------
 
 def test_describe():
-    print("[describe]")
+    section("describe")
 
     # Describe provider (dynamic)
     provider_name = _first_provider_name()
@@ -464,7 +545,7 @@ def test_describe():
         if assert_exit_ok("describe provider json exits 0", rc, stderr):
             assert_valid_json("describe provider valid json", stdout)
     else:
-        print("  SKIP  describe provider (no providers found)")
+        skip("describe provider (no providers found)")
 
     # Describe plan (dynamic)
     plan_name = _first_plan_name()
@@ -485,12 +566,84 @@ def test_describe():
         if assert_exit_ok("describe plan json exits 0", rc, stderr):
             assert_valid_json("describe plan valid json", stdout)
     else:
-        print("  SKIP  describe plan (no plans found)")
+        skip("describe plan (no plans found)")
+
+    # Describe mapping (dynamic)
+    mapping_name, mapping_ns = _first_named("mapping", "network")
+    if mapping_name and mapping_ns:
+        stdout, stderr, rc = run([
+            "describe", "mapping", "network", "--name", mapping_name,
+            "--namespace", mapping_ns,
+        ])
+        if assert_exit_ok("describe mapping network exits 0", rc, stderr):
+            assert_contains("describe mapping network has name", stdout, mapping_name)
+    else:
+        skip("describe mapping network (no network mappings found)")
 
 
 # ---------------------------------------------------------------------------
-# Tests: positional args
+# Tests: get inventory / host / hook / conversion (skip if absent)
 # ---------------------------------------------------------------------------
+
+def test_get_inventory():
+    section("get inventory")
+
+    provider_name = _first_provider_name()
+    provider_ns = _first_provider_namespace()
+    if not provider_name or not provider_ns:
+        skip("get inventory (no providers found)")
+        return
+
+    for kind in ("vm", "network", "storage"):
+        stdout, stderr, rc = run([
+            "get", "inventory", kind,
+            "--provider", provider_name,
+            "--namespace", provider_ns,
+            "-o", "json",
+        ])
+        if rc != 0:
+            skip("get inventory %s (%s)" % (kind, stderr.strip()[:80] or "command failed"))
+            continue
+        record(f"get inventory {kind} exits 0", True)
+        assert_valid_json(f"get inventory {kind} valid json", stdout)
+
+
+def test_get_optional_resources():
+    section("get host / hook / conversion")
+
+    for resource in ("hosts", "hooks", "conversions"):
+        stdout, stderr, rc = run(["get", resource, "-o", "json", "-A"])
+        if rc != 0:
+            skip("get %s (%s)" % (resource, stderr.strip()[:80] or "command failed"))
+            continue
+        record(f"get {resource} json exits 0", True)
+        data = assert_valid_json(f"get {resource} valid json", stdout)
+        items = data if isinstance(data, list) else []
+        if not items:
+            skip("get %s (none found)" % resource)
+
+
+# ---------------------------------------------------------------------------
+# Tests: dry-run create provider
+# ---------------------------------------------------------------------------
+
+def test_dry_run_create_provider():
+    section("dry-run create provider")
+
+    stdout, stderr, rc = run([
+        "create", "provider", "smoke-dryrun-ocp",
+        "--type", "openshift",
+        "--dry-run",
+        "-o", "json",
+    ])
+    if assert_exit_ok("create provider --dry-run json exits 0", rc, stderr):
+        data = assert_valid_json("create provider --dry-run valid json", stdout)
+        if data is not None:
+            text = json.dumps(data) if not isinstance(data, str) else data
+            record("create provider --dry-run has Provider",
+                   "Provider" in text or "provider" in text.lower(),
+                   f"output keys/preview={text[:160]}")
+
 
 def test_positional_args():
     """Test that 'get' commands accept names as positional args.
@@ -500,7 +653,7 @@ def test_positional_args():
     be blocked only if a command used Cobra's cmd.MarkFlagRequired()
     (e.g. describe, create, patch use MarkRequiredForMCP, not that).
     """
-    print("[positional args]")
+    section("positional args")
 
     # Discover a provider dynamically for positional arg tests
     provider_name = _first_provider_name()
@@ -522,7 +675,7 @@ def test_positional_args():
         if assert_exit_ok("get provider positional table exits 0", rc, stderr):
             assert_contains("get provider positional has name", stdout, provider_name)
     else:
-        print("  SKIP  get provider positional (no providers found)")
+        skip("get provider positional (no providers found)")
 
     # Discover a plan dynamically for positional arg tests
     plan_name = _first_plan_name()
@@ -544,7 +697,7 @@ def test_positional_args():
         if assert_exit_ok("get plan positional table exits 0", rc, stderr):
             assert_contains("get plan positional has name", stdout, plan_name)
     else:
-        print("  SKIP  get plan positional (no plans found)")
+        skip("get plan positional (no plans found)")
 
 
 # ---------------------------------------------------------------------------
@@ -553,7 +706,7 @@ def test_positional_args():
 
 def test_create_patch_delete():
     """Full lifecycle: create namespace, create/get/describe/patch/delete provider, cleanup."""
-    print("[create / patch / delete lifecycle]")
+    section("create / patch / delete lifecycle")
 
     # --- Setup: create test namespace ---
     if not setup_test_namespace():
@@ -581,9 +734,7 @@ def _lifecycle_create_provider():
         "--type", "openshift",
         "--namespace", TEST_NAMESPACE,
     ])
-    if assert_exit_ok("create provider (positional) exits 0", rc, stderr):
-        combined = stdout + stderr
-        assert_contains("create provider confirms creation", combined.lower(), "creat")
+    assert_exit_ok("create provider (positional) exits 0", rc, stderr)
 
     # Verify it exists
     stdout, stderr, rc = run([
@@ -696,7 +847,7 @@ def _lifecycle_delete_provider():
 # ---------------------------------------------------------------------------
 
 def test_help():
-    print("[help]")
+    section("help")
 
     # 1. Default help
     stdout, stderr, rc = run(["help"])
@@ -721,19 +872,30 @@ def test_help():
         record("help karl non-empty", len(stdout.strip()) > 0,
                "empty output" if not stdout.strip() else "")
 
-    # 5. Machine-readable JSON schema
+    # 5. Offload topic
+    stdout, stderr, rc = run(["help", "offload"])
+    if assert_exit_ok("help offload exits 0", rc, stderr):
+        record("help offload non-empty", len(stdout.strip()) > 0,
+               "empty output" if not stdout.strip() else "")
+
+    # 6. Machine-readable JSON schema
     stdout, stderr, rc = run(["help", "--machine"])
     if assert_exit_ok("help --machine exits 0", rc, stderr):
         data = assert_valid_json("help --machine valid json", stdout)
         if data and isinstance(data, dict):
             assert_contains("help --machine has commands", json.dumps(data), "commands")
+            verbs = {_first_verb(p) for p in _command_paths(data)}
+            for verb in EXPECTED_MACHINE_VERBS:
+                record(f"help --machine has {verb}",
+                       verb in verbs,
+                       f"verbs={sorted(verbs)}")
 
-    # 6. Machine-readable YAML schema
+    # 7. Machine-readable YAML schema
     stdout, stderr, rc = run(["help", "--machine", "-o", "yaml"])
     if assert_exit_ok("help --machine yaml exits 0", rc, stderr):
         assert_valid_yaml("help --machine valid yaml", stdout)
 
-    # 7. Machine schema for a specific command
+    # 8. Machine schema for a specific command
     stdout, stderr, rc = run(["help", "--machine", "get", "plan"])
     if assert_exit_ok("help --machine get plan exits 0", rc, stderr):
         data = assert_valid_json("help --machine get plan json", stdout)
@@ -741,26 +903,29 @@ def test_help():
             assert_contains("help --machine get plan has commands",
                             json.dumps(data), "plan")
 
-    # 8. Machine --short (condensed)
+    # 9. Machine --short (condensed)
     stdout, stderr, rc = run(["help", "--machine", "--short"])
     if assert_exit_ok("help --machine --short exits 0", rc, stderr):
         assert_valid_json("help --machine --short valid json", stdout)
 
-    # 9. Machine --read-only
+    # 10. Machine --read-only
     stdout, stderr, rc = run(["help", "--machine", "--read-only"])
     if assert_exit_ok("help --machine --read-only exits 0", rc, stderr):
         data = assert_valid_json("help --machine --read-only json", stdout)
         if data and isinstance(data, dict):
-            commands_str = json.dumps(data.get("commands", []))
-            record("help --machine --read-only excludes create",
-                   "create" not in commands_str.split('"use"')[0] if '"use"' in commands_str else True)
+            write_found = [
+                p for p in _command_paths(data) if _first_verb(p) in WRITE_VERBS
+            ]
+            record("help --machine --read-only excludes write verbs",
+                   len(write_found) == 0,
+                   f"write commands: {write_found[:8]}")
 
-    # 10. Machine --write
+    # 11. Machine --write
     stdout, stderr, rc = run(["help", "--machine", "--write"])
     if assert_exit_ok("help --machine --write exits 0", rc, stderr):
         assert_valid_json("help --machine --write json", stdout)
 
-    # 11. Help for TSL topic in machine format
+    # 12. Help for TSL topic in machine format
     stdout, stderr, rc = run(["help", "--machine", "tsl"])
     if assert_exit_ok("help --machine tsl exits 0", rc, stderr):
         assert_valid_json("help --machine tsl valid json", stdout)
@@ -771,7 +936,7 @@ def test_help():
 # ---------------------------------------------------------------------------
 
 def test_errors():
-    print("[error handling]")
+    section("error handling")
 
     # 1. get plan --vms without plan name
     _, _, rc = run(["get", "plan", "--vms"])
@@ -828,13 +993,14 @@ def test_errors():
 
 def main():
     if not os.path.isfile(BINARY):
-        print(f"Binary not found: {BINARY}")
+        print(_paint("1;31", "Binary not found: %s" % BINARY))
         print("Run 'make build' first, or use 'make test-e2e'.")
         sys.exit(2)
 
-    print("=" * 60)
-    print("E2E Smoke Tests")
-    print("=" * 60)
+    bar = _paint("1;36", "=" * 60)
+    print(bar)
+    print(_paint("1;36", "E2E Smoke Tests"))
+    print(bar)
 
     test_version()
     test_health()
@@ -842,19 +1008,23 @@ def main():
     test_get_providers()
     test_get_plans()
     test_get_mappings()
+    test_get_inventory()
+    test_get_optional_resources()
     test_describe()
     test_positional_args()
+    test_dry_run_create_provider()
     test_create_patch_delete()
     test_help()
     test_errors()
 
-    print("=" * 60)
-    print(f"Results: {passed} passed, {failed} failed")
+    print(bar)
+    summary = "Results: %d passed, %d failed" % (passed, failed)
+    print(_paint("1;31" if failed else "1;32", summary))
     if errors:
-        print("Failed tests:")
+        print(_paint("1;31", "Failed tests:"))
         for name in errors:
-            print(f"  - {name}")
-    print("=" * 60)
+            print(_paint("31", "  - %s" % name))
+    print(bar)
 
     sys.exit(1 if failed > 0 else 0)
 

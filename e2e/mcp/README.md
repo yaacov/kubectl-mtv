@@ -4,13 +4,24 @@ End-to-end tests for the kubectl-mtv MCP (Model Context Protocol) server.
 
 ## Overview
 
-These tests verify the complete MCP server functionality including:
-- Provider management (vSphere, OpenShift)
-- Inventory queries with TSL (Tree Search Language)
-- Host configuration for direct ESXi transfers
-- Migration plan creation and management
-- Network and storage mappings
-- Bearer token authentication
+These tests verify MCP server functionality against a live OpenShift cluster and vSphere lab: providers (including patch), inventory TSL, hosts, plans (create/patch/dry-run start/archive), mappings, hooks, dry-run/show_cli, health, and bearer-token auth (included in the default suite).
+
+```
+e2e/mcp/
+├── conftest.py           # Shared fixtures and helpers
+├── pyproject.toml        # pytest config, dependencies
+├── Makefile              # Server lifecycle + test targets
+├── setup/                # Setup verification tests
+├── auth/                 # Bearer-token auth tests (in default suite)
+├── dryrun/               # dry-run + show_cli tests
+├── providers/            # Provider CRUD tests
+├── hosts/                # Host CRUD tests
+├── plans/                # Plan create/read/patch/lifecycle tests
+├── mappings/             # Mapping create + read tests
+├── hooks/                # Hook create/get/describe/delete tests
+├── inventory/            # Inventory read tests
+└── health/               # Health check tests
+```
 
 ## Prerequisites
 
@@ -136,13 +147,15 @@ make test                    # All tests (requires running server)
 
 ```bash
 make test-setup              # Server connectivity + namespace setup
-make test-providers          # Provider create/read
+make test-auth               # Bearer-token authentication (also in make test)
+make test-providers          # Provider create/read/patch
 make test-hosts              # ESXi host configuration
-make test-plans              # Migration plans
-make test-mappings           # Network/storage mappings
+make test-plans              # Migration plans (create/read/patch/lifecycle)
+make test-mappings           # Network/storage mapping create + read
+make test-hooks              # Hook create/get/describe/delete
 make test-inventory          # vSphere inventory queries
+make test-dryrun             # dry-run and show_cli
 make test-health             # MTV health checks
-make test-auth               # Authentication/authorization
 ```
 
 ### By Operation Type

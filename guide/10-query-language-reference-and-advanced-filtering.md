@@ -656,9 +656,6 @@ kubectl mtv get inventory hosts --provider vsphere-prod --query "where vmCount >
 
 # Datastores with low free space
 kubectl mtv get inventory datastores --provider vsphere-prod --query "where freeSpaceGB < 100"
-
-# Resource pools with high utilization
-kubectl mtv get inventory resource-pools --provider vsphere-prod --query "where memoryUsageGB > 50000"
 ```
 
 ## Provider-Specific Query Examples

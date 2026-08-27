@@ -114,10 +114,15 @@ test-hosts: install
 test-plans: install
 	$(PYTEST) $(PYTEST_ARGS) plans/
 
-## test-mappings: Run only network/storage mapping read tests
+## test-mappings: Run only network/storage mapping create + read tests
 .PHONY: test-mappings
 test-mappings: install
 	$(PYTEST) $(PYTEST_ARGS) mappings/
+
+## test-hooks: Run only hook create/get/describe/delete tests
+.PHONY: test-hooks
+test-hooks: install
+	$(PYTEST) $(PYTEST_ARGS) hooks/
 
 ## test-inventory: Run only vSphere inventory read tests
 .PHONY: test-inventory

@@ -106,6 +106,9 @@ VSPHERE_PROVIDER_NAME: str = os.environ.get("VSPHERE_PROVIDER_NAME", "mcp-e2e-vs
 OCP_PROVIDER_NAME: str = os.environ.get("OCP_PROVIDER_NAME", "mcp-e2e-host")
 COLD_PLAN_NAME: str = os.environ.get("COLD_PLAN_NAME", "mcp-e2e-cold-plan")
 WARM_PLAN_NAME: str = os.environ.get("WARM_PLAN_NAME", "mcp-e2e-warm-plan")
+HOOK_NAME: str = os.environ.get("HOOK_NAME", "mcp-e2e-hook")
+NETWORK_MAPPING_NAME: str = os.environ.get("NETWORK_MAPPING_NAME", "mcp-e2e-net-map")
+STORAGE_MAPPING_NAME: str = os.environ.get("STORAGE_MAPPING_NAME", "mcp-e2e-storage-map")
 
 # ---------------------------------------------------------------------------
 # Fail fast if any required variables are missing
@@ -477,6 +480,40 @@ async def cleanup_test_resources(mcp_session):
                 "name": f"{COLD_PLAN_NAME},{WARM_PLAN_NAME}",
                 "namespace": TEST_NAMESPACE,
                 "skip-archive": True,
+            },
+        })
+    except Exception:
+        pass
+
+    # Delete standalone mappings created by the suite
+    try:
+        await call_tool(mcp_session, "mtv_write", {
+            "command": "delete mapping network",
+            "flags": {
+                "name": NETWORK_MAPPING_NAME,
+                "namespace": TEST_NAMESPACE,
+            },
+        })
+    except Exception:
+        pass
+    try:
+        await call_tool(mcp_session, "mtv_write", {
+            "command": "delete mapping storage",
+            "flags": {
+                "name": STORAGE_MAPPING_NAME,
+                "namespace": TEST_NAMESPACE,
+            },
+        })
+    except Exception:
+        pass
+
+    # Delete hooks
+    try:
+        await call_tool(mcp_session, "mtv_write", {
+            "command": "delete hook",
+            "flags": {
+                "name": HOOK_NAME,
+                "namespace": TEST_NAMESPACE,
             },
         })
     except Exception:

@@ -2444,7 +2444,7 @@
       ],
       "path_string": "get inventory",
       "description": "Get inventory resources",
-      "long_description": "Get inventory resources from providers via the MTV inventory service.\n\nThe inventory service provides access to source provider resources (VMs, networks,\nstorage, hosts, etc.) without directly connecting to the provider. Resources are\ncached and can be queried using TSL (Tree Search Language) filters.\n\nAvailable resource types vary by provider:\n  - All providers: vm, network, storage\n  - vSphere/oVirt: host, datacenter, cluster, disk\n  - vSphere: datastore, folder, resource-pool, vsphere-custom-field-def\n  - oVirt: disk-profile, nic-profile, ovirt-server-cpu\n  - OpenStack: instance, image, flavor, project, volume, volume-type, snapshot, subnet, openstack-region\n  - OpenShift: namespace, pvc, data-volume, openshift-instance-type, openshift-cluster-instance-type, openshift-kubevirt\n  - EC2: ec2-instance, ec2-volume, ec2-volume-type, ec2-network, ec2-snapshot\n  - Azure: vm, network, storage\n  - Nutanix: vm, network, storage, host, cluster, nutanix-image\n  - Hyper-V: vm, network, storage, host, cluster, disk",
+      "long_description": "Get inventory resources from providers via the MTV inventory service.\n\nThe inventory service provides access to source provider resources (VMs, networks,\nstorage, hosts, etc.) without directly connecting to the provider. Resources are\ncached and can be queried using TSL (Tree Search Language) filters.\n\nAvailable resource types vary by provider:\n  - All providers: vm, network, storage\n  - vSphere/oVirt: host, datacenter, cluster, disk\n  - vSphere: datastore, folder, vsphere-custom-field-def\n  - oVirt: disk-profile, nic-profile, ovirt-server-cpu\n  - OpenStack: instance, image, flavor, project, volume, volume-type, snapshot, subnet, openstack-region\n  - OpenShift: namespace, pvc, data-volume, openshift-instance-type, openshift-cluster-instance-type, openshift-kubevirt\n  - EC2: ec2-instance, ec2-volume, ec2-volume-type, ec2-network, ec2-snapshot\n  - Azure: vm, network, storage\n  - Nutanix: vm, network, storage, host, cluster, nutanix-image\n  - Hyper-V: vm, network, storage, host, cluster, disk",
       "usage": "kubectl-mtv get inventory",
       "category": "read",
       "flags": [],
@@ -3844,54 +3844,6 @@
       "aliases": [
         "pvcs",
         "persistentvolumeclaims"
-      ],
-      "category": "read",
-      "flags": [
-        {
-          "name": "output",
-          "shorthand": "o",
-          "type": "string",
-          "default": "table",
-          "description": "Output format (table, json, yaml, markdown)",
-          "required": false,
-          "enum": [
-            "table",
-            "json",
-            "yaml",
-            "markdown"
-          ]
-        },
-        {
-          "name": "provider",
-          "shorthand": "p",
-          "type": "string",
-          "description": "Provider name",
-          "required": true
-        },
-        {
-          "name": "query",
-          "shorthand": "q",
-          "type": "string",
-          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
-          "required": false
-        }
-      ],
-      "runnable": true
-    },
-    {
-      "name": "resource-pool",
-      "path": [
-        "get",
-        "inventory",
-        "resource-pool"
-      ],
-      "path_string": "get inventory resource-pool",
-      "description": "Get resource pools from a provider",
-      "long_description": "Get resource pools from a vSphere provider's inventory.",
-      "usage": "kubectl-mtv get inventory resource-pool [flags]",
-      "aliases": [
-        "resourcepools",
-        "resource-pools"
       ],
       "category": "read",
       "flags": [
