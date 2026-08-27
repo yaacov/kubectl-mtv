@@ -1,5 +1,7 @@
 """Inventory · read -- query vSphere inventory for VMs, datastores, networks, hosts."""
 
+import re
+
 import pytest
 
 from conftest import (
@@ -14,7 +16,30 @@ from conftest import (
 )
 
 # All test VMs that must exist in the inventory
-_TEST_VM_NAMES = set((COLD_VMS + "," + WARM_VMS).split(","))
+COLD_VM_LIST = [v.strip() for v in COLD_VMS.split(",") if v.strip()]
+WARM_VM_LIST = [v.strip() for v in WARM_VMS.split(",") if v.strip()]
+_TEST_VM_NAMES = set(COLD_VM_LIST + WARM_VM_LIST)
+
+
+def _common_prefix(names):
+    """Longest common prefix of *names*, used to build TSL patterns."""
+    if not names:
+        return ""
+    prefix = names[0]
+    for name in names[1:]:
+        while prefix and not name.startswith(prefix):
+            prefix = prefix[:-1]
+    return prefix
+
+
+# Shared prefix of lab VM names (e.g. "mtv-rhel8-"). Empty if names share nothing.
+VM_PREFIX = _common_prefix(list(_TEST_VM_NAMES))
+VM_PREFIX_RE = re.escape(VM_PREFIX) if VM_PREFIX else ".*"
+# LIKE / ILIKE treat % and _ as wildcards.
+_VM_LIKE = (
+    VM_PREFIX.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    if VM_PREFIX else "%"
+)
 
 
 # ===================================================================
@@ -82,7 +107,7 @@ async def test_query_ne(mcp_session):
                 "provider": VSPHERE_PROVIDER_NAME,
                 "namespace": TEST_NAMESPACE,
                 "output": "json",
-                "query": f"where name ~= '^mtv-rhel8' and name {op} '{cold_vm}'",
+                "query": f"where name ~= '^{VM_PREFIX_RE}' and name {op} '{cold_vm}'",
             },
         })
         vms = result.get("data", [])
@@ -172,14 +197,15 @@ async def test_query_regex_match(mcp_session):
             "provider": VSPHERE_PROVIDER_NAME,
             "namespace": TEST_NAMESPACE,
             "output": "json",
-            "query": "where name ~= '^mtv-rhel8-.*sanity$'",
+            "query": f"where name ~= '^{VM_PREFIX_RE}'",
         },
     })
     vms = result.get("data", [])
     assert len(vms) >= 1, "~= should match at least one VM"
-    for vm in vms:
-        name = vm.get("name", "")
-        assert name.startswith("mtv-rhel8-") and name.endswith("sanity")
+    if VM_PREFIX:
+        for vm in vms:
+            name = vm.get("name", "")
+            assert name.startswith(VM_PREFIX), f"'{name}' should start with '{VM_PREFIX}'"
 
     print(f"\n  ✓ Regex match (~=) returned {len(vms)} VMs")
 
@@ -187,21 +213,24 @@ async def test_query_regex_match(mcp_session):
 @pytest.mark.order(after="test_query_regex_match")
 async def test_query_regex_not_match(mcp_session):
     """Regex NOT match operator (~!)."""
+    exclude = WARM_VM_LIST[0] if WARM_VM_LIST else COLD_VM_LIST[-1]
     result = await call_tool(mcp_session, "mtv_read", {
         "command": "get inventory vm",
         "flags": {
             "provider": VSPHERE_PROVIDER_NAME,
             "namespace": TEST_NAMESPACE,
             "output": "json",
-            "query": "where name ~= '^mtv-rhel8' and name ~! 'warm'",
+            "query": f"where name ~= '^{VM_PREFIX_RE}' and name ~! '{re.escape(exclude)}'",
         },
     })
     vms = result.get("data", [])
     assert len(vms) >= 1, "~! should return at least one VM"
     for vm in vms:
-        assert "warm" not in vm.get("name", "")
+        assert exclude not in vm.get("name", ""), (
+            f"~! should exclude '{exclude}', got {vm.get('name')}"
+        )
 
-    print(f"\n  ✓ Regex NOT (~!) returned {len(vms)} VMs excluding 'warm'")
+    print(f"\n  ✓ Regex NOT (~!) returned {len(vms)} VMs excluding '{exclude}'")
 
 
 # -------------------------------------------------------------------
@@ -216,16 +245,17 @@ async def test_query_like(mcp_session):
             "provider": VSPHERE_PROVIDER_NAME,
             "namespace": TEST_NAMESPACE,
             "output": "json",
-            "query": "where name like 'mtv-rhel8-%sanity'",
+            "query": f"where name like '{_VM_LIKE}%'",
         },
     })
     vms = result.get("data", [])
     assert len(vms) >= 1, "LIKE should match at least one VM"
-    for vm in vms:
-        name = vm.get("name", "")
-        assert name.startswith("mtv-rhel8-") and name.endswith("sanity")
+    if VM_PREFIX:
+        for vm in vms:
+            name = vm.get("name", "")
+            assert name.startswith(VM_PREFIX), f"'{name}' should start with '{VM_PREFIX}'"
 
-    print(f"\n  ✓ LIKE returned {len(vms)} VMs matching 'mtv-rhel8-%sanity'")
+    print(f"\n  ✓ LIKE returned {len(vms)} VMs matching '{_VM_LIKE}%'")
 
 
 @pytest.mark.order(after="test_query_like")
@@ -237,14 +267,17 @@ async def test_query_ilike(mcp_session):
             "provider": VSPHERE_PROVIDER_NAME,
             "namespace": TEST_NAMESPACE,
             "output": "json",
-            "query": "where name ilike 'MTV-RHEL8-%SANITY'",
+            "query": f"where name ilike '{_VM_LIKE.upper()}%'",
         },
     })
     vms = result.get("data", [])
     assert len(vms) >= 1, "ILIKE should match case-insensitively"
-    for vm in vms:
-        name = vm.get("name", "").lower()
-        assert name.startswith("mtv-rhel8-") and name.endswith("sanity")
+    if VM_PREFIX:
+        for vm in vms:
+            name = vm.get("name", "").lower()
+            assert name.startswith(VM_PREFIX.lower()), (
+                f"'{vm.get('name')}' should start with '{VM_PREFIX}' (case-insensitive)"
+            )
 
     print(f"\n  ✓ ILIKE returned {len(vms)} VMs (case-insensitive match)")
 
@@ -308,13 +341,14 @@ async def test_query_and(mcp_session):
             "provider": VSPHERE_PROVIDER_NAME,
             "namespace": TEST_NAMESPACE,
             "output": "json",
-            "query": "where name ~= '^mtv-rhel8' and cpuCount >= 1",
+            "query": f"where name ~= '^{VM_PREFIX_RE}' and cpuCount >= 1",
         },
     })
     vms = result.get("data", [])
     assert len(vms) >= 1, "AND should return VMs"
     for vm in vms:
-        assert vm.get("name", "").startswith("mtv-rhel8")
+        if VM_PREFIX:
+            assert vm.get("name", "").startswith(VM_PREFIX)
         assert vm.get("cpuCount", 0) >= 1
 
     print(f"\n  ✓ AND returned {len(vms)} VMs satisfying both conditions")
@@ -346,21 +380,22 @@ async def test_query_or(mcp_session):
 @pytest.mark.order(after="test_query_or")
 async def test_query_not(mcp_session):
     """NOT logical operator."""
+    exclude = WARM_VM_LIST[0] if WARM_VM_LIST else COLD_VM_LIST[-1]
     result = await call_tool(mcp_session, "mtv_read", {
         "command": "get inventory vm",
         "flags": {
             "provider": VSPHERE_PROVIDER_NAME,
             "namespace": TEST_NAMESPACE,
             "output": "json",
-            "query": "where not (name ~= 'warm')",
+            "query": f"where not (name = '{exclude}')",
         },
     })
     vms = result.get("data", [])
     assert len(vms) >= 1, "NOT should return VMs"
     for vm in vms:
-        assert "warm" not in vm.get("name", "")
+        assert vm.get("name") != exclude, f"NOT should exclude '{exclude}'"
 
-    print(f"\n  ✓ NOT returned {len(vms)} VMs excluding 'warm'")
+    print(f"\n  ✓ NOT returned {len(vms)} VMs excluding '{exclude}'")
 
 
 @pytest.mark.order(after="test_query_not")
@@ -506,7 +541,7 @@ async def test_query_order_by_limit(mcp_session):
             "provider": VSPHERE_PROVIDER_NAME,
             "namespace": TEST_NAMESPACE,
             "output": "json",
-            "query": "where name ~= '^mtv-' order by name limit 3",
+            "query": "where name ~= '^{}' order by name limit 3".format(VM_PREFIX_RE),
         },
     })
     vms = result.get("data", [])
@@ -526,7 +561,7 @@ async def test_query_order_by_desc(mcp_session):
             "provider": VSPHERE_PROVIDER_NAME,
             "namespace": TEST_NAMESPACE,
             "output": "json",
-            "query": "where name ~= '^mtv-rhel8' order by name desc",
+            "query": f"where name ~= '^{VM_PREFIX_RE}' order by name desc",
         },
     })
     vms = result.get("data", [])
@@ -622,3 +657,40 @@ async def test_inventory_hosts(mcp_session):
     )
 
     print(f"\n  ✓ ESXi host '{ESXI_HOST_NAME}' found (total: {len(hosts)})")
+
+
+# ===================================================================
+# Additional vSphere inventory types
+# ===================================================================
+async def _assert_inventory_list(mcp_session, kind):
+    result = await call_tool(mcp_session, "mtv_read", {
+        "command": f"get inventory {kind}",
+        "flags": {
+            "provider": VSPHERE_PROVIDER_NAME,
+            "namespace": TEST_NAMESPACE,
+            "output": "json",
+        },
+    })
+    items = result.get("data", [])
+    assert isinstance(items, list), f"Expected list for {kind}, got {type(items)}"
+    assert len(items) >= 1, f"Expected at least 1 {kind}, got {len(items)}"
+    print(f"\n  ✓ Inventory {kind}: {len(items)} items")
+    return items
+
+
+@pytest.mark.order(65)
+async def test_inventory_clusters(mcp_session):
+    """List vSphere clusters."""
+    await _assert_inventory_list(mcp_session, "cluster")
+
+
+@pytest.mark.order(66)
+async def test_inventory_datacenters(mcp_session):
+    """List vSphere datacenters."""
+    await _assert_inventory_list(mcp_session, "datacenter")
+
+
+@pytest.mark.order(67)
+async def test_inventory_folders(mcp_session):
+    """List vSphere folders."""
+    await _assert_inventory_list(mcp_session, "folder")

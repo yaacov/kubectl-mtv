@@ -4,6 +4,9 @@ import pytest
 
 from conftest import (
     COLD_VMS,
+    ESXI_HOST_NAME,
+    ESXI_PASSWORD,
+    ESXI_USERNAME,
     NETWORK_PAIRS,
     OCP_PROVIDER_NAME,
     STORAGE_PAIRS,
@@ -139,3 +142,48 @@ async def test_dry_run_no_resource_created(mcp_session):
         f"but found in: {plan_names}"
     )
     print(f"\n  Confirmed: '{DRY_RUN_PLAN_NAME}' was not created in the cluster")
+
+
+@pytest.mark.order(14)
+async def test_dry_run_create_mapping_network(mcp_session):
+    """dry-run create mapping network should output a NetworkMap without creating it."""
+    result = await call_tool(mcp_session, "mtv_write", {
+        "command": "create mapping network",
+        "flags": {
+            "name": "dryrun-e2e-net-map",
+            "source": VSPHERE_PROVIDER_NAME,
+            "target": OCP_PROVIDER_NAME,
+            "network-pairs": NETWORK_PAIRS,
+            "namespace": TEST_NAMESPACE,
+            "dry_run": True,
+        },
+    })
+    assert result.get("return_value") == 0, f"Unexpected result: {result}"
+    output = result.get("output", "")
+    assert "NetworkMap" in output or "networkmap" in output.lower(), (
+        f"Expected NetworkMap in output: {output[:200]}"
+    )
+    print(f"\n  dry-run create mapping network output length: {len(output)} chars")
+
+
+@pytest.mark.order(14)
+async def test_dry_run_create_host(mcp_session):
+    """dry-run create host should output a Host CR without creating it."""
+    result = await call_tool(mcp_session, "mtv_write", {
+        "command": "create host",
+        "flags": {
+            "host-id": ESXI_HOST_NAME,
+            "provider": VSPHERE_PROVIDER_NAME,
+            "username": ESXI_USERNAME,
+            "password": ESXI_PASSWORD,
+            "network-adapter": "Management Network",
+            "host-insecure-skip-tls": True,
+            "namespace": TEST_NAMESPACE,
+            "dry_run": True,
+        },
+    })
+    assert result.get("return_value") == 0, f"Unexpected result: {result}"
+    output = result.get("output", "")
+    assert "Host" in output, f"Expected 'Host' in output: {output[:200]}"
+    print(f"\n  dry-run create host output length: {len(output)} chars")
+

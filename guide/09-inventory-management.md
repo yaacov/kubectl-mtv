@@ -51,7 +51,6 @@ kubectl-mtv provides access to a comprehensive inventory of resources across dif
 | Resource | Aliases | Description |
 |----------|---------|-------------|
 | `datastore` | `datastores` | vSphere storage datastores |
-| `resource-pool` | `resourcepools`, `resource-pools` | vSphere resource pools |
 | `folder` | `folders` | vSphere organizational folders |
 | `vsphere-custom-field-def` | `vsphere-custom-field-defs`, `vsphere-customfielddefs` | Custom field definitions |
 
@@ -186,9 +185,6 @@ kubectl mtv get inventory hosts --provider ovirt-prod
 
 # List datacenters
 kubectl mtv get inventory datacenters --provider vsphere-prod
-
-# List resource pools (vSphere)
-kubectl mtv get inventory resource-pools --provider vsphere-prod
 
 # List clusters
 kubectl mtv get inventory clusters --provider vsphere-prod
@@ -392,9 +388,6 @@ kubectl mtv get inventory vms --provider vsphere-prod \
 kubectl mtv get inventory datastores --provider vsphere-prod \
   --query "where freeSpaceGB > 100"
 
-# List resource pools by availability
-kubectl mtv get inventory resource-pools --provider vsphere-prod
-
 # Find hosts in specific clusters
 kubectl mtv get inventory hosts --provider vsphere-prod \
   --query "where cluster.name = 'Production-Cluster'"
@@ -500,7 +493,6 @@ vSphere provides the richest inventory with hierarchical structure:
 kubectl mtv get inventory datacenters --provider vsphere-prod
 kubectl mtv get inventory clusters --provider vsphere-prod
 kubectl mtv get inventory hosts --provider vsphere-prod
-kubectl mtv get inventory resource-pools --provider vsphere-prod
 kubectl mtv get inventory folders --provider vsphere-prod
 kubectl mtv get inventory datastores --provider vsphere-prod
 kubectl mtv get inventory networks --provider vsphere-prod

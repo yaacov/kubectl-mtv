@@ -51,9 +51,9 @@ diff -u "$OLD/pkg/apis/forklift/v1beta1/forkliftcontroller.go" \
 diff -rq "$OLD/pkg/apis" "$NEW/pkg/apis"
 diff -ru "$OLD/pkg/apis/forklift/v1beta1" "$NEW/pkg/apis/forklift/v1beta1"
 
-# Inventory is often not vendored; compare the module cache
-# Legacy handlers: pkg/controller/provider/web
-# Newer providers: pkg/provider/<name>/inventory
+# Inventory REST is not in vendor (kubectl-mtv only vendors APIs it imports).
+# Source of truth is Forklift handler registration, not kubectl-mtv client.go.
+# Legacy: pkg/controller/provider/web  Newer: pkg/provider/<name>/inventory
 NEW_MOD="$(GOFLAGS=-mod=mod go list -m -f '{{.Dir}}' github.com/kubev2v/forklift)"
 for rel in pkg/controller/provider/web pkg/provider; do
   OLD_DIR="$OLD/$rel"
@@ -138,4 +138,19 @@ Usual signals: new `ProviderType` constants, mapping pair fields, `StorageVendor
 
 Inventory is consumed via REST (`pkg/util/client/inventory.go`), not vendored Go types. JSON is decoded into `map[string]interface{}`, so upstream changes will not fail the build but can break output.
 
-Handlers live under `pkg/controller/provider/web` (legacy per-provider sub-packages) and `pkg/provider/<name>/inventory` (newer providers such as EC2). Compare those trees to collection paths in `pkg/cmd/get/inventory/client.go`, list/column logic in `pkg/cmd/get/inventory/`, and Cobra wiring in `cmd/get/inventory_*.go`.
+**Source of truth is Forklift handler registration**, not kubectl-mtv.
+
+1. Start at `pkg/controller/provider/web/doc.go` `All()` -- that is the live mux. It appends each provider's `Handlers()` plus AAP.
+2. For each provider, read that package's `Handlers()` (usually `doc.go`) and the route constants (`*Collection`, `*Root`, or `e.GET(...)` in `AddRoutes`). Those strings are the HTTP collections.
+3. Legacy providers live under `pkg/controller/provider/web/<type>/`. EC2 (and any later provider using the same layout) lives under `pkg/provider/<name>/inventory/web`.
+4. A collector walking a vSphere/oVirt object type is **not** an inventory endpoint. Resource pools are collected while walking VMs; there is no `/resourcepools` handler.
+
+Then, and only then, look at kubectl-mtv as a **consumer**:
+
+- `pkg/cmd/get/inventory/` list functions choose the collection per provider type (often remapping: vSphere storage -> `datastores`, oVirt storage -> `storagedomains`, Nutanix storage -> `storagecontainers`, OpenShift network -> `networkattachmentdefinitions`).
+- `pkg/cmd/get/inventory/client.go` is a bag of HTTP helpers, not a catalog. Do not add CLI types from it. Collection strings must match Forklift route constants. OpenStack Nova instances are at `vms` (`GetInstances` is an alias); OVA disks are at `disks`.
+- Cobra wiring is `cmd/get/inventory_*.go`. A new Forklift collection is a plan item only if kubectl-mtv should expose it. Forklift also serves `tree` and `workloads`; kubectl-mtv does not need a command for every handler.
+
+AAP is not provider-scoped: `GET /aap/job-templates`.
+
+Never plan a new inventory command, collection path, or e2e probe from kubectl-mtv docs/`client.go`/guide text. If Forklift has no handler for that path, the cluster will 404.
