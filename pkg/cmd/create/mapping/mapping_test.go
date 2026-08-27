@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	forkliftv1beta1 "github.com/kubev2v/forklift/pkg/apis/forklift/v1beta1"
 	"github.com/yaacov/kubectl-mtv/pkg/util/flags"
 )
 
@@ -121,6 +122,82 @@ func TestValidateNetworkPairsTargets_EmptyPairsInList(t *testing.T) {
 	err := validateNetworkPairsTargets("source1:default,,source2:ns/nad")
 	if err != nil {
 		t.Errorf("expected nil with empty entries, got: %v", err)
+	}
+}
+
+func TestValidateNetworkPairsTargets_DefaultWithIPMode(t *testing.T) {
+	err := validateNetworkPairsTargets("source1:default;networkIPMode=preserve")
+	if err != nil {
+		t.Errorf("expected nil for default with networkIPMode, got: %v", err)
+	}
+}
+
+func TestValidateNetworkPairsTargets_DuplicateDefaultWithIPMode(t *testing.T) {
+	err := validateNetworkPairsTargets("source1:default;networkIPMode=preserve,source2:default;networkIPMode=dhcp")
+	if err == nil {
+		t.Error("expected error for duplicate pod network with networkIPMode options")
+	}
+}
+
+func TestSplitPairMainAndOptions(t *testing.T) {
+	main, opts := splitPairMainAndOptions("VM Network:default;networkIPMode=dhcp")
+	if main != "VM Network:default" {
+		t.Errorf("main = %q, want %q", main, "VM Network:default")
+	}
+	if len(opts) != 1 || opts[0] != "networkIPMode=dhcp" {
+		t.Errorf("opts = %v, want [networkIPMode=dhcp]", opts)
+	}
+
+	main, opts = splitPairMainAndOptions("source:ns/nad")
+	if main != "source:ns/nad" {
+		t.Errorf("main = %q, want %q", main, "source:ns/nad")
+	}
+	if len(opts) != 0 {
+		t.Errorf("opts = %v, want empty", opts)
+	}
+}
+
+func TestParseNetworkIPModeOptions_Valid(t *testing.T) {
+	tests := []struct {
+		opts []string
+		want forkliftv1beta1.NetworkIPMode
+	}{
+		{nil, ""},
+		{[]string{}, ""},
+		{[]string{"networkIPMode=preserve"}, forkliftv1beta1.NetworkIPModePreserve},
+		{[]string{"networkIPMode=dhcp"}, forkliftv1beta1.NetworkIPModeDHCP},
+		{[]string{"networkIPMode=none"}, forkliftv1beta1.NetworkIPModeNone},
+	}
+	for _, tt := range tests {
+		got, err := parseNetworkIPModeOptions(tt.opts)
+		if err != nil {
+			t.Errorf("parseNetworkIPModeOptions(%v) error = %v", tt.opts, err)
+			continue
+		}
+		if got != tt.want {
+			t.Errorf("parseNetworkIPModeOptions(%v) = %q, want %q", tt.opts, got, tt.want)
+		}
+	}
+}
+
+func TestParseNetworkIPModeOptions_Invalid(t *testing.T) {
+	tests := []struct {
+		opts []string
+		want string
+	}{
+		{[]string{"networkIPMode=static"}, "invalid networkIPMode"},
+		{[]string{"ipMode=dhcp"}, "unknown network pair option"},
+		{[]string{"networkIPMode"}, "invalid option format"},
+	}
+	for _, tt := range tests {
+		_, err := parseNetworkIPModeOptions(tt.opts)
+		if err == nil {
+			t.Errorf("parseNetworkIPModeOptions(%v) = nil, want error containing %q", tt.opts, tt.want)
+			continue
+		}
+		if !strings.Contains(err.Error(), tt.want) {
+			t.Errorf("parseNetworkIPModeOptions(%v) error = %q, want substring %q", tt.opts, err.Error(), tt.want)
+		}
 	}
 }
 

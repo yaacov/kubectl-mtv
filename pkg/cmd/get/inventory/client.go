@@ -333,6 +333,34 @@ func (pc *ProviderClient) GetDataVolume(ctx context.Context, id string, detail i
 	return pc.GetResourceByID(ctx, "datavolumes", id, detail)
 }
 
+// vSphere-specific resources
+func (pc *ProviderClient) GetCustomFieldDefs(ctx context.Context, detail int) (interface{}, error) {
+	return pc.GetResourceCollection(ctx, "customfielddefs", detail)
+}
+
+// oVirt-specific resources
+func (pc *ProviderClient) GetServerCpus(ctx context.Context, detail int) (interface{}, error) {
+	return pc.GetResourceCollection(ctx, "servercpus", detail)
+}
+
+// OpenStack-specific resources
+func (pc *ProviderClient) GetRegions(ctx context.Context, detail int) (interface{}, error) {
+	return pc.GetResourceCollection(ctx, "regions", detail)
+}
+
+// OpenShift-specific resources
+func (pc *ProviderClient) GetInstanceTypes(ctx context.Context, detail int) (interface{}, error) {
+	return pc.GetResourceCollection(ctx, "instancetypes", detail)
+}
+
+func (pc *ProviderClient) GetClusterInstanceTypes(ctx context.Context, detail int) (interface{}, error) {
+	return pc.GetResourceCollection(ctx, "clusterinstancetypes", detail)
+}
+
+func (pc *ProviderClient) GetKubeVirts(ctx context.Context, detail int) (interface{}, error) {
+	return pc.GetResourceCollection(ctx, "kubevirts", detail)
+}
+
 // OVA Provider Resources
 func (pc *ProviderClient) GetOVAFiles(ctx context.Context, detail int) (interface{}, error) {
 	return pc.GetResourceCollection(ctx, "ovafiles", detail)
