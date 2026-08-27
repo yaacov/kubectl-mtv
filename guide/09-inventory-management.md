@@ -28,8 +28,9 @@ kubectl-mtv provides access to a comprehensive inventory of resources across dif
 
 | Resource | Aliases | Description |
 |----------|---------|-------------|
-| `diskprofile` | `diskprofiles`, `disk-profiles` | Disk performance profiles |
-| `nicprofile` | `nicprofiles`, `nic-profiles` | Network interface profiles |
+| `disk-profile` | `diskprofiles`, `disk-profiles` | Disk performance profiles |
+| `nic-profile` | `nicprofiles`, `nic-profiles` | Network interface profiles |
+| `ovirt-server-cpu` | `ovirt-server-cpus`, `ovirt-servercpus` | Server CPU types |
 
 ### OpenStack-Specific Resources
 
@@ -40,24 +41,29 @@ kubectl-mtv provides access to a comprehensive inventory of resources across dif
 | `flavor` | `flavors` | Instance sizing configurations |
 | `project` | `projects` | OpenStack projects/tenants |
 | `volume` | `volumes` | Block storage volumes |
-| `volumetype` | `volumetypes`, `volume-types` | Volume type definitions |
+| `volume-type` | `volumetypes`, `volume-types` | Volume type definitions |
 | `snapshot` | `snapshots` | Volume and instance snapshots |
 | `subnet` | `subnets` | Network subnets |
+| `openstack-region` | `openstack-regions` | OpenStack regions |
 
 ### vSphere-Specific Resources
 
 | Resource | Aliases | Description |
 |----------|---------|-------------|
 | `datastore` | `datastores` | vSphere storage datastores |
-| `resourcepool` | `resourcepools`, `resource-pools` | vSphere resource pools |
+| `resource-pool` | `resourcepools`, `resource-pools` | vSphere resource pools |
 | `folder` | `folders` | vSphere organizational folders |
+| `vsphere-custom-field-def` | `vsphere-custom-field-defs`, `vsphere-customfielddefs` | Custom field definitions |
 
 ### Kubernetes-Specific Resources
 
 | Resource | Aliases | Description |
 |----------|---------|-------------|
 | `pvc` | `pvcs`, `persistentvolumeclaims` | Persistent Volume Claims |
-| `datavolume` | `datavolumes`, `data-volumes` | KubeVirt DataVolumes |
+| `data-volume` | `datavolumes`, `data-volumes` | KubeVirt DataVolumes |
+| `openshift-instance-type` | `openshift-instance-types`, `openshift-instancetypes` | Namespaced VM instance types |
+| `openshift-cluster-instance-type` | `openshift-cluster-instance-types`, `openshift-clusterinstancetypes` | Cluster-scoped VM instance types |
+| `openshift-kubevirt` | `openshift-kubevirts` | KubeVirt custom resources |
 
 ### EC2-Specific Resources
 
@@ -70,6 +76,16 @@ kubectl-mtv provides access to a comprehensive inventory of resources across dif
 | `ec2-volume-type` | `ec2-volume-types` | EBS volume types |
 
 **Note**: Generic resources (`vms`, `networks`, `storage`) also work with EC2 providers and display EC2-specific information.
+
+### Nutanix-Specific Resources
+
+| Resource | Aliases | Description |
+|----------|---------|-------------|
+| `nutanix-image` | `nutanix-images` | Nutanix images |
+
+**Note**: Generic resources (`vms`, `networks`, `storage`, `hosts`, `clusters`) also work with Nutanix providers. Use `nutanix-image` rather than `image`, which is the OpenStack image command.
+
+Types unique to one provider use a provider prefix (`ec2-instance`, `nutanix-image`, `vsphere-custom-field-def`). Shared types keep a generic name (`vm`, `cluster`, `network`).
 
 ### Provider Resources
 
@@ -489,6 +505,7 @@ kubectl mtv get inventory folders --provider vsphere-prod
 kubectl mtv get inventory datastores --provider vsphere-prod
 kubectl mtv get inventory networks --provider vsphere-prod
 kubectl mtv get inventory vms --provider vsphere-prod
+kubectl mtv get inventory vsphere-custom-field-def --provider vsphere-prod
 ```
 
 ### oVirt Provider Inventory
@@ -503,6 +520,7 @@ kubectl mtv get inventory storages --provider ovirt-prod
 kubectl mtv get inventory networks --provider ovirt-prod
 kubectl mtv get inventory disk-profiles --provider ovirt-prod
 kubectl mtv get inventory nic-profiles --provider ovirt-prod
+kubectl mtv get inventory ovirt-server-cpu --provider ovirt-prod
 ```
 
 ### OpenStack Provider Inventory
@@ -519,6 +537,7 @@ kubectl mtv get inventory volumes --provider openstack-prod
 kubectl mtv get inventory volumetypes --provider openstack-prod
 kubectl mtv get inventory snapshots --provider openstack-prod
 kubectl mtv get inventory subnets --provider openstack-prod
+kubectl mtv get inventory openstack-region --provider openstack-prod
 ```
 
 ### OpenShift/KubeVirt Provider Inventory
@@ -531,6 +550,33 @@ kubectl mtv get inventory vms --provider openshift-source
 kubectl mtv get inventory pvcs --provider openshift-source
 kubectl mtv get inventory data-volumes --provider openshift-source
 kubectl mtv get inventory namespaces --provider openshift-source
+kubectl mtv get inventory openshift-instance-type --provider openshift-source
+kubectl mtv get inventory openshift-cluster-instance-type --provider openshift-source
+kubectl mtv get inventory openshift-kubevirt --provider openshift-source
+```
+
+### Nutanix Provider Inventory
+
+```bash
+# Nutanix-specific resources
+kubectl mtv get inventory vms --provider nutanix-prod
+kubectl mtv get inventory hosts --provider nutanix-prod
+kubectl mtv get inventory clusters --provider nutanix-prod
+kubectl mtv get inventory networks --provider nutanix-prod
+kubectl mtv get inventory storages --provider nutanix-prod
+kubectl mtv get inventory nutanix-image --provider nutanix-prod
+```
+
+### Hyper-V Provider Inventory
+
+```bash
+# Hyper-V resources (shared types)
+kubectl mtv get inventory vms --provider hyperv-prod
+kubectl mtv get inventory hosts --provider hyperv-prod
+kubectl mtv get inventory clusters --provider hyperv-prod
+kubectl mtv get inventory networks --provider hyperv-prod
+kubectl mtv get inventory storages --provider hyperv-prod
+kubectl mtv get inventory disks --provider hyperv-prod
 ```
 
 ## Real-Time Monitoring and Watching

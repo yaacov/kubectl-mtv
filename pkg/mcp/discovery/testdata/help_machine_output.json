@@ -370,7 +370,7 @@
       ],
       "path_string": "create mapping network",
       "description": "Create a new network mapping",
-      "long_description": "Create a new network mapping between source and target providers.\n\nNetwork mappings translate source VM network connections to target network\nattachment definitions (NADs) or pod networking ('default').\n\nPair formats:\n  - source:target-namespace/target-network - Map to specific NAD\n  - source:target-network - Map to NAD in same namespace\n  - source:default - Map to pod networking\n  - source:ignored - Skip this network",
+      "long_description": "Create a new network mapping between source and target providers.\n\nNetwork mappings translate source VM network connections to target network\nattachment definitions (NADs) or pod networking ('default').\n\nPair formats:\n  - source:target-namespace/target-network - Map to specific NAD\n  - source:target-network - Map to NAD in same namespace\n  - source:default - Map to pod networking\n  - source:ignored - Skip this network\n  - Append ;networkIPMode=preserve|dhcp|none to override plan-level preserveStaticIPs",
       "usage": "kubectl-mtv create mapping network [flags]",
       "category": "write",
       "flags": [
@@ -391,7 +391,7 @@
         {
           "name": "network-pairs",
           "type": "string",
-          "description": "Network mapping pairs in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated)",
+          "description": "Network mapping pairs in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated). Append ';networkIPMode=preserve|dhcp|none' to override plan-level preserveStaticIPs",
           "required": false
         },
         {
@@ -424,6 +424,10 @@
         {
           "description": "Create a network mapping to a specific NAD",
           "command": "kubectl-mtv create mapping network --name my-net-map --source vsphere-prod --target host --network-pairs \"VM Network:openshift-cnv/br-external,Management:default\""
+        },
+        {
+          "description": "Preserve static IPs on one network and use DHCP on another",
+          "command": "kubectl-mtv create mapping network --name my-net-map --source vsphere-prod --target host --network-pairs \"VM Network:default;networkIPMode=preserve,Guest:ignored;networkIPMode=dhcp\""
         }
       ],
       "runnable": true
@@ -456,7 +460,7 @@
         {
           "name": "default-offload-plugin",
           "type": "string",
-          "description": "Default offload plugin type for all storage pairs (vsphere)",
+          "description": "Default offload plugin type for storage pairs (vsphere|csiVolumeImport)",
           "required": false
         },
         {
@@ -557,7 +561,7 @@
         {
           "name": "storage-pairs",
           "type": "string",
-          "description": "Storage mapping pairs in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)",
+          "description": "Storage mapping pairs in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)",
           "required": false
         },
         {
@@ -580,6 +584,10 @@
         {
           "description": "Create a storage mapping with offload plugin",
           "command": "kubectl-mtv create mapping storage --name my-storage-map --source vsphere-prod --target host --storage-pairs \"datastore1:ocs-storagecluster-ceph-rbd;offloadPlugin=vsphere;offloadVendor=ontap\""
+        },
+        {
+          "description": "Create a storage mapping with CSI volume import offload",
+          "command": "kubectl-mtv create mapping storage --name my-csi-map --source vsphere-prod --target host --storage-pairs \"datastore1:hpe-sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par\""
         }
       ],
       "runnable": true
@@ -592,7 +600,7 @@
       ],
       "path_string": "create plan",
       "description": "Create a migration plan",
-      "long_description": "Create a migration plan to move VMs from a source provider to OpenShift.\n\nOnly --name, --source, and --vms are required. All other flags are optional\nand have sensible defaults — only set them when you need to override the\ndefault behavior (see \"Optional Fields\" below).\n\nVMs can be specified as:\n  - Comma-separated names: --vms \"vm1,vm2,vm3\"\n  - TSL query: --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n  - YAML/JSON file: --vms @vms.yaml\n\nProviders:\n  --source is the name of the source provider resource (e.g. \"vsphere-prod\").\n  --target is the name of the target provider resource (e.g. \"host\", \"ocp-target\").\n  If --target is omitted, the first OpenShift provider in the namespace is used.\n\nOptional Fields — leave unset unless you need to override:\n  Network/storage mappings are auto-generated from provider inventory when\n  omitted. Only specify --network-pairs, --storage-pairs, --network-mapping,\n  or --storage-mapping if you need custom mappings that differ from the\n  auto-detected defaults.\n\n  Similarly, flags like --migration-type (default: cold), --target-namespace\n  (default: plan namespace), --target-power-state (default: match source),\n  --preserve-static-ips (default: true), and other boolean/string flags all\n  have reasonable defaults. Setting them unnecessarily makes commands harder\n  to read and may override values you actually want.\n\nMapping Pair Formats (when overriding auto-generated mappings):\n  --network-pairs: comma-separated \"source:target\" pairs. Target forms:\n    source:default                    - Pod networking\n    source:nad-name                   - NAD in plan namespace\n    source:namespace/nad-name         - NAD in explicit namespace\n    source:ignored                    - Skip this network\n    Example: \"VM Network:default,Production:myns/br-ext,Backup:ignored\"\n\n  --storage-pairs: comma-separated \"source:storageclass[;options]\" pairs.\n    source:storageclass               - Basic mapping\n    source:sc;volumeMode=Block        - With volume mode (Filesystem|Block)\n    source:sc;accessMode=ReadWriteMany - With access mode\n    source:sc;offloadPlugin=vsphere;offloadVendor=ontap - Storage offload\n    Options are semicolon-separated and can be combined:\n    Example: \"ds1:fast-ssd,ds2:economy;volumeMode=Block;accessMode=ReadWriteOnce\"\n\nQuery Language (TSL):\n  The --vms flag accepts TSL queries to select VMs dynamically:\n    --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n    --vms \"where powerState = 'poweredOn' and memoryMB \u003e 4096\"\n    --vms \"where len(disks) \u003e 1\"\n  Run 'kubectl-mtv help tsl' for the full syntax reference and field list.\n\nAffinity Syntax (KARL):\n  The --target-affinity and --convertor-affinity flags use KARL syntax:\n    --target-affinity \"REQUIRE pods(app=database) on node\"\n    --convertor-affinity \"PREFER pods(app=cache) on zone weight=80\"\n  Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.\n  Run 'kubectl-mtv help karl' for the full syntax reference.",
+      "long_description": "Create a migration plan to move VMs from a source provider to OpenShift.\n\nOnly --name, --source, and --vms are required. All other flags are optional\nand have sensible defaults — only set them when you need to override the\ndefault behavior (see \"Optional Fields\" below).\n\nVMs can be specified as:\n  - Comma-separated names: --vms \"vm1,vm2,vm3\"\n  - TSL query: --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n  - YAML/JSON file: --vms @vms.yaml\n\nProviders:\n  --source is the name of the source provider resource (e.g. \"vsphere-prod\").\n  --target is the name of the target provider resource (e.g. \"host\", \"ocp-target\").\n  If --target is omitted, the first OpenShift provider in the namespace is used.\n\nOptional Fields — leave unset unless you need to override:\n  Network/storage mappings are auto-generated from provider inventory when\n  omitted. Only specify --network-pairs, --storage-pairs, --network-mapping,\n  or --storage-mapping if you need custom mappings that differ from the\n  auto-detected defaults.\n\n  Similarly, flags like --migration-type (default: cold), --target-namespace\n  (default: plan namespace), --target-power-state (default: match source),\n  --preserve-static-ips (default: true), and other boolean/string flags all\n  have reasonable defaults. Setting them unnecessarily makes commands harder\n  to read and may override values you actually want.\n\nMapping Pair Formats (when overriding auto-generated mappings):\n  --network-pairs: comma-separated \"source:target\" pairs. Target forms:\n    source:default                    - Pod networking\n    source:nad-name                   - NAD in plan namespace\n    source:namespace/nad-name         - NAD in explicit namespace\n    source:ignored                    - Skip this network\n    Example: \"VM Network:default,Production:myns/br-ext,Backup:ignored\"\n\n  --storage-pairs: comma-separated \"source:storageclass[;options]\" pairs.\n    source:storageclass               - Basic mapping\n    source:sc;volumeMode=Block        - With volume mode (Filesystem|Block)\n    source:sc;accessMode=ReadWriteMany - With access mode\n    source:sc;offloadPlugin=vsphere;offloadVendor=ontap - Storage offload (XCOPY)\n    source:sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par - CSI import offload\n    Options are semicolon-separated and can be combined:\n    Example: \"ds1:fast-ssd,ds2:economy;volumeMode=Block;accessMode=ReadWriteOnce\"\n\nQuery Language (TSL):\n  The --vms flag accepts TSL queries to select VMs dynamically:\n    --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n    --vms \"where powerState = 'poweredOn' and memoryMB \u003e 4096\"\n    --vms \"where len(disks) \u003e 1\"\n  Run 'kubectl-mtv help tsl' for the full syntax reference and field list.\n\nAffinity Syntax (KARL):\n  The --target-affinity and --convertor-affinity flags use KARL syntax:\n    --target-affinity \"REQUIRE pods(app=database) on node\"\n    --convertor-affinity \"PREFER pods(app=cache) on zone weight=80\"\n  Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.\n  Run 'kubectl-mtv help karl' for the full syntax reference.",
       "usage": "kubectl-mtv create plan [flags]",
       "aliases": [
         "plans"
@@ -659,7 +667,7 @@
         {
           "name": "default-offload-plugin",
           "type": "string",
-          "description": "Default offload plugin type for storage pairs (vsphere)",
+          "description": "Default offload plugin type for storage pairs (vsphere|csiVolumeImport)",
           "required": false
         },
         {
@@ -869,9 +877,9 @@
         },
         {
           "name": "pvc-name-template-use-generate-name",
-          "type": "bool",
-          "default": true,
-          "description": "Use generateName instead of name for PVC name template (true/false)",
+          "type": "string",
+          "default": "auto",
+          "description": "Use generateName instead of name for PVC name template (true/false/auto)",
           "required": false
         },
         {
@@ -1075,7 +1083,7 @@
       ],
       "path_string": "create provider",
       "description": "Create a new provider",
-      "long_description": "Create a new MTV provider to connect to a virtualization platform.\n\nProviders represent source or target environments for VM migrations. Supported types:\n  - vsphere: VMware vSphere/vCenter (requires VDDK init image for migration)\n  - ovirt: Red Hat Virtualization (oVirt/RHV)\n  - openstack: OpenStack cloud platform\n  - ova: OVA files from NFS share\n  - openshift: Target OpenShift cluster (usually named 'host')\n  - ec2: Amazon EC2 instances\n  - hyperv: Microsoft Hyper-V\n  - azure: Microsoft Azure VMs\n\nCredentials can be provided directly via flags or through an existing Kubernetes secret.",
+      "long_description": "Create a new MTV provider to connect to a virtualization platform.\n\nProviders represent source or target environments for VM migrations. Supported types:\n  - vsphere: VMware vSphere/vCenter (requires VDDK init image for migration)\n  - ovirt: Red Hat Virtualization (oVirt/RHV)\n  - openstack: OpenStack cloud platform\n  - ova: OVA files from NFS share\n  - openshift: Target OpenShift cluster (usually named 'host')\n  - ec2: Amazon EC2 instances\n  - hyperv: Microsoft Hyper-V\n  - azure: Microsoft Azure VMs\n  - nutanix: Nutanix Prism (Central or Element)\n\nCredentials can be provided directly via flags or through an existing Kubernetes secret.",
       "usage": "kubectl-mtv create provider [flags]",
       "aliases": [
         "providers"
@@ -1167,11 +1175,29 @@
           ]
         },
         {
+          "name": "hyperv-management-type",
+          "type": "string",
+          "description": "HyperV management type (e.g., cluster)",
+          "required": false
+        },
+        {
           "name": "name",
           "shorthand": "M",
           "type": "string",
           "description": "Provider name",
           "required": true
+        },
+        {
+          "name": "nutanix-cluster-uuid",
+          "type": "string",
+          "description": "Nutanix cluster UUID (used with Prism Central)",
+          "required": false
+        },
+        {
+          "name": "nutanix-prism-type",
+          "type": "string",
+          "description": "Nutanix Prism endpoint type (central or element)",
+          "required": false
         },
         {
           "name": "output",
@@ -1287,7 +1313,7 @@
           "name": "type",
           "shorthand": "t",
           "type": "string",
-          "description": "Provider type (openshift, vsphere, ovirt, openstack, ova, ec2, hyperv, azure)",
+          "description": "Provider type (openshift, vsphere, ovirt, openstack, ova, ec2, hyperv, azure, nutanix)",
           "required": true,
           "enum": [
             "openshift",
@@ -1297,7 +1323,8 @@
             "ova",
             "hyperv",
             "ec2",
-            "azure"
+            "azure",
+            "nutanix"
           ]
         },
         {
@@ -1370,6 +1397,10 @@
         {
           "description": "Create an Azure provider",
           "command": "kubectl-mtv create provider --name my-azure --type azure --azure-tenant-id \"$AZURE_TENANT_ID\" --azure-subscription-id \"$AZURE_SUBSCRIPTION_ID\" --azure-client-id \"$AZURE_CLIENT_ID\" --azure-client-secret \"$AZURE_CLIENT_SECRET\" --azure-resource-group \"my-resource-group\""
+        },
+        {
+          "description": "Create a Nutanix provider",
+          "command": "kubectl-mtv create provider --name my-nutanix --type nutanix --url https://prism.example.com:9440 --username admin --password 'secret' --nutanix-prism-type central --nutanix-cluster-uuid 00000000-0000-0000-0000-000000000000"
         }
       ],
       "runnable": true
@@ -1478,7 +1509,7 @@
       ],
       "path_string": "cutover plan",
       "description": "Set the cutover time for one or more warm migration plans",
-      "long_description": "Trigger cutover for warm migration plans.\n\nCutover stops the source VMs and performs the final sync to complete the migration.\nUse this to manually trigger cutover for warm migrations, or to reschedule\na cutover time. If no cutover time is specified, it defaults to immediately.",
+      "long_description": "Trigger cutover for warm migration plans.\n\nCutover stops the source VMs and performs the final sync to complete the migration.\nUse this to manually trigger cutover for warm migrations, or to reschedule\na cutover time. If no cutover time is specified, it defaults to immediately.\n\nUse --vm to limit the cutover to specific VMs in the plan (by name or ID)\ninstead of the whole plan. All listed VMs get the same cutover time.",
       "usage": "kubectl-mtv cutover plan [flags]",
       "aliases": [
         "plans"
@@ -1506,6 +1537,13 @@
           "default": [],
           "description": "Plan name(s) to cutover (comma-separated, e.g. \"plan1,plan2\")",
           "required": false
+        },
+        {
+          "name": "vm",
+          "type": "stringSlice",
+          "default": [],
+          "description": "VM name(s) or ID(s) to limit the cutover to (comma-separated). Requires a single --name. If omitted, the cutover applies to the whole plan.",
+          "required": false
         }
       ],
       "examples": [
@@ -1516,6 +1554,14 @@
         {
           "description": "Schedule cutover for a specific time",
           "command": "kubectl-mtv cutover plan --name my-warm-migration --cutover 2026-12-31T23:00:00Z"
+        },
+        {
+          "description": "Schedule cutover for specific VMs only",
+          "command": "kubectl-mtv cutover plan --name my-warm-migration --cutover 2026-12-31T23:00:00Z --vm vm-1"
+        },
+        {
+          "description": "Trigger immediate cutover for specific VMs only",
+          "command": "kubectl-mtv cutover plan --name my-warm-migration --vm vm-1,vm-2"
         },
         {
           "description": "Cutover all warm migration plans",
@@ -2398,7 +2444,7 @@
       ],
       "path_string": "get inventory",
       "description": "Get inventory resources",
-      "long_description": "Get inventory resources from providers via the MTV inventory service.\n\nThe inventory service provides access to source provider resources (VMs, networks,\nstorage, hosts, etc.) without directly connecting to the provider. Resources are\ncached and can be queried using TSL (Tree Search Language) filters.\n\nAvailable resource types vary by provider:\n  - All providers: vm, network, storage\n  - vSphere/oVirt: host, datacenter, cluster, disk\n  - vSphere: datastore, folder, resourcepool\n  - oVirt: diskprofile, nicprofile\n  - OpenStack: instance, image, flavor, project, volume, volumetype, snapshot, subnet\n  - OpenShift: namespace, pvc, datavolume\n  - EC2: ec2instance, ec2volume, ec2volumetype, ec2network\n  - Azure: vm, network, storage",
+      "long_description": "Get inventory resources from providers via the MTV inventory service.\n\nThe inventory service provides access to source provider resources (VMs, networks,\nstorage, hosts, etc.) without directly connecting to the provider. Resources are\ncached and can be queried using TSL (Tree Search Language) filters.\n\nAvailable resource types vary by provider:\n  - All providers: vm, network, storage\n  - vSphere/oVirt: host, datacenter, cluster, disk\n  - vSphere: datastore, folder, resource-pool, vsphere-custom-field-def\n  - oVirt: disk-profile, nic-profile, ovirt-server-cpu\n  - OpenStack: instance, image, flavor, project, volume, volume-type, snapshot, subnet, openstack-region\n  - OpenShift: namespace, pvc, data-volume, openshift-instance-type, openshift-cluster-instance-type, openshift-kubevirt\n  - EC2: ec2-instance, ec2-volume, ec2-volume-type, ec2-network, ec2-snapshot\n  - Azure: vm, network, storage\n  - Nutanix: vm, network, storage, host, cluster, nutanix-image\n  - Hyper-V: vm, network, storage, host, cluster, disk",
       "usage": "kubectl-mtv get inventory",
       "category": "read",
       "flags": [],
@@ -2413,7 +2459,7 @@
       ],
       "path_string": "get inventory cluster",
       "description": "Get clusters from a provider",
-      "long_description": "Get clusters from a provider's inventory.\n\nLists compute clusters from vSphere or oVirt providers. Clusters group hosts\ntogether and define resource pools for VMs.",
+      "long_description": "Get clusters from a provider's inventory.\n\nLists compute clusters from vSphere, oVirt, Nutanix, or Hyper-V providers. Clusters group hosts\ntogether and define resource pools for VMs.",
       "usage": "kubectl-mtv get inventory cluster [flags]",
       "aliases": [
         "clusters"
@@ -2790,6 +2836,53 @@
       "usage": "kubectl-mtv get inventory ec2-network [flags]",
       "aliases": [
         "ec2-networks"
+      ],
+      "category": "read",
+      "flags": [
+        {
+          "name": "output",
+          "shorthand": "o",
+          "type": "string",
+          "default": "table",
+          "description": "Output format (table, json, yaml, markdown)",
+          "required": false,
+          "enum": [
+            "table",
+            "json",
+            "yaml",
+            "markdown"
+          ]
+        },
+        {
+          "name": "provider",
+          "shorthand": "p",
+          "type": "string",
+          "description": "Provider name",
+          "required": true
+        },
+        {
+          "name": "query",
+          "shorthand": "q",
+          "type": "string",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
+          "required": false
+        }
+      ],
+      "runnable": true
+    },
+    {
+      "name": "ec2-snapshot",
+      "path": [
+        "get",
+        "inventory",
+        "ec2-snapshot"
+      ],
+      "path_string": "get inventory ec2-snapshot",
+      "description": "Get EC2 EBS snapshots from a provider",
+      "long_description": "Get EC2 EBS snapshots from an AWS provider's inventory.",
+      "usage": "kubectl-mtv get inventory ec2-snapshot [flags]",
+      "aliases": [
+        "ec2-snapshots"
       ],
       "category": "read",
       "flags": [
@@ -3359,6 +3452,291 @@
       "runnable": true
     },
     {
+      "name": "nutanix-image",
+      "path": [
+        "get",
+        "inventory",
+        "nutanix-image"
+      ],
+      "path_string": "get inventory nutanix-image",
+      "description": "Get Nutanix images from a provider",
+      "long_description": "Get images from a Nutanix provider's inventory.",
+      "usage": "kubectl-mtv get inventory nutanix-image [flags]",
+      "aliases": [
+        "nutanix-images"
+      ],
+      "category": "read",
+      "flags": [
+        {
+          "name": "output",
+          "shorthand": "o",
+          "type": "string",
+          "default": "table",
+          "description": "Output format (table, json, yaml, markdown)",
+          "required": false,
+          "enum": [
+            "table",
+            "json",
+            "yaml",
+            "markdown"
+          ]
+        },
+        {
+          "name": "provider",
+          "shorthand": "p",
+          "type": "string",
+          "description": "Provider name",
+          "required": true
+        },
+        {
+          "name": "query",
+          "shorthand": "q",
+          "type": "string",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
+          "required": false
+        }
+      ],
+      "runnable": true
+    },
+    {
+      "name": "openshift-cluster-instance-type",
+      "path": [
+        "get",
+        "inventory",
+        "openshift-cluster-instance-type"
+      ],
+      "path_string": "get inventory openshift-cluster-instance-type",
+      "description": "Get OpenShift cluster VM instance types from a provider",
+      "long_description": "Get cluster-scoped VirtualMachineClusterInstancetype resources from an OpenShift provider's inventory.",
+      "usage": "kubectl-mtv get inventory openshift-cluster-instance-type [flags]",
+      "aliases": [
+        "openshift-cluster-instance-types",
+        "openshift-clusterinstancetypes"
+      ],
+      "category": "read",
+      "flags": [
+        {
+          "name": "output",
+          "shorthand": "o",
+          "type": "string",
+          "default": "table",
+          "description": "Output format (table, json, yaml, markdown)",
+          "required": false,
+          "enum": [
+            "table",
+            "json",
+            "yaml",
+            "markdown"
+          ]
+        },
+        {
+          "name": "provider",
+          "shorthand": "p",
+          "type": "string",
+          "description": "Provider name",
+          "required": true
+        },
+        {
+          "name": "query",
+          "shorthand": "q",
+          "type": "string",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
+          "required": false
+        }
+      ],
+      "runnable": true
+    },
+    {
+      "name": "openshift-instance-type",
+      "path": [
+        "get",
+        "inventory",
+        "openshift-instance-type"
+      ],
+      "path_string": "get inventory openshift-instance-type",
+      "description": "Get OpenShift VM instance types from a provider",
+      "long_description": "Get namespaced VirtualMachineInstancetype resources from an OpenShift provider's inventory.",
+      "usage": "kubectl-mtv get inventory openshift-instance-type [flags]",
+      "aliases": [
+        "openshift-instance-types",
+        "openshift-instancetypes"
+      ],
+      "category": "read",
+      "flags": [
+        {
+          "name": "output",
+          "shorthand": "o",
+          "type": "string",
+          "default": "table",
+          "description": "Output format (table, json, yaml, markdown)",
+          "required": false,
+          "enum": [
+            "table",
+            "json",
+            "yaml",
+            "markdown"
+          ]
+        },
+        {
+          "name": "provider",
+          "shorthand": "p",
+          "type": "string",
+          "description": "Provider name",
+          "required": true
+        },
+        {
+          "name": "query",
+          "shorthand": "q",
+          "type": "string",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
+          "required": false
+        }
+      ],
+      "runnable": true
+    },
+    {
+      "name": "openshift-kubevirt",
+      "path": [
+        "get",
+        "inventory",
+        "openshift-kubevirt"
+      ],
+      "path_string": "get inventory openshift-kubevirt",
+      "description": "Get OpenShift KubeVirt CRs from a provider",
+      "long_description": "Get KubeVirt custom resources from an OpenShift provider's inventory.",
+      "usage": "kubectl-mtv get inventory openshift-kubevirt [flags]",
+      "aliases": [
+        "openshift-kubevirts"
+      ],
+      "category": "read",
+      "flags": [
+        {
+          "name": "output",
+          "shorthand": "o",
+          "type": "string",
+          "default": "table",
+          "description": "Output format (table, json, yaml, markdown)",
+          "required": false,
+          "enum": [
+            "table",
+            "json",
+            "yaml",
+            "markdown"
+          ]
+        },
+        {
+          "name": "provider",
+          "shorthand": "p",
+          "type": "string",
+          "description": "Provider name",
+          "required": true
+        },
+        {
+          "name": "query",
+          "shorthand": "q",
+          "type": "string",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
+          "required": false
+        }
+      ],
+      "runnable": true
+    },
+    {
+      "name": "openstack-region",
+      "path": [
+        "get",
+        "inventory",
+        "openstack-region"
+      ],
+      "path_string": "get inventory openstack-region",
+      "description": "Get OpenStack regions from a provider",
+      "long_description": "Get regions from an OpenStack provider's inventory.",
+      "usage": "kubectl-mtv get inventory openstack-region [flags]",
+      "aliases": [
+        "openstack-regions"
+      ],
+      "category": "read",
+      "flags": [
+        {
+          "name": "output",
+          "shorthand": "o",
+          "type": "string",
+          "default": "table",
+          "description": "Output format (table, json, yaml, markdown)",
+          "required": false,
+          "enum": [
+            "table",
+            "json",
+            "yaml",
+            "markdown"
+          ]
+        },
+        {
+          "name": "provider",
+          "shorthand": "p",
+          "type": "string",
+          "description": "Provider name",
+          "required": true
+        },
+        {
+          "name": "query",
+          "shorthand": "q",
+          "type": "string",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
+          "required": false
+        }
+      ],
+      "runnable": true
+    },
+    {
+      "name": "ovirt-server-cpu",
+      "path": [
+        "get",
+        "inventory",
+        "ovirt-server-cpu"
+      ],
+      "path_string": "get inventory ovirt-server-cpu",
+      "description": "Get oVirt server CPU types from a provider",
+      "long_description": "Get server CPU types from an oVirt provider's inventory.",
+      "usage": "kubectl-mtv get inventory ovirt-server-cpu [flags]",
+      "aliases": [
+        "ovirt-server-cpus",
+        "ovirt-servercpus"
+      ],
+      "category": "read",
+      "flags": [
+        {
+          "name": "output",
+          "shorthand": "o",
+          "type": "string",
+          "default": "table",
+          "description": "Output format (table, json, yaml, markdown)",
+          "required": false,
+          "enum": [
+            "table",
+            "json",
+            "yaml",
+            "markdown"
+          ]
+        },
+        {
+          "name": "provider",
+          "shorthand": "p",
+          "type": "string",
+          "description": "Provider name",
+          "required": true
+        },
+        {
+          "name": "query",
+          "shorthand": "q",
+          "type": "string",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
+          "required": false
+        }
+      ],
+      "runnable": true
+    },
+    {
       "name": "project",
       "path": [
         "get",
@@ -3842,6 +4220,54 @@
       "aliases": [
         "volumetypes",
         "volume-types"
+      ],
+      "category": "read",
+      "flags": [
+        {
+          "name": "output",
+          "shorthand": "o",
+          "type": "string",
+          "default": "table",
+          "description": "Output format (table, json, yaml, markdown)",
+          "required": false,
+          "enum": [
+            "table",
+            "json",
+            "yaml",
+            "markdown"
+          ]
+        },
+        {
+          "name": "provider",
+          "shorthand": "p",
+          "type": "string",
+          "description": "Provider name",
+          "required": true
+        },
+        {
+          "name": "query",
+          "shorthand": "q",
+          "type": "string",
+          "description": "Query filter using TSL syntax (e.g. \"where name ~= 'prod-.*'\", \"where name in ['vm1','vm2']\")",
+          "required": false
+        }
+      ],
+      "runnable": true
+    },
+    {
+      "name": "vsphere-custom-field-def",
+      "path": [
+        "get",
+        "inventory",
+        "vsphere-custom-field-def"
+      ],
+      "path_string": "get inventory vsphere-custom-field-def",
+      "description": "Get vSphere custom field definitions from a provider",
+      "long_description": "Get custom field definitions from a vSphere provider's inventory.",
+      "usage": "kubectl-mtv get inventory vsphere-custom-field-def [flags]",
+      "aliases": [
+        "vsphere-custom-field-defs",
+        "vsphere-customfielddefs"
       ],
       "category": "read",
       "flags": [
@@ -4609,7 +5035,7 @@
         {
           "name": "add-pairs",
           "type": "string",
-          "description": "Network pairs to add in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated)",
+          "description": "Network pairs to add in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated). Append ';networkIPMode=preserve|dhcp|none' to override plan-level preserveStaticIPs",
           "required": false
         },
         {
@@ -4628,7 +5054,7 @@
         {
           "name": "update-pairs",
           "type": "string",
-          "description": "Network pairs to update in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated)",
+          "description": "Network pairs to update in format 'source:target-namespace/target-network', 'source:target-network', 'source:default', or 'source:ignored' (comma-separated). Append ';networkIPMode=preserve|dhcp|none' to override plan-level preserveStaticIPs",
           "required": false
         }
       ],
@@ -4660,7 +5086,7 @@
         {
           "name": "add-pairs",
           "type": "string",
-          "description": "Storage pairs to add in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)",
+          "description": "Storage pairs to add in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)",
           "required": false
         },
         {
@@ -4678,7 +5104,7 @@
         {
           "name": "default-offload-plugin",
           "type": "string",
-          "description": "Default offload plugin type for new/updated storage pairs (vsphere)",
+          "description": "Default offload plugin type for storage pairs (vsphere|csiVolumeImport)",
           "required": false
         },
         {
@@ -4715,7 +5141,7 @@
         {
           "name": "update-pairs",
           "type": "string",
-          "description": "Storage pairs to update in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)",
+          "description": "Storage pairs to update in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)",
           "required": false
         }
       ],
@@ -4875,9 +5301,8 @@
         },
         {
           "name": "pvc-name-template-use-generate-name",
-          "type": "bool",
-          "default": true,
-          "description": "Use generateName instead of name for PVC name template (true/false)",
+          "type": "string",
+          "description": "Use generateName instead of name for PVC name template (true/false/auto)",
           "required": false
         },
         {
@@ -5071,6 +5496,12 @@
           "required": false
         },
         {
+          "name": "exclude-disks",
+          "type": "string",
+          "description": "vSphere bus addresses to skip during migration (comma-separated, e.g. scsi0:1,scsi0:2). Empty value clears the list. vSphere only.",
+          "required": false
+        },
+        {
           "name": "instance-type",
           "type": "string",
           "description": "Override the VM's instance type in the target",
@@ -5251,11 +5682,29 @@
           ]
         },
         {
+          "name": "hyperv-management-type",
+          "type": "string",
+          "description": "HyperV management type (e.g., cluster)",
+          "required": false
+        },
+        {
           "name": "name",
           "shorthand": "M",
           "type": "string",
           "description": "Provider name",
           "required": true
+        },
+        {
+          "name": "nutanix-cluster-uuid",
+          "type": "string",
+          "description": "Nutanix cluster UUID (used with Prism Central)",
+          "required": false
+        },
+        {
+          "name": "nutanix-prism-type",
+          "type": "string",
+          "description": "Nutanix Prism endpoint type (central or element)",
+          "required": false
         },
         {
           "name": "password",
