@@ -1112,13 +1112,13 @@
         {
           "name": "azure-resource-group",
           "type": "string",
-          "description": "Azure resource group containing source VMs (required for azure type)",
+          "description": "Azure resource group containing source VMs (optional; omit to inventory the whole subscription)",
           "required": false
         },
         {
           "name": "azure-snapshot-resource-group",
           "type": "string",
-          "description": "Resource group for snapshots (defaults to source resource group)",
+          "description": "Resource group for snapshots (required when --azure-resource-group is omitted)",
           "required": false
         },
         {
@@ -1143,6 +1143,12 @@
           "name": "azure-tenant-id",
           "type": "string",
           "description": "Azure AD tenant ID",
+          "required": false
+        },
+        {
+          "name": "azure-volume-snapshot-class",
+          "type": "string",
+          "description": "VolumeSnapshotClass name override (auto-discovered from disk.csi.azure.com if omitted)",
           "required": false
         },
         {
@@ -2444,7 +2450,7 @@
       ],
       "path_string": "get inventory",
       "description": "Get inventory resources",
-      "long_description": "Get inventory resources from providers via the MTV inventory service.\n\nThe inventory service provides access to source provider resources (VMs, networks,\nstorage, hosts, etc.) without directly connecting to the provider. Resources are\ncached and can be queried using TSL (Tree Search Language) filters.\n\nAvailable resource types vary by provider:\n  - All providers: vm, network, storage\n  - vSphere/oVirt: host, datacenter, cluster, disk\n  - vSphere: datastore, folder, vsphere-custom-field-def\n  - oVirt: disk-profile, nic-profile, ovirt-server-cpu\n  - OpenStack: instance, image, flavor, project, volume, volume-type, snapshot, subnet, openstack-region\n  - OpenShift: namespace, pvc, data-volume, openshift-instance-type, openshift-cluster-instance-type, openshift-kubevirt\n  - EC2: ec2-instance, ec2-volume, ec2-volume-type, ec2-network, ec2-snapshot\n  - Azure: vm, network, storage\n  - Nutanix: vm, network, storage, host, cluster, nutanix-image\n  - Hyper-V: vm, network, storage, host, cluster, disk",
+      "long_description": "Get inventory resources from providers via the MTV inventory service.\n\nThe inventory service provides access to source provider resources (VMs, networks,\nstorage, hosts, etc.) without directly connecting to the provider. Resources are\ncached and can be queried using TSL (Tree Search Language) filters.\n\nAvailable resource types vary by provider:\n  - All providers: vm, network, storage\n  - vSphere/oVirt: host, datacenter, cluster, disk\n  - vSphere: datastore, folder, vsphere-custom-field-def\n  - oVirt: disk-profile, nic-profile, ovirt-server-cpu\n  - OpenStack: instance, image, flavor, project, volume, volume-type, snapshot, subnet, openstack-region\n  - OpenShift: namespace, pvc, data-volume, openshift-instance-type, openshift-cluster-instance-type, openshift-kubevirt\n  - EC2: ec2-instance, ec2-volume, ec2-volume-type, ec2-network, ec2-snapshot\n  - Azure: vm, network, storage, disk\n  - Nutanix: vm, network, storage, host, cluster, nutanix-image\n  - Hyper-V: vm, network, storage, host, cluster, disk",
       "usage": "kubectl-mtv get inventory",
       "category": "read",
       "flags": [],
@@ -5609,6 +5615,12 @@
           "name": "azure-tenant-id",
           "type": "string",
           "description": "Azure AD tenant ID",
+          "required": false
+        },
+        {
+          "name": "azure-volume-snapshot-class",
+          "type": "string",
+          "description": "VolumeSnapshotClass name override",
           "required": false
         },
         {

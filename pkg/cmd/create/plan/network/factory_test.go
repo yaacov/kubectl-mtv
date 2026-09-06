@@ -77,7 +77,7 @@ func TestGetNetworkMapper_ProviderRouting(t *testing.T) {
 			}
 
 			// Verify mapper implements the interface
-			var _ mapper.NetworkMapper = networkMapper
+			var _ mapper.NetworkMapper = networkMapper //nolint:staticcheck // compile-time interface check
 		})
 	}
 }
@@ -116,7 +116,7 @@ func TestNetworkMapperInterface_AllImplementations(t *testing.T) {
 		}
 
 		// This test ensures all mappers implement the interface
-		var _ mapper.NetworkMapper = m
+		var _ mapper.NetworkMapper = m //nolint:staticcheck // compile-time interface check
 	}
 }
 

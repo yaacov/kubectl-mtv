@@ -426,10 +426,11 @@ kubectl mtv create provider --name <name> [flags]
 - `--azure-subscription-id`: Azure subscription ID containing source VMs (credential, stored in secret)
 - `--azure-client-id`: Azure service principal application (client) ID (credential, stored in secret)
 - `--azure-client-secret`: Azure service principal secret (credential, stored in secret)
-- `--azure-resource-group`: Azure resource group containing source VMs (credential, stored in secret)
+- `--azure-resource-group`: Azure resource group containing source VMs (optional credential, stored in secret; omit to inventory the whole subscription)
 - `--azure-target-region`: Target region for cross-region migrations (optional, stored in settings)
 - `--azure-snapshot-sku`: Snapshot SKU (Standard_LRS, Standard_ZRS, Premium_LRS; default: Standard_ZRS; stored in settings)
-- `--azure-snapshot-resource-group`: Resource group for snapshots (defaults to source resource group; stored in settings)
+- `--azure-snapshot-resource-group`: Resource group for snapshots (required when `--azure-resource-group` is omitted; stored in settings)
+- `--azure-volume-snapshot-class`: VolumeSnapshotClass name override (optional, stored in settings)
 
 **HyperV Provider Flags:**
 - `--smb-url`: SMB share URL for HyperV (e.g., //server/share)
@@ -1066,6 +1067,7 @@ kubectl mtv patch provider --name <provider-name> [flags]
 - `--azure-target-region`: Update target region for cross-region migrations (updates settings)
 - `--azure-snapshot-sku`: Update snapshot SKU (Standard_LRS, Standard_ZRS, Premium_LRS; updates settings)
 - `--azure-snapshot-resource-group`: Update snapshot resource group (updates settings)
+- `--azure-volume-snapshot-class`: Update VolumeSnapshotClass name override (updates settings)
 
 **HyperV Provider Update Flags:**
 - `--smb-url`: Update SMB share URL

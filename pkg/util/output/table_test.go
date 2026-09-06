@@ -181,13 +181,13 @@ func TestPrintMarkdownWithQuery_SelectColumns(t *testing.T) {
 	}
 	origStdout := os.Stdout
 	defer func() { os.Stdout = origStdout }()
-	defer r.Close()
+	defer func() { _ = r.Close() }()
 	os.Stdout = w
 
 	if err := PrintMarkdownWithQuery(data, defaultCols, queryOpts, ""); err != nil {
 		t.Fatalf("PrintMarkdownWithQuery returned error: %v", err)
 	}
-	w.Close()
+	_ = w.Close()
 	os.Stdout = origStdout
 
 	var captured bytes.Buffer
