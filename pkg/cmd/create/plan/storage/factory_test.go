@@ -86,7 +86,7 @@ func TestGetStorageMapper_ProviderRouting(t *testing.T) {
 			}
 
 			// Verify mapper implements the interface
-			var _ mapper.StorageMapper = storageMapper
+			var _ mapper.StorageMapper = storageMapper //nolint:staticcheck // compile-time interface check
 		})
 	}
 }
@@ -124,7 +124,7 @@ func TestStorageMapperInterface_AllImplementations(t *testing.T) {
 		}
 
 		// This test ensures all mappers implement the interface
-		var _ mapper.StorageMapper = m
+		var _ mapper.StorageMapper = m //nolint:staticcheck // compile-time interface check
 	}
 }
 

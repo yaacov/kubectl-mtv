@@ -3,21 +3,14 @@ package util
 import (
 	"context"
 	"net/http"
-	"os"
 	"strings"
 	"testing"
 )
 
 func TestResolveEnvVar(t *testing.T) {
-	// Set test environment variables
-	os.Setenv("TEST_HOST", "https://vcenter.example.com")
-	os.Setenv("TEST_PORT", "443")
-	os.Setenv("TEST_USER", "admin")
-	defer func() {
-		os.Unsetenv("TEST_HOST")
-		os.Unsetenv("TEST_PORT")
-		os.Unsetenv("TEST_USER")
-	}()
+	t.Setenv("TEST_HOST", "https://vcenter.example.com")
+	t.Setenv("TEST_PORT", "443")
+	t.Setenv("TEST_USER", "admin")
 
 	tests := []struct {
 		name    string
@@ -103,12 +96,8 @@ func TestResolveEnvVar(t *testing.T) {
 }
 
 func TestResolveEnvVars(t *testing.T) {
-	os.Setenv("TEST_URL", "https://vcenter.example.com")
-	os.Setenv("TEST_PASS", "s3cret")
-	defer func() {
-		os.Unsetenv("TEST_URL")
-		os.Unsetenv("TEST_PASS")
-	}()
+	t.Setenv("TEST_URL", "https://vcenter.example.com")
+	t.Setenv("TEST_PASS", "s3cret")
 
 	tests := []struct {
 		name    string
