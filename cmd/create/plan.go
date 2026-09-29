@@ -636,6 +636,8 @@ Affinity Syntax (KARL):
 	cmd.Flags().StringVar(&enableNestedVirtualization, "enable-nested-virtualization", "auto", "Enable nested virtualization on target VMs (true/false/auto)")
 	cmd.Flags().BoolVar(&planSpec.XfsCompatibility, "xfs-compatibility", false, "Use XFS-compatible virt-v2v image for this plan")
 	cmd.Flags().BoolVar(&planSpec.RDMAsLun, "rdm-as-lun", false, "Map VMware RDM disks as LUN devices (SCSI passthrough) in the target VM (vSphere only)")
+	cmd.Flags().BoolVar(&planSpec.SelinuxRelabelAtBoot, "selinux-relabel-at-boot", false, "Defer SELinux relabeling until the guest's first boot after conversion (virt-v2v --selinux-relabel-at-boot)")
+	cmd.Flags().StringSliceVar(&planSpec.SelinuxRelabelExclude, "selinux-relabel-exclude", nil, "Guest directories excluded from SELinux relabeling during conversion (virt-v2v --selinux-relabel-exclude, repeatable)")
 	cmd.Flags().StringVar(&planSpec.ServiceAccount, "service-account", "", "ServiceAccount for migration pods in the target namespace (overrides global setting)")
 	cmd.Flags().BoolVar(&tagMappingDisabled, "tag-mapping-disabled", false, "Disable vSphere tag-to-label conversion entirely (vSphere only)")
 	cmd.Flags().StringSliceVar(&tagMappingLabelTags, "tag-mapping-label-tags", nil, "Only convert these vSphere tag categories to labels (comma-separated, vSphere only)")
