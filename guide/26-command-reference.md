@@ -390,7 +390,7 @@ kubectl mtv create provider --name <name> [flags]
 **Common Flags:**
 - `--type, -t`: Provider type (openshift, vsphere, ovirt, openstack, ova, ec2, azure, hyperv)
 - `--secret`: Secret containing provider credentials
-- `--url, -U`: Provider URL
+- `--url, -U`: Provider URL (omit for local OpenShift host provider)
 - `--username, -u`: Provider credentials username
 - `--password, -p`: Provider credentials password
 - `--cacert`: Provider CA certificate (use @filename to load from file)
@@ -495,14 +495,14 @@ kubectl mtv create plan --name <name> --source <provider> --vms <vm-selection> [
 - `--network-mapping`: Network mapping name (omit to auto-generate from inventory)
 - `--storage-mapping`: Storage mapping name (omit to auto-generate from inventory)
 - `--network-pairs`: Network mapping pairs, comma-separated (omit to auto-generate)
-- `--storage-pairs`: Storage mapping pairs, comma-separated with semicolon parameters (omit to auto-generate)
+- `--storage-pairs`: Storage mapping pairs, comma-separated with semicolon parameters (omit to auto-generate). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only
 - `--default-target-network`: Override the default target network for auto-generated mapping
 - `--default-target-storage-class`: Override the default storage class for auto-generated mapping
 
 **Optional Plan Configuration Flags:**
 - `--description`: Plan description
 - `--target-namespace`: Target namespace for migrated VMs (default: plan namespace)
-- `--transfer-network`: Network attachment definition for disk transfer (default: controller default)
+- `--transfer-network`: NAD (NetworkAttachmentDefinition) for disk transfer; namespace/name or name in plan namespace
 - `--migration-type, -m`: Migration type: cold, warm, live, or conversion (default: cold)
 - `--warm`: Enable warm migration (legacy flag; use --migration-type=warm instead)
 
@@ -535,20 +535,20 @@ kubectl mtv create plan --name <name> --source <provider> --vms <vm-selection> [
 - `--convertor-affinity`: Convertor affinity using [KARL](../28-karl-kubernetes-affinity-rule-language-reference) syntax
 
 **Optional Template and Customization Flags:**
-- `--pvc-name-template`: PVC name template for VM disks (uses built-in template when omitted)
-- `--volume-name-template`: Volume interface name template
-- `--network-name-template`: Network interface name template
+- `--pvc-name-template`: Go template for PVC names (keep rendered name ≤40 chars)
+- `--volume-name-template`: Go template for volume interface names (vSphere only)
+- `--network-name-template`: Go template for network interface names (vSphere only)
 
 **Optional Conversion and Guest Conversion Flags:**
 - `--conversion-temp-storage-class`: Storage class for temporary conversion PVCs (useful for large VM migrations)
 - `--conversion-temp-storage-size`: Size of temporary conversion PVC (e.g. '30Gi', '1Ti')
-- `--customization-scripts`: ConfigMap containing customization scripts for guest conversion (supports namespace/name)
+- `--customization-scripts`: ConfigMap (namespace/name or name); script keys: N_win_firstboot_*.ps1, N_linux_run_*.sh, N_linux_firstboot_*.sh
 - `--virt-v2v-image`: Override global virt-v2v container image for this plan
 - `--skip-zone-node-selector`: Skip zone-based node selector for migrated VMs (EC2 only)
 
 **Optional Advanced Flags:**
-- `--preserve-cluster-cpu-model`: Preserve CPU model from oVirt cluster
-- `--preserve-static-ips`: Preserve static IPs during migration; supported for vSphere and OpenStack, including UDN namespaces (default: true)
+- `--preserve-cluster-cpu-model`: Preserve CPU model from oVirt/RHV cluster (oVirt/RHV only)
+- `--preserve-static-ips`: Preserve static IPs during migration (vSphere/Hyper-V only; default: true)
 - `--migrate-shared-disks`: Migrate shared disks (default: true)
 - `--skip-guest-conversion`: Skip guest conversion process
 - `--delete-guest-conversion-pod`: Delete guest conversion pod after successful migration
@@ -556,16 +556,16 @@ kubectl mtv create plan --name <name> --source <provider> --vms <vm-selection> [
 - `--install-legacy-drivers`: Install legacy Windows drivers (true/false/auto)
 - `--use-compatibility-mode`: Use compatibility devices for bootability (default: true)
 - `--enable-nested-virtualization`: Enable nested virtualization on target VMs (true/false/auto)
-- `--xfs-compatibility`: Use XFS-compatible virt-v2v image for this plan
+- `--xfs-compatibility`: Use XFS-compatible virt-v2v image (disables BTRFS support for this plan)
 - `--rdm-as-lun`: Map VMware RDM disks as LUN devices (SCSI passthrough) in the target VM (vSphere only)
-- `--run-preflight-inspection`: Run preflight inspection on VM base disks before starting disk transfer (default: true)
+- `--run-preflight-inspection`: Run preflight on VM base disks before disk transfer (warm vSphere only; default: true)
 - `--archived`: Whether this plan should be archived (default: false)
 - `--pvc-name-template-use-generate-name`: Use generateName instead of name for PVC name template (default: true)
-- `--service-account`: ServiceAccount for migration pods in the target namespace (overrides global setting)
+- `--service-account`: DNS-1123 subdomain name of ServiceAccount for migration pods in target namespace (overrides global setting)
 
 **Optional Hook Flags:**
-- `--pre-hook`: Pre-migration hook for all VMs
-- `--post-hook`: Post-migration hook for all VMs
+- `--pre-hook`: Existing Hook resource name in plan namespace (all VMs)
+- `--post-hook`: Existing Hook resource name in plan namespace (all VMs)
 
 **Examples:**
 ```bash
@@ -607,12 +607,12 @@ kubectl mtv create mapping storage --name <name> [flags]
 
 **Network Mapping Flags:**
 - `--source, -S`: Source provider name
-- `--target, -T`: Target provider name
+- `--target, -T`: OpenShift target provider name
 - `--network-pairs`: Network mapping pairs
 
 **Storage Mapping Flags:**
 - `--source, -S`: Source provider name
-- `--target, -T`: Target provider name
+- `--target, -T`: OpenShift target provider name
 - `--storage-pairs`: Storage mapping pairs with enhanced options
 - `--default-volume-mode`: Default volume mode
 - `--default-access-mode`: Default access mode
@@ -685,7 +685,7 @@ kubectl mtv create hook --name <name> [flags]
 
 **Local Hook Flags:**
 - `--image`: Container image to run (default: quay.io/kubev2v/hook-runner)
-- `--playbook`: Ansible playbook content (use @filename to load from file)
+- `--playbook`: Ansible playbook as plain YAML or @file (stored base64 in CR)
 - `--service-account`: Service account for hook execution
 - `--deadline`: Hook execution deadline in seconds
 
@@ -870,8 +870,8 @@ kubectl mtv patch plan --plan-name <plan-name> [flags]
 
 **Plan-Level Flags:**
 - `--description`: Plan description
-- `--migration-type`: Update migration type (cold, warm, live, or conversion)
-- `--transfer-network`: Update transfer network
+- `--migration-type`: Update migration type (cold, warm, live, or conversion; default: cold)
+- `--transfer-network`: NAD (NetworkAttachmentDefinition) for disk transfer; namespace/name or name
 - `--target-namespace`: Target namespace for migrated VMs
 - `--target-labels`: Update target VM labels
 - `--target-node-selector`: Update target node selector
@@ -882,25 +882,25 @@ kubectl mtv patch plan --plan-name <plan-name> [flags]
 - `--convertor-affinity`: Update convertor affinity rules using KARL syntax
 - `--conversion-temp-storage-class`: Storage class for temporary conversion PVCs
 - `--conversion-temp-storage-size`: Size of temporary conversion PVC
-- `--customization-scripts`: ConfigMap for guest conversion scripts (supports namespace/name)
+- `--customization-scripts`: ConfigMap (namespace/name or name); script keys: N_win_firstboot_*.ps1, N_linux_run_*.sh, N_linux_firstboot_*.sh
 - `--virt-v2v-image`: Override virt-v2v container image for this plan
 - `--skip-zone-node-selector`: Skip zone-based node selector (EC2 only)
-- `--preserve-cluster-cpu-model`: Preserve CPU model from oVirt cluster
-- `--preserve-static-ips`: Preserve static IPs during migration; supported for vSphere and OpenStack, including UDN namespaces
+- `--preserve-cluster-cpu-model`: Preserve CPU model from oVirt/RHV cluster (oVirt/RHV only)
+- `--preserve-static-ips`: Preserve static IPs during migration (vSphere/Hyper-V only)
 - `--install-legacy-drivers`: Install legacy Windows drivers (true/false/auto)
 - `--use-compatibility-mode`: Use compatibility devices when skipGuestConversion is true
 - `--enable-nested-virtualization`: Enable nested virtualization on target VMs (true/false/auto)
-- `--xfs-compatibility`: Use XFS-compatible virt-v2v image for this plan
-- `--pvc-name-template`: Template for generating PVC names
-- `--volume-name-template`: Template for generating volume interface names
-- `--network-name-template`: Template for generating network interface names
+- `--xfs-compatibility`: Use XFS-compatible virt-v2v image (disables BTRFS support for this plan)
+- `--pvc-name-template`: Go template for PVC names (keep rendered name ≤40 chars)
+- `--volume-name-template`: Go template for volume interface names (vSphere only)
+- `--network-name-template`: Go template for network interface names (vSphere only)
 - `--migrate-shared-disks`: Migrate disks shared between multiple VMs
 - `--skip-guest-conversion`: Skip the guest conversion process
 - `--delete-guest-conversion-pod`: Delete guest conversion pod after successful migration
 - `--delete-vm-on-fail-migration`: Delete target VM when migration fails
-- `--run-preflight-inspection`: Run preflight inspection on VM base disks
+- `--run-preflight-inspection`: Run preflight on VM base disks before disk transfer (warm vSphere only)
 - `--rdm-as-lun`: Map VMware RDM disks as LUN devices (vSphere only)
-- `--service-account`: ServiceAccount for migration pods
+- `--service-account`: DNS-1123 subdomain name of ServiceAccount for migration pods
 - `--warm`: Enable warm migration (legacy; use --migration-type=warm instead)
 - `--archived`: Whether this plan should be archived
 - `--pvc-name-template-use-generate-name`: Use generateName instead of name for PVC name template
@@ -926,22 +926,22 @@ kubectl mtv patch planvm --plan-name <plan-name> --vm-name <vm-name> [flags]
 
 **VM-Specific Flags:**
 - `--target-name`: Custom target VM name
-- `--instance-type`: KubeVirt instance type
+- `--instance-type`: Override instance type on the target (EC2)
 - `--root-disk`: Primary boot disk selection
 - `--target-power-state`: VM power state after migration (on, off, auto)
 - `--luks-secret`: Kubernetes Secret name containing LUKS disk decryption keys
 - `--nbde-clevis`: Enable passphrase-less NBDE/Clevis disk unlocking via TANG server
-- `--delete-vm-on-fail-migration`: Delete target VM when migration fails
-- `--enable-nested-virtualization`: Enable nested virtualization for this VM (true/false/auto)
-- `--migrate-shared-disks`: Migrate shared disks for this VM, overrides plan-level setting (true/false/auto)
+- `--delete-vm-on-fail-migration`: Delete target VM when migration fails (ignored when plan-level is true)
+- `--enable-nested-virtualization`: Enable nested virtualization for this VM (true/false/auto; auto clears VM override)
+- `--migrate-shared-disks`: Migrate shared disks for this VM (true/false/auto; auto clears VM override to inherit plan setting)
 - `--rdm-as-lun`: Map VMware RDM disks as LUN devices for this VM, overrides plan-level setting (vSphere only, true/false/auto)
-- `--add-pre-hook`: Add a pre-migration hook to this VM
-- `--add-post-hook`: Add a post-migration hook to this VM
+- `--add-pre-hook`: Existing Hook resource name in plan namespace (pre-migration)
+- `--add-post-hook`: Existing Hook resource name in plan namespace (post-migration)
 - `--remove-hook`: Remove a hook from this VM by hook name
 - `--clear-hooks`: Clear all hooks for the VM
-- `--pvc-name-template`: Custom PVC naming template for this VM
-- `--volume-name-template`: Custom volume naming template for this VM
-- `--network-name-template`: Custom network naming template for this VM
+- `--pvc-name-template`: Go template for PVC names for this VM (keep rendered name ≤40 chars)
+- `--volume-name-template`: Go template for volume interface names (vSphere only)
+- `--network-name-template`: Go template for network interface names (vSphere only)
 
 **Examples:**
 ```bash
@@ -995,7 +995,7 @@ kubectl mtv patch hook --name <hook-name> [flags]
 
 **Local Hook Update Flags:**
 - `--image`: Update container image URL
-- `--playbook`: Update Ansible playbook content (use @filename to load from file)
+- `--playbook`: Update Ansible playbook as plain YAML or @file (stored base64 in CR)
 - `--service-account`: Update service account
 - `--deadline`: Update hook deadline in seconds
 

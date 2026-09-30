@@ -219,7 +219,7 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 	cmd.Flags().StringVar(&secret, "secret", "", "Secret containing provider credentials")
 
 	// Provider credential flags
-	cmd.Flags().StringVarP(&url, "url", "U", "", "Provider URL")
+	cmd.Flags().StringVarP(&url, "url", "U", "", "Provider URL (omit for local OpenShift host provider)")
 	cmd.Flags().StringVarP(&username, "username", "u", "", "Provider credentials username")
 	cmd.Flags().StringVarP(&password, "password", "p", "", "Provider credentials password")
 	cmd.Flags().StringVar(&cacert, "cacert", "", "Provider CA certificate (use @filename to load from file)")
@@ -254,7 +254,7 @@ Credentials can be provided directly via flags or through an existing Kubernetes
 	cmd.Flags().StringVar(&smbUrl, "smb-url", "", "SMB share URL for HyperV (e.g., //server/share)")
 	cmd.Flags().StringVar(&smbUser, "smb-user", "", "SMB username (defaults to HyperV username)")
 	cmd.Flags().StringVar(&smbPassword, "smb-password", "", "SMB password (defaults to HyperV password)")
-	cmd.Flags().StringVar(&hypervMgmtType, "hyperv-management-type", "", "HyperV management type (e.g., cluster)")
+	cmd.Flags().StringVar(&hypervMgmtType, "hyperv-management-type", "", "Hyper-V management type (standalone|cluster)")
 
 	// Azure specific flags
 	cmd.Flags().StringVar(&azureTenantID, "azure-tenant-id", "", "Azure AD tenant ID")
