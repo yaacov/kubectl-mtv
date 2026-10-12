@@ -110,6 +110,10 @@ kubectl mtv create hook --name simple-notification \
   --playbook "$(cat << 'EOF'
 - hosts: localhost
   tasks:
+  - name: Load workload context  
+    include_vars:
+      file: workload.yml
+      name: workload
   - name: Send notification
     debug:
       msg: "Migration hook executed for {% raw %}{{ workload.vm.name }}{% endraw %}"
