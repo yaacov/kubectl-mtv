@@ -125,6 +125,8 @@ All MCP server flags are verified from the implementation:
 | `--output-format` | string | `text` | Default output format for commands: `text` (table) or `json` |
 | `--server` | string | `""` | Kubernetes API server URL (passed to kubectl via --server flag) |
 | `--token` | string | `""` | Kubernetes authentication token (passed to kubectl via --token flag) |
+| `--certificate-authority` | string | `""` | Path to a CA certificate file for Kubernetes API TLS verification |
+| `--insecure-skip-tls-verify` | boolean | `false` | Skip TLS certificate verification for Kubernetes API connections |
 | `--max-response-chars` | int | `0` | Max characters for text output (`0` = unlimited). Truncates long responses to help small LLMs stay within context window limits |
 
 ### Usage Examples

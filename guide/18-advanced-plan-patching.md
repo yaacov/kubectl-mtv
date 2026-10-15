@@ -141,6 +141,36 @@ kubectl mtv patch plan --plan-name network-organized \
   --network-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.NetworkType}}{% endraw %}-{% raw %}{{.NetworkIndex}}{% endraw %}"
 ```
 
+### SELinux, Disk Conversion, and Tag Mapping Configuration
+
+Update SELinux relabeling, SCSI reservation, pre-copy, and tag mapping settings:
+
+```bash
+# Defer SELinux relabeling to first boot
+kubectl mtv patch plan --plan-name production-migration \
+  --selinux-relabel-at-boot true
+
+# Exclude directories from SELinux relabeling
+kubectl mtv patch plan --plan-name production-migration \
+  --selinux-relabel-exclude /data,/opt/app
+
+# Enable SCSI persistent reservation for shared RDM LUN disks
+kubectl mtv patch plan --plan-name shared-storage-migration \
+  --scsi-reservation true
+
+# Enable two-phase disk transfer for Hyper-V
+kubectl mtv patch plan --plan-name hyperv-migration \
+  --pre-copy-source-disks true
+
+# Disable vSphere tag-to-label conversion
+kubectl mtv patch plan --plan-name no-tags-migration \
+  --tag-mapping-disabled true
+
+# Restrict tag categories converted to labels
+kubectl mtv patch plan --plan-name selective-tags-migration \
+  --tag-mapping-label-tags "Environment,Application"
+```
+
 ### Migration Behavior Configuration
 
 Control various aspects of the migration process:
@@ -258,6 +288,37 @@ kubectl mtv patch planvm --plan-name app-migration --vm-name web-tier \
 # Custom network naming for multi-homed VMs
 kubectl mtv patch planvm --plan-name network-migration --vm-name firewall-vm \
   --network-name-template "{% raw %}{{.TargetVmName}}{% endraw %}-{% raw %}{{.NetworkType}}{% endraw %}-{% raw %}{{.NetworkIndex}}{% endraw %}"
+```
+
+### Per-VM Disk and Conversion Overrides
+
+Customize disk exclusion, SCSI reservation, and SELinux relabeling for individual VMs:
+
+```bash
+# Discover disk bus addresses from inventory
+kubectl mtv get inventory vms --provider my-vsphere \
+  --query "where name = 'app-vm'" --output json \
+  | jq '.items[0].disks[] | {bus, datastore: .datastore.name, capacityInBytes}'
+
+# Exclude specific disks from migration (vSphere bus addresses)
+kubectl mtv patch planvm --plan-name my-migration --vm-name app-vm \
+  --exclude-disks scsi0:1,scsi0:2
+
+# Clear excluded disks (re-include all disks)
+kubectl mtv patch planvm --plan-name my-migration --vm-name app-vm \
+  --exclude-disks ""
+
+# Override SCSI reservation per-VM (true/false/auto; auto clears override)
+kubectl mtv patch planvm --plan-name my-migration --vm-name cluster-node-01 \
+  --scsi-reservation true
+
+# Override SELinux relabeling per-VM
+kubectl mtv patch planvm --plan-name my-migration --vm-name rhel-vm \
+  --selinux-relabel-at-boot true
+
+# Override SELinux relabel exclusions per-VM
+kubectl mtv patch planvm --plan-name my-migration --vm-name rhel-vm \
+  --selinux-relabel-exclude /data,/opt
 ```
 
 ### Security Configuration

@@ -65,6 +65,8 @@ type PatchPlanOptions struct {
 	Warm                           bool
 	RunPreflightInspection         bool
 	RDMAsLun                       bool
+	SCSIReservation                bool
+	PreCopySourceDisks             bool
 	SelinuxRelabelAtBoot           bool
 	SelinuxRelabelExclude          []string
 	ServiceAccount                 string
@@ -88,6 +90,8 @@ type PatchPlanOptions struct {
 	InstallLegacyDriversChanged           bool
 	EnableNestedVirtualizationChanged     bool
 	RDMAsLunChanged                       bool
+	SCSIReservationChanged                bool
+	PreCopySourceDisksChanged             bool
 	SelinuxRelabelAtBootChanged           bool
 	SelinuxRelabelExcludeChanged          bool
 	ServiceAccountChanged                 bool
@@ -549,6 +553,18 @@ func PatchPlan(opts PatchPlanOptions) error {
 		planUpdated = true
 	}
 
+	if opts.SCSIReservationChanged {
+		patchSpec["scsiReservation"] = opts.SCSIReservation
+		klog.V(2).Infof("Updated SCSI reservation to %t", opts.SCSIReservation)
+		planUpdated = true
+	}
+
+	if opts.PreCopySourceDisksChanged {
+		patchSpec["preCopySourceDisks"] = opts.PreCopySourceDisks
+		klog.V(2).Infof("Updated preCopySourceDisks to %t", opts.PreCopySourceDisks)
+		planUpdated = true
+	}
+
 	if opts.SelinuxRelabelAtBootChanged {
 		patchSpec["selinuxRelabelAtBoot"] = opts.SelinuxRelabelAtBoot
 		klog.V(2).Infof("Updated SELinux relabel at boot to %t", opts.SelinuxRelabelAtBoot)
@@ -634,6 +650,7 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 	addPreHook, addPostHook, removeHook string, clearHooks bool, deleteVmOnFailMigration string, deleteVmOnFailMigrationChanged bool,
 	nbdeClevis bool, nbdeClevisChanged bool, enableNestedVirtualization string, enableNestedVirtualizationChanged bool,
 	migrateSharedDisks string, migrateSharedDisksChanged bool, rdmAsLun string, rdmAsLunChanged bool,
+	scsiReservation string, scsiReservationChanged bool,
 	excludeDisks string, excludeDisksChanged bool,
 	selinuxRelabelAtBoot string, selinuxRelabelAtBootChanged bool,
 	selinuxRelabelExclude string, selinuxRelabelExcludeChanged bool) error {
@@ -889,6 +906,31 @@ func PatchPlanVM(configFlags *genericclioptions.ConfigFlags, planName, vmName, n
 			vmUpdated = true
 		default:
 			return fmt.Errorf("invalid value for rdm-as-lun: %s (must be 'true', 'false', or 'auto')", rdmAsLun)
+		}
+	}
+
+	if scsiReservationChanged {
+		switch strings.ToLower(scsiReservation) {
+		case "true":
+			err = unstructured.SetNestedField(vmCopy, true, "scsiReservation")
+			if err != nil {
+				return fmt.Errorf("failed to set SCSI reservation: %v", err)
+			}
+			klog.V(2).Infof("Updated VM SCSI reservation to true")
+			vmUpdated = true
+		case "false":
+			err = unstructured.SetNestedField(vmCopy, false, "scsiReservation")
+			if err != nil {
+				return fmt.Errorf("failed to set SCSI reservation: %v", err)
+			}
+			klog.V(2).Infof("Updated VM SCSI reservation to false")
+			vmUpdated = true
+		case "auto", "":
+			unstructured.RemoveNestedField(vmCopy, "scsiReservation")
+			klog.V(2).Infof("Cleared VM SCSI reservation override")
+			vmUpdated = true
+		default:
+			return fmt.Errorf("invalid value for scsi-reservation: %s (must be 'true', 'false', or 'auto')", scsiReservation)
 		}
 	}
 

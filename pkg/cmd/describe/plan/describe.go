@@ -117,6 +117,8 @@ func buildSpecSection(b *describe.Builder, plan *unstructured.Unstructured) {
 	preserveStaticIPs, _, _ := unstructured.NestedBool(plan.Object, "spec", "preserveStaticIPs")
 	enableNestedVirt, enableNestedVirtExists, _ := unstructured.NestedBool(plan.Object, "spec", "enableNestedVirtualization")
 	xfsCompatibility, _, _ := unstructured.NestedBool(plan.Object, "spec", "xfsCompatibility")
+	scsiReservation, _, _ := unstructured.NestedBool(plan.Object, "spec", "scsiReservation")
+	preCopySourceDisks, _, _ := unstructured.NestedBool(plan.Object, "spec", "preCopySourceDisks")
 	selinuxRelabelAtBoot, selinuxRelabelAtBootExists, _ := unstructured.NestedBool(plan.Object, "spec", "selinuxRelabelAtBoot")
 	selinuxRelabelExclude, _, _ := unstructured.NestedStringSlice(plan.Object, "spec", "selinuxRelabelExclude")
 
@@ -145,6 +147,12 @@ func buildSpecSection(b *describe.Builder, plan *unstructured.Unstructured) {
 		b.Field("Nested Virtualization", "auto-detect")
 	}
 	b.FieldC("XFS Compatibility", fmt.Sprintf("%t", xfsCompatibility), output.ColorizeBooleanString)
+	if scsiReservation {
+		b.FieldC("SCSI Reservation", "true", output.ColorizeBooleanString)
+	}
+	if preCopySourceDisks {
+		b.FieldC("Pre-Copy Source Disks", "true", output.ColorizeBooleanString)
+	}
 	if selinuxRelabelAtBootExists {
 		b.FieldC("SELinux Relabel At Boot", fmt.Sprintf("%t", selinuxRelabelAtBoot), output.ColorizeBooleanString)
 	}
@@ -306,6 +314,7 @@ func buildVMsSection(b *describe.Builder, plan *unstructured.Unstructured, migra
 		instanceType, _, _ := unstructured.NestedString(vm, "instanceType")
 		rootDisk, _, _ := unstructured.NestedString(vm, "rootDisk")
 		excludeDisks, _, _ := unstructured.NestedStringSlice(vm, "excludeDisks")
+		scsiReservationVM, scsiReservationVMExists, _ := unstructured.NestedBool(vm, "scsiReservation")
 		selinuxRelabelAtBoot, selinuxRelabelAtBootExists, _ := unstructured.NestedBool(vm, "selinuxRelabelAtBoot")
 		selinuxRelabelExclude, _, _ := unstructured.NestedStringSlice(vm, "selinuxRelabelExclude")
 		targetPowerState, _, _ := unstructured.NestedString(vm, "targetPowerState")
@@ -340,6 +349,9 @@ func buildVMsSection(b *describe.Builder, plan *unstructured.Unstructured, migra
 		}
 		if len(excludeDisks) > 0 {
 			b.FieldC("Exclude Disks", strings.Join(excludeDisks, ", "), output.Yellow)
+		}
+		if scsiReservationVMExists {
+			b.FieldC("SCSI Reservation", fmt.Sprintf("%t", scsiReservationVM), output.ColorizeBooleanString)
 		}
 		if selinuxRelabelAtBootExists {
 			b.FieldC("SELinux Relabel At Boot", fmt.Sprintf("%t", selinuxRelabelAtBoot), output.ColorizeBooleanString)

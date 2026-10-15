@@ -49,6 +49,9 @@ The PlanVMS format is based on the Forklift API VM specification, verified from 
   targetPowerState: on
   deleteVmOnFailMigration: false
   nbdeClevis: false
+  excludeDisks:
+  - scsi0:1
+  - scsi0:2
   luks:
     name: encryption-keys
     namespace: security
@@ -133,6 +136,29 @@ Critical for multi-disk VMs to ensure proper boot configuration.
 **LUKS Configuration:**
 - `luks`: References a Kubernetes Secret containing LUKS passphrases
 - `nbdeClevis`: Enables network-based automatic unlocking using TANG servers
+
+#### Exclude Disks (vSphere)
+
+```yaml
+# Exclude specific disks from migration by bus address
+  excludeDisks:
+  - scsi0:1
+  - scsi0:2
+```
+
+Use vSphere disk bus addresses (e.g. `scsi0:1`, `scsi0:2`) to skip specific disks during migration. This is useful for excluding local scratch disks or temporary storage that should not be migrated.
+
+To discover the bus addresses for a VM's disks, query the inventory in JSON format and inspect the `disks` array:
+
+```bash
+# Show disk details for a specific VM
+kubectl mtv get inventory vms --provider my-vsphere \
+  --query "where name = 'my-vm'" --output json | jq '.items[0].disks[] | {bus, datastore: .datastore.name, capacityInBytes}'
+```
+
+Each disk entry includes a `bus` field (e.g. `scsi0:0`, `scsi0:1`) that you can use directly with `excludeDisks` or the `--exclude-disks` flag.
+
+The equivalent CLI flag for per-VM patching is `--exclude-disks` (see [Chapter 18](../18-advanced-plan-patching)).
 
 ### Migration Behavior Configuration
 

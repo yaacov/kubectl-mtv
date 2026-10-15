@@ -113,11 +113,13 @@ kubectl mtv get providers [flags]  # Alias
 
 #### get mapping [--name MAPPING_NAME]
 
-Retrieve network and storage mappings.
+Retrieve network and storage mappings. Use `get mapping` to list all mappings, or use the `network`/`storage` subcommands to filter by type.
 
 ```bash
 kubectl mtv get mapping [--name mapping-name] [flags]
 kubectl mtv get mappings [flags]  # Alias
+kubectl mtv get mapping network [--name mapping-name] [flags]
+kubectl mtv get mapping storage [--name mapping-name] [flags]
 ```
 
 **Flags:**
@@ -125,6 +127,21 @@ kubectl mtv get mappings [flags]  # Alias
 - `--output, -o`: Output format (table, json, yaml, markdown)
 - `--query, -q`: Query filter using TSL syntax
 - `--watch, -w`: Watch for changes
+
+**Examples:**
+```bash
+# List all mappings (network + storage)
+kubectl mtv get mappings
+
+# List only network mappings
+kubectl mtv get mapping network
+
+# List only storage mappings
+kubectl mtv get mapping storage
+
+# Get a specific network mapping
+kubectl mtv get mapping network --name prod-networks
+```
 
 #### get host [--name HOST_NAME]
 
@@ -174,6 +191,54 @@ kubectl mtv get conversion --name <conversion-name> [flags]  # Get specific conv
 ### get inventory - Query Provider Inventory
 
 Get inventory resources from providers using the Tree Search Language (TSL) for advanced filtering.
+
+The following table lists all 31 inventory resource types, grouped by provider:
+
+| **Group** | **Resource** | **Aliases** | **Providers** |
+|-----------|-------------|-------------|---------------|
+| General | `vm` | `vms` | All |
+| | `host` | `hosts` | vSphere, oVirt, Nutanix, Hyper-V |
+| | `network` | `networks` | All |
+| | `storage` | `storages` | All |
+| | `datacenter` | `datacenters` | vSphere, oVirt |
+| | `cluster` | `clusters` | vSphere, oVirt, Nutanix, Hyper-V |
+| | `disk` | `disks` | vSphere, oVirt, Hyper-V |
+| | `namespace` | `namespaces` | OpenShift |
+| | `provider` | `providers` | All (inventory status) |
+| vSphere | `datastore` | `datastores` | vSphere |
+| | `folder` | `folders` | vSphere |
+| | `vsphere-custom-field-def` | `vsphere-custom-field-defs`, `vsphere-customfielddefs` | vSphere |
+| oVirt | `disk-profile` | `diskprofiles`, `disk-profiles` | oVirt |
+| | `nic-profile` | `nicprofiles`, `nic-profiles` | oVirt |
+| | `ovirt-server-cpu` | `ovirt-server-cpus`, `ovirt-servercpus` | oVirt |
+| OpenStack | `instance` | `instances` | OpenStack |
+| | `image` | `images` | OpenStack |
+| | `flavor` | `flavors` | OpenStack |
+| | `project` | `projects` | OpenStack |
+| | `volume` | `volumes` | OpenStack |
+| | `volume-type` | `volumetypes`, `volume-types` | OpenStack |
+| | `snapshot` | `snapshots` | OpenStack |
+| | `subnet` | `subnets` | OpenStack |
+| | `openstack-region` | `openstack-regions` | OpenStack |
+| Kubernetes | `pvc` | `pvcs`, `persistentvolumeclaims` | OpenShift |
+| | `data-volume` | `datavolumes`, `data-volumes` | OpenShift |
+| | `openshift-instance-type` | `openshift-instance-types`, `openshift-instancetypes` | OpenShift |
+| | `openshift-cluster-instance-type` | `openshift-cluster-instance-types`, `openshift-clusterinstancetypes` | OpenShift |
+| | `openshift-kubevirt` | `openshift-kubevirts` | OpenShift |
+| EC2 | `ec2-instance` | `ec2-instances` | EC2 |
+| | `ec2-volume` | `ec2-volumes` | EC2 |
+| | `ec2-volume-type` | `ec2-volumetypes`, `ec2-volume-types` | EC2 |
+| | `ec2-network` | `ec2-networks` | EC2 |
+| | `ec2-snapshot` | `ec2-snapshots` | EC2 |
+| Nutanix | `nutanix-image` | `nutanix-images` | Nutanix |
+| AAP | `job-template` | `job-templates`, `jobtemplates` | AAP (controller-level) |
+
+All inventory subcommands support these common flags:
+- `--provider, -p`: Provider name (required, except for `job-template` and `provider`)
+- `--query, -q`: TSL query filter
+- `--output, -o`: Output format (table, json, yaml, markdown; `planvms` for VMs)
+- `--watch, -w`: Watch for changes
+- `--extended`: Show extended information (where supported)
 
 #### get inventory vms --provider PROVIDER_NAME
 
@@ -395,6 +460,8 @@ kubectl mtv create provider --name <name> [flags]
 - `--password, -p`: Provider credentials password
 - `--cacert`: Provider CA certificate (use @filename to load from file)
 - `--provider-insecure-skip-tls`: Skip TLS verification when connecting to the provider
+- `--dry-run`: Output Provider CR(s) to stdout instead of creating them
+- `--output, -o`: Output format for dry-run (json, yaml). Defaults to yaml when `--dry-run` is used
 
 **OpenShift Provider Flags:**
 - `--provider-token, -T`: Provider authentication token
@@ -558,6 +625,13 @@ kubectl mtv create plan --name <name> --source <provider> --vms <vm-selection> [
 - `--enable-nested-virtualization`: Enable nested virtualization on target VMs (true/false/auto)
 - `--xfs-compatibility`: Use XFS-compatible virt-v2v image (disables BTRFS support for this plan)
 - `--rdm-as-lun`: Map VMware RDM disks as LUN devices (SCSI passthrough) in the target VM (vSphere only)
+- `--scsi-reservation`: Enable SCSI persistent reservation for shared RDM LUN disks (requires `--rdm-as-lun`, vSphere only)
+- `--pre-copy-source-disks`: Enable two-phase disk transfer for Hyper-V: init container converts VHDX to raw via qemu-img, then virt-v2v does in-place guest customization (Hyper-V only)
+- `--selinux-relabel-at-boot`: Defer SELinux relabeling until the guest's first boot after conversion
+- `--selinux-relabel-exclude`: Guest directories excluded from SELinux relabeling during conversion (repeatable)
+- `--tag-mapping-disabled`: Disable vSphere tag-to-label conversion entirely (vSphere only)
+- `--tag-mapping-label-tags`: Only convert these vSphere tag categories to labels (comma-separated, vSphere only)
+- `--default-offload-migration-hosts`: Default dedicated ESXi host IDs for XCOPY migrations (+-separated, e.g. host-10+host-11)
 - `--run-preflight-inspection`: Run preflight on VM base disks before disk transfer (warm vSphere only; default: true)
 - `--archived`: Whether this plan should be archived (default: false)
 - `--pvc-name-template-use-generate-name`: Use generateName instead of name for PVC name template (default: true)
@@ -609,6 +683,8 @@ kubectl mtv create mapping storage --name <name> [flags]
 - `--source, -S`: Source provider name
 - `--target, -T`: OpenShift target provider name
 - `--network-pairs`: Network mapping pairs
+- `--dry-run`: Output mapping CR to stdout instead of creating it
+- `--output, -o`: Output format for dry-run (json, yaml). Defaults to yaml when `--dry-run` is used
 
 **Storage Mapping Flags:**
 - `--source, -S`: Source provider name
@@ -619,6 +695,8 @@ kubectl mtv create mapping storage --name <name> [flags]
 - `--default-offload-plugin`: Default offload plugin type
 - `--default-offload-secret`: Default offload secret name
 - `--default-offload-vendor`: Default offload plugin vendor
+- `--dry-run`: Output mapping CR to stdout instead of creating it
+- `--output, -o`: Output format for dry-run (json, yaml). Defaults to yaml when `--dry-run` is used
 
 **Storage Array Offload Flags:** (Same as create plan)
 
@@ -657,6 +735,8 @@ kubectl mtv create host --host-id <id> [flags]
 - `--password`: Host password (creates new secret if no --existing-secret provided)
 - `--host-insecure-skip-tls`: Skip TLS verification for host connections
 - `--cacert`: CA certificate for host authentication
+- `--dry-run`: Output Host CR(s) to stdout instead of creating them
+- `--output, -o`: Output format for dry-run (json, yaml). Defaults to yaml when `--dry-run` is used
 
 **Examples:**
 ```bash
@@ -688,6 +768,8 @@ kubectl mtv create hook --name <name> [flags]
 - `--playbook`: Ansible playbook as plain YAML or @file (stored base64 in CR)
 - `--service-account`: Service account for hook execution
 - `--deadline`: Hook execution deadline in seconds
+- `--dry-run`: Output Hook CR to stdout instead of creating it
+- `--output, -o`: Output format for dry-run (json, yaml). Defaults to yaml when `--dry-run` is used
 
 **AAP Hook Flags** (mutually exclusive with `--image` and `--playbook`):
 - `--aap-job-template-id`: AAP job template ID (required for AAP hooks)
@@ -900,6 +982,12 @@ kubectl mtv patch plan --plan-name <plan-name> [flags]
 - `--delete-vm-on-fail-migration`: Delete target VM when migration fails
 - `--run-preflight-inspection`: Run preflight on VM base disks before disk transfer (warm vSphere only)
 - `--rdm-as-lun`: Map VMware RDM disks as LUN devices (vSphere only)
+- `--scsi-reservation`: Enable SCSI persistent reservation for shared RDM LUN disks (requires `--rdm-as-lun`, vSphere only) (true/false)
+- `--pre-copy-source-disks`: Enable two-phase disk transfer for Hyper-V (Hyper-V only) (true/false)
+- `--selinux-relabel-at-boot`: Defer SELinux relabeling until the guest's first boot after conversion (true/false)
+- `--selinux-relabel-exclude`: Guest directories excluded from SELinux relabeling during conversion (repeatable)
+- `--tag-mapping-disabled`: Disable vSphere tag-to-label conversion entirely (vSphere only) (true/false)
+- `--tag-mapping-label-tags`: Only convert these vSphere tag categories to labels (comma-separated, vSphere only)
 - `--service-account`: DNS-1123 subdomain name of ServiceAccount for migration pods
 - `--warm`: Enable warm migration (legacy; use --migration-type=warm instead)
 - `--archived`: Whether this plan should be archived
@@ -935,6 +1023,10 @@ kubectl mtv patch planvm --plan-name <plan-name> --vm-name <vm-name> [flags]
 - `--enable-nested-virtualization`: Enable nested virtualization for this VM (true/false/auto; auto clears VM override)
 - `--migrate-shared-disks`: Migrate shared disks for this VM (true/false/auto; auto clears VM override to inherit plan setting)
 - `--rdm-as-lun`: Map VMware RDM disks as LUN devices for this VM, overrides plan-level setting (vSphere only, true/false/auto)
+- `--scsi-reservation`: Enable SCSI persistent reservation for shared RDM LUN disks for this VM, overrides plan-level setting (vSphere only, true/false/auto)
+- `--exclude-disks`: vSphere bus addresses to skip during migration (comma-separated, e.g. scsi0:1,scsi0:2). Empty value clears the list. vSphere only
+- `--selinux-relabel-at-boot`: Defer SELinux relabeling until first boot for this VM, overrides plan-level setting (true/false/auto)
+- `--selinux-relabel-exclude`: Directories excluded from SELinux relabeling for this VM (comma-separated). Empty value clears the list
 - `--add-pre-hook`: Existing Hook resource name in plan namespace (pre-migration)
 - `--add-post-hook`: Existing Hook resource name in plan namespace (post-migration)
 - `--remove-hook`: Remove a hook from this VM by hook name
@@ -969,10 +1061,21 @@ kubectl mtv patch mapping network --name <mapping-name> [flags]
 kubectl mtv patch mapping storage --name <mapping-name> [flags]
 ```
 
-**Mapping Update Flags:**
-- `--add-pairs`: Add new mapping pairs
-- `--update-pairs`: Update existing mapping pairs
-- `--remove-pairs`: Remove mapping pairs (specify source names)
+**Network Mapping Update Flags:**
+- `--add-pairs`: Add new network mapping pairs
+- `--update-pairs`: Update existing network mapping pairs
+- `--remove-pairs`: Remove network mapping pairs (specify source names)
+
+**Storage Mapping Update Flags:**
+- `--add-pairs`: Add new storage mapping pairs
+- `--update-pairs`: Update existing storage mapping pairs
+- `--remove-pairs`: Remove storage mapping pairs (specify source names)
+- `--default-volume-mode`: Default volume mode for new/updated storage pairs (Filesystem or Block)
+- `--default-access-mode`: Default access mode for new/updated storage pairs (ReadWriteOnce, ReadWriteMany, or ReadOnlyMany)
+- `--default-offload-plugin`: Default offload plugin type for new/updated storage pairs (e.g. vsphere)
+- `--default-offload-secret`: Default offload plugin secret name for new/updated storage pairs
+- `--default-offload-vendor`: Default offload plugin vendor for new/updated storage pairs
+- `--default-offload-migration-hosts`: Default dedicated ESXi host IDs for XCOPY migrations (+-separated, e.g. host-10+host-11)
 
 **Examples:**
 ```bash
@@ -983,6 +1086,12 @@ kubectl mtv patch mapping network --name prod-networks \
 # Update storage mapping pairs
 kubectl mtv patch mapping storage --name enterprise-storage \
   --update-pairs "premium-ds:ultra-fast-ssd;volumeMode=Block"
+
+# Set default storage options for new pairs
+kubectl mtv patch mapping storage --name enterprise-storage \
+  --default-volume-mode Block \
+  --default-access-mode ReadWriteMany \
+  --add-pairs "shared-ds:ceph-rbd"
 ```
 
 #### patch hook --name HOOK_NAME
@@ -1093,6 +1202,7 @@ kubectl mtv mcp-server [flags]
 - `--output-format`: Default output format for commands: markdown, text (table), or json (default: markdown)
 - `--server`: Kubernetes API server URL (passed to kubectl via --server flag)
 - `--token`: Kubernetes authentication token (passed to kubectl via --token flag)
+- `--certificate-authority`: Path to a CA certificate file for Kubernetes API TLS verification
 - `--insecure-skip-tls-verify`: Skip TLS certificate verification for Kubernetes API connections
 - `--max-response-chars`: Max characters for text output (0=unlimited). Helps small LLMs by truncating long responses
 - `--read-only`: Run in read-only mode (disables write operations)

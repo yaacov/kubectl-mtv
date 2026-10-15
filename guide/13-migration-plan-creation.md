@@ -398,6 +398,76 @@ kubectl mtv create plan --name auto-power \
   --vms "where powerState in ['poweredOn', 'suspended']"
 ```
 
+### SELinux Relabeling and Disk Conversion Settings
+
+#### SELinux Relabeling Control
+
+Control how SELinux contexts are relabeled during guest conversion:
+
+```bash
+# Defer SELinux relabeling to first boot (faster conversion, relabel happens on guest)
+kubectl mtv create plan --name deferred-relabel \
+  --source vsphere-prod \
+  --selinux-relabel-at-boot \
+  --vms "rhel-server-01,rhel-server-02"
+
+# Exclude specific directories from relabeling
+kubectl mtv create plan --name selective-relabel \
+  --source vsphere-prod \
+  --selinux-relabel-exclude /data,/opt/app \
+  --vms "app-server-01"
+
+# Combine both options
+kubectl mtv create plan --name custom-relabel \
+  --source vsphere-prod \
+  --selinux-relabel-at-boot \
+  --selinux-relabel-exclude /data \
+  --vms "rhel-server-01"
+```
+
+#### SCSI Reservation for Shared RDM LUN Disks (vSphere)
+
+Enable SCSI persistent reservation when migrating shared RDM LUN disks:
+
+```bash
+# Enable RDM as LUN with SCSI reservation
+kubectl mtv create plan --name shared-lun-migration \
+  --source vsphere-prod \
+  --rdm-as-lun \
+  --scsi-reservation \
+  --vms "cluster-node-01,cluster-node-02"
+```
+
+#### Two-Phase Disk Transfer for Hyper-V
+
+Enable pre-copy source disk conversion for Hyper-V migrations. When enabled, an init container converts VHDX files to raw format via qemu-img before virt-v2v performs in-place guest customization:
+
+```bash
+# Enable two-phase Hyper-V disk transfer
+kubectl mtv create plan --name hyperv-migration \
+  --source hyperv-prod \
+  --pre-copy-source-disks \
+  --vms "hyperv-vm-01,hyperv-vm-02"
+```
+
+#### vSphere Tag Mapping Control
+
+Control how vSphere tags are converted to Kubernetes labels on target VMs:
+
+```bash
+# Disable tag-to-label conversion entirely
+kubectl mtv create plan --name no-tags \
+  --source vsphere-prod \
+  --tag-mapping-disabled \
+  --vms "web-server-01"
+
+# Only convert specific tag categories to labels
+kubectl mtv create plan --name selective-tags \
+  --source vsphere-prod \
+  --tag-mapping-label-tags "Environment,Application" \
+  --vms "app-server-01"
+```
+
 ### Guest OS and Compatibility Settings
 
 #### Guest Conversion Configuration

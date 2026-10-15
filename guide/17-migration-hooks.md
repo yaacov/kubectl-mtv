@@ -493,6 +493,44 @@ kubectl mtv create plan --name vm-specific-hooks \
   --storage-mapping prod-storage-map
 ```
 
+### AAP Job Template Discovery
+
+When creating AAP hooks, use `get inventory job-template` to discover available templates:
+
+```bash
+# List available AAP job templates
+kubectl mtv get inventory job-template
+
+# Filter templates by name
+kubectl mtv get inventory job-template --query "where name ~= 'migration-.*'"
+
+# View as JSON for full details
+kubectl mtv get inventory job-template --output json
+```
+
+### Modifying Existing Hooks
+
+Use `patch hook` to update an existing hook after creation:
+
+```bash
+# Update a local hook's image
+kubectl mtv patch hook --name my-hook --image my-registry/hook:v2
+
+# Update playbook from file
+kubectl mtv patch hook --name my-hook --playbook @updated-playbook.yml
+
+# Switch a local hook to an AAP hook
+kubectl mtv patch hook --name my-hook --aap-job-template-id 42 --image ""
+
+# Switch an AAP hook back to a local hook
+kubectl mtv patch hook --name my-hook --clear-aap --image quay.io/kubev2v/hook-runner
+
+# Update hook deadline
+kubectl mtv patch hook --name my-hook --deadline 600
+```
+
+See [Chapter 26: Command Reference](../26-command-reference) for the full `patch hook` flag list.
+
 ### Hook Management via Plan Patching
 
 Hooks can be added or modified after plan creation using the `patch planvm` command:
