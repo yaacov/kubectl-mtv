@@ -83,6 +83,7 @@ kubectl mtv settings unset --setting controller_max_vm_inflight
 | `feature_windows_registry_network_config` | bool | false | Enable Windows registry-based network configuration |
 | `feature_windows_wait_for_reboot` | bool | false | Wait for Windows VM reboot after migration |
 | `feature_mcp_server` | bool | false | Enable MCP server feature in the operator |
+| `feature_copy_appliance` | bool | false | Enable copy-appliance based disk transfer for vSphere (alternative to VDDK/NBD) |
 
 ### Performance Tuning
 
@@ -93,6 +94,7 @@ kubectl mtv settings unset --setting controller_max_vm_inflight
 | `controller_max_concurrent_reconciles` | int | 10 | Maximum concurrent controller reconciles |
 | `controller_snapshot_removal_timeout_minuts` | int | 120 | Timeout for snapshot removal (minutes) |
 | `controller_filesystem_overhead` | int | 10 | Filesystem overhead percentage |
+| `controller_multus_network_name_always_qualified` | bool | false | Always qualify Multus network names with namespace (namespace/name format) |
 
 ### Container Images
 
@@ -135,6 +137,28 @@ kubectl mtv settings unset --setting controller_max_vm_inflight
 | `aap_ca_secret_name` | string | (empty) | Name of the Secret containing a custom CA for AAP |
 
 See [Chapter 29: AAP Integration](29-aap-integration.md) for full AAP setup and usage documentation.
+
+### Copy Appliance Settings (Extended)
+
+When `feature_copy_appliance` is enabled, additional settings are available via `--all`:
+
+| **Setting** | **Type** | **Default** | **Description** |
+|-------------|----------|-------------|-----------------|
+| `copy_appliance_template_builder_image_fqin` | string | (empty) | Builder image for copy appliance templates |
+| `copy_appliance_template_base_disk_container_image_fqin` | string | (empty) | Base disk container image for copy appliance templates |
+| `copy_appliance_template_cpu` | string | 2 | CPU cores for copy appliance template |
+| `copy_appliance_template_memory_mib` | string | 4096 | Memory in MiB for copy appliance template |
+| `copy_appliance_container_image_fqin` | string | (empty) | Copy appliance container image |
+| `copy_appliance_ssh_user` | string | root | SSH user for copy appliance connections |
+
+```bash
+# View copy-appliance settings
+kubectl mtv settings --all | grep copy_appliance
+
+# Configure copy appliance template resources
+kubectl mtv settings set --setting copy_appliance_template_cpu --value 4
+kubectl mtv settings set --setting copy_appliance_template_memory_mib --value 8192
+```
 
 ## Supported vs Extended Settings
 

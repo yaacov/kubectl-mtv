@@ -660,6 +660,8 @@ Affinity Syntax (KARL):
 	cmd.Flags().StringVar(&enableNestedVirtualization, "enable-nested-virtualization", "auto", "Enable nested virtualization on target VMs (true/false/auto)")
 	cmd.Flags().BoolVar(&planSpec.XfsCompatibility, "xfs-compatibility", false, "Use XFS-compatible virt-v2v image for this plan (disables BTRFS support for this plan)")
 	cmd.Flags().BoolVar(&planSpec.RDMAsLun, "rdm-as-lun", false, "Map VMware RDM disks as LUN devices (SCSI passthrough) in the target VM (vSphere only)")
+	cmd.Flags().BoolVar(&planSpec.SCSIReservation, "scsi-reservation", false, "Enable SCSI persistent reservation for shared RDM LUN disks (requires --rdm-as-lun, vSphere only)")
+	cmd.Flags().BoolVar(&planSpec.PreCopySourceDisks, "pre-copy-source-disks", false, "Enable two-phase disk transfer for Hyper-V: init container converts VHDX to raw via qemu-img, then virt-v2v does in-place guest customization (Hyper-V only)")
 	cmd.Flags().BoolVar(&planSpec.SelinuxRelabelAtBoot, "selinux-relabel-at-boot", false, "Defer SELinux relabeling until the guest's first boot after conversion (virt-v2v --selinux-relabel-at-boot)")
 	cmd.Flags().StringSliceVar(&planSpec.SelinuxRelabelExclude, "selinux-relabel-exclude", nil, "Guest directories excluded from SELinux relabeling during conversion (virt-v2v --selinux-relabel-exclude, repeatable)")
 	cmd.Flags().StringVar(&planSpec.ServiceAccount, "service-account", "", "DNS-1123 subdomain name of ServiceAccount for migration pods in target namespace (overrides global setting)")

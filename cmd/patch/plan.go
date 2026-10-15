@@ -39,6 +39,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var virtV2vImage string
 	var xfsCompatibility bool
 	var rdmAsLun bool
+	var scsiReservation bool
+	var preCopySourceDisks bool
 	var selinuxRelabelAtBoot bool
 	var selinuxRelabelExclude []string
 	var serviceAccount string
@@ -53,6 +55,8 @@ func NewPlanCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command {
 	var installLegacyDriversChanged bool
 	var enableNestedVirtualizationChanged bool
 	var rdmAsLunChanged bool
+	var scsiReservationChanged bool
+	var preCopySourceDisksChanged bool
 	var selinuxRelabelAtBootChanged bool
 	var selinuxRelabelExcludeChanged bool
 	var serviceAccountChanged bool
@@ -160,6 +164,8 @@ Affinity Syntax (KARL):
 			installLegacyDriversChanged = cmd.Flags().Changed("install-legacy-drivers")
 			enableNestedVirtualizationChanged = cmd.Flags().Changed("enable-nested-virtualization")
 			rdmAsLunChanged = cmd.Flags().Changed("rdm-as-lun")
+			scsiReservationChanged = cmd.Flags().Changed("scsi-reservation")
+			preCopySourceDisksChanged = cmd.Flags().Changed("pre-copy-source-disks")
 			selinuxRelabelAtBootChanged = cmd.Flags().Changed("selinux-relabel-at-boot")
 			selinuxRelabelExcludeChanged = cmd.Flags().Changed("selinux-relabel-exclude")
 			serviceAccountChanged = cmd.Flags().Changed("service-account")
@@ -212,6 +218,8 @@ Affinity Syntax (KARL):
 				Warm:                           warm,
 				RunPreflightInspection:         runPreflightInspection,
 				RDMAsLun:                       rdmAsLun,
+				SCSIReservation:                scsiReservation,
+				PreCopySourceDisks:             preCopySourceDisks,
 				SelinuxRelabelAtBoot:           selinuxRelabelAtBoot,
 				SelinuxRelabelExclude:          selinuxRelabelExclude,
 				ServiceAccount:                 serviceAccount,
@@ -235,6 +243,8 @@ Affinity Syntax (KARL):
 				InstallLegacyDriversChanged:           installLegacyDriversChanged,
 				EnableNestedVirtualizationChanged:     enableNestedVirtualizationChanged,
 				RDMAsLunChanged:                       rdmAsLunChanged,
+				SCSIReservationChanged:                scsiReservationChanged,
+				PreCopySourceDisksChanged:             preCopySourceDisksChanged,
 				SelinuxRelabelAtBootChanged:           selinuxRelabelAtBootChanged,
 				SelinuxRelabelExcludeChanged:          selinuxRelabelExcludeChanged,
 				ServiceAccountChanged:                 serviceAccountChanged,
@@ -286,6 +296,8 @@ Affinity Syntax (KARL):
 	flags.ExplicitBoolVar(cmd.Flags(), &warm, "warm", false, "Enable warm migration (use --migration-type=warm instead) (true/false)")
 	flags.ExplicitBoolVar(cmd.Flags(), &runPreflightInspection, "run-preflight-inspection", true, "Run preflight on VM base disks before disk transfer (warm vSphere only; default true) (true/false)")
 	flags.ExplicitBoolVar(cmd.Flags(), &rdmAsLun, "rdm-as-lun", false, "Map VMware RDM disks as LUN devices (SCSI passthrough) in the target VM (vSphere only) (true/false)")
+	flags.ExplicitBoolVar(cmd.Flags(), &scsiReservation, "scsi-reservation", false, "Enable SCSI persistent reservation for shared RDM LUN disks (requires --rdm-as-lun, vSphere only) (true/false)")
+	flags.ExplicitBoolVar(cmd.Flags(), &preCopySourceDisks, "pre-copy-source-disks", false, "Enable two-phase disk transfer for Hyper-V (Hyper-V only) (true/false)")
 	flags.ExplicitBoolVar(cmd.Flags(), &selinuxRelabelAtBoot, "selinux-relabel-at-boot", false, "Defer SELinux relabeling until the guest's first boot after conversion (true/false)")
 	cmd.Flags().StringSliceVar(&selinuxRelabelExclude, "selinux-relabel-exclude", nil, "Guest directories excluded from SELinux relabeling during conversion (repeatable)")
 	cmd.Flags().StringVar(&serviceAccount, "service-account", "", "DNS-1123 subdomain name of ServiceAccount for migration pods in target namespace (overrides global setting)")
@@ -369,6 +381,8 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	var migrateSharedDisksChanged bool
 	var rdmAsLunVM string
 	var rdmAsLunVMChanged bool
+	var scsiReservationVM string
+	var scsiReservationVMChanged bool
 	var excludeDisks string
 	var excludeDisksChanged bool
 	var selinuxRelabelAtBootVM string
@@ -423,6 +437,7 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 			enableNestedVirtualizationChanged = cmd.Flags().Changed("enable-nested-virtualization")
 			migrateSharedDisksChanged = cmd.Flags().Changed("migrate-shared-disks")
 			rdmAsLunVMChanged = cmd.Flags().Changed("rdm-as-lun")
+			scsiReservationVMChanged = cmd.Flags().Changed("scsi-reservation")
 			excludeDisksChanged = cmd.Flags().Changed("exclude-disks")
 			selinuxRelabelAtBootVMChanged = cmd.Flags().Changed("selinux-relabel-at-boot")
 			selinuxRelabelExcludeVMChanged = cmd.Flags().Changed("selinux-relabel-exclude")
@@ -432,6 +447,7 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 				addPreHook, addPostHook, removeHook, clearHooks, deleteVmOnFailMigration, deleteVmOnFailMigrationChanged,
 				nbdeClevis, nbdeClevisChanged, enableNestedVirtualization, enableNestedVirtualizationChanged,
 				migrateSharedDisks, migrateSharedDisksChanged, rdmAsLunVM, rdmAsLunVMChanged,
+				scsiReservationVM, scsiReservationVMChanged,
 				excludeDisks, excludeDisksChanged,
 				selinuxRelabelAtBootVM, selinuxRelabelAtBootVMChanged,
 				selinuxRelabelExcludeVM, selinuxRelabelExcludeVMChanged)
@@ -465,6 +481,7 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	cmd.Flags().StringVar(&enableNestedVirtualization, "enable-nested-virtualization", "", "Enable nested virtualization for this VM (true/false/auto; auto clears VM override)")
 	cmd.Flags().StringVar(&migrateSharedDisks, "migrate-shared-disks", "", "Migrate shared disks for this VM (true/false/auto; auto clears VM override to inherit plan setting)")
 	cmd.Flags().StringVar(&rdmAsLunVM, "rdm-as-lun", "", "Map VMware RDM disks as LUN devices for this VM, overrides plan-level setting (vSphere only, true/false/auto)")
+	cmd.Flags().StringVar(&scsiReservationVM, "scsi-reservation", "", "Enable SCSI persistent reservation for shared RDM LUN disks for this VM, overrides plan-level setting (vSphere only, true/false/auto)")
 	cmd.Flags().StringVar(&excludeDisks, "exclude-disks", "", "vSphere bus addresses to skip during migration (comma-separated, e.g. scsi0:1,scsi0:2). Empty value clears the list. vSphere only.")
 	cmd.Flags().StringVar(&selinuxRelabelAtBootVM, "selinux-relabel-at-boot", "", "Defer SELinux relabeling until first boot for this VM, overrides plan-level setting (true/false/auto)")
 	cmd.Flags().StringVar(&selinuxRelabelExcludeVM, "selinux-relabel-exclude", "", "Directories excluded from SELinux relabeling for this VM (comma-separated). Empty value clears the list.")
@@ -502,6 +519,12 @@ func NewPlanVMCmd(kubeConfigFlags *genericclioptions.ConfigFlags) *cobra.Command
 	}
 
 	if err := cmd.RegisterFlagCompletionFunc("rdm-as-lun", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return []string{"true", "false", "auto"}, cobra.ShellCompDirectiveNoFileComp
+	}); err != nil {
+		panic(err)
+	}
+
+	if err := cmd.RegisterFlagCompletionFunc("scsi-reservation", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return []string{"true", "false", "auto"}, cobra.ShellCompDirectiveNoFileComp
 	}); err != nil {
 		panic(err)

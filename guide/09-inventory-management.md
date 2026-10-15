@@ -86,6 +86,25 @@ kubectl-mtv provides access to a comprehensive inventory of resources across dif
 
 Types unique to one provider use a provider prefix (`ec2-instance`, `nutanix-image`, `vsphere-custom-field-def`). Shared types keep a generic name (`vm`, `cluster`, `network`).
 
+### AAP (Ansible Automation Platform) Resources
+
+| Resource | Aliases | Description |
+|----------|---------|-------------|
+| `job-template` | `job-templates`, `jobtemplates` | AAP job templates for hook automation |
+
+AAP job templates are queried from the inventory service (not from a specific provider). Requires AAP to be configured on the ForkliftController (`aap_url` and `aap_token_secret_name` settings).
+
+```bash
+# List all AAP job templates
+kubectl mtv get inventory job-template
+
+# Filter by name
+kubectl mtv get inventory job-template --query "where name ~= 'migration-.*'"
+
+# Output as JSON
+kubectl mtv get inventory job-template --output json
+```
+
 ### Provider Resources
 
 | Resource | Aliases | Description |
