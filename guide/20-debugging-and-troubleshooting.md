@@ -123,13 +123,13 @@ kubectl mtv get providers  # Will use enhanced verbosity
 #### Go Version Compatibility
 
 ```bash
-# Check Go version (requires 1.24+)
+# Check Go version (requires 1.26+)
 go version
 
 # Error: Go version too old
 # Solution: Upgrade Go
-curl -OL https://golang.org/dl/go1.24.0.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.24.0.linux-amd64.tar.gz
+curl -OL https://golang.org/dl/go1.26.0.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.26.0.linux-amd64.tar.gz
 export PATH=/usr/local/go/bin:$PATH
 ```
 
@@ -441,6 +441,24 @@ kubectl get secret ovirt-provider-secret -o yaml | grep ca.crt | base64 -d
 ## Monitoring Techniques
 
 ### Describing Resources
+
+#### Plan Diagnostics
+
+The `describe plan` command supports a `--diagnostics` flag that collects pod logs, events, and configuration context for a migration plan. This is the fastest way to get a comprehensive picture of a failing migration:
+
+```bash
+# Run diagnostics on a plan (scans 500 log lines, shows 10 per pod by default)
+kubectl mtv describe plan --name problem-plan --diagnostics
+
+# Scan more log lines for hard-to-find errors
+kubectl mtv describe plan --name problem-plan --diagnostics --scan-log-lines 2000
+
+# Show more log context in the output
+kubectl mtv describe plan --name problem-plan --diagnostics --show-log-lines 50
+
+# Combine with verbose mode for maximum detail
+kubectl mtv describe plan --name problem-plan --diagnostics --scan-log-lines 5000 --show-log-lines 100 -v=2
+```
 
 #### Comprehensive Resource Description
 

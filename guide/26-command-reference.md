@@ -340,6 +340,9 @@ kubectl mtv describe plan --name <plan-name> [flags]
 - `--with-vms`: Include list of VMs in the plan specification
 - `--vm`: VM name to describe (switches to VM description mode)
 - `--watch, -w`: Watch VM status with live updates (only when --vm is used)
+- `--diagnostics, -D`: Include diagnostics (pod logs, events, configuration context)
+- `--scan-log-lines`: Number of log lines to scan for diagnostics (default: 500, max: 10000)
+- `--show-log-lines`: Number of log lines to display in diagnostics output (default: 10, max: 500)
 - `--output, -o`: Output format (table, json, yaml, markdown)
 
 #### describe provider --name PROVIDER_NAME

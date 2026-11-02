@@ -122,7 +122,8 @@ All MCP server flags are verified from the implementation:
 | `--port` | string | `8080` | Port to listen on for HTTP mode |
 | `--cert-file` | string | `""` | Path to TLS certificate file (enables TLS when used with --key-file) |
 | `--key-file` | string | `""` | Path to TLS private key file (enables TLS when used with --cert-file) |
-| `--output-format` | string | `text` | Default output format for commands: `text` (table) or `json` |
+| `--output-format` | string | `markdown` | Default output format for commands: `markdown`, `text` (table), or `json` |
+| `--read-only` | boolean | `false` | Run in read-only mode (disables write operations) |
 | `--server` | string | `""` | Kubernetes API server URL (passed to kubectl via --server flag) |
 | `--token` | string | `""` | Kubernetes authentication token (passed to kubectl via --token flag) |
 | `--certificate-authority` | string | `""` | Path to a CA certificate file for Kubernetes API TLS verification |

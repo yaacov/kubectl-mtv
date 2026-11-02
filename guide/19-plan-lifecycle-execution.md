@@ -167,6 +167,24 @@ kubectl mtv cutover plans --name web-warm,db-warm,cache-warm \
   --cutover "2024-01-15T02:30:00Z"
 ```
 
+#### Per-VM Cutover
+
+You can trigger cutover for individual VMs within a warm migration plan using the `--vm` flag. This is useful when different VMs in the same plan have different maintenance windows or readiness states:
+
+```bash
+# Cutover a single VM immediately
+kubectl mtv cutover plan --name warm-production --vm web-server-01
+
+# Cutover a single VM at a scheduled time
+kubectl mtv cutover plan --name warm-production \
+  --vm database-server-01 \
+  --cutover "2024-01-15T04:00:00Z"
+
+# Cutover multiple VMs (comma-separated)
+kubectl mtv cutover plan --name warm-production \
+  --vm "web-server-01,web-server-02"
+```
+
 #### Cutover Management Scenarios
 
 ```bash

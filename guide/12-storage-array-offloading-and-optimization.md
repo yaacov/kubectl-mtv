@@ -27,7 +27,11 @@ Storage array offloading is an advanced migration optimization technique that de
 
 ### How It Works
 
-Storage array offloading operates through the **vSphere XCopy Volume Populator**, which integrates with VMware's vSphere and compatible storage arrays:
+Two offload plugin types are available:
+
+### vsphere (XCOPY) Plugin
+
+The `vsphere` plugin operates through the **vSphere XCopy Volume Populator**, which integrates with VMware's vSphere and compatible storage arrays:
 
 1. **Feature Flag Activation**: The Forklift controller must have the `feature_copy_offload` flag enabled
 2. **Storage Map Consultation**: The controller consults the StorageMap's offload plugin configuration to determine if VM disks can be offloaded
@@ -36,6 +40,26 @@ Storage array offloading operates through the **vSphere XCopy Volume Populator**
 5. **XCOPY Execution**: The populator uses the storage API to map the PVC to an ESXi host, then uses vSphere API to invoke vmkfstools XCOPY operations
 6. **VAAI Integration**: Requires vSphere APIs for Array Integration (VAAI) and storage acceleration to be enabled on the ESXi host
 7. **Fallback Handling**: Non-compatible volumes automatically fall back to standard virt-v2v processing
+
+### csiVolumeImport Plugin
+
+The `csiVolumeImport` plugin uses the CSI driver's native import capability to migrate VVol/RDM disks:
+
+1. **Feature Flag Activation**: The Forklift controller must have the `feature_copy_offload` flag enabled
+2. **Storage Map Consultation**: The controller checks the offload plugin configuration
+3. **PVC with Import Annotations**: The controller creates a PVC with CSI import annotations per disk
+4. **CSI Driver Cloning**: The CSI driver clones the source array volume directly -- no populator pod or service account is launched
+
+**Supported vendors for `csiVolumeImport`**: `primera3par` (HPE Primera/3PAR) and `ontap` (NetApp ONTAP).
+
+```bash
+# Example: CSI volume import with HPE Primera
+kubectl mtv create mapping storage --name csi-offload \
+  --source vsphere-prod \
+  --target openshift-target \
+  --storage-pairs "hpe-ds:hpe-sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par" \
+  --default-offload-secret hpe-creds
+```
 
 ## Supported Storage Vendors and Arrays
 

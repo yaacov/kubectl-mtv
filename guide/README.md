@@ -67,6 +67,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
         *   EC2 Provider (AWS region, target region/AZ).
         *   Azure Provider (Service Principal, Resource Group, Snapshot settings).
         *   HyperV Provider (SMB share).
+        *   Nutanix Provider (Prism Central or Element).
         *   OpenShift/Kubernetes (Target) Provider.
     *   **How-To: Patching Providers** (Updating settings securely).
         *   Updating URL, Credentials, and CA Certificates.

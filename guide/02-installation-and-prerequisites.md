@@ -25,7 +25,7 @@ Before installing `kubectl-mtv`, ensure your environment meets the following req
 
 If building from source, you'll need:
 
-- **Go**: Version 1.24 or higher (current requirement based on go.mod)
+- **Go**: Version 1.26 or higher (current requirement based on go.mod)
 - **Git**: For cloning the repository
 - **Make**: For using the build system
 
@@ -118,9 +118,9 @@ For development, customization, or platforms without pre-built binaries.
 
 **On Ubuntu/Debian:**
 ```bash
-# Install Go 1.24+
-wget https://go.dev/dl/go1.24.7.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.24.7.linux-amd64.tar.gz
+# Install Go 1.26+
+wget https://go.dev/dl/go1.26.0.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.26.0.linux-amd64.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 
 # Install build tools
@@ -134,7 +134,7 @@ sudo apt-get install git make
 sudo dnf install golang git make
 
 # Verify Go version
-go version  # Should be 1.24+
+go version  # Should be 1.26+
 ```
 
 **On macOS:**
@@ -143,7 +143,7 @@ go version  # Should be 1.24+
 brew install go git
 
 # Verify Go version
-go version  # Should be 1.24+
+go version  # Should be 1.26+
 ```
 
 #### Step 2: Build the Binary
