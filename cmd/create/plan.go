@@ -620,7 +620,7 @@ Affinity Syntax (KARL):
 	cmd.Flags().StringVar(&planSpec.TargetNamespace, "target-namespace", "", "Target namespace (defaults to plan namespace)")
 	cmd.Flags().StringVar(&transferNetwork, "transfer-network", "", "NAD (NetworkAttachmentDefinition) for disk transfer; namespace/name or name in plan namespace")
 	cmd.Flags().BoolVar(&planSpec.PreserveClusterCPUModel, "preserve-cluster-cpu-model", false, "Preserve the CPU model and flags the VM runs with in its oVirt/RHV cluster (oVirt/RHV only)")
-	flags.ExplicitBoolVar(cmd.Flags(), &planSpec.PreserveStaticIPs, "preserve-static-ips", true, "Preserve static IP configurations during migration (vSphere/Hyper-V only; default true) (true/false)")
+	flags.ExplicitBoolVar(cmd.Flags(), &planSpec.PreserveStaticIPs, "preserve-static-ips", true, "Preserve static IP configurations during migration (vSphere/Hyper-V/oVirt/Nutanix; default true) (true/false)")
 	cmd.Flags().StringVar(&planSpec.PVCNameTemplate, "pvc-name-template", "", "Go template for PVC names (keep rendered name ≤40 chars). Variables: {{.VmName}}, {{.PlanName}}, {{.DiskIndex}}, {{.WinDriveLetter}}, {{.RootDiskIndex}}, {{.Shared}}, {{.FileName}}")
 	cmd.Flags().StringVar(&planSpec.VolumeNameTemplate, "volume-name-template", "", "Go template for volume interface names (vSphere only). Variables: {{.PVCName}}, {{.VolumeIndex}}")
 	cmd.Flags().StringVar(&planSpec.NetworkNameTemplate, "network-name-template", "", "Go template for network interface names (vSphere only). Variables: {{.NetworkName}}, {{.NetworkNamespace}}, {{.NetworkType}}, {{.NetworkIndex}}")
