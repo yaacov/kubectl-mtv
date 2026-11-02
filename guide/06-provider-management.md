@@ -12,7 +12,7 @@ For detailed information about provider prerequisites and requirements, see the 
 ## Overview of Providers
 
 Providers define the connection and authentication details for virtualization platforms. Each migration requires:
-- **Source Provider**: Your current virtualization platform (vSphere, oVirt, OpenStack, EC2, Azure, KubeVirt, OVA, or HyperV)
+- **Source Provider**: Your current virtualization platform (vSphere, oVirt, OpenStack, EC2, Azure, Nutanix, KubeVirt, OVA, or HyperV)
 - **Target Provider**: Your destination KubeVirt cluster (typically OpenShift/Kubernetes)
 
 ### Supported Provider Types
@@ -28,6 +28,7 @@ kubectl-mtv supports the following provider types:
 | `ec2` | Amazon EC2 | Source provider for AWS environments |
 | `azure` | Microsoft Azure | Source provider for Azure VM environments |
 | `hyperv` | Microsoft Hyper-V | Source provider for Hyper-V environments |
+| `nutanix` | Nutanix Prism | Source provider for Nutanix environments |
 | `ova` | OVA/OVF files | Source provider for VM image files |
 
 ## Listing, Describing, and Deleting Providers
@@ -425,6 +426,14 @@ kubectl mtv create provider --name my-hyperv --type hyperv \
   --cacert "-----BEGIN CERTIFICATE-----
 MIIGBzCCA++gAwIBAgIJAKt...
 -----END CERTIFICATE-----"
+
+# HyperV provider for a failover cluster
+kubectl mtv create provider --name my-hyperv-cluster --type hyperv \
+  --url https://192.168.1.100 \
+  --username Administrator \
+  --password YourSecurePassword \
+  --smb-url '//192.168.1.100/VMShare' \
+  --hyperv-management-type cluster
 ```
 
 **HyperV Provider Settings**:
@@ -432,6 +441,48 @@ MIIGBzCCA++gAwIBAgIJAKt...
 - `--smb-url`: Required SMB share path for VM disk access (e.g., `//server/share`)
 - `--smb-user`: Optional separate SMB username (defaults to HyperV username)
 - `--smb-password`: Optional separate SMB password (defaults to HyperV password)
+- `--hyperv-management-type`: Hyper-V management type (`standalone` or `cluster`)
+
+### Nutanix Provider
+
+Create providers for Nutanix environments. Nutanix providers support both Prism Central and Prism Element endpoints.
+
+```bash
+# Nutanix provider with Prism Central
+kubectl mtv create provider --name nutanix-prod --type nutanix \
+  --url https://prism-central.example.com:9440 \
+  --username admin \
+  --password YourSecurePassword \
+  --nutanix-prism-type central \
+  --nutanix-cluster-uuid 00000000-0000-0000-0000-000000000000
+
+# Nutanix provider with Prism Element
+kubectl mtv create provider --name nutanix-element --type nutanix \
+  --url https://prism-element.example.com:9440 \
+  --username admin \
+  --password YourSecurePassword \
+  --nutanix-prism-type element
+
+# Nutanix provider with CA certificate
+kubectl mtv create provider --name nutanix-prod --type nutanix \
+  --url https://prism-central.example.com:9440 \
+  --username admin \
+  --password YourSecurePassword \
+  --nutanix-prism-type central \
+  --nutanix-cluster-uuid 00000000-0000-0000-0000-000000000000 \
+  --cacert @/path/to/nutanix-ca.pem
+
+# Nutanix provider with existing secret
+kubectl mtv create provider --name nutanix-prod --type nutanix \
+  --url https://prism-central.example.com:9440 \
+  --secret nutanix-credentials-secret \
+  --nutanix-prism-type central \
+  --nutanix-cluster-uuid 00000000-0000-0000-0000-000000000000
+```
+
+**Nutanix Provider Settings**:
+- `--nutanix-prism-type`: Prism endpoint type (`central` or `element`)
+- `--nutanix-cluster-uuid`: Nutanix cluster UUID (used with Prism Central to scope inventory to a specific cluster)
 
 ### Using Environment Variables
 

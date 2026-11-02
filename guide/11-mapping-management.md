@@ -173,8 +173,15 @@ kubectl mtv create mapping storage --name NAME \
 Storage pairs support enhanced options verified from the command code:
 
 ```
-'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere][;offloadSecret=secret-name][;offloadVendor=vendor-name]'
+'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vendor-name]'
 ```
+
+##### Offload Plugin Types
+
+| Plugin | Description | Supported Vendors |
+|--------|-------------|-------------------|
+| `vsphere` | Uses VAAI/XCOPY via a VolumePopulator pod to clone disks directly on the storage array | All supported vendors |
+| `csiVolumeImport` | Uses the CSI driver's native import capability to migrate VVol/RDM disks. No populator pod is launched -- the controller creates a PVC with import annotations and the CSI driver clones the source volume | `primera3par`, `ontap` |
 
 #### Enhanced Storage Options
 
@@ -254,6 +261,18 @@ kubectl mtv create mapping storage --name ontap-offload \
   --offload-storage-username ontap-admin \
   --offload-storage-password NetAppPassword123 \
   --offload-storage-endpoint https://netapp-cluster.company.com
+```
+
+##### CSI Volume Import Offloading (HPE Primera/3PAR)
+
+For environments using HPE Primera or 3PAR with a compatible CSI driver, you can use the `csiVolumeImport` plugin instead of the `vsphere` XCOPY populator. This approach does not launch a populator pod -- the CSI driver handles the volume clone directly:
+
+```bash
+# CSI volume import offloading with HPE Primera
+kubectl mtv create mapping storage --name csi-import-primera \
+  --source vsphere-prod \
+  --target openshift-target \
+  --storage-pairs "hpe-datastore:hpe-sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par;offloadSecret=hpe-creds"
 ```
 
 ##### Default Options for Multiple Storage Classes

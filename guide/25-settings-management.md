@@ -63,7 +63,7 @@ kubectl mtv settings unset --setting controller_max_vm_inflight
 
 | **Flag** | **Short** | **Default** | **Description** |
 |----------|-----------|-------------|-----------------|
-| `--output` | `-o` | `table` | Output format: `table`, `json`, `yaml` |
+| `--output` | `-o` | `table` | Output format: `table`, `json`, `yaml`, `markdown` |
 | `--all` | | `false` | Include all settings (supported + extended) |
 
 ## Commonly Used Settings
@@ -76,7 +76,6 @@ kubectl mtv settings unset --setting controller_max_vm_inflight
 | `controller_ovirt_warm_migration` | bool | true | Enable warm migration from oVirt |
 | `feature_copy_offload` | bool | true | Enable storage array offload (XCOPY) |
 | `feature_ocp_live_migration` | bool | false | Enable cross-cluster OpenShift live migration |
-| `feature_vmware_system_serial_number` | bool | true | Use VMware system serial number for migrated VMs |
 | `feature_ova_appliance_management` | bool | false | Enable appliance management for OVF-based providers |
 | `feature_vsphere_vmware_driver_removal` | bool | false | Enable VMware driver removal during vSphere migrations |
 | `controller_static_udn_ip_addresses` | bool | true | Assign static IPs to the default pod network interface in UDN-enabled namespaces (OCP 4.20+) |
@@ -137,6 +136,19 @@ kubectl mtv settings unset --setting controller_max_vm_inflight
 | `aap_ca_secret_name` | string | (empty) | Name of the Secret containing a custom CA for AAP |
 
 See [Chapter 29: AAP Integration](29-aap-integration.md) for full AAP setup and usage documentation.
+
+### Extended Feature Flags
+
+The following feature flags are only visible with `--all`:
+
+| **Setting** | **Type** | **Default** | **Description** |
+|-------------|----------|-------------|-----------------|
+| `feature_vmware_system_serial_number` | bool | true | Use VMware system serial number for migrated VMs |
+
+```bash
+# View extended feature flags
+kubectl mtv settings --all | grep feature_vmware
+```
 
 ### Copy Appliance Settings (Extended)
 

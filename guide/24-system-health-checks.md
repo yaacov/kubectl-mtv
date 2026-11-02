@@ -47,7 +47,7 @@ kubectl mtv health --output yaml
 
 | **Flag** | **Short** | **Default** | **Description** |
 |----------|-----------|-------------|-----------------|
-| `--output` | `-o` | `table` | Output format: `table`, `json`, `yaml` |
+| `--output` | `-o` | `table` | Output format: `table`, `json`, `yaml`, `markdown` |
 | `--skip-logs` | | `false` | Skip pod log analysis (faster execution) |
 | `--log-lines` | | `100` | Number of log lines per pod to analyze |
 | `--namespace` | `-n` | | Scope providers and plans to a namespace |

@@ -350,7 +350,7 @@ kubectl mtv get plan --name vendor-conversion-example --watch
 ```bash
 kubectl mtv create plan --name advanced-conversion-plan \
   --source vsphere-production \
-  --destination openshift-target \
+  --target openshift-target \
   --migration-type conversion \
   --description "Conversion migration with vendor-provided storage" \
   --target-namespace migrated-workloads \
