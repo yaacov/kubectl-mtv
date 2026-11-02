@@ -259,7 +259,7 @@
         {
           "name": "playbook",
           "type": "string",
-          "description": "Ansible playbook content, or use @filename to read from file (optional)",
+          "description": "Ansible playbook as plain YAML or @file (stored base64 in CR; optional for local hooks)",
           "required": false
         },
         {
@@ -412,7 +412,7 @@
           "name": "target",
           "shorthand": "T",
           "type": "string",
-          "description": "Target provider name",
+          "description": "OpenShift target provider name",
           "required": false
         }
       ],
@@ -561,14 +561,14 @@
         {
           "name": "storage-pairs",
           "type": "string",
-          "description": "Storage mapping pairs in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)",
+          "description": "Storage mapping pairs in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only",
           "required": false
         },
         {
           "name": "target",
           "shorthand": "T",
           "type": "string",
-          "description": "Target provider name",
+          "description": "OpenShift target provider name",
           "required": false
         }
       ],
@@ -649,7 +649,7 @@
         {
           "name": "customization-scripts",
           "type": "string",
-          "description": "ConfigMap containing customization scripts for guest conversion. Supports 'namespace/name' or 'name'",
+          "description": "ConfigMap (namespace/name or name); script keys: N_win_firstboot_*.ps1, N_linux_run_*.sh, N_linux_firstboot_*.sh",
           "required": false
         },
         {
@@ -778,7 +778,7 @@
         {
           "name": "network-name-template",
           "type": "string",
-          "description": "Template for generating network interface names in the target VM. Variables: {{.NetworkName}}, {{.NetworkNamespace}}, {{.NetworkType}}, {{.NetworkIndex}}",
+          "description": "Go template for network interface names (vSphere only). Variables: {{.NetworkName}}, {{.NetworkNamespace}}, {{.NetworkType}}, {{.NetworkIndex}}",
           "required": false
         },
         {
@@ -846,33 +846,40 @@
         {
           "name": "post-hook",
           "type": "string",
-          "description": "Post-migration hook to add to all VMs in the plan",
+          "description": "Existing Hook resource name in plan namespace to run after migration on all VMs",
+          "required": false
+        },
+        {
+          "name": "pre-copy-source-disks",
+          "type": "bool",
+          "default": false,
+          "description": "Enable two-phase disk transfer for Hyper-V: init container converts VHDX to raw via qemu-img, then virt-v2v does in-place guest customization (Hyper-V only)",
           "required": false
         },
         {
           "name": "pre-hook",
           "type": "string",
-          "description": "Pre-migration hook to add to all VMs in the plan",
+          "description": "Existing Hook resource name in plan namespace to run before migration on all VMs",
           "required": false
         },
         {
           "name": "preserve-cluster-cpu-model",
           "type": "bool",
           "default": false,
-          "description": "Preserve the CPU model and flags the VM runs with in its cluster",
+          "description": "Preserve the CPU model and flags the VM runs with in its oVirt/RHV cluster (oVirt/RHV only)",
           "required": false
         },
         {
           "name": "preserve-static-ips",
           "type": "bool",
           "default": true,
-          "description": "Preserve static IP configurations during migration (true/false)",
+          "description": "Preserve static IP configurations during migration (vSphere/Hyper-V/oVirt/Nutanix; default true) (true/false)",
           "required": false
         },
         {
           "name": "pvc-name-template",
           "type": "string",
-          "description": "Template for generating PVC names. Variables: {{.VmName}}, {{.PlanName}}, {{.DiskIndex}}, {{.WinDriveLetter}}, {{.RootDiskIndex}}, {{.Shared}}, {{.FileName}}",
+          "description": "Go template for PVC names (keep rendered name ≤40 chars). Variables: {{.VmName}}, {{.PlanName}}, {{.DiskIndex}}, {{.WinDriveLetter}}, {{.RootDiskIndex}}, {{.Shared}}, {{.FileName}}",
           "required": false
         },
         {
@@ -893,13 +900,34 @@
           "name": "run-preflight-inspection",
           "type": "bool",
           "default": true,
-          "description": "Run preflight inspection on VM base disks before starting disk transfer (true/false)",
+          "description": "Run preflight on VM base disks before disk transfer (warm vSphere only; default true) (true/false)",
+          "required": false
+        },
+        {
+          "name": "scsi-reservation",
+          "type": "bool",
+          "default": false,
+          "description": "Enable SCSI persistent reservation for shared RDM LUN disks (requires --rdm-as-lun, vSphere only)",
+          "required": false
+        },
+        {
+          "name": "selinux-relabel-at-boot",
+          "type": "bool",
+          "default": false,
+          "description": "Defer SELinux relabeling until the guest's first boot after conversion (virt-v2v --selinux-relabel-at-boot)",
+          "required": false
+        },
+        {
+          "name": "selinux-relabel-exclude",
+          "type": "stringSlice",
+          "default": [],
+          "description": "Guest directories excluded from SELinux relabeling during conversion (virt-v2v --selinux-relabel-exclude, repeatable)",
           "required": false
         },
         {
           "name": "service-account",
           "type": "string",
-          "description": "ServiceAccount for migration pods in the target namespace (overrides global setting)",
+          "description": "DNS-1123 subdomain name of ServiceAccount for migration pods in target namespace (overrides global setting)",
           "required": false
         },
         {
@@ -932,7 +960,7 @@
         {
           "name": "storage-pairs",
           "type": "string",
-          "description": "Inline storage mapping pairs (auto-generated when omitted). Format: 'source:storage-class[;param=value]' (comma-separated)",
+          "description": "Inline storage mapping pairs (auto-generated when omitted). Format: 'source:storage-class[;param=value]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only",
           "required": false
         },
         {
@@ -992,7 +1020,7 @@
         {
           "name": "transfer-network",
           "type": "string",
-          "description": "Network attachment definition for disk transfer. Supports 'namespace/network-name' or 'network-name'",
+          "description": "NAD (NetworkAttachmentDefinition) for disk transfer; namespace/name or name in plan namespace",
           "required": false
         },
         {
@@ -1017,7 +1045,7 @@
         {
           "name": "volume-name-template",
           "type": "string",
-          "description": "Template for generating volume interface names in the target VM. Variables: {{.PVCName}}, {{.VolumeIndex}}",
+          "description": "Go template for volume interface names (vSphere only). Variables: {{.PVCName}}, {{.VolumeIndex}}",
           "required": false
         },
         {
@@ -1031,7 +1059,7 @@
           "name": "xfs-compatibility",
           "type": "bool",
           "default": false,
-          "description": "Use XFS-compatible virt-v2v image for this plan",
+          "description": "Use XFS-compatible virt-v2v image for this plan (disables BTRFS support for this plan)",
           "required": false
         }
       ],
@@ -1069,8 +1097,24 @@
           "command": "kubectl-mtv create plan --name explicit-defaults --source vsphere-prod --vms \"where name ~= 'test-.*'\" --default-target-network default --default-target-storage-class standard"
         },
         {
+          "description": "Warm migration: disable VMware preflight inspection (warm vSphere only)",
+          "command": "kubectl-mtv create plan --name warm-no-preflight --source vsphere-prod --vms \"critical-vm\" --migration-type warm --run-preflight-inspection false"
+        },
+        {
+          "description": "Conversion-only plan (no storage mapping; guest conversion without disk import)",
+          "command": "kubectl-mtv create plan --name convert-only --source vsphere-prod --vms \"legacy-vm\" --migration-type conversion"
+        },
+        {
+          "description": "Guest conversion with virt-customize scripts ConfigMap",
+          "command": "kubectl-mtv create plan --name with-scripts --source vsphere-prod --vms \"app-vm\" --customization-scripts my-scripts"
+        },
+        {
+          "description": "vSphere-only volume interface naming template",
+          "command": "kubectl-mtv create plan --name vol-names --source vsphere-prod --vms \"db-vm\" --volume-name-template \"disk-{{.VolumeIndex}}\""
+        },
+        {
           "description": "Disable default-true boolean flags with explicit false",
-          "command": "kubectl-mtv create plan --name no-preflight --source vsphere-prod --vms \"quick-vm\" --run-preflight-inspection false --preserve-static-ips false"
+          "command": "kubectl-mtv create plan --name no-static-ips --source vsphere-prod --vms \"quick-vm\" --preserve-static-ips false"
         }
       ],
       "runnable": true
@@ -1183,7 +1227,7 @@
         {
           "name": "hyperv-management-type",
           "type": "string",
-          "description": "HyperV management type (e.g., cluster)",
+          "description": "Hyper-V management type (standalone|cluster)",
           "required": false
         },
         {
@@ -1337,7 +1381,7 @@
           "name": "url",
           "shorthand": "U",
           "type": "string",
-          "description": "Provider URL",
+          "description": "Provider URL (omit for local OpenShift host provider)",
           "required": false
         },
         {
@@ -4885,7 +4929,7 @@
       ],
       "path_string": "patch hook",
       "description": "Patch an existing migration hook",
-      "long_description": "Patch an existing migration hook by updating its configuration.\n\nHooks can be either local (image-based) or AAP (Ansible Automation Platform) hooks.\nUse --aap-job-template-id to set/change AAP configuration, or --clear-aap to remove it.\n\nExamples:\n  # Update the image of a local hook\n  kubectl-mtv patch hook --name my-hook --image my-registry/hook-image:v2\n\n  # Switch a local hook to an AAP hook\n  kubectl-mtv patch hook --name my-hook --aap-job-template-id 42 --image \"\"\n\n  # Switch an AAP hook back to a local hook\n  kubectl-mtv patch hook --name my-hook --clear-aap --image quay.io/kubev2v/hook-runner\n\n  # Update the deadline\n  kubectl-mtv patch hook --name my-hook --deadline 600",
+      "long_description": "Patch an existing migration hook by updating its configuration.\n\nHooks can be either local (image-based) or AAP (Ansible Automation Platform) hooks.\nUse --aap-job-template-id to set/change AAP configuration, or --clear-aap to remove it.\n\nExamples:\n  # Update the image of a local hook\n  kubectl-mtv patch hook --name my-hook --image my-registry/hook-image:v2\n\n  # Switch a local hook to an AAP hook\n  kubectl-mtv patch hook --name my-hook --aap-job-template-id 42 --image \"\"\n\n  # Switch an AAP hook back to a local hook\n  kubectl-mtv patch hook --name my-hook --clear-aap --image quay.io/kubev2v/hook-runner\n\n  # Update playbook from file\n  kubectl-mtv patch hook --name my-hook --playbook @playbook.yaml\n\n  # Update the deadline\n  kubectl-mtv patch hook --name my-hook --deadline 600",
       "usage": "kubectl-mtv patch hook [flags]",
       "aliases": [
         "hooks"
@@ -4948,7 +4992,7 @@
         {
           "name": "playbook",
           "type": "string",
-          "description": "Ansible playbook content, or use @filename to read from file",
+          "description": "Ansible playbook as plain YAML or @file (stored base64 in CR)",
           "required": false
         },
         {
@@ -5022,6 +5066,10 @@
           "command": "kubectl-mtv patch mapping network --name my-net-map --add-pairs \"VM Network:default\""
         },
         {
+          "description": "Skip a network and set per-pair IP mode",
+          "command": "kubectl-mtv patch mapping network --name my-net-map --add-pairs \"Backup:ignored,Guest:default;networkIPMode=dhcp\""
+        },
+        {
           "description": "Update network pairs",
           "command": "kubectl-mtv patch mapping network --name my-net-map --update-pairs \"VM Network:migration-net\""
         }
@@ -5044,7 +5092,7 @@
         {
           "name": "add-pairs",
           "type": "string",
-          "description": "Storage pairs to add in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)",
+          "description": "Storage pairs to add in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only",
           "required": false
         },
         {
@@ -5099,7 +5147,7 @@
         {
           "name": "update-pairs",
           "type": "string",
-          "description": "Storage pairs to update in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated pairs, semicolon-separated parameters)",
+          "description": "Storage pairs to update in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only",
           "required": false
         }
       ],
@@ -5107,6 +5155,10 @@
         {
           "description": "Add storage pairs to a mapping",
           "command": "kubectl-mtv patch mapping storage --name my-storage-map --add-pairs \"datastore1:standard\""
+        },
+        {
+          "description": "Add CSI volume import offload pair",
+          "command": "kubectl-mtv patch mapping storage --name my-storage-map --add-pairs \"datastore1:hpe-sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par\""
         },
         {
           "description": "Update storage pairs",
@@ -5123,7 +5175,7 @@
       ],
       "path_string": "patch plan",
       "description": "Patch a migration plan",
-      "long_description": "Patch an existing migration plan without modifying its VM list.\n\nUse this to update plan settings like migration type, transfer network,\ntarget labels, node selectors, or convertor pod configuration.\n\nAffinity Syntax (KARL):\n  The --target-affinity and --convertor-affinity flags use KARL syntax:\n    --target-affinity \"REQUIRE pods(app=database) on node\"\n    --convertor-affinity \"PREFER pods(app=cache) on zone weight=80\"\n  Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.\n  Run 'kubectl-mtv help karl' for the full syntax reference.",
+      "long_description": "Patch an existing migration plan without modifying its VM list.\n\nUse this to update plan settings like migration type, transfer network,\ntarget labels, node selectors, or convertor pod configuration.\n\nMigration type 'conversion' is guest conversion only and must not be combined\nwith storage mapping flags (same validation as create plan).\n\nAffinity Syntax (KARL):\n  The --target-affinity and --convertor-affinity flags use KARL syntax:\n    --target-affinity \"REQUIRE pods(app=database) on node\"\n    --convertor-affinity \"PREFER pods(app=cache) on zone weight=80\"\n  Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.\n  Run 'kubectl-mtv help karl' for the full syntax reference.",
       "usage": "kubectl-mtv patch plan [flags]",
       "aliases": [
         "plans"
@@ -5172,7 +5224,7 @@
         {
           "name": "customization-scripts",
           "type": "string",
-          "description": "ConfigMap containing customization scripts for guest conversion. Supports 'namespace/name' or 'name'",
+          "description": "ConfigMap (namespace/name or name); script keys: N_win_firstboot_*.ps1, N_linux_run_*.sh, N_linux_firstboot_*.sh",
           "required": false
         },
         {
@@ -5216,7 +5268,7 @@
         {
           "name": "migration-type",
           "type": "string",
-          "description": "Migration type: cold, warm, live, or conversion",
+          "description": "Migration type: cold, warm, live, or conversion (default: cold)",
           "required": false,
           "enum": [
             "cold",
@@ -5228,7 +5280,7 @@
         {
           "name": "network-name-template",
           "type": "string",
-          "description": "Template for generating network interface names in the target VM. Variables: {{.NetworkName}}, {{.NetworkNamespace}}, {{.NetworkType}}, {{.NetworkIndex}}",
+          "description": "Go template for network interface names (vSphere only). Variables: {{.NetworkName}}, {{.NetworkNamespace}}, {{.NetworkType}}, {{.NetworkIndex}}",
           "required": false
         },
         {
@@ -5238,23 +5290,30 @@
           "required": true
         },
         {
+          "name": "pre-copy-source-disks",
+          "type": "bool",
+          "default": false,
+          "description": "Enable two-phase disk transfer for Hyper-V (Hyper-V only) (true/false)",
+          "required": false
+        },
+        {
           "name": "preserve-cluster-cpu-model",
           "type": "bool",
           "default": false,
-          "description": "Preserve the CPU model and flags the VM runs with in its cluster (true/false)",
+          "description": "Preserve the CPU model and flags the VM runs with in its oVirt/RHV cluster (oVirt/RHV only) (true/false)",
           "required": false
         },
         {
           "name": "preserve-static-ips",
           "type": "bool",
           "default": false,
-          "description": "Preserve static IP configurations during migration (true/false)",
+          "description": "Preserve static IP configurations during migration (vSphere/Hyper-V/oVirt/Nutanix) (true/false)",
           "required": false
         },
         {
           "name": "pvc-name-template",
           "type": "string",
-          "description": "Template for generating PVC names for VM disks. Variables: {{.VmName}}, {{.PlanName}}, {{.DiskIndex}}, {{.WinDriveLetter}}, {{.RootDiskIndex}}, {{.Shared}}, {{.FileName}}",
+          "description": "Go template for PVC names (keep rendered name ≤40 chars). Variables: {{.VmName}}, {{.PlanName}}, {{.DiskIndex}}, {{.WinDriveLetter}}, {{.RootDiskIndex}}, {{.Shared}}, {{.FileName}}",
           "required": false
         },
         {
@@ -5274,13 +5333,34 @@
           "name": "run-preflight-inspection",
           "type": "bool",
           "default": true,
-          "description": "Run preflight inspection on VM base disks before starting disk transfer (true/false)",
+          "description": "Run preflight on VM base disks before disk transfer (warm vSphere only; default true) (true/false)",
+          "required": false
+        },
+        {
+          "name": "scsi-reservation",
+          "type": "bool",
+          "default": false,
+          "description": "Enable SCSI persistent reservation for shared RDM LUN disks (requires --rdm-as-lun, vSphere only) (true/false)",
+          "required": false
+        },
+        {
+          "name": "selinux-relabel-at-boot",
+          "type": "bool",
+          "default": false,
+          "description": "Defer SELinux relabeling until the guest's first boot after conversion (true/false)",
+          "required": false
+        },
+        {
+          "name": "selinux-relabel-exclude",
+          "type": "stringSlice",
+          "default": [],
+          "description": "Guest directories excluded from SELinux relabeling during conversion (repeatable)",
           "required": false
         },
         {
           "name": "service-account",
           "type": "string",
-          "description": "ServiceAccount for migration pods in the target namespace (overrides global setting)",
+          "description": "DNS-1123 subdomain name of ServiceAccount for migration pods in target namespace (overrides global setting)",
           "required": false
         },
         {
@@ -5346,7 +5426,7 @@
         {
           "name": "transfer-network",
           "type": "string",
-          "description": "Network to use for transferring VM data. Supports 'namespace/network-name' or just 'network-name' (uses plan namespace)",
+          "description": "NAD (NetworkAttachmentDefinition) for disk transfer; namespace/name or name in plan namespace",
           "required": false
         },
         {
@@ -5365,7 +5445,7 @@
         {
           "name": "volume-name-template",
           "type": "string",
-          "description": "Template for generating volume interface names in the target VM. Variables: {{.PVCName}}, {{.VolumeIndex}}",
+          "description": "Go template for volume interface names (vSphere only). Variables: {{.PVCName}}, {{.VolumeIndex}}",
           "required": false
         },
         {
@@ -5379,7 +5459,7 @@
           "name": "xfs-compatibility",
           "type": "bool",
           "default": false,
-          "description": "Use XFS-compatible virt-v2v image for this plan (true/false)",
+          "description": "Use XFS-compatible virt-v2v image for this plan (disables BTRFS support for this plan) (true/false)",
           "required": false
         }
       ],
@@ -5389,16 +5469,24 @@
           "command": "kubectl-mtv patch plan --plan-name my-migration --migration-type warm"
         },
         {
+          "description": "Warm migration: disable VMware preflight inspection (warm vSphere only)",
+          "command": "kubectl-mtv patch plan --plan-name my-migration --migration-type warm --run-preflight-inspection false"
+        },
+        {
           "description": "Update transfer network",
           "command": "kubectl-mtv patch plan --plan-name my-migration --transfer-network my-namespace/migration-net"
         },
         {
-          "description": "Disable static IP preservation",
+          "description": "Disable static IP preservation (vSphere/Hyper-V/oVirt/Nutanix)",
           "command": "kubectl-mtv patch plan --plan-name my-migration --preserve-static-ips false"
         },
         {
-          "description": "Enable raw disk copy mode (skip guest conversion)",
-          "command": "kubectl-mtv patch plan --plan-name my-migration --skip-guest-conversion true"
+          "description": "Enable raw disk copy with VirtIO devices (skip guest conversion)",
+          "command": "kubectl-mtv patch plan --plan-name my-migration --skip-guest-conversion true --use-compatibility-mode false"
+        },
+        {
+          "description": "Attach virt-customize scripts ConfigMap for guest conversion",
+          "command": "kubectl-mtv patch plan --plan-name my-migration --customization-scripts my-scripts"
         },
         {
           "description": "Configure convertor pod scheduling",
@@ -5425,13 +5513,13 @@
         {
           "name": "add-post-hook",
           "type": "string",
-          "description": "Add a post-migration hook to this VM",
+          "description": "Existing Hook resource name in plan namespace to run after migration on this VM",
           "required": false
         },
         {
           "name": "add-pre-hook",
           "type": "string",
-          "description": "Add a pre-migration hook to this VM",
+          "description": "Existing Hook resource name in plan namespace to run before migration on this VM",
           "required": false
         },
         {
@@ -5444,13 +5532,13 @@
         {
           "name": "delete-vm-on-fail-migration",
           "type": "string",
-          "description": "Delete target VM when migration fails (true/false, overrides plan-level setting)",
+          "description": "Delete target VM when migration fails (true/false; ignored when plan-level is true)",
           "required": false
         },
         {
           "name": "enable-nested-virtualization",
           "type": "string",
-          "description": "Enable nested virtualization for this VM (true/false/auto)",
+          "description": "Enable nested virtualization for this VM (true/false/auto; auto clears VM override)",
           "required": false
         },
         {
@@ -5462,7 +5550,7 @@
         {
           "name": "instance-type",
           "type": "string",
-          "description": "Override the VM's instance type in the target",
+          "description": "Override the VM instance type on the target (EC2)",
           "required": false
         },
         {
@@ -5474,7 +5562,7 @@
         {
           "name": "migrate-shared-disks",
           "type": "string",
-          "description": "Migrate shared disks for this VM, overrides plan-level setting (true/false/auto)",
+          "description": "Migrate shared disks for this VM (true/false/auto; auto clears VM override to inherit plan setting)",
           "required": false
         },
         {
@@ -5487,7 +5575,7 @@
         {
           "name": "network-name-template",
           "type": "string",
-          "description": "Go template for naming network interfaces. Variables: {{.NetworkName}}, {{.NetworkNamespace}}, {{.NetworkType}}, {{.NetworkIndex}}",
+          "description": "Go template for network interface names (vSphere only). Variables: {{.NetworkName}}, {{.NetworkNamespace}}, {{.NetworkType}}, {{.NetworkIndex}}",
           "required": false
         },
         {
@@ -5499,7 +5587,7 @@
         {
           "name": "pvc-name-template",
           "type": "string",
-          "description": "Go template for naming PVCs for this VM's disks. Variables: {{.VmName}}, {{.PlanName}}, {{.DiskIndex}}, {{.WinDriveLetter}}, {{.RootDiskIndex}}, {{.Shared}}, {{.FileName}}",
+          "description": "Go template for PVC names for this VM (keep rendered name ≤40 chars). Variables: {{.VmName}}, {{.PlanName}}, {{.DiskIndex}}, {{.WinDriveLetter}}, {{.RootDiskIndex}}, {{.Shared}}, {{.FileName}}",
           "required": false
         },
         {
@@ -5518,6 +5606,24 @@
           "name": "root-disk",
           "type": "string",
           "description": "The primary disk to boot from",
+          "required": false
+        },
+        {
+          "name": "scsi-reservation",
+          "type": "string",
+          "description": "Enable SCSI persistent reservation for shared RDM LUN disks for this VM, overrides plan-level setting (vSphere only, true/false/auto)",
+          "required": false
+        },
+        {
+          "name": "selinux-relabel-at-boot",
+          "type": "string",
+          "description": "Defer SELinux relabeling until first boot for this VM, overrides plan-level setting (true/false/auto)",
+          "required": false
+        },
+        {
+          "name": "selinux-relabel-exclude",
+          "type": "string",
+          "description": "Directories excluded from SELinux relabeling for this VM (comma-separated). Empty value clears the list.",
           "required": false
         },
         {
@@ -5541,8 +5647,34 @@
         {
           "name": "volume-name-template",
           "type": "string",
-          "description": "Go template for naming volume interfaces. Variables: {{.PVCName}}, {{.VolumeIndex}}",
+          "description": "Go template for volume interface names (vSphere only). Variables: {{.PVCName}}, {{.VolumeIndex}}",
           "required": false
+        }
+      ],
+      "examples": [
+        {
+          "description": "Rename VM on the target cluster",
+          "command": "kubectl-mtv patch planvm --plan-name my-migration --vm-name legacy-vm --target-name migrated-vm"
+        },
+        {
+          "description": "Skip a vSphere disk by bus address",
+          "command": "kubectl-mtv patch planvm --plan-name my-migration --vm-name app-vm --exclude-disks scsi0:1,scsi0:2"
+        },
+        {
+          "description": "Add a pre-migration hook to one VM",
+          "command": "kubectl-mtv patch planvm --plan-name my-migration --vm-name db-vm --add-pre-hook my-pre-hook"
+        },
+        {
+          "description": "LUKS decryption secret for encrypted disks",
+          "command": "kubectl-mtv patch planvm --plan-name my-migration --vm-name encrypted-vm --luks-secret vm-luks-keys"
+        },
+        {
+          "description": "NBDE/Clevis unlocking (takes precedence over --luks-secret)",
+          "command": "kubectl-mtv patch planvm --plan-name my-migration --vm-name encrypted-vm --nbde-clevis true"
+        },
+        {
+          "description": "Clear VM-level shared-disk override (inherit plan setting)",
+          "command": "kubectl-mtv patch planvm --plan-name my-migration --vm-name shared-vm --migrate-shared-disks auto"
         }
       ],
       "runnable": true
@@ -5648,7 +5780,7 @@
         {
           "name": "hyperv-management-type",
           "type": "string",
-          "description": "HyperV management type (e.g., cluster)",
+          "description": "Hyper-V management type (standalone|cluster)",
           "required": false
         },
         {
@@ -5667,7 +5799,7 @@
         {
           "name": "nutanix-prism-type",
           "type": "string",
-          "description": "Nutanix Prism endpoint type (central or element)",
+          "description": "Nutanix Prism endpoint type (central|element)",
           "required": false
         },
         {

@@ -176,7 +176,7 @@ kubectl mtv patch plan --plan-name selective-tags-migration \
 Control various aspects of the migration process:
 
 ```bash
-# Enable static IP preservation (vSphere and OpenStack; also applies to UDN namespaces)
+# Enable static IP preservation (vSphere/Hyper-V/oVirt/Nutanix; also applies to UDN namespaces)
 kubectl mtv patch plan --plan-name vsphere-production \
   --preserve-static-ips true
 

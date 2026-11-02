@@ -123,7 +123,7 @@ Affinity Syntax (KARL):
   # Update transfer network
   kubectl-mtv patch plan --plan-name my-migration --transfer-network my-namespace/migration-net
 
-  # Disable static IP preservation (vSphere/Hyper-V only)
+  # Disable static IP preservation (vSphere/Hyper-V/oVirt/Nutanix)
   kubectl-mtv patch plan --plan-name my-migration --preserve-static-ips false
 
   # Enable raw disk copy with VirtIO devices (skip guest conversion)
@@ -283,7 +283,7 @@ Affinity Syntax (KARL):
 	// Plan metadata and configuration flags
 	cmd.Flags().StringVar(&description, "description", "", "Plan description")
 	flags.ExplicitBoolVar(cmd.Flags(), &preserveClusterCPUModel, "preserve-cluster-cpu-model", false, "Preserve the CPU model and flags the VM runs with in its oVirt/RHV cluster (oVirt/RHV only) (true/false)")
-	flags.ExplicitBoolVar(cmd.Flags(), &preserveStaticIPs, "preserve-static-ips", false, "Preserve static IP configurations during migration (vSphere/Hyper-V only) (true/false)")
+	flags.ExplicitBoolVar(cmd.Flags(), &preserveStaticIPs, "preserve-static-ips", false, "Preserve static IP configurations during migration (vSphere/Hyper-V/oVirt/Nutanix) (true/false)")
 	cmd.Flags().StringVar(&pvcNameTemplate, "pvc-name-template", "", "Go template for PVC names (keep rendered name ≤40 chars). Variables: {{.VmName}}, {{.PlanName}}, {{.DiskIndex}}, {{.WinDriveLetter}}, {{.RootDiskIndex}}, {{.Shared}}, {{.FileName}}")
 	cmd.Flags().StringVar(&volumeNameTemplate, "volume-name-template", "", "Go template for volume interface names (vSphere only). Variables: {{.PVCName}}, {{.VolumeIndex}}")
 	cmd.Flags().StringVar(&networkNameTemplate, "network-name-template", "", "Go template for network interface names (vSphere only). Variables: {{.NetworkName}}, {{.NetworkNamespace}}, {{.NetworkType}}, {{.NetworkIndex}}")
