@@ -125,6 +125,7 @@ Whether you're migrating a single development VM or orchestrating enterprise-sca
     *   Overview and Benefits (10x faster migrations, reduced network overhead).
     *   **Supported Storage Vendors** (IBM FlashSystem, NetApp ONTAP, Pure Storage, Dell PowerMax, HPE Primera).
     *   **How-To: Configuration and Setup** (vSphere XCopy integration, credential management).
+    *   **NFS Array Offload** (`vsphereNfs` on Pure FlashArray).
     *   **Vendor-Specific Configurations** (FlashSystem, ONTAP, Pure Storage, PowerMax optimizations).
     *   **Performance Tuning and Monitoring** (Best practices, troubleshooting, metrics analysis).
 

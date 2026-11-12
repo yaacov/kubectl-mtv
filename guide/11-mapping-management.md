@@ -173,14 +173,15 @@ kubectl mtv create mapping storage --name NAME \
 Storage pairs support enhanced options verified from the command code:
 
 ```
-'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vendor-name]'
+'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|vsphereNfs|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vendor-name]'
 ```
 
 ##### Offload Plugin Types
 
 | Plugin | Description | Supported Vendors |
 |--------|-------------|-------------------|
-| `vsphere` | Uses VAAI/XCOPY via a VolumePopulator pod to clone disks directly on the storage array | All supported vendors |
+| `vsphere` | Uses VAAI/XCOPY via a VolumePopulator pod to clone VMFS disks directly on the storage array | All supported vendors |
+| `vsphereNfs` | Asks the storage array to copy a VMDK between its own NFS exports. Destination volume mode is Filesystem. Dedicated ESXi migration hosts are not used | `pureFlashArray` |
 | `csiVolumeImport` | Uses the CSI driver's native import capability to migrate VVol/RDM disks. No populator pod is launched -- the controller creates a PVC with import annotations and the CSI driver clones the source volume | `primera3par`, `ontap` |
 
 #### Enhanced Storage Options
@@ -273,6 +274,17 @@ kubectl mtv create mapping storage --name csi-import-primera \
   --source vsphere-prod \
   --target openshift-target \
   --storage-pairs "hpe-datastore:hpe-sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par;offloadSecret=hpe-creds"
+```
+
+##### NFS Array Offload (Pure FlashArray)
+
+`vsphereNfs` copies a VMDK from a vSphere NFS datastore into an NFS export on the same Pure FlashArray. The source datastore must be NFS, the vendor must be `pureFlashArray`, and `volumeMode` must be `Filesystem` when set. Secret keys are the same as Pure XCOPY (`STORAGE_HOSTNAME`, `STORAGE_USERNAME`, `STORAGE_PASSWORD`, `STORAGE_TOKEN`, `PURE_CLUSTER_PREFIX`). Do not set `offloadMigrationHosts` for this plugin.
+
+```bash
+kubectl mtv create mapping storage --name pure-nfs-offload \
+  --source vsphere-prod \
+  --target openshift-target \
+  --storage-pairs "nfs-datastore:pure-nfs;offloadPlugin=vsphereNfs;offloadVendor=pureFlashArray;volumeMode=Filesystem;offloadSecret=pure-creds"
 ```
 
 ##### Default Options for Multiple Storage Classes

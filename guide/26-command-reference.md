@@ -565,7 +565,7 @@ kubectl mtv create plan --name <name> --source <provider> --vms <vm-selection> [
 - `--network-mapping`: Network mapping name (omit to auto-generate from inventory)
 - `--storage-mapping`: Storage mapping name (omit to auto-generate from inventory)
 - `--network-pairs`: Network mapping pairs, comma-separated (omit to auto-generate)
-- `--storage-pairs`: Storage mapping pairs, comma-separated with semicolon parameters (omit to auto-generate). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only
+- `--storage-pairs`: Storage mapping pairs, comma-separated with semicolon parameters (omit to auto-generate). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only. With offloadPlugin=vsphereNfs, offloadVendor is pureFlashArray only, volumeMode must be Filesystem, and offloadMigrationHosts is not allowed
 - `--default-target-network`: Override the default target network for auto-generated mapping
 - `--default-target-storage-class`: Override the default storage class for auto-generated mapping
 
@@ -579,7 +579,7 @@ kubectl mtv create plan --name <name> --source <provider> --vms <vm-selection> [
 **Optional Storage Enhancement Flags:**
 - `--default-volume-mode`: Default volume mode (Filesystem|Block)
 - `--default-access-mode`: Default access mode (ReadWriteOnce|ReadWriteMany|ReadOnlyMany)
-- `--default-offload-plugin`: Default offload plugin type (vsphere)
+- `--default-offload-plugin`: Default offload plugin type (vsphere|vsphereNfs|csiVolumeImport)
 - `--default-offload-secret`: Existing offload secret name
 - `--default-offload-vendor`: Default offload plugin vendor
 
@@ -619,6 +619,9 @@ kubectl mtv create plan --name <name> --source <provider> --vms <vm-selection> [
 **Optional Advanced Flags:**
 - `--preserve-cluster-cpu-model`: Preserve CPU model from oVirt/RHV cluster (oVirt/RHV only)
 - `--preserve-static-ips`: Preserve static IPs during migration (vSphere/Hyper-V/oVirt/Nutanix; default: true)
+- `--offload-populator-priority-class`: Existing PriorityClass for vSphere XCOPY populator pods (not used by vsphereNfs)
+- `--skip-nic-mac-address`: Do not copy the source NIC MAC address (vSphere only; default: false)
+- `--skip-nic-pci-address`: Do not copy the source NIC PCI address (vSphere only; default: false)
 - `--migrate-shared-disks`: Migrate shared disks (default: true)
 - `--skip-guest-conversion`: Skip guest conversion process
 - `--delete-guest-conversion-pod`: Delete guest conversion pod after successful migration
@@ -972,6 +975,9 @@ kubectl mtv patch plan --plan-name <plan-name> [flags]
 - `--skip-zone-node-selector`: Skip zone-based node selector (EC2 only)
 - `--preserve-cluster-cpu-model`: Preserve CPU model from oVirt/RHV cluster (oVirt/RHV only)
 - `--preserve-static-ips`: Preserve static IPs during migration (vSphere/Hyper-V/oVirt/Nutanix)
+- `--offload-populator-priority-class`: Existing PriorityClass for vSphere XCOPY populator pods (not used by vsphereNfs)
+- `--skip-nic-mac-address`: Do not copy the source NIC MAC address (vSphere only)
+- `--skip-nic-pci-address`: Do not copy the source NIC PCI address (vSphere only)
 - `--install-legacy-drivers`: Install legacy Windows drivers (true/false/auto)
 - `--use-compatibility-mode`: Use compatibility devices when skipGuestConversion is true
 - `--enable-nested-virtualization`: Enable nested virtualization on target VMs (true/false/auto)
@@ -1075,7 +1081,7 @@ kubectl mtv patch mapping storage --name <mapping-name> [flags]
 - `--remove-pairs`: Remove storage mapping pairs (specify source names)
 - `--default-volume-mode`: Default volume mode for new/updated storage pairs (Filesystem or Block)
 - `--default-access-mode`: Default access mode for new/updated storage pairs (ReadWriteOnce, ReadWriteMany, or ReadOnlyMany)
-- `--default-offload-plugin`: Default offload plugin type for new/updated storage pairs (e.g. vsphere)
+- `--default-offload-plugin`: Default offload plugin type for new/updated storage pairs (vsphere|vsphereNfs|csiVolumeImport)
 - `--default-offload-secret`: Default offload plugin secret name for new/updated storage pairs
 - `--default-offload-vendor`: Default offload plugin vendor for new/updated storage pairs
 - `--default-offload-migration-hosts`: Default dedicated ESXi host IDs for XCOPY migrations (+-separated, e.g. host-10+host-11)

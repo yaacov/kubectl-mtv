@@ -511,6 +511,23 @@ kubectl mtv create plan --name new-ips \
   --vms "test-vm-01,dev-vm-01"
 ```
 
+#### vSphere NIC Addresses and XCOPY Priority
+
+These flags apply to vSphere sources. Both skip flags default to false, which copies the source address when one is available.
+
+- `--skip-nic-mac-address`: do not copy the source NIC MAC. KubeVirt assigns a MAC.
+- `--skip-nic-pci-address`: do not copy the source NIC PCI address. Use this when a conventional PCI NIC conflicts with OpenShift Virtualization, for example a legacy guest with `useVirtioTransitional`.
+- `--offload-populator-priority-class`: name of an existing PriorityClass for vSphere XCOPY populator pods. The `vsphereNfs` plugin does not use it.
+
+```bash
+kubectl mtv create plan --name legacy-guest \
+  --source vsphere-prod \
+  --skip-nic-mac-address true \
+  --skip-nic-pci-address true \
+  --offload-populator-priority-class migration-high \
+  --vms "win2003"
+```
+
 ### Convertor Pod Configuration
 
 Configure the virt-v2v conversion pods:

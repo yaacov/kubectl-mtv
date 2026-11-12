@@ -460,7 +460,7 @@
         {
           "name": "default-offload-plugin",
           "type": "string",
-          "description": "Default offload plugin type for storage pairs (vsphere|csiVolumeImport)",
+          "description": "Default offload plugin type for storage pairs (vsphere|vsphereNfs|csiVolumeImport)",
           "required": false
         },
         {
@@ -561,7 +561,7 @@
         {
           "name": "storage-pairs",
           "type": "string",
-          "description": "Storage mapping pairs in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only",
+          "description": "Storage mapping pairs in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|vsphereNfs|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only. With offloadPlugin=vsphereNfs, offloadVendor is pureFlashArray only, volumeMode must be Filesystem, and offloadMigrationHosts is not allowed",
           "required": false
         },
         {
@@ -588,6 +588,10 @@
         {
           "description": "Create a storage mapping with CSI volume import offload",
           "command": "kubectl-mtv create mapping storage --name my-csi-map --source vsphere-prod --target host --storage-pairs \"datastore1:hpe-sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par\""
+        },
+        {
+          "description": "NFS array offload (Pure FlashArray, Filesystem destination)",
+          "command": "kubectl-mtv create mapping storage --name my-nfs-map --source vsphere-prod --target host --storage-pairs \"nfs-ds:pure-nfs;offloadPlugin=vsphereNfs;offloadVendor=pureFlashArray;volumeMode=Filesystem\""
         }
       ],
       "runnable": true
@@ -600,7 +604,7 @@
       ],
       "path_string": "create plan",
       "description": "Create a migration plan",
-      "long_description": "Create a migration plan to move VMs from a source provider to OpenShift.\n\nOnly --name, --source, and --vms are required. All other flags are optional\nand have sensible defaults — only set them when you need to override the\ndefault behavior (see \"Optional Fields\" below).\n\nVMs can be specified as:\n  - Comma-separated names: --vms \"vm1,vm2,vm3\"\n  - TSL query: --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n  - YAML/JSON file: --vms @vms.yaml\n\nProviders:\n  --source is the name of the source provider resource (e.g. \"vsphere-prod\").\n  --target is the name of the target provider resource (e.g. \"host\", \"ocp-target\").\n  If --target is omitted, the first OpenShift provider in the namespace is used.\n\nOptional Fields — leave unset unless you need to override:\n  Network/storage mappings are auto-generated from provider inventory when\n  omitted. Only specify --network-pairs, --storage-pairs, --network-mapping,\n  or --storage-mapping if you need custom mappings that differ from the\n  auto-detected defaults.\n\n  Similarly, flags like --migration-type (default: cold), --target-namespace\n  (default: plan namespace), --target-power-state (default: match source),\n  --preserve-static-ips (default: true), and other boolean/string flags all\n  have reasonable defaults. Setting them unnecessarily makes commands harder\n  to read and may override values you actually want.\n\nMapping Pair Formats (when overriding auto-generated mappings):\n  --network-pairs: comma-separated \"source:target\" pairs. Target forms:\n    source:default                    - Pod networking\n    source:nad-name                   - NAD in plan namespace\n    source:namespace/nad-name         - NAD in explicit namespace\n    source:ignored                    - Skip this network\n    Example: \"VM Network:default,Production:myns/br-ext,Backup:ignored\"\n\n  --storage-pairs: comma-separated \"source:storageclass[;options]\" pairs.\n    source:storageclass               - Basic mapping\n    source:sc;volumeMode=Block        - With volume mode (Filesystem|Block)\n    source:sc;accessMode=ReadWriteMany - With access mode\n    source:sc;offloadPlugin=vsphere;offloadVendor=ontap - Storage offload (XCOPY)\n    source:sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par - CSI import offload\n    Options are semicolon-separated and can be combined:\n    Example: \"ds1:fast-ssd,ds2:economy;volumeMode=Block;accessMode=ReadWriteOnce\"\n\nQuery Language (TSL):\n  The --vms flag accepts TSL queries to select VMs dynamically:\n    --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n    --vms \"where powerState = 'poweredOn' and memoryMB \u003e 4096\"\n    --vms \"where len(disks) \u003e 1\"\n  Run 'kubectl-mtv help tsl' for the full syntax reference and field list.\n\nAffinity Syntax (KARL):\n  The --target-affinity and --convertor-affinity flags use KARL syntax:\n    --target-affinity \"REQUIRE pods(app=database) on node\"\n    --convertor-affinity \"PREFER pods(app=cache) on zone weight=80\"\n  Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.\n  Run 'kubectl-mtv help karl' for the full syntax reference.",
+      "long_description": "Create a migration plan to move VMs from a source provider to OpenShift.\n\nOnly --name, --source, and --vms are required. All other flags are optional\nand have sensible defaults — only set them when you need to override the\ndefault behavior (see \"Optional Fields\" below).\n\nVMs can be specified as:\n  - Comma-separated names: --vms \"vm1,vm2,vm3\"\n  - TSL query: --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n  - YAML/JSON file: --vms @vms.yaml\n\nProviders:\n  --source is the name of the source provider resource (e.g. \"vsphere-prod\").\n  --target is the name of the target provider resource (e.g. \"host\", \"ocp-target\").\n  If --target is omitted, the first OpenShift provider in the namespace is used.\n\nOptional Fields — leave unset unless you need to override:\n  Network/storage mappings are auto-generated from provider inventory when\n  omitted. Only specify --network-pairs, --storage-pairs, --network-mapping,\n  or --storage-mapping if you need custom mappings that differ from the\n  auto-detected defaults.\n\n  Similarly, flags like --migration-type (default: cold), --target-namespace\n  (default: plan namespace), --target-power-state (default: match source),\n  --preserve-static-ips (default: true), and other boolean/string flags all\n  have reasonable defaults. Setting them unnecessarily makes commands harder\n  to read and may override values you actually want.\n\nMapping Pair Formats (when overriding auto-generated mappings):\n  --network-pairs: comma-separated \"source:target\" pairs. Target forms:\n    source:default                    - Pod networking\n    source:nad-name                   - NAD in plan namespace\n    source:namespace/nad-name         - NAD in explicit namespace\n    source:ignored                    - Skip this network\n    Example: \"VM Network:default,Production:myns/br-ext,Backup:ignored\"\n\n  --storage-pairs: comma-separated \"source:storageclass[;options]\" pairs.\n    source:storageclass               - Basic mapping\n    source:sc;volumeMode=Block        - With volume mode (Filesystem|Block)\n    source:sc;accessMode=ReadWriteMany - With access mode\n    source:sc;offloadPlugin=vsphere;offloadVendor=ontap - Storage offload (XCOPY, VMFS)\n    source:sc;offloadPlugin=vsphereNfs;offloadVendor=pureFlashArray;volumeMode=Filesystem - NFS array offload\n    source:sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par - CSI import offload\n    Options are semicolon-separated and can be combined:\n    Example: \"ds1:fast-ssd,ds2:economy;volumeMode=Block;accessMode=ReadWriteOnce\"\n\nQuery Language (TSL):\n  The --vms flag accepts TSL queries to select VMs dynamically:\n    --vms \"where name ~= 'prod-.*' and cpuCount \u003c= 8\"\n    --vms \"where powerState = 'poweredOn' and memoryMB \u003e 4096\"\n    --vms \"where len(disks) \u003e 1\"\n  Run 'kubectl-mtv help tsl' for the full syntax reference and field list.\n\nAffinity Syntax (KARL):\n  The --target-affinity and --convertor-affinity flags use KARL syntax:\n    --target-affinity \"REQUIRE pods(app=database) on node\"\n    --convertor-affinity \"PREFER pods(app=cache) on zone weight=80\"\n  Rule types: REQUIRE, PREFER, AVOID, REPEL. Topology: node, zone, region, rack.\n  Run 'kubectl-mtv help karl' for the full syntax reference.",
       "usage": "kubectl-mtv create plan [flags]",
       "aliases": [
         "plans"
@@ -667,7 +671,7 @@
         {
           "name": "default-offload-plugin",
           "type": "string",
-          "description": "Default offload plugin type for storage pairs (vsphere|csiVolumeImport)",
+          "description": "Default offload plugin type for storage pairs (vsphere|vsphereNfs|csiVolumeImport)",
           "required": false
         },
         {
@@ -798,6 +802,12 @@
           "type": "bool",
           "default": false,
           "description": "Skip TLS verification for offload connections",
+          "required": false
+        },
+        {
+          "name": "offload-populator-priority-class",
+          "type": "string",
+          "description": "Existing PriorityClass for vSphere XCOPY populator pods (not used by vsphereNfs)",
           "required": false
         },
         {
@@ -938,6 +948,20 @@
           "required": false
         },
         {
+          "name": "skip-nic-mac-address",
+          "type": "bool",
+          "default": false,
+          "description": "Do not copy the source NIC MAC address onto the target VM (vSphere only; default false) (true/false)",
+          "required": false
+        },
+        {
+          "name": "skip-nic-pci-address",
+          "type": "bool",
+          "default": false,
+          "description": "Do not copy the source NIC PCI address onto the target VM (vSphere only; default false). Use when a conventional PCI NIC conflicts with OpenShift Virtualization, for example a legacy guest with useVirtioTransitional (true/false)",
+          "required": false
+        },
+        {
           "name": "skip-zone-node-selector",
           "type": "bool",
           "default": false,
@@ -960,7 +984,7 @@
         {
           "name": "storage-pairs",
           "type": "string",
-          "description": "Inline storage mapping pairs (auto-generated when omitted). Format: 'source:storage-class[;param=value]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only",
+          "description": "Inline storage mapping pairs (auto-generated when omitted). Format: 'source:storage-class[;param=value]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only. With offloadPlugin=vsphereNfs, offloadVendor is pureFlashArray only, volumeMode must be Filesystem, and offloadMigrationHosts is not allowed",
           "required": false
         },
         {
@@ -1115,6 +1139,10 @@
         {
           "description": "Disable default-true boolean flags with explicit false",
           "command": "kubectl-mtv create plan --name no-static-ips --source vsphere-prod --vms \"quick-vm\" --preserve-static-ips false"
+        },
+        {
+          "description": "vSphere: let KubeVirt assign NIC MAC and PCI addresses",
+          "command": "kubectl-mtv create plan --name legacy-guest --source vsphere-prod --vms \"win2003\" --skip-nic-mac-address true --skip-nic-pci-address true --offload-populator-priority-class migration-high"
         }
       ],
       "runnable": true
@@ -5092,7 +5120,7 @@
         {
           "name": "add-pairs",
           "type": "string",
-          "description": "Storage pairs to add in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only",
+          "description": "Storage pairs to add in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|vsphereNfs|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only. With offloadPlugin=vsphereNfs, offloadVendor is pureFlashArray only, volumeMode must be Filesystem, and offloadMigrationHosts is not allowed",
           "required": false
         },
         {
@@ -5110,7 +5138,7 @@
         {
           "name": "default-offload-plugin",
           "type": "string",
-          "description": "Default offload plugin type for storage pairs (vsphere|csiVolumeImport)",
+          "description": "Default offload plugin type for storage pairs (vsphere|vsphereNfs|csiVolumeImport)",
           "required": false
         },
         {
@@ -5147,7 +5175,7 @@
         {
           "name": "update-pairs",
           "type": "string",
-          "description": "Storage pairs to update in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only",
+          "description": "Storage pairs to update in format 'source:storage-class[;volumeMode=Block|Filesystem][;accessMode=ReadWriteOnce|ReadWriteMany|ReadOnlyMany][;offloadPlugin=vsphere|vsphereNfs|csiVolumeImport][;offloadSecret=secret-name][;offloadVendor=vantara|ontap|...]' (comma-separated). With offloadPlugin=csiVolumeImport, offloadVendor is primera3par|ontap only. With offloadPlugin=vsphereNfs, offloadVendor is pureFlashArray only, volumeMode must be Filesystem, and offloadMigrationHosts is not allowed",
           "required": false
         }
       ],
@@ -5159,6 +5187,10 @@
         {
           "description": "Add CSI volume import offload pair",
           "command": "kubectl-mtv patch mapping storage --name my-storage-map --add-pairs \"datastore1:hpe-sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par\""
+        },
+        {
+          "description": "Add NFS array offload pair (Pure FlashArray)",
+          "command": "kubectl-mtv patch mapping storage --name my-storage-map --add-pairs \"nfs-ds:pure-nfs;offloadPlugin=vsphereNfs;offloadVendor=pureFlashArray;volumeMode=Filesystem\""
         },
         {
           "description": "Update storage pairs",
@@ -5284,6 +5316,12 @@
           "required": false
         },
         {
+          "name": "offload-populator-priority-class",
+          "type": "string",
+          "description": "Existing PriorityClass for vSphere XCOPY populator pods (not used by vsphereNfs)",
+          "required": false
+        },
+        {
           "name": "plan-name",
           "type": "string",
           "description": "Plan name",
@@ -5368,6 +5406,20 @@
           "type": "bool",
           "default": false,
           "description": "Skip the guest conversion process (raw disk copy mode) (true/false)",
+          "required": false
+        },
+        {
+          "name": "skip-nic-mac-address",
+          "type": "bool",
+          "default": false,
+          "description": "Do not copy the source NIC MAC address onto the target VM (vSphere only; default false) (true/false)",
+          "required": false
+        },
+        {
+          "name": "skip-nic-pci-address",
+          "type": "bool",
+          "default": false,
+          "description": "Do not copy the source NIC PCI address onto the target VM (vSphere only; default false). Use when a conventional PCI NIC conflicts with OpenShift Virtualization, for example a legacy guest with useVirtioTransitional (true/false)",
           "required": false
         },
         {
@@ -5479,6 +5531,10 @@
         {
           "description": "Disable static IP preservation (vSphere/Hyper-V/oVirt/Nutanix)",
           "command": "kubectl-mtv patch plan --plan-name my-migration --preserve-static-ips false"
+        },
+        {
+          "description": "vSphere: let KubeVirt assign NIC MAC and PCI addresses",
+          "command": "kubectl-mtv patch plan --plan-name my-migration --skip-nic-mac-address true --skip-nic-pci-address true --offload-populator-priority-class migration-high"
         },
         {
           "description": "Enable raw disk copy with VirtIO devices (skip guest conversion)",

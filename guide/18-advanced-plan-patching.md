@@ -180,6 +180,12 @@ Control various aspects of the migration process:
 kubectl mtv patch plan --plan-name vsphere-production \
   --preserve-static-ips true
 
+# vSphere: let KubeVirt assign NIC MAC and PCI addresses, and prioritize XCOPY populator pods
+kubectl mtv patch plan --plan-name legacy-guest \
+  --skip-nic-mac-address true \
+  --skip-nic-pci-address true \
+  --offload-populator-priority-class migration-high
+
 # Configure shared disk migration
 kubectl mtv patch plan --plan-name cluster-workloads \
   --migrate-shared-disks true
