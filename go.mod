@@ -10,7 +10,6 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/x/ansi v0.11.7
 	github.com/google/jsonschema-go v0.4.3
-	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/kubev2v/forklift v0.0.0-20261111190406-31d5e641986b
 	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/spf13/cobra v1.10.2

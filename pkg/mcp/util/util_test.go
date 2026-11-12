@@ -311,6 +311,7 @@ func TestFormatShellCommand(t *testing.T) {
 		name        string
 		cmd         string
 		args        []string
+		wantExact   string
 		wantContain string
 		wantMissing string
 	}{
@@ -341,12 +342,39 @@ func TestFormatShellCommand(t *testing.T) {
 			wantContain: "--offload-vsphere-password",
 			wantMissing: "pass123",
 		},
+		{
+			name:      "empty argument",
+			cmd:       "kubectl-mtv",
+			args:      []string{"get", ""},
+			wantExact: "kubectl-mtv get ''",
+		},
+		{
+			name:      "argument with space",
+			cmd:       "kubectl-mtv",
+			args:      []string{"get", "hello world"},
+			wantExact: "kubectl-mtv get 'hello world'",
+		},
+		{
+			name:      "argument with single quote",
+			cmd:       "kubectl-mtv",
+			args:      []string{"get", "it's"},
+			wantExact: `kubectl-mtv get 'it'\''s'`,
+		},
+		{
+			name:      "argument with dollar",
+			cmd:       "kubectl-mtv",
+			args:      []string{"get", "foo$bar"},
+			wantExact: "kubectl-mtv get 'foo$bar'",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := formatShellCommand(tt.cmd, tt.args)
 
+			if tt.wantExact != "" && result != tt.wantExact {
+				t.Errorf("formatShellCommand() = %q, want %q", result, tt.wantExact)
+			}
 			if tt.wantContain != "" && !strings.Contains(result, tt.wantContain) {
 				t.Errorf("formatShellCommand() = %q, should contain %q", result, tt.wantContain)
 			}
