@@ -27,7 +27,7 @@ Storage array offloading is an advanced migration optimization technique that de
 
 ### How It Works
 
-Two offload plugin types are available:
+Three offload plugin types are available:
 
 ### vsphere (XCOPY) Plugin
 
@@ -59,6 +59,26 @@ kubectl mtv create mapping storage --name csi-offload \
   --target openshift-target \
   --storage-pairs "hpe-ds:hpe-sc;offloadPlugin=csiVolumeImport;offloadVendor=primera3par" \
   --default-offload-secret hpe-creds
+```
+
+### vsphereNfs Plugin
+
+The `vsphereNfs` plugin asks a Pure FlashArray to copy a VMDK file from the source NFS export into the destination NFS export. Both exports must be served by the same array. There is no XCOPY populator pod and no dedicated ESXi migration host. The controller creates a Filesystem PVC.
+
+1. **Feature Flag Activation**: The Forklift controller must have the `feature_copy_offload` flag enabled
+2. **NFS Source**: The source vSphere datastore must be NFS. The controller sets `NfsOffloadDiskNotNFS` when it is not
+3. **VMFS Stays on XCOPY**: The `vsphere` plugin is for VMFS. The controller sets `XcopyOffloadDiskNotVMFS` when that plugin is mapped to an NFS datastore
+4. **Vendor**: `pureFlashArray` only
+5. **Secret**: Same keys as Pure XCOPY (`STORAGE_HOSTNAME`, `STORAGE_USERNAME`, `STORAGE_PASSWORD`, `STORAGE_TOKEN`, `PURE_CLUSTER_PREFIX`)
+6. **Volume Mode**: `Filesystem` when set. `offloadMigrationHosts` is not allowed
+7. **Priority Class**: `--offload-populator-priority-class` applies to XCOPY populator pods only, not to this plugin
+
+```bash
+kubectl mtv create mapping storage --name pure-nfs-offload \
+  --source vsphere-prod \
+  --target openshift-target \
+  --storage-pairs "nfs-ds:pure-nfs;offloadPlugin=vsphereNfs;offloadVendor=pureFlashArray;volumeMode=Filesystem" \
+  --default-offload-secret pure-creds
 ```
 
 ## Supported Storage Vendors and Arrays

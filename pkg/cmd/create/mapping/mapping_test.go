@@ -244,7 +244,7 @@ func TestValidateAccessMode_Invalid(t *testing.T) {
 // --- validateOffloadPlugin ---
 
 func TestValidateOffloadPlugin_Valid(t *testing.T) {
-	for _, plugin := range []string{"vsphere", "csiVolumeImport"} {
+	for _, plugin := range []string{"vsphere", "vsphereNfs", "csiVolumeImport"} {
 		if err := validateOffloadPlugin(plugin); err != nil {
 			t.Errorf("validateOffloadPlugin(%s) = error %v", plugin, err)
 		}
